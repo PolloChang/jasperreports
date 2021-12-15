@@ -58,13 +58,8 @@ public class GraphicStyle extends Style
 
 		if (element.getModeValue() == ModeEnum.OPAQUE)
 		{
-			//fill = "solid";
 			backcolor = JRColorUtil.getColorHexa(element.getBackcolor());
 		}
-//		else
-//		{
-//			//fill = "none";
-//		}
 
 		forecolor = JRColorUtil.getColorHexa(element.getLinePen().getLineColor());
 

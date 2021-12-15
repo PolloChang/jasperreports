@@ -514,25 +514,16 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 				{
 					if (emptyCellColSpan > 0)
 					{
-						//writeEmptyCell(gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
-						//emptyCellWidth = 0;
 					}
 
-					//writeOccupiedCells(1);
 					exportOccupiedCells(1);
-//					OccupiedGridCell occupiedGridCell = (OccupiedGridCell)gridCell;
-//					ElementGridCell elementGridCell = (ElementGridCell)grid[occupiedGridCell.getRow()][occupiedGridCell.getCol()];
-//					exportOccupiedCells(elementGridCell);
-//					col += elementGridCell.getColSpan() - 1;
 				}
 				else if(gridCell.getType() == JRExporterGridCell.TYPE_ELEMENT_CELL)
 				{
 					if (emptyCellColSpan > 0)
 					{
-						//writeEmptyCell(gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
-						//emptyCellWidth = 0;
 					}
 
 					JRPrintElement element = gridCell.getElement();
@@ -566,21 +557,13 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 						exportGenericElement(tableBuilder, (JRGenericPrintElement)element, gridCell);
 					}
 
-					// //x += gridCell.colSpan - 1;
-					//col += gridCell.getColSpan() - 1;
 				}
 				else
 				{
 					emptyCellColSpan++;
-					//emptyCellWidth += gridCell.getWidth();
 					exportEmptyCell(gridCell, 1);
 				}
 			}
-
-//			if (emptyCellColSpan > 0)
-//			{
-//				//writeEmptyCell(null, emptyCellColSpan, emptyCellWidth, rowHeight);
-//			}
 
 			tableBuilder.buildRowFooter();
 		}
@@ -607,12 +590,6 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	private void exportEmptyCell(JRExporterGridCell gridCell, int emptyCellColSpan) throws IOException
 	{
 		tempBodyWriter.write("<table:table-cell");
-		//tempBodyWriter.write(" office:value-type=\"string\"");
-//		if (gridCell == null)
-//		{
-//			tempBodyWriter.write(" table:style-name=\"empty-cell\"");
-//		}
-//		else
 		{
 			tempBodyWriter.write(" table:style-name=\"" + styleCache.getCellStyle(gridCell) + "\"");
 		}

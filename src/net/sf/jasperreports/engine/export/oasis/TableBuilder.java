@@ -557,16 +557,6 @@ public class TableBuilder
 				bodyWriter.write(" xlink:show=\"new\"");
 			}
 		}
-/*
- * tooltips are unavailable for the moment
- *
-		if (link.getHyperlinkTooltip() != null)
-		{
-			bodyWriter.write(" xlink:title=\"");
-			bodyWriter.write(JRStringUtil.xmlEncode(link.getHyperlinkTooltip()));
-			bodyWriter.write("\"");
-		}
-*/
 		bodyWriter.write(">");
 	}
 

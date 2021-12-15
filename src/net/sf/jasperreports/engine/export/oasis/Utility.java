@@ -40,15 +40,6 @@ import java.util.StringTokenizer;
  */
 public final class Utility 
 {
-
-//	public static String getIndent(int i) 
-//	{
-//		String indent = "";
-//		for (int j=0; j<i; j++) {
-//			indent += " ";
-//		}
-//		return indent;
-//	}
 	
 	protected static String replaceNewLineWithLineBreak(String source)
 	{

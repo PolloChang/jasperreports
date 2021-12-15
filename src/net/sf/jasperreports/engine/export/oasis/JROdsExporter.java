@@ -239,15 +239,6 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 		tableBuilder.buildRow(rowIndex, isFlexibleRowHeight ? -1 : lastRowHeight);
 	}
 
-//	@Override
-//	protected void setCell(
-//		JRExporterGridCell gridCell, 
-//		int colIndex,
-//		int rowIndex) 
-//	{
-//		//nothing to do
-//	}
-
 	@Override
 	protected void addBlankCell(
 		JRExporterGridCell gridCell, 
@@ -265,13 +256,7 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 		{
 			tempBodyWriter.write(" table:style-name=\"" + styleCache.getCellStyle(gridCell) + "\"");
 		}
-//		if (emptyCellColSpan > 1)
-//		{
-//			tempBodyWriter.write(" table:number-columns-spanned=\"" + emptyCellColSpan + "\"");
-//		}
 		tempBodyWriter.write("/>\n");
-//
-//		exportOccupiedCells(emptyCellColSpan - 1);
 	}
 
 	@Override
@@ -419,8 +404,7 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 			XlsReportConfiguration configuration = getCurrentItemConfiguration();
 			
 			boolean isOnePagePerSheet = configuration.isOnePagePerSheet();
-			
-//				tempBodyWriter.write("<text:p>");
+
 			documentBuilder.insertPageAnchor(tableBuilder);
 			if (!configuration.isIgnoreAnchors() && image.getAnchorName() != null)
 			{
@@ -440,12 +424,8 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 			tempBodyWriter.write("<draw:frame text:anchor-type=\"frame\" "
 					+ "draw:style-name=\"" + styleCache.getGraphicStyle(image) + "\" "
 					+ cellAddress
-//						+ "table:end-x=\"" + LengthUtil.inchRound(image.getWidth()) + "in\" "
-//						+ "table:end-y=\"" + LengthUtil.inchRound(image.getHeight()) + "in\" "
 					+ "table:end-x=\"0in\" "
 					+ "table:end-y=\"0in\" "
-//						+ "svg:x=\"" + LengthUtil.inch(image.getX() + leftPadding + xoffset) + "in\" "
-//						+ "svg:y=\"" + LengthUtil.inch(image.getY() + topPadding + yoffset) + "in\" "
 					+ "svg:x=\"0in\" "
 					+ "svg:y=\"0in\" "
 					+ "svg:width=\"" + LengthUtil.inchRound(image.getWidth()) + "in\" "
@@ -465,7 +445,6 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 			{
 				tableBuilder.endHyperlink(false);
 			}
-//				tempBodyWriter.write("</text:p>");
 		}
 
 		tableBuilder.buildCellFooter();
@@ -548,35 +527,8 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 
 		tableBuilder.buildCellHeader(styleCache.getCellStyle(gridCell), gridCell.getColSpan(), gridCell.getRowSpan());
 
-//		double x1, y1, x2, y2;
-//
-//		if (line.getDirection() == JRLine.DIRECTION_TOP_DOWN)
-//		{
-//			x1 = Utility.translatePixelsToInches(0);
-//			y1 = Utility.translatePixelsToInches(0);
-//			x2 = Utility.translatePixelsToInches(line.getWidth() - 1);
-//			y2 = Utility.translatePixelsToInches(line.getHeight() - 1);
-//		}
-//		else
-//		{
-//			x1 = Utility.translatePixelsToInches(0);
-//			y1 = Utility.translatePixelsToInches(line.getHeight() - 1);
-//			x2 = Utility.translatePixelsToInches(line.getWidth() - 1);
-//			y2 = Utility.translatePixelsToInches(0);
-//		}
 
 		tempBodyWriter.write("<text:p>");
-//FIXMEODS		insertPageAnchor();
-//		tempBodyWriter.write(
-//				"<draw:line text:anchor-type=\"paragraph\" "
-//				+ "draw:style-name=\"" + styleCache.getGraphicStyle(line) + "\" "
-//				+ "svg:x1=\"" + x1 + "in\" "
-//				+ "svg:y1=\"" + y1 + "in\" "
-//				+ "svg:x2=\"" + x2 + "in\" "
-//				+ "svg:y2=\"" + y2 + "in\">"
-//				//+ "</draw:line>"
-//				+ "<text:p/></draw:line>"
-//				);
 		tempBodyWriter.write("</text:p>");
 		tableBuilder.buildCellFooter();
 	}
@@ -853,14 +805,6 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	protected void initExport()
 	{
 		super.initExport();
-
-//		macroTemplate =  macroTemplate == null ? getPropertiesUtil().getProperty(jasperPrint, PROPERTY_MACRO_TEMPLATE) : macroTemplate;
-//		
-//		password = 
-//			getStringParameter(
-//				JExcelApiExporterParameter.PASSWORD,
-//				JExcelApiExporterParameter.PROPERTY_PASSWORD
-//				);
 	}
 	
 
@@ -881,36 +825,6 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 				configuration.isIgnorePageMargins()
 				);
 	}
-
-
-//	/**
-//	 *
-//	 */
-//	protected void exportEllipse(TableBuilder tableBuilder, JRPrintEllipse ellipse, JRExporterGridCell gridCell) throws IOException
-//	{
-//		JRLineBox box = new JRBaseLineBox(null);
-//		JRPen pen = box.getPen();
-//		pen.setLineColor(ellipse.getLinePen().getLineColor());
-//		pen.setLineStyle(ellipse.getLinePen().getLineStyleValue());
-//		pen.setLineWidth(ellipse.getLinePen().getLineWidth());
-//
-//		gridCell.setBox(box);//CAUTION: only some exporters set the cell box
-//		
-//		tableBuilder.buildCellHeader(styleCache.getCellStyle(gridCell), gridCell.getColSpan(), gridCell.getRowSpan());
-//		tempBodyWriter.write("<text:p>");
-//		insertPageAnchor();
-////		tempBodyWriter.write(
-////			"<draw:ellipse text:anchor-type=\"paragraph\" "
-////			+ "draw:style-name=\"" + styleCache.getGraphicStyle(ellipse) + "\" "
-////			+ "svg:width=\"" + Utility.translatePixelsToInches(ellipse.getWidth()) + "in\" "
-////			+ "svg:height=\"" + Utility.translatePixelsToInches(ellipse.getHeight()) + "in\" "
-////			+ "svg:x=\"0in\" "
-////			+ "svg:y=\"0in\">"
-////			+ "<text:p/></draw:ellipse>"
-////			);
-//		tempBodyWriter.write("</text:p>");
-//		tableBuilder.buildCellFooter();
-//	}
 
 
 	/**
