@@ -417,21 +417,29 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 
 			boolean startedHyperlink = tableBuilder.startHyperlink(image,false, isOnePagePerSheet);
 
-			//String cellAddress = getCellAddress(rowIndex + gridCell.getRowSpan(), colIndex + gridCell.getColSpan() - 1);
 			String cellAddress = getCellAddress(rowIndex + gridCell.getRowSpan() + 1, colIndex + gridCell.getColSpan());
 			cellAddress = cellAddress == null ? "" : "table:end-cell-address=\"" + cellAddress + "\" ";
+
+			StringBuffer drawContent = new StringBuffer();
+
+			drawContent.append("<draw:frame text:anchor-type=\"frame\" ");
+			drawContent.append("draw:style-name=\"");
+			drawContent.append(styleCache.getGraphicStyle(image));
+			drawContent.append("\" ");
+			drawContent.append(cellAddress);
+			drawContent.append("table:end-x=\"0in\" ");
+			drawContent.append("table:end-y=\"0in\" ");
+			drawContent.append("svg:x=\"0in\" ");
+			drawContent.append("svg:y=\"0in\" ");
+			drawContent.append("svg:width=\"");
+			drawContent.append(LengthUtil.inchRound(image.getWidth()));
+			drawContent.append( "in\" ");
+			drawContent.append("svg:height=\"");
+			drawContent.append(LengthUtil.inchRound(image.getHeight()));
+			drawContent.append( "in\"");
+			drawContent.append(">");
 			
-			tempBodyWriter.write("<draw:frame text:anchor-type=\"frame\" "
-					+ "draw:style-name=\"" + styleCache.getGraphicStyle(image) + "\" "
-					+ cellAddress
-					+ "table:end-x=\"0in\" "
-					+ "table:end-y=\"0in\" "
-					+ "svg:x=\"0in\" "
-					+ "svg:y=\"0in\" "
-					+ "svg:width=\"" + LengthUtil.inchRound(image.getWidth()) + "in\" "
-					+ "svg:height=\"" + LengthUtil.inchRound(image.getHeight()) + "in\"" 
-					+ ">"
-					);
+			tempBodyWriter.write(drawContent.toString());
 			tempBodyWriter.write("<draw:image ");
 			String imagePath = documentBuilder.getImagePath(renderer, image, gridCell);
 			tempBodyWriter.write(" xlink:href=\"" + JRStringUtil.xmlEncode(imagePath) + "\"");
