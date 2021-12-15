@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,9 +25,12 @@ package net.sf.jasperreports.charts.util;
 
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.StringTokenizer;
 
 import net.sf.jasperreports.charts.ChartTheme;
@@ -47,13 +50,19 @@ import net.sf.jasperreports.engine.util.JRSingletonCache;
 
 import org.jfree.chart.ChartRenderingInfo;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.axis.TickUnit;
+import org.jfree.chart.axis.TickUnitSource;
+import org.jfree.chart.axis.TickUnits;
 import org.jfree.chart.entity.ChartEntity;
 import org.jfree.chart.entity.EntityCollection;
+import org.jfree.data.Range;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ChartUtil.java 5217 2012-04-03 15:16:10Z teodord $
+ * @version $Id: ChartUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class ChartUtil
 {
@@ -63,6 +72,9 @@ public final class ChartUtil
 	@SuppressWarnings("deprecation")
 	private static final JRSingletonCache<ChartRendererFactory> CHART_RENDERER_FACTORY_CACHE = 
 			new JRSingletonCache<ChartRendererFactory>(ChartRendererFactory.class);
+	
+	protected static final double AUTO_TICK_UNIT_THRESHOLD = 1e12;
+	protected static final double AUTO_TICK_UNIT_FACTOR = 1000d;
 
 	private JasperReportsContext jasperReportsContext;
 
@@ -79,7 +91,7 @@ public final class ChartUtil
 	/**
 	 *
 	 */
-	private static ChartUtil getDefaultInstance()
+	private static ChartUtil getDefaultInstance()//FIXMECONTEXT check this use of this
 	{
 		return new ChartUtil(DefaultJasperReportsContext.getInstance());
 	}
@@ -274,6 +286,219 @@ public final class ChartUtil
 			net.sf.jasperreports.engine.JRRenderable deprecatedRenderer 
 				= getRenderer(chart, chartHyperlinkProvider, rectangle);
 			return RenderableUtil.getWrappingRenderable(deprecatedRenderer);
+		}
+	}
+	
+	/**
+	 * @deprecated replaced by {@link #createIntegerTickUnits(Locale)}
+	 */
+	@Deprecated
+	public TickUnitSource createIntegerTickUnits()
+	{
+		return createIntegerTickUnits(Locale.getDefault());
+	}
+	
+	public TickUnitSource createIntegerTickUnits(Locale locale)
+	{
+        DecimalFormatSymbols formatSymbols = DecimalFormatSymbols.getInstance(locale);
+        
+		// copied from NumberAxis.createIntegerTickUnits() to preserve backward behaviour
+        TickUnits units = new TickUnits();
+		DecimalFormat df0 = new DecimalFormat("0", formatSymbols);
+        DecimalFormat df1 = new DecimalFormat("#,##0", formatSymbols);
+        units.add(new NumberTickUnit(1, df0));
+        units.add(new NumberTickUnit(2, df0));
+        units.add(new NumberTickUnit(5, df0));
+        units.add(new NumberTickUnit(10, df0));
+        units.add(new NumberTickUnit(20, df0));
+        units.add(new NumberTickUnit(50, df0));
+        units.add(new NumberTickUnit(100, df0));
+        units.add(new NumberTickUnit(200, df0));
+        units.add(new NumberTickUnit(500, df0));
+        units.add(new NumberTickUnit(1000, df1));
+        units.add(new NumberTickUnit(2000, df1));
+        units.add(new NumberTickUnit(5000, df1));
+        units.add(new NumberTickUnit(10000, df1));
+        units.add(new NumberTickUnit(20000, df1));
+        units.add(new NumberTickUnit(50000, df1));
+        units.add(new NumberTickUnit(100000, df1));
+        units.add(new NumberTickUnit(200000, df1));
+        units.add(new NumberTickUnit(500000, df1));
+        units.add(new NumberTickUnit(1000000, df1));
+        units.add(new NumberTickUnit(2000000, df1));
+        units.add(new NumberTickUnit(5000000, df1));
+        units.add(new NumberTickUnit(10000000, df1));
+        units.add(new NumberTickUnit(20000000, df1));
+        units.add(new NumberTickUnit(50000000, df1));
+        units.add(new NumberTickUnit(100000000, df1));
+        units.add(new NumberTickUnit(200000000, df1));
+        units.add(new NumberTickUnit(500000000, df1));
+        units.add(new NumberTickUnit(1000000000, df1));
+        units.add(new NumberTickUnit(2000000000, df1));
+        units.add(new NumberTickUnit(5000000000.0, df1));
+        units.add(new NumberTickUnit(10000000000.0, df1));
+		
+		// adding further values by default because 1E10 is not enough for some people
+		// using getNumberInstance because that's what NumberAxis.createIntegerTickUnits does
+		units.add(new NumberTickUnit(20000000000L, df1));
+		units.add(new NumberTickUnit(50000000000L, df1));
+		units.add(new NumberTickUnit(100000000000L, df1));
+		units.add(new NumberTickUnit(200000000000L, df1));
+		units.add(new NumberTickUnit(500000000000L, df1));
+		units.add(new NumberTickUnit(1000000000000L, df1));
+		units.add(new NumberTickUnit(2000000000000L, df1));
+		units.add(new NumberTickUnit(5000000000000L, df1));
+		units.add(new NumberTickUnit(10000000000000L, df1));
+		units.add(new NumberTickUnit(20000000000000L, df1));
+		units.add(new NumberTickUnit(50000000000000L, df1));
+		units.add(new NumberTickUnit(100000000000000L, df1));
+		units.add(new NumberTickUnit(200000000000000L, df1));
+		units.add(new NumberTickUnit(500000000000000L, df1));
+		units.add(new NumberTickUnit(1000000000000000L, df1));
+		units.add(new NumberTickUnit(2000000000000000L, df1));
+		units.add(new NumberTickUnit(5000000000000000L, df1));
+		units.add(new NumberTickUnit(10000000000000000L, df1));
+		units.add(new NumberTickUnit(20000000000000000L, df1));
+		units.add(new NumberTickUnit(50000000000000000L, df1));
+		units.add(new NumberTickUnit(100000000000000000L, df1));
+		units.add(new NumberTickUnit(200000000000000000L, df1));
+		units.add(new NumberTickUnit(500000000000000000L, df1));
+		units.add(new NumberTickUnit(1000000000000000000L, df1));
+		units.add(new NumberTickUnit(2000000000000000000L, df1));
+		units.add(new NumberTickUnit(5000000000000000000L, df1));
+		
+		return units;
+	}
+	
+	/**
+	 * @deprecated replaced by {@link #createStandardTickUnits(Locale)}
+	 */
+	@Deprecated
+	public TickUnitSource createStandardTickUnits()
+	{
+		return createStandardTickUnits(Locale.getDefault());
+	}
+	
+	public TickUnitSource createStandardTickUnits(Locale locale)
+	{
+        DecimalFormatSymbols formatSymbols = DecimalFormatSymbols.getInstance(locale);
+        
+		//copied from NumberAxis.createStandardTickUnits() to preserve backward behaviour 
+        TickUnits units = new TickUnits();
+        DecimalFormat df0 = new DecimalFormat("0.00000000", formatSymbols);
+        DecimalFormat df1 = new DecimalFormat("0.0000000", formatSymbols);
+        DecimalFormat df2 = new DecimalFormat("0.000000", formatSymbols);
+        DecimalFormat df3 = new DecimalFormat("0.00000", formatSymbols);
+        DecimalFormat df4 = new DecimalFormat("0.0000", formatSymbols);
+        DecimalFormat df5 = new DecimalFormat("0.000", formatSymbols);
+        DecimalFormat df6 = new DecimalFormat("0.00", formatSymbols);
+        DecimalFormat df7 = new DecimalFormat("0.0", formatSymbols);
+        DecimalFormat df8 = new DecimalFormat("#,##0", formatSymbols);
+        //these two are probably not needed
+        DecimalFormat df9 = new DecimalFormat("#,###,##0", formatSymbols);
+        DecimalFormat df10 = new DecimalFormat("#,###,###,##0", formatSymbols);
+
+        // we can add the units in any order, the TickUnits collection will
+        // sort them...
+        units.add(new NumberTickUnit(0.0000001, df1));
+        units.add(new NumberTickUnit(0.000001, df2));
+        units.add(new NumberTickUnit(0.00001, df3));
+        units.add(new NumberTickUnit(0.0001, df4));
+        units.add(new NumberTickUnit(0.001, df5));
+        units.add(new NumberTickUnit(0.01, df6));
+        units.add(new NumberTickUnit(0.1, df7));
+        units.add(new NumberTickUnit(1, df8));
+        units.add(new NumberTickUnit(10, df8));
+        units.add(new NumberTickUnit(100, df8));
+        units.add(new NumberTickUnit(1000, df8));
+        units.add(new NumberTickUnit(10000, df8));
+        units.add(new NumberTickUnit(100000, df8));
+        units.add(new NumberTickUnit(1000000, df9));
+        units.add(new NumberTickUnit(10000000, df9));
+        units.add(new NumberTickUnit(100000000, df9));
+        units.add(new NumberTickUnit(1000000000, df10));
+        units.add(new NumberTickUnit(10000000000.0, df10));
+        units.add(new NumberTickUnit(100000000000.0, df10));
+
+        units.add(new NumberTickUnit(0.00000025, df0));
+        units.add(new NumberTickUnit(0.0000025, df1));
+        units.add(new NumberTickUnit(0.000025, df2));
+        units.add(new NumberTickUnit(0.00025, df3));
+        units.add(new NumberTickUnit(0.0025, df4));
+        units.add(new NumberTickUnit(0.025, df5));
+        units.add(new NumberTickUnit(0.25, df6));
+        units.add(new NumberTickUnit(2.5, df7));
+        units.add(new NumberTickUnit(25, df8));
+        units.add(new NumberTickUnit(250, df8));
+        units.add(new NumberTickUnit(2500, df8));
+        units.add(new NumberTickUnit(25000, df8));
+        units.add(new NumberTickUnit(250000, df8));
+        units.add(new NumberTickUnit(2500000, df9));
+        units.add(new NumberTickUnit(25000000, df9));
+        units.add(new NumberTickUnit(250000000, df9));
+        units.add(new NumberTickUnit(2500000000.0, df10));
+        units.add(new NumberTickUnit(25000000000.0, df10));
+        units.add(new NumberTickUnit(250000000000.0, df10));
+
+        units.add(new NumberTickUnit(0.0000005, df1));
+        units.add(new NumberTickUnit(0.000005, df2));
+        units.add(new NumberTickUnit(0.00005, df3));
+        units.add(new NumberTickUnit(0.0005, df4));
+        units.add(new NumberTickUnit(0.005, df5));
+        units.add(new NumberTickUnit(0.05, df6));
+        units.add(new NumberTickUnit(0.5, df7));
+        units.add(new NumberTickUnit(5L, df8));
+        units.add(new NumberTickUnit(50L, df8));
+        units.add(new NumberTickUnit(500L, df8));
+        units.add(new NumberTickUnit(5000L, df8));
+        units.add(new NumberTickUnit(50000L, df8));
+        units.add(new NumberTickUnit(500000L, df8));
+        units.add(new NumberTickUnit(5000000L, df9));
+        units.add(new NumberTickUnit(50000000L, df9));
+        units.add(new NumberTickUnit(500000000L, df9));
+        units.add(new NumberTickUnit(5000000000L, df10));
+        units.add(new NumberTickUnit(50000000000L, df10));
+        units.add(new NumberTickUnit(500000000000L, df10));
+		
+		// adding further values by default because 5E11 is not enough for some people
+		units.add(new NumberTickUnit(1000000000000L, df8));
+		units.add(new NumberTickUnit(2500000000000L, df8));
+		units.add(new NumberTickUnit(5000000000000L, df8));
+		units.add(new NumberTickUnit(10000000000000L, df8));
+		units.add(new NumberTickUnit(25000000000000L, df8));
+		units.add(new NumberTickUnit(50000000000000L, df8));
+		units.add(new NumberTickUnit(100000000000000L, df8));
+		units.add(new NumberTickUnit(250000000000000L, df8));
+		units.add(new NumberTickUnit(500000000000000L, df8));
+		units.add(new NumberTickUnit(1000000000000000L, df8));
+		units.add(new NumberTickUnit(2500000000000000L, df8));
+		units.add(new NumberTickUnit(5000000000000000L, df8));
+		units.add(new NumberTickUnit(10000000000000000L, df8));
+		units.add(new NumberTickUnit(25000000000000000L, df8));
+		units.add(new NumberTickUnit(50000000000000000L, df8));
+		units.add(new NumberTickUnit(100000000000000000L, df8));
+		units.add(new NumberTickUnit(250000000000000000L, df8));
+		units.add(new NumberTickUnit(500000000000000000L, df8));
+		units.add(new NumberTickUnit(1000000000000000000L, df8));
+		units.add(new NumberTickUnit(2500000000000000000L, df8));
+		units.add(new NumberTickUnit(5000000000000000000L, df8));
+
+		return units;
+	}
+	
+	public void setAutoTickUnit(NumberAxis numberAxis)
+	{
+		if (numberAxis.isAutoTickUnitSelection())
+		{
+			Range range = numberAxis.getRange();
+			if (range.getLength() >= AUTO_TICK_UNIT_THRESHOLD)
+			{
+				// this is a workaround for a floating point error makes JFreeChart
+				// select tick units that are too small when the values are very large
+				double autoSize = range.getLength() / AUTO_TICK_UNIT_THRESHOLD;
+				TickUnit unit = numberAxis.getStandardTickUnits().getCeilingTickUnit(autoSize);
+				numberAxis.setTickUnit((NumberTickUnit) unit, false, false);
+			}
 		}
 	}
 }

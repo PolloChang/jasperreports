@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,11 +43,12 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRVerticalFiller.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRVerticalFiller.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRVerticalFiller extends JRBaseFiller
 {
-
+	public static final String EXCEPTION_MESSAGE_KEY_COLUMN_HEADER_OVERFLOW_INFINITE_LOOP = JRVerticalFiller.class.getName() +  ".column.header.overflow.infinite.loop";
+	
 	private static final Log log = LogFactory.getLog(JRVerticalFiller.class);
 
 	/**
@@ -128,6 +129,13 @@ public class JRVerticalFiller extends JRBaseFiller
 		if (columnFooter != null)
 		{
 			lastPageColumnFooterOffsetY -= columnFooter.getHeight();
+		}
+		
+		if (log.isDebugEnabled())
+		{
+			log.debug("Filler " + fillerId + " - pageHeight: " + pageHeight
+					+ ", columnFooterOffsetY: " + columnFooterOffsetY
+					+ ", lastPageColumnFooterOffsetY: " + lastPageColumnFooterOffsetY);
 		}
 	}
 
@@ -246,10 +254,19 @@ public class JRVerticalFiller extends JRBaseFiller
 				printPageStretchHeight = offsetY + bottomMargin;
 			//}
 		}
+		else
+		{
+			addLastPageBookmarks();
+		}
 
 		if (fillContext.isIgnorePagination())
 		{
 			jasperPrint.setPageHeight(offsetY + bottomMargin);
+		}
+		
+		if (bookmarkHelper != null)
+		{
+			jasperPrint.setBookmarks(bookmarkHelper.getRootBookmarks());
 		}
 	}
 
@@ -320,7 +337,7 @@ public class JRVerticalFiller extends JRBaseFiller
 	 {
 		if (log.isDebugEnabled() && !title.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": title");
+			log.debug("Fill " + fillerId + ": title at " + offsetY);
 		}
 
 		title.evaluatePrintWhenExpression(JRExpression.EVALUATION_DEFAULT);
@@ -396,7 +413,7 @@ public class JRVerticalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !pageHeader.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": page header");
+			log.debug("Fill " + fillerId + ": page header at " + offsetY);
 		}
 
 		setNewPageColumnInBands();
@@ -475,7 +492,7 @@ public class JRVerticalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !columnHeader.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": column header");
+			log.debug("Fill " + fillerId + ": column header at " + offsetY);
 		}
 
 		setNewPageColumnInBands();
@@ -529,7 +546,7 @@ public class JRVerticalFiller extends JRBaseFiller
 
 			if (!filled)
 			{
-				throw new JRRuntimeException("Infinite loop creating new page due to column header overflow.");
+				throw new JRRuntimeException(EXCEPTION_MESSAGE_KEY_COLUMN_HEADER_OVERFLOW_INFINITE_LOOP, (Object[]) null, getJasperReportsContext(), getLocale());
 			}
 		}
 
@@ -577,7 +594,7 @@ public class JRVerticalFiller extends JRBaseFiller
 
 		if (log.isDebugEnabled() && !groupHeaderSection.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": " + group.getName() + " header");
+			log.debug("Fill " + fillerId + ": " + group.getName() + " header at " + offsetY);
 		}
 
 		byte evalPrevPage = (group.isTopLevelChange()?JRExpression.EVALUATION_OLD:JRExpression.EVALUATION_DEFAULT);
@@ -721,7 +738,7 @@ public class JRVerticalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !detailSection.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": detail");
+			log.debug("Fill " + fillerId + ": detail at " + offsetY);
 		}
 
 		if (!detailSection.areAllPrintWhenExpressionsNull())
@@ -914,7 +931,7 @@ public class JRVerticalFiller extends JRBaseFiller
 
 		if (log.isDebugEnabled() && !groupFooterSection.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": " + group.getName() + " footer");
+			log.debug("Fill " + fillerId + ": " + group.getName() + " footer at " + offsetY);
 		}
 
 		JRFillBand[] groupFooterBands = groupFooterSection.getFillBands();
@@ -960,7 +977,7 @@ public class JRVerticalFiller extends JRBaseFiller
 	 {
 		if (log.isDebugEnabled() && !columnFooter.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": column footer");
+			log.debug("Fill " + fillerId + ": column footer at " + offsetY);
 		}
 
 		setOffsetX();
@@ -1006,7 +1023,7 @@ public class JRVerticalFiller extends JRBaseFiller
 
 		if (log.isDebugEnabled() && !crtPageFooter.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": " + (isLastPageFooter ? "last " : "") + "page footer");
+			log.debug("Fill " + fillerId + ": " + (isLastPageFooter ? "last " : "") + "page footer at " + offsetY);
 		}
 
 		offsetX = leftMargin;
@@ -1032,7 +1049,7 @@ public class JRVerticalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !summary.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": summary");
+			log.debug("Fill " + fillerId + ": summary at " + offsetY);
 		}
 
 		offsetX = leftMargin;
@@ -1108,6 +1125,11 @@ public class JRVerticalFiller extends JRBaseFiller
 
 				fillBand(printBand);
 				offsetY += printBand.getHeight();
+
+				/*   */
+				fillSummaryOverflow();
+				
+				//DONE
 			}
 			else
 			{
@@ -1138,13 +1160,19 @@ public class JRVerticalFiller extends JRBaseFiller
 
 					fillBand(printBand);
 					offsetY += printBand.getHeight();
+
+					/*   */
+					fillSummaryOverflow();
+					
+					//DONE
+				}
+				else
+				{
+					resolveBandBoundElements(summary, JRExpression.EVALUATION_DEFAULT);
+
+					//DONE
 				}
 			}
-
-			/*   */
-			fillSummaryOverflow();
-			
-			//DONE
 		}
 		else
 		{
@@ -1799,7 +1827,7 @@ public class JRVerticalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !background.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": background");
+			log.debug("Fill " + fillerId + ": background at " + offsetY);
 		}
 
 		//offsetX = leftMargin;
@@ -1821,6 +1849,8 @@ public class JRVerticalFiller extends JRBaseFiller
 
 					fillBand(printBand);
 					//offsetY += printBand.getHeight();
+					
+					//FIXMENOW does not have resolveBandBoundElements
 			}
 		}
 	}
@@ -2193,7 +2223,7 @@ public class JRVerticalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !noData.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": noData");
+			log.debug("Fill " + fillerId + ": noData at " + offsetY);
 		}
 
 		noData.evaluatePrintWhenExpression(JRExpression.EVALUATION_DEFAULT);

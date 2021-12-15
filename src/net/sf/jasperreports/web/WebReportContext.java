@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.ReportContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: WebReportContext.java 5164 2012-03-28 13:05:17Z teodord $
+ * @version $Id: WebReportContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class WebReportContext implements ReportContext
 {
@@ -43,7 +43,7 @@ public class WebReportContext implements ReportContext
 	 *
 	 */
 	private static final String SESSION_ATTRIBUTE_REPORT_CONTEXT_ID_PREFIX = "net.sf.jasperreports.web.report.context_";
-	public static final String REQUEST_PARAMETER_REPORT_CONTEXT_ID = "jr.ctxid";
+	public static final String REQUEST_PARAMETER_REPORT_CONTEXT_ID = "jr_ctxid";
 
 	/**
 	 * @deprecated Replaced by {@link #REPORT_CONTEXT_PARAMETER_JASPER_PRINT_ACCESSOR}.
@@ -52,6 +52,8 @@ public class WebReportContext implements ReportContext
 	
 	public static final String REPORT_CONTEXT_PARAMETER_JASPER_PRINT_ACCESSOR = "net.sf.jasperreports.web.jasper_print.accessor";
 	//public static final String REPORT_CONTEXT_PARAMETER_JASPER_REPORT = "net.sf.jasperreports.web.jasper_report";
+	
+	public static final String APPLICATION_CONTEXT_PATH = "net.sf.jasperreports.web.app.context.path";
 	
 	/**
 	 *
@@ -91,7 +93,7 @@ public class WebReportContext implements ReportContext
 		if (webReportContext != null)
 		{
 			//webReportContext.setRequest(request);
-			webReportContext.setParameterValue("net.sf.jasperreports.web.app.context.path", request.getContextPath());
+			webReportContext.setParameterValue(APPLICATION_CONTEXT_PATH, request.getContextPath());
 			webReportContext.setParameterValue(JRParameter.REPORT_CONTEXT, webReportContext);
 		}
 		

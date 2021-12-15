@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,7 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * A {@link JRGenericElement} used during report fill.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillGenericElement.java 5407 2012-05-22 13:27:32Z lucianc $
+ * @version $Id: JRFillGenericElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillGenericElement extends JRFillElement implements
 		JRGenericElement
@@ -96,6 +96,7 @@ public class JRFillGenericElement extends JRFillElement implements
 	protected void evaluateElement(byte evaluation) throws JRException
 	{
 		evaluateProperties(evaluation);
+		evaluateStyle(evaluation);
 		
 		parameterValues.clear();
 		for (int i = 0; i < parameters.length; i++)
@@ -160,14 +161,14 @@ public class JRFillGenericElement extends JRFillElement implements
 		if (isEvaluateAuto())
 		{
 			JRRecordedValuesGenericPrintElement recordedValuesElement = 
-				new JRRecordedValuesGenericPrintElement(getTemplate(), elementId, parameters.length);
+				new JRRecordedValuesGenericPrintElement(getTemplate(), printElementOriginator, parameters.length);
 			copyBasicAttributes(recordedValuesElement);
 			initDelayedEvaluationPrint(recordedValuesElement);
 			printElement = recordedValuesElement;
 		}
 		else
 		{
-			printElement = new JRTemplateGenericPrintElement(getTemplate(), elementId, parameters.length);
+			printElement = new JRTemplateGenericPrintElement(getTemplate(), printElementOriginator, parameters.length);
 			copyBasicAttributes(printElement);
 			if (isEvaluateNow())
 			{
@@ -184,6 +185,7 @@ public class JRFillGenericElement extends JRFillElement implements
 
 	protected void copyBasicAttributes(JRGenericPrintElement printElement)
 	{
+		printElement.setUUID(this.getUUID());
 		printElement.setX(this.getX());
 		printElement.setY(this.getRelativeY());
 		printElement.setWidth(getWidth());

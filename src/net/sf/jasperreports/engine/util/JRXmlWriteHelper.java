@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,10 +37,11 @@ import java.util.regex.Pattern;
 
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlWriteHelper.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRXmlWriteHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlWriteHelper
 {
@@ -494,7 +495,7 @@ public class JRXmlWriteHelper
 	{
 		if (value != null)
 		{
-			writeAttribute(name, JRStringUtil.xmlEncode(value));
+			writeAttribute(name, JRStringUtil.encodeXmlAttribute(value));
 		}
 	}
 	
@@ -510,7 +511,7 @@ public class JRXmlWriteHelper
 	{
 		if (value != null && !value.equals(defaultValue))
 		{
-			writeAttribute(name, JRStringUtil.xmlEncode(value));
+			writeAttribute(name, JRStringUtil.encodeXmlAttribute(value));
 		}
 	}
 	
@@ -522,7 +523,33 @@ public class JRXmlWriteHelper
 		}
 	}
 	
+	public void addAttribute(String name, Number value, Number defaultValue)
+	{
+		if (value != null && !value.equals(defaultValue))
+		{
+			writeAttribute(name, String.valueOf(value));
+		}
+	}
+	
+	public void addAttribute(String name, Float value, boolean withMinDecimals)
+	{
+		if (value != null)
+		{
+			Number number = value;
+			if (withMinDecimals && value.intValue() == value.floatValue())
+			{
+				number = value.intValue();
+			}
+			writeAttribute(name, String.valueOf(number));
+		}
+	}
+	
 	public void addAttribute(String name, JREnum value)
+	{
+		addAttribute(name, (NamedEnum) value);
+	}
+	
+	public void addAttribute(String name, NamedEnum value)
 	{
 		if (value != null)
 		{
@@ -531,6 +558,11 @@ public class JRXmlWriteHelper
 	}
 	
 	public void addAttribute(String name, JREnum value, JREnum defaultValue)
+	{
+		addAttribute(name, (NamedEnum) value, (NamedEnum) defaultValue);
+	}
+	
+	public void addAttribute(String name, NamedEnum value, NamedEnum defaultValue)
 	{
 		if (value != null && !value.equals(defaultValue))
 		{
@@ -602,7 +634,7 @@ public class JRXmlWriteHelper
 	{
 		if (color != null)
 		{
-			writeAttribute(name, "#" + JRColorUtil.getColorHexa(color));
+			writeAttribute(name, JRColorUtil.getCssColor(color));
 		}
 	}
 	

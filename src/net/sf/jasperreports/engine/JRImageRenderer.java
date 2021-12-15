@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,24 +37,69 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.lang.ref.SoftReference;
 import java.net.URL;
-import java.net.URLStreamHandlerFactory;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
 import net.sf.jasperreports.engine.type.RenderableTypeEnum;
-import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.JRImageLoader;
 import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.util.JRTypeSniffer;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 
 /**
+ * Provides functionality for image rendering.
+ * <p/>
+ * The content of an image element can come either directly from an image file like a JPG,
+ * GIF, PNG, or can be a Scalable Vector Graphics (SVG) file that is rendered using some
+ * business logic or a special graphics API like a charting or a barcode library. Either way,
+ * JasperReports treats images in a very transparent way because it relies on a special
+ * interface called {@link net.sf.jasperreports.engine.Renderable} to offer a common
+ * way to render images.
+ * <p/>
+ * The {@link net.sf.jasperreports.engine.Renderable} interface has a method called 
+ * <code>render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle)</code>,
+ * which gets called by the engine each time it needs to draw the image
+ * on a given device or graphic context. This approach provides the best quality for the
+ * SVG images when they must be drawn on unknown devices or zoomed into without
+ * losing sharpness.
+ * <p/>
+ * Other methods specified in this interface can be used to obtain the native size of the
+ * actual image that the renderer wraps or the binary data for an image that must be stored
+ * in a separate file during export.
+ * <p/>
+ * The library comes with a default implementation for the 
+ * {@link net.sf.jasperreports.engine.Renderable} interface that
+ * wraps images that come from files or binary image data in JPG, GIF, or PNG format.
+ * This is the {@link net.sf.jasperreports.engine.JRImageRenderer} class, which is actually a container
+ * for the binary image data, used to load a <code>java.awt.Image</code> object from it.
+ * Then it draws the loaded image on the supplied <code>java.awt.Graphics2D</code> context when the engine
+ * requires it.
+ * <p/>
+ * Image renderers are serializable because inside the generated document for each image is
+ * a renderer object kept as reference, which is serialized along with the whole
+ * JasperPrint object.
+ * <p/>
+ * When a {@link net.sf.jasperreports.engine.JRImageRenderer} instance is serialized, 
+ * so is the binary image data it contains.
+ * <p/>
+ * However, if the image element must be lazy loaded (see the <code>isLazy</code> image attribute), then the
+ * engine will not load the binary image data at report-filling time. Rather, it stores inside
+ * the renderer only the <code>java.lang.String</code> location of the image. The actual image data
+ * is loaded only when needed for rendering at report-export or view time.
+ * <p/>
+ * To simplify the implementation of SVG image renderers, JasperReports ships with an
+ * abstract rendered {@link net.sf.jasperreports.engine.JRAbstractSvgRenderer}. This
+ * implementation contains the code to produce binary image data from the SVG graphic in
+ * JPG format. This is needed when the image must be stored in separate files on disk or
+ * delivered in binary format to a consumer (like a web browser).
+ * 
+ * @see net.sf.jasperreports.engine.JRAbstractSvgRenderer
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRImageRenderer.java 5397 2012-05-21 01:10:02Z teodord $
+ * @version $Id: JRImageRenderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRImageRenderer extends JRAbstractRenderer
 {
@@ -139,40 +184,6 @@ public class JRImageRenderer extends JRAbstractRenderer
 	}
 
 	
-	/**
-	 * @deprecated Replaced by {@link #getInstance(String, OnErrorTypeEnum, boolean)}.
-	 */
-	public static JRRenderable getInstance(
-		String imageLocation, 
-		OnErrorTypeEnum onErrorType, 
-		boolean isLazy, 
-		ClassLoader classLoader,
-		URLStreamHandlerFactory urlHandlerFactory,
-		FileResolver fileResolver
-		) throws JRException
-	{
-		if (imageLocation == null)
-		{
-			return null;
-		}
-
-		if (isLazy)
-		{
-			return new JRImageRenderer(imageLocation);
-		}
-
-		try
-		{
-			byte[] data = JRLoader.loadBytesFromLocation(imageLocation, classLoader, urlHandlerFactory, fileResolver);
-			return new JRImageRenderer(data);
-		}
-		catch (JRException e)
-		{
-			return getOnErrorRenderer(onErrorType, e);
-		}
-	}
-
-
 	/**
 	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(Image, OnErrorTypeEnum)}.
 	 */

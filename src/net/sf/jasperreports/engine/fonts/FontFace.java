@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,7 @@ import java.awt.Font;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FontFace.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FontFace.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface FontFace
 {
@@ -40,14 +40,39 @@ public interface FontFace
 	public String getName();
 	
 	/**
+	 * @deprecated Replaced by {@link #getTtf()}.
+	 */
+	public String getFile();
+	
+	/**
 	 * Returns the TTF file, if the font face has specified one (the font face does not specify a TTF file in case it maps
 	 * a JVM available font such as a Java logical font or a system font).
 	 */
-	public String getFile();
+	public String getTtf();
 	
 	/**
 	 * Returns a non-null instance of java.awt.Font representing the font face.
 	 */
 	public Font getFont();
+
+	/**
+	 * 
+	 */
+	public String getPdf();
+
+	/**
+	 * 
+	 */
+	public String getEot();
+	
+	/**
+	 * 
+	 */
+	public String getSvg();
+	
+	/**
+	 * 
+	 */
+	public String getWoff();
 
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,22 +34,21 @@ import net.sf.jasperreports.engine.fill.JREvaluator;
 import net.sf.jasperreports.engine.fill.JRFillField;
 import net.sf.jasperreports.engine.fill.JRFillParameter;
 import net.sf.jasperreports.engine.fill.JRFillVariable;
+import net.sf.jasperreports.engine.fill.JasperReportsContextAware;
 import net.sf.jasperreports.engine.util.JRClassLoader;
+import net.sf.jasperreports.functions.FunctionsUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
-import org.mozilla.javascript.Script;
 
 /**
  * JavaScript expression evaluator that compiles expressions at fill time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptEvaluator.java 5451 2012-06-14 15:35:10Z lucianc $
+ * @version $Id: JavaScriptEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JavaScriptCompiler
  */
-public class JavaScriptEvaluator extends JREvaluator
+public class JavaScriptEvaluator extends JREvaluator implements JasperReportsContextAware
 {
 	
 	/**
@@ -64,10 +63,9 @@ public class JavaScriptEvaluator extends JREvaluator
 	
 	private final JasperReportsContext jrContext;
 	private final JavaScriptCompileData compileData;
-	private Context context;
+	private FunctionsUtil functionsUtil;
 	private JavaScriptEvaluatorScope evaluatorScope;
 	private Map<String, Class<?>> loadedTypes = new HashMap<String, Class<?>>();
-	private Map<String, Script> compiledExpressions = new HashMap<String, Script>();
 
 	/**
 	 * Create a JavaScript expression evaluator.
@@ -79,6 +77,12 @@ public class JavaScriptEvaluator extends JREvaluator
 		this.jrContext = jrContext;
 		this.compileData = compileData;
 	}
+	
+	@Override
+	public void setJasperReportsContext(JasperReportsContext context)
+	{
+		this.functionsUtil = FunctionsUtil.getInstance(context);
+	}
 
 	protected void customizedInit(
 			Map<String, JRFillParameter> parametersMap, 
@@ -86,18 +90,7 @@ public class JavaScriptEvaluator extends JREvaluator
 			Map<String, JRFillVariable> variablesMap
 			) throws JRException
 	{
-		context = ContextFactory.getGlobal().enterContext();//TODO exit context
-		
-		int optimizationLevel = JRPropertiesUtil.getInstance(jrContext).getIntegerProperty(PROPERTY_OPTIMIZATION_LEVEL);
-		if (log.isDebugEnabled())
-		{
-			log.debug("optimization level " + optimizationLevel);
-		}
-		context.setOptimizationLevel(optimizationLevel);
-		
-		context.getWrapFactory().setJavaPrimitiveWrap(false);
-		
-		evaluatorScope = new JavaScriptEvaluatorScope(context, this);
+		evaluatorScope = new JavaScriptEvaluatorScope(jrContext, this, functionsUtil);
 		evaluatorScope.init(parametersMap, fieldsMap, variablesMap);
 	}
 	
@@ -134,24 +127,7 @@ public class JavaScriptEvaluator extends JREvaluator
 	
 	protected Object evaluateExpression(String expression)
 	{
-		Script compiledExpression = getCompiledExpression(expression);
-		return evaluatorScope.evaluateExpression(compiledExpression);
-	}
-	
-	protected Script getCompiledExpression(String expression)
-	{
-		Script compiledExpression = compiledExpressions.get(expression);
-		if (compiledExpression == null)
-		{
-			if (log.isTraceEnabled())
-			{
-				log.trace("compiling expression " + expression);
-			}
-			
-			compiledExpression = context.compileString(expression, "expression", 0, null);
-			compiledExpressions.put(expression, compiledExpression);
-		}
-		return compiledExpression;
+		return evaluatorScope.evaluateExpression(expression);
 	}
 	
 	/**

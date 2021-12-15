@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -54,7 +54,7 @@ import org.mozilla.javascript.optimizer.ClassCompiler;
  * This implementation produces Java bytecode for the expressions.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptClassCompiler.java 5451 2012-06-14 15:35:10Z lucianc $
+ * @version $Id: JavaScriptClassCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JavaScriptCompiledData
  * @see JavaScriptCompiledEvaluator
  */
@@ -95,7 +95,7 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 	}
 
 	/**
-	 * @deprecated Replaced by {@link #JavaScriptCompiler(JasperReportsContext)}.
+	 * @deprecated Replaced by {@link #JavaScriptClassCompiler(JasperReportsContext)}.
 	 */
 	public JavaScriptClassCompiler()
 	{
@@ -261,6 +261,10 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 					|| currentScriptSource.length() + expressionFragment.length() > scriptMaxLength)
 			{
 				addScriptSource();
+				
+				// currentExpressionId has changed
+				expressionFragment = "case " + currentExpressionId + ":\n"
+						+ expression + "\nbreak\n";
 			}
 			
 			currentScriptSource.append(expressionFragment);

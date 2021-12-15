@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -53,7 +53,7 @@ import net.sf.jasperreports.engine.util.JRStringUtil;
 /**
  * 
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: FillSpiderChart.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: FillSpiderChart.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillSpiderChart extends BaseFillComponent implements JRFillCloneable
 {
@@ -68,6 +68,7 @@ public class FillSpiderChart extends BaseFillComponent implements JRFillCloneabl
 	private String subtitleText;
 	private String anchorName;
 	private String hyperlinkReference;
+	private Boolean hyperlinkWhen;
 	private String hyperlinkAnchor;
 	private Integer hyperlinkPage;
 	private String hyperlinkTooltip;
@@ -115,6 +116,7 @@ public class FillSpiderChart extends BaseFillComponent implements JRFillCloneabl
 		subtitleText = JRStringUtil.getString(fillContext.evaluate(getChartSettings().getSubtitleExpression(), evaluation));
 		anchorName = JRStringUtil.getString(fillContext.evaluate(getChartSettings().getAnchorNameExpression(), evaluation));
 		hyperlinkReference = JRStringUtil.getString(fillContext.evaluate(getChartSettings().getHyperlinkReferenceExpression(), evaluation));
+		hyperlinkWhen = (Boolean)fillContext.evaluate(getChartSettings().getHyperlinkWhenExpression(), evaluation);
 		hyperlinkAnchor = JRStringUtil.getString(fillContext.evaluate(getChartSettings().getHyperlinkAnchorExpression(), evaluation));
 		hyperlinkPage = (Integer) fillContext.evaluate(getChartSettings().getHyperlinkPageExpression(), evaluation);
 		hyperlinkTooltip = JRStringUtil.getString(fillContext.evaluate(getChartSettings().getHyperlinkTooltipExpression(), evaluation));
@@ -174,11 +176,13 @@ public class FillSpiderChart extends BaseFillComponent implements JRFillCloneabl
 		templateImage.setLinkTarget(getLinkTarget());
 		templateImage = deduplicate(templateImage);
 		
-		JRTemplatePrintImage image = new JRTemplatePrintImage(templateImage, elementId);
+		JRTemplatePrintImage image = new JRTemplatePrintImage(templateImage, printElementOriginator);
+		image.setUUID(element.getUUID());
 		image.setX(element.getX());
 		image.setY(fillContext.getElementPrintY());
 		image.setWidth(element.getWidth());
 		image.setHeight(element.getHeight());
+		image.setBookmarkLevel(getBookmarkLevel());
 
 		if (isEvaluateNow())
 		{
@@ -207,17 +211,24 @@ public class FillSpiderChart extends BaseFillComponent implements JRFillCloneabl
 	{
 		evaluateRenderer(evaluation);
 		copy((JRPrintImage) element);
+		fillContext.getFiller().getFillContext().updateBookmark(element);
 	}
 
 	protected void copy(JRPrintImage printImage)
 	{
 		printImage.setRenderable(getRenderable());
 		printImage.setAnchorName(getAnchorName());
-		printImage.setHyperlinkReference(getHyperlinkReference());
+		if (getChartSettings().getHyperlinkWhenExpression() == null || hyperlinkWhen == Boolean.TRUE)
+		{
+			printImage.setHyperlinkReference(getHyperlinkReference());
+		}
+		else
+		{
+			printImage.setHyperlinkReference(null);
+		}
 		printImage.setHyperlinkAnchor(getHyperlinkAnchor());
 		printImage.setHyperlinkPage(getHyperlinkPage());
 		printImage.setHyperlinkTooltip(getHyperlinkTooltip());
-		printImage.setBookmarkLevel(getBookmarkLevel());
 		printImage.setHyperlinkParameters(hyperlinkParameters);
 //		transferProperties(printImage);
 	}

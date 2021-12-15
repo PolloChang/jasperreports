@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,11 +23,13 @@
  */
 package net.sf.jasperreports.engine.component;
 
+import net.sf.jasperreports.engine.JasperReportsContext;
+
 /**
  * A default {@link ComponentManager component manager} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultComponentManager.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DefaultComponentManager.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultComponentManager implements ComponentManager
 {
@@ -37,7 +39,7 @@ public class DefaultComponentManager implements ComponentManager
 	private ComponentFillFactory componentFillFactory;
 	private ComponentDesignConverter componentDesignConverter;
 
-	public ComponentFillFactory getComponentFillFactory()
+	public ComponentFillFactory getComponentFillFactory(JasperReportsContext jasperReportsContext)
 	{
 		return componentFillFactory;
 	}
@@ -46,7 +48,7 @@ public class DefaultComponentManager implements ComponentManager
 	 * Sets the fill component factory implementation.
 	 * 
 	 * @param fillFactory the fill component factory 
-	 * @see #getComponentFillFactory()
+	 * @see #getComponentFillFactory(JasperReportsContext)
 	 */
 	public void setComponentFillFactory(ComponentFillFactory fillFactory)
 	{
@@ -54,7 +56,7 @@ public class DefaultComponentManager implements ComponentManager
 	}
 
 	
-	public ComponentCompiler getComponentCompiler()
+	public ComponentCompiler getComponentCompiler(JasperReportsContext jasperReportsContext)
 	{
 		return componentCompiler;
 	}
@@ -63,14 +65,14 @@ public class DefaultComponentManager implements ComponentManager
 	 * Sets the component compiler implementation.
 	 * 
 	 * @param componentCompiler the component compiler
-	 * @see #getComponentCompiler()
+	 * @see #getComponentCompiler(JasperReportsContext)
 	 */
 	public void setComponentCompiler(ComponentCompiler componentCompiler)
 	{
 		this.componentCompiler = componentCompiler;
 	}
 	
-	public ComponentXmlWriter getComponentXmlWriter()
+	public ComponentXmlWriter getComponentXmlWriter(JasperReportsContext jasperReportsContext)
 	{
 		return componentXmlWriter;
 	}
@@ -79,14 +81,14 @@ public class DefaultComponentManager implements ComponentManager
 	 * Sets the component XML writer implementation.
 	 * 
 	 * @param componentXmlWriter the component XML writer
-	 * @see #getComponentXmlWriter()
+	 * @see #getComponentXmlWriter(JasperReportsContext)
 	 */
 	public void setComponentXmlWriter(ComponentXmlWriter componentXmlWriter)
 	{
 		this.componentXmlWriter = componentXmlWriter;
 	}
 
-	public ComponentDesignConverter getDesignConverter()
+	public ComponentDesignConverter getDesignConverter(JasperReportsContext jasperReportsContext)
 	{
 		return componentDesignConverter;
 	}
@@ -96,8 +98,7 @@ public class DefaultComponentManager implements ComponentManager
 	 * 
 	 * @param designConverter the design component preview converter
 	 */
-	public void setDesignConverter(
-			ComponentDesignConverter designConverter)
+	public void setDesignConverter(ComponentDesignConverter designConverter)
 	{
 		this.componentDesignConverter = designConverter;
 	}

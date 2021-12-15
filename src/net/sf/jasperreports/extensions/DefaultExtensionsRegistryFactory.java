@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,11 +28,23 @@ import java.util.List;
 
 import net.sf.jasperreports.charts.ChartThemeBundle;
 import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElement;
-import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElementHtmlHandler;
+import net.sf.jasperreports.components.headertoolbar.json.HeaderToolbarElementJsonHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElement;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementCsvHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementDocxHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementGraphics2DHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementHtmlHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementOdsHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementOdtHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementPdfHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementPptxHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementRtfHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementXlsHandler;
+import net.sf.jasperreports.components.iconlabel.IconLabelElementXlsxHandler;
 import net.sf.jasperreports.components.map.MapElementDocxHandler;
 import net.sf.jasperreports.components.map.MapElementGraphics2DHandler;
 import net.sf.jasperreports.components.map.MapElementHtmlHandler;
-import net.sf.jasperreports.components.map.MapElementJExcelApiHandler;
+import net.sf.jasperreports.components.map.MapElementJsonHandler;
 import net.sf.jasperreports.components.map.MapElementOdsHandler;
 import net.sf.jasperreports.components.map.MapElementOdtHandler;
 import net.sf.jasperreports.components.map.MapElementPdfHandler;
@@ -43,24 +55,27 @@ import net.sf.jasperreports.components.map.MapElementXlsxHandler;
 import net.sf.jasperreports.components.map.MapPrintElement;
 import net.sf.jasperreports.components.sort.SortElement;
 import net.sf.jasperreports.components.sort.SortElementHtmlHandler;
+import net.sf.jasperreports.components.sort.SortElementJsonHandler;
+import net.sf.jasperreports.crosstabs.interactive.CrosstabInteractiveJsonHandler;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.export.FlashHtmlHandler;
 import net.sf.jasperreports.engine.export.FlashPrintElement;
 import net.sf.jasperreports.engine.export.GenericElementHandler;
 import net.sf.jasperreports.engine.export.GenericElementHandlerBundle;
-import net.sf.jasperreports.engine.export.JExcelApiExporter;
+import net.sf.jasperreports.engine.export.HtmlExporter;
+import net.sf.jasperreports.engine.export.JRCsvExporter;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
-import net.sf.jasperreports.engine.export.JRHtmlExporter;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 import net.sf.jasperreports.engine.export.JRRtfExporter;
-import net.sf.jasperreports.engine.export.JRXhtmlExporter;
 import net.sf.jasperreports.engine.export.JRXlsExporter;
+import net.sf.jasperreports.engine.export.JsonExporter;
 import net.sf.jasperreports.engine.export.oasis.JROdsExporter;
 import net.sf.jasperreports.engine.export.oasis.JROdtExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRPptxExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 import net.sf.jasperreports.engine.fill.DefaultChartTheme;
+import net.sf.jasperreports.engine.fill.JRFillCrosstab;
 import net.sf.jasperreports.engine.query.DefaultQueryExecuterFactoryBundle;
 import net.sf.jasperreports.engine.query.JRQueryExecuterFactoryBundle;
 import net.sf.jasperreports.engine.scriptlets.DefaultScriptletFactory;
@@ -72,7 +87,7 @@ import net.sf.jasperreports.engine.xml.JRXmlConstants;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultExtensionsRegistryFactory.java 5136 2012-03-27 13:04:59Z teodord $
+ * @version $Id: DefaultExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
@@ -87,8 +102,14 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 			public GenericElementHandler getHandler(String elementName,
 					String exporterKey)
 			{
-				if (FlashPrintElement.FLASH_ELEMENT_NAME.equals(elementName) 
-						&& JRHtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey))
+				@SuppressWarnings("deprecation")
+				String depXhtmlKey = net.sf.jasperreports.engine.export.JRXhtmlExporter.XHTML_EXPORTER_KEY;
+				@SuppressWarnings("deprecation")
+				String depJExcelApiKey = net.sf.jasperreports.engine.export.JExcelApiExporter.JXL_EXPORTER_KEY;
+				if (
+					FlashPrintElement.FLASH_ELEMENT_NAME.equals(elementName) 
+					&& HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey)
+					)
 				{
 					return FlashHtmlHandler.getInstance();
 				}
@@ -98,9 +119,16 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 					{
 						return MapElementGraphics2DHandler.getInstance();
 					}
-					if(JRHtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey) || JRXhtmlExporter.XHTML_EXPORTER_KEY.equals(exporterKey))
+					if(
+						HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey) 
+						|| depXhtmlKey.equals(exporterKey)
+						)
 					{
 						return MapElementHtmlHandler.getInstance();
+					}
+					else if (JsonExporter.JSON_EXPORTER_KEY.equals(exporterKey))
+					{
+						return MapElementJsonHandler.getInstance();
 					}
 					else if(JRPdfExporter.PDF_EXPORTER_KEY.equals(exporterKey))
 					{
@@ -110,9 +138,12 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 					{
 						return MapElementXlsHandler.getInstance();
 					}
-					else if(JExcelApiExporter.JXL_EXPORTER_KEY.equals(exporterKey))
+					else if(depJExcelApiKey.equals(exporterKey))
 					{
-						return MapElementJExcelApiHandler.getInstance();
+						@SuppressWarnings("deprecation")
+						net.sf.jasperreports.components.map.MapElementJExcelApiHandler depHandler = 
+							net.sf.jasperreports.components.map.MapElementJExcelApiHandler.getInstance();
+						return depHandler;
 					}
 //					else if(JExcelApiMetadataExporter.JXL_METADATA_EXPORTER_KEY.equals(exporterKey))
 //					{
@@ -143,16 +174,90 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 						return MapElementOdsHandler.getInstance();
 					}
 				}
-				if (SortElement.SORT_ELEMENT_NAME.equals(elementName) 
-						&& JRXhtmlExporter.XHTML_EXPORTER_KEY.equals(exporterKey))
+				if (SortElement.SORT_ELEMENT_NAME.equals(elementName))
 				{
-					return new SortElementHtmlHandler();
+					if (HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey))
+					{
+						return new SortElementHtmlHandler();
+					} else if (JsonExporter.JSON_EXPORTER_KEY.equals(exporterKey))
+					{
+						return new SortElementJsonHandler();
+					}
 				}
-				if (HeaderToolbarElement.ELEMENT_NAME.equals(elementName) 
-						&& JRXhtmlExporter.XHTML_EXPORTER_KEY.equals(exporterKey))
+				if (HeaderToolbarElement.ELEMENT_NAME.equals(elementName) && JsonExporter.JSON_EXPORTER_KEY.equals(exporterKey))
 				{
-					return new HeaderToolbarElementHtmlHandler();
+					return new HeaderToolbarElementJsonHandler();
 				}
+				if (IconLabelElement.ELEMENT_NAME.equals(elementName))
+				{
+					if (JRPdfExporter.PDF_EXPORTER_KEY.equals(exporterKey))
+					{
+						return new IconLabelElementPdfHandler();
+					}
+					else if (JRGraphics2DExporter.GRAPHICS2D_EXPORTER_KEY.equals(exporterKey))
+					{
+						return new IconLabelElementGraphics2DHandler();
+					}		
+					else if (
+						HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey) 
+						|| depXhtmlKey.equals(exporterKey)
+						)
+					{
+						return IconLabelElementHtmlHandler.getInstance();
+					}		
+					else if (JRCsvExporter.CSV_EXPORTER_KEY.equals(exporterKey))
+					{
+						return IconLabelElementCsvHandler.getInstance();
+					}		
+					else if (depJExcelApiKey.equals(exporterKey))
+					{
+						@SuppressWarnings("deprecation")
+						net.sf.jasperreports.components.iconlabel.IconLabelElementJExcelApiHandler depHandler =
+							net.sf.jasperreports.components.iconlabel.IconLabelElementJExcelApiHandler.getInstance();
+						return depHandler;
+					}		
+					else if (JRXlsExporter.XLS_EXPORTER_KEY.equals(exporterKey))
+					{
+						return IconLabelElementXlsHandler.getInstance();
+					}		
+					else if (JRXlsxExporter.XLSX_EXPORTER_KEY.equals(exporterKey))
+					{
+						return IconLabelElementXlsxHandler.getInstance();
+					}		
+					else if (JRDocxExporter.DOCX_EXPORTER_KEY.equals(exporterKey))
+					{
+						return IconLabelElementDocxHandler.getInstance();
+					}		
+					else if (JRPptxExporter.PPTX_EXPORTER_KEY.equals(exporterKey))
+					{
+						return IconLabelElementPptxHandler.getInstance();
+					}		
+					else if (JROdsExporter.ODS_EXPORTER_KEY.equals(exporterKey))
+					{
+						return IconLabelElementOdsHandler.getInstance();
+					}		
+					else if (JROdtExporter.ODT_EXPORTER_KEY.equals(exporterKey))
+					{
+						return IconLabelElementOdtHandler.getInstance();
+					}		
+					else if (JRRtfExporter.RTF_EXPORTER_KEY.equals(exporterKey))
+					{
+						return IconLabelElementRtfHandler.getInstance();
+					}		
+//					else if (JRXmlExporter.XML_EXPORTER_KEY.equals(exporterKey))
+//					{
+//						return IconLabelElementXmlHandler.getInstance();
+//					}		
+				}
+				
+				if (JRFillCrosstab.CROSSTAB_INTERACTIVE_ELEMENT_NAME.equals(elementName))
+				{
+					if (JsonExporter.JSON_EXPORTER_KEY.equals(exporterKey))
+					{
+						return new CrosstabInteractiveJsonHandler();
+					}
+				}
+				
 				return null;
 			}
 		};

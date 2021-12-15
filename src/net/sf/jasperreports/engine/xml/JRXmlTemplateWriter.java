@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -47,7 +47,7 @@ import org.apache.commons.logging.LogFactory;
  * {@link JRTemplate Template} XML serializer.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlTemplateWriter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXmlTemplateWriter.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRXmlTemplateLoader
  */
 public class JRXmlTemplateWriter extends JRXmlBaseWriter
@@ -202,14 +202,14 @@ public class JRXmlTemplateWriter extends JRXmlBaseWriter
 	 * Creates an XML template writer.
 	 * 
 	 * @param template the template to write
-	 * @param out the ouput writer
+	 * @param out the output writer
 	 * @param encoding the XML encoding to use
 	 */
 	public JRXmlTemplateWriter(JRTemplate template, Writer out, String encoding)
 	{
 		this.template = template;
 		this.encoding = encoding;
-		useWriter(new JRXmlWriteHelper(out));
+		useWriter(new JRXmlWriteHelper(out), null);//FIXMEVERSION
 	}
 
 	/**

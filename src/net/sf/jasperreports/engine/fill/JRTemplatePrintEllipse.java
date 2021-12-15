@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintEllipse.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTemplatePrintEllipse.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintEllipse extends JRTemplatePrintGraphicElement implements JRPrintEllipse
 {
@@ -44,6 +44,10 @@ public class JRTemplatePrintEllipse extends JRTemplatePrintGraphicElement implem
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+	public JRTemplatePrintEllipse()
+	{
+	}
+	
 	/**
 	 * Creates a print ellipse element.
 	 * 
@@ -60,16 +64,27 @@ public class JRTemplatePrintEllipse extends JRTemplatePrintGraphicElement implem
 	 * 
 	 * @param ellipse the template ellipse that the element will use
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRTemplatePrintEllipse(JRTemplateEllipse, PrintElementOriginator)}
 	 */
 	public JRTemplatePrintEllipse(JRTemplateEllipse ellipse, int sourceElementId)
 	{
 		super(ellipse, sourceElementId);
 	}
 
+	/**
+	 * Creates a print ellipse element.
+	 * 
+	 * @param ellipse the template ellipse that the element will use
+	 * @param originator
+	 */
+	public JRTemplatePrintEllipse(JRTemplateEllipse ellipse, PrintElementOriginator originator)
+	{
+		super(ellipse, originator);
+	}
+
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);
 	}
-
 
 }

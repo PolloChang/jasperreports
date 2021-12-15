@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -85,6 +85,7 @@ import net.sf.jasperreports.charts.base.JRBaseXyDataset;
 import net.sf.jasperreports.charts.base.JRBaseXySeries;
 import net.sf.jasperreports.charts.base.JRBaseXyzDataset;
 import net.sf.jasperreports.charts.base.JRBaseXyzSeries;
+import net.sf.jasperreports.crosstabs.CrosstabColumnCell;
 import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.crosstabs.JRCrosstabBucket;
@@ -94,6 +95,7 @@ import net.sf.jasperreports.crosstabs.JRCrosstabDataset;
 import net.sf.jasperreports.crosstabs.JRCrosstabMeasure;
 import net.sf.jasperreports.crosstabs.JRCrosstabParameter;
 import net.sf.jasperreports.crosstabs.JRCrosstabRowGroup;
+import net.sf.jasperreports.crosstabs.base.BaseCrosstabColumnCell;
 import net.sf.jasperreports.crosstabs.base.JRBaseCellContents;
 import net.sf.jasperreports.crosstabs.base.JRBaseCrosstab;
 import net.sf.jasperreports.crosstabs.base.JRBaseCrosstabBucket;
@@ -113,6 +115,7 @@ import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRDatasetParameter;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
+import net.sf.jasperreports.engine.JRElementDataset;
 import net.sf.jasperreports.engine.JRElementGroup;
 import net.sf.jasperreports.engine.JREllipse;
 import net.sf.jasperreports.engine.JRExpression;
@@ -146,13 +149,28 @@ import net.sf.jasperreports.engine.JRSubreportParameter;
 import net.sf.jasperreports.engine.JRSubreportReturnValue;
 import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.analytics.dataset.BaseDataAxis;
+import net.sf.jasperreports.engine.analytics.dataset.BaseDataAxisLevel;
+import net.sf.jasperreports.engine.analytics.dataset.BaseDataLevelBucket;
+import net.sf.jasperreports.engine.analytics.dataset.BaseDataLevelBucketProperty;
+import net.sf.jasperreports.engine.analytics.dataset.BaseDataMeasure;
+import net.sf.jasperreports.engine.analytics.dataset.BaseMultiAxisData;
+import net.sf.jasperreports.engine.analytics.dataset.BaseMultiAxisDataset;
+import net.sf.jasperreports.engine.analytics.dataset.DataAxis;
+import net.sf.jasperreports.engine.analytics.dataset.DataAxisLevel;
+import net.sf.jasperreports.engine.analytics.dataset.DataLevelBucket;
+import net.sf.jasperreports.engine.analytics.dataset.DataLevelBucketProperty;
+import net.sf.jasperreports.engine.analytics.dataset.DataMeasure;
+import net.sf.jasperreports.engine.analytics.dataset.MultiAxisData;
+import net.sf.jasperreports.engine.analytics.dataset.MultiAxisDataset;
 
 
 /**
  * Factory of objects used in compiled reports.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseObjectFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseObjectFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseObjectFactory extends JRAbstractObjectFactory
 {
@@ -1338,6 +1356,24 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	protected BaseReturnValue getReturnValue(ReturnValue returnValue)
+	{
+		BaseReturnValue baseReturnValue = null;
+
+		if (returnValue != null)
+		{
+			baseReturnValue = (BaseReturnValue) get(returnValue);
+			if (baseReturnValue == null)
+			{
+				baseReturnValue = new BaseReturnValue(returnValue, this);
+				put(returnValue, baseReturnValue);
+			}
+		}
+
+		return baseReturnValue;
+	}
+
+
 	/**
 	 *
 	 */
@@ -1450,17 +1486,23 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 			baseCrosstab = (JRBaseCrosstab) get(crosstab);
 			if (baseCrosstab == null)
 			{
-				Integer id = expressionCollector.getCrosstabId(crosstab);
-				if (id == null)
-				{
-					throw new JRRuntimeException("Crosstab ID not found.");
-				}
-
-				baseCrosstab = new JRBaseCrosstab(crosstab, this, id.intValue());
+				int crosstabId = resolveCrosstabId(crosstab);
+				baseCrosstab = new JRBaseCrosstab(crosstab, this, crosstabId);
 			}
 		}
 
 		setVisitResult(baseCrosstab);
+	}
+
+
+	protected int resolveCrosstabId(JRCrosstab crosstab)
+	{
+		Integer id = expressionCollector.getCrosstabId(crosstab);
+		if (id == null)
+		{
+			throw new JRRuntimeException("Crosstab ID not found.");
+		}
+		return id;
 	}
 
 
@@ -1687,5 +1729,142 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 			}
 		}
 		setVisitResult(base);
+	}
+
+
+	public MultiAxisData getMultiAxisData(MultiAxisData data)
+	{
+		MultiAxisData baseData = null;
+		if (data != null)
+		{
+			baseData = (MultiAxisData) get(data);
+			if (baseData == null)
+			{
+				baseData = new BaseMultiAxisData(data, this);
+			}
+		}
+		return baseData;
+	}
+
+
+	public MultiAxisDataset getMultiAxisDataset(MultiAxisDataset dataset)
+	{
+		MultiAxisDataset baseDataset = null;
+		if (dataset != null)
+		{
+			baseDataset = (MultiAxisDataset) get(dataset);
+			if (baseDataset == null)
+			{
+				baseDataset = new BaseMultiAxisDataset(dataset, this);
+			}
+		}
+		return baseDataset;
+	}
+
+	
+	public JRElementDataset getElementDataset(JRElementDataset dataset)
+	{
+		JRElementDataset baseDataset = null;
+		if (dataset != null)
+		{
+			baseDataset = (JRElementDataset) get(dataset);
+			if (baseDataset == null)
+			{
+				baseDataset = new JRBaseElementDataset(dataset, this);
+			}
+		}
+		return baseDataset;
+	}
+
+
+	public DataAxis getDataAxis(DataAxis axis)
+	{
+		DataAxis baseAxis = null;
+		if (axis != null)
+		{
+			baseAxis = (DataAxis) get(axis);
+			if (baseAxis == null)
+			{
+				baseAxis = new BaseDataAxis(axis, this);
+			}
+		}
+		return baseAxis;
+	}
+
+
+	public DataAxisLevel getDataAxisLevel(DataAxisLevel level)
+	{
+		DataAxisLevel baseLevel = null;
+		if (level != null)
+		{
+			baseLevel = (DataAxisLevel) get(level);
+			if (baseLevel == null)
+			{
+				baseLevel = new BaseDataAxisLevel(level, this);
+			}
+		}
+		return baseLevel;
+	}
+
+
+	public DataLevelBucket getDataLevelBucket(DataLevelBucket bucket)
+	{
+		DataLevelBucket baseBucket = null;
+		if (bucket != null)
+		{
+			baseBucket = (DataLevelBucket) get(bucket);
+			if (baseBucket == null)
+			{
+				baseBucket = new BaseDataLevelBucket(bucket, this);
+			}
+		}
+		return baseBucket;
+	}
+
+
+	public DataMeasure getDataMeasure(DataMeasure measure)
+	{
+		DataMeasure baseMeasure = null;
+		if (measure != null)
+		{
+			baseMeasure = (DataMeasure) get(measure);
+			if (baseMeasure == null)
+			{
+				baseMeasure = new BaseDataMeasure(measure, this);
+			}
+		}
+		return baseMeasure;
+	}
+
+
+	public DataLevelBucketProperty getDataLevelBucketProperty(DataLevelBucketProperty bucketProperty)
+	{
+		DataLevelBucketProperty baseBucketProperty = null;
+		if (bucketProperty != null)
+		{
+			baseBucketProperty = (DataLevelBucketProperty) get(bucketProperty);
+			if (baseBucketProperty == null)
+			{
+				baseBucketProperty = new BaseDataLevelBucketProperty(bucketProperty, this);
+			}
+		}
+		return baseBucketProperty;
+	}
+
+
+	public CrosstabColumnCell getCrosstabColumnCell(CrosstabColumnCell cell)
+	{
+		BaseCrosstabColumnCell baseCell = null;
+
+		if (cell != null)
+		{
+			baseCell = (BaseCrosstabColumnCell) get(cell);
+			if (baseCell == null)
+			{
+				baseCell = new BaseCrosstabColumnCell(cell, this);
+			}
+		}
+
+		return baseCell;
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.fill.JRFiller;
@@ -39,20 +38,24 @@ import net.sf.jasperreports.engine.util.SimpleFileResolver;
 
 
 /**
- * Fa�ade class for filling compiled report designs with data from report data sources, 
+ * Facade class for filling compiled report designs with data from report data sources, 
  * in order to produce page-oriented documents, ready-to-print.
  * <p>
+ * It exposes a variety of methods that receive a report template in the form of an object, file,
+ * or input stream, and also produces a document in various output forms (object, file, or
+ * output stream).
+ * <p>
  * All methods receive a Map object that should contain the values for the report parameters.
- * These value are retrieved by the engine using the corresponding report parameter name as the key. 
+ * These values are retrieved by the engine using the corresponding report parameter name as the key. 
  * <p>
  * There are two types of method signatures with regards to the data source
  * provided for filling the report:
  * <ul>
  * <li>Methods that receive an instance of the {@link net.sf.jasperreports.engine.JRDataSource} interface
  * and use it directly for retrieving report data;
- * <li>Methods that receive an instance of the {@link java.sql.Connection} interface and retrieve
+ * <li>Methods that receive an instance of the <code>java.sql.Connection</code> interface and retrieve
  * the report data by executing the report internal SQL query through this JDBC connection and wrapping 
- * the returned {@link java.sql.ResultSet} object inside a {@link net.sf.jasperreports.engine.JRResultSetDataSource}
+ * the returned <code>java.sql.ResultSet</code> object inside a {@link net.sf.jasperreports.engine.JRResultSetDataSource}
  * instance. 
  * </ul>
  * 
@@ -61,11 +64,11 @@ import net.sf.jasperreports.engine.util.SimpleFileResolver;
  * @see net.sf.jasperreports.engine.fill.JRFiller
  * @see net.sf.jasperreports.engine.JasperPrint
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperFillManager.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JasperFillManager.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JasperFillManager
 {
-	private JasperReportsContext jasperReportsContext;
+	private final JasperReportsContext jasperReportsContext;
 
 
 	/**
@@ -119,9 +122,11 @@ public final class JasperFillManager
 		File destFile = new File(sourceFile.getParent(), jasperReport.getName() + ".jrprint");
 		String destFileName = destFile.toString();
 
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		fillToFile(jasperReport, destFileName, parameters, connection);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params, connection);
+		
+		JRSaver.saveObject(jasperPrint, destFileName);
 		
 		return destFileName;
 	}
@@ -136,7 +141,7 @@ public final class JasperFillManager
 	 * 
 	 * @param sourceFileName source file containing the compile report design
 	 * @param params     report parameters map
-	 * @see JRFiller#fillReport(JasperReport, Map)
+	 * @see JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public String fillToFile(
 		String sourceFileName, 
@@ -150,10 +155,12 @@ public final class JasperFillManager
 		File destFile = new File(sourceFile.getParent(), jasperReport.getName() + ".jrprint");
 		String destFileName = destFile.toString();
 
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		fillToFile(jasperReport, destFileName, parameters);
-		
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params);
+
+		JRSaver.saveObject(jasperPrint, destFileName);
+
 		return destFileName;
 	}
 
@@ -178,9 +185,11 @@ public final class JasperFillManager
 
 		JasperReport jasperReport = (JasperReport)JRLoader.loadObject(sourceFile);
 
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		fillToFile(jasperReport, destFileName, parameters, connection);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params, connection);
+		
+		JRSaver.saveObject(jasperPrint, destFileName);
 	}
 
 	
@@ -191,7 +200,7 @@ public final class JasperFillManager
 	 * @param sourceFileName source file containing the compile report design
 	 * @param destFileName   file name to place the generated report into
 	 * @param params     report parameters map
-	 * @see JRFiller#fillReport(JasperReport, Map)
+	 * @see JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public void fillToFile(
 		String sourceFileName, 
@@ -203,9 +212,11 @@ public final class JasperFillManager
 
 		JasperReport jasperReport = (JasperReport)JRLoader.loadObject(sourceFile);
 
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		fillToFile(jasperReport, destFileName, parameters);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params);
+
+		JRSaver.saveObject(jasperPrint, destFileName);
 	}
 
 	
@@ -238,7 +249,7 @@ public final class JasperFillManager
 	 * @param jasperReport compiled report design object to use for filling
 	 * @param destFileName file name to place the generated report into
 	 * @param parameters   report parameters map
-	 * @see JRFiller#fillReport(JasperReport, Map)
+	 * @see JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public void fillToFile(
 		JasperReport jasperReport, 
@@ -271,9 +282,9 @@ public final class JasperFillManager
 
 		JasperReport jasperReport = (JasperReport)JRLoader.loadObject(sourceFile);
 
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		return fill(jasperReport, parameters, connection);
+		return JRFiller.fill(lcJrCtx, jasperReport, params, connection);
 	}
 
 	
@@ -284,7 +295,7 @@ public final class JasperFillManager
 	 * @param sourceFileName source file containing the compile report design
 	 * @param params     report parameters map
 	 * @return generated report object
-	 * @see JRFiller#fillReport(JasperReport, Map)
+	 * @see JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public JasperPrint fill(
 		String sourceFileName, 
@@ -295,9 +306,9 @@ public final class JasperFillManager
 
 		JasperReport jasperReport = (JasperReport)JRLoader.loadObject(sourceFile);
 		
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		return fill(jasperReport, parameters);
+		return JRFiller.fill(lcJrCtx, jasperReport, params);
 	}
 
 	
@@ -330,7 +341,7 @@ public final class JasperFillManager
 	 * @param inputStream  input stream to read the compiled report design object from
 	 * @param outputStream output stream to write the generated report object to
 	 * @param parameters   report parameters map
-	 * @see JRFiller#fillReport(JasperReport, Map)
+	 * @see JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public void fillToStream(
 		InputStream inputStream, 
@@ -373,7 +384,7 @@ public final class JasperFillManager
 	 * @param jasperReport compiled report design object to use for filling
 	 * @param outputStream output stream to write the generated report object to
 	 * @param parameters   report parameters map
-	 * @see JRFiller#fillReport(JasperReport, Map)
+	 * @see JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public void fillToStream(
 		JasperReport jasperReport, 
@@ -415,7 +426,7 @@ public final class JasperFillManager
 	 * @param inputStream  input stream to read the compiled report design object from
 	 * @param parameters   report parameters map
 	 * @return generated report object
-	 * @see JRFiller#fillReport(JasperReport, Map)
+	 * @see JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public JasperPrint fill(
 		InputStream inputStream, 
@@ -454,7 +465,7 @@ public final class JasperFillManager
 	 * @param jasperReport compiled report design object to use for filling
 	 * @param parameters   report parameters map
 	 * @return generated report object
-	 * @see JRFiller#fillReport(JasperReport, Map)
+	 * @see JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public JasperPrint fill(
 		JasperReport jasperReport, 
@@ -489,9 +500,11 @@ public final class JasperFillManager
 		File destFile = new File(sourceFile.getParent(), jasperReport.getName() + ".jrprint");
 		String destFileName = destFile.toString();
 
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		fillToFile(jasperReport, destFileName, parameters, dataSource);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params, dataSource);
+
+		JRSaver.saveObject(jasperPrint, destFileName);
 		
 		return destFileName;
 	}
@@ -517,9 +530,11 @@ public final class JasperFillManager
 
 		JasperReport jasperReport = (JasperReport)JRLoader.loadObject(sourceFile);
 
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		fillToFile(jasperReport, destFileName, parameters, dataSource);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params, dataSource);
+
+		JRSaver.saveObject(jasperPrint, destFileName);
 	}
 
 	
@@ -564,9 +579,9 @@ public final class JasperFillManager
 
 		JasperReport jasperReport = (JasperReport)JRLoader.loadObject(sourceFile);
 
-		Map<String,Object> parameters = setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = getLocalJasperReportsContext(sourceFile);
 
-		return fill(jasperReport, parameters, dataSource);
+		return JRFiller.fill(lcJrCtx, jasperReport, params, dataSource);
 	}
 
 	
@@ -972,38 +987,8 @@ public final class JasperFillManager
 
 	/**
 	 * 
-	 *
-	protected static Map<String,Object> setFileResolver(File file, Map<String,Object> params)
-	{
-		Map<String,Object> parameters  = params;
-		
-		if (parameters == null)
-		{
-			parameters = new HashMap<String,Object>();
-		}
-
-		if (!parameters.containsKey(JRParameter.REPORT_FILE_RESOLVER))
-		{
-			SimpleFileResolver fileResolver =
-				new SimpleFileResolver(
-					Arrays.asList(new File[]{file.getParentFile(), new File(".")})
-					);
-			fileResolver.setResolveAbsolutePath(true);
-			
-			parameters.put(
-				JRParameter.REPORT_FILE_RESOLVER, 
-				fileResolver
-				);
-		}
-		
-		return parameters;
-	}
-
-
-	/**
-	 * 
 	 */
-	protected Map<String,Object> setFileResolver(File file, Map<String,Object> params)//FIXMECONTEXT no longer create map
+	protected JasperReportsContext getLocalJasperReportsContext(File file)
 	{
 		SimpleFileResolver fileResolver =
 			new SimpleFileResolver(
@@ -1013,15 +998,6 @@ public final class JasperFillManager
 		
 		LocalJasperReportsContext localJasperReportsContext = new LocalJasperReportsContext(jasperReportsContext);
 		localJasperReportsContext.setFileResolver(fileResolver);
-		jasperReportsContext = localJasperReportsContext;
-		
-		Map<String,Object> parameters  = params;
-		
-		if (parameters == null)
-		{
-			parameters = new HashMap<String,Object>();
-		}
-
-		return parameters;
+		return localJasperReportsContext;
 	}
 }

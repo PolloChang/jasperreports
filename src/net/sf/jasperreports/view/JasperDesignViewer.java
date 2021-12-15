@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,8 +37,27 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
+ * This class can be used at design time to preview the report
+ * templates. It was included in the main library as a development tool in order to make up
+ * for the missing visual designer.
+ * <p>
+ * The class is a simple
+ * Swing-based Java application that can load and display a report template either in its raw
+ * JRXML form or in its compiled form. Even though it is not a complex GUI application and
+ * lacks advanced functionality like dragging and dropping visual report elements, it is a
+ * very helpful tool. All the supplied JasperReports samples were initially created using this design
+ * viewer.
+ * </p><p>
+ * All the supplied samples already have Ant tasks in their <code>build.xml</code> files that will launch
+ * this design viewer to display the report templates.
+ * There are two Ant tasks for each sample report: <code>viewDesign</code> and <code>viewDesignXML</code>. The
+ * first one loads the compiled report template that is normally found in the <code>*.jasper</code> file.
+ * The second one loads the JRXML report template, which is more useful since you can
+ * edit the JRXML file and click the Reload button to immediately see the modification on
+ * the screen.
+ * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperDesignViewer.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JasperDesignViewer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JasperDesignViewer extends javax.swing.JFrame 
 {

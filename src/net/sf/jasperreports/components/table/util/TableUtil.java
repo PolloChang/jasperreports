@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,16 +41,18 @@ import net.sf.jasperreports.components.table.TableComponent;
 import net.sf.jasperreports.engine.JRChild;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRDatasetRun;
+import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionChunk;
 import net.sf.jasperreports.engine.JRGroup;
+import net.sf.jasperreports.engine.JRReport;
 import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.design.JRDesignTextElement;
-import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 
 /**
  * @author Veaceslav Chicu (schicu@users.sourceforge.net)
- * @version $Id: TableUtil.java 5409 2012-05-23 19:25:03Z teodord $
+ * @version $Id: TableUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableUtil 
 {
@@ -64,11 +66,11 @@ public class TableUtil
 	
 	private TableComponent table;
 	private Map<Cell, Rectangle> boundsMap = new HashMap<Cell, Rectangle>();
-	private JasperDesign jasperDesign;
+	private JRReport report;
 
-	public TableUtil(TableComponent table, JasperDesign jasperDesign) {
+	public TableUtil(TableComponent table, JRReport report) {
 		this.table = table;
-		this.jasperDesign = jasperDesign;
+		this.report = report;
 		init(table);
 	}
 
@@ -245,16 +247,29 @@ public class TableUtil
 	}
 
 	public List<?> getGroupList() {
-		return getGroupList(table, jasperDesign);
+		return getGroupList(table, report);
 	}
 
-	public static List<?> getGroupList(TableComponent table, JasperDesign jd) {
+	public static List<?> getGroupList(TableComponent table, JRReport report) 
+	{
 		List<?> groupsList = null;
 		JRDatasetRun datasetRun = table.getDatasetRun();
-		if (datasetRun != null) {
+		if (datasetRun != null) 
+		{
 			String dataSetName = datasetRun.getDatasetName();
-			JRDataset ds = jd.getDatasetMap().get(dataSetName);
-			groupsList = (ds != null ? Arrays.asList(ds.getGroups()) : null);
+			JRDataset[] datasets = report.getDatasets();
+			if (datasets != null && dataSetName != null)
+			{
+				for (JRDataset ds : datasets)
+				{
+					JRGroup[] groups = ds.getGroups();
+					if (dataSetName.equals(ds.getName()) && groups != null)
+					{
+						groupsList = Arrays.asList(groups);
+						break;
+					}
+				}
+			}
 		}
 		return groupsList;
 	}
@@ -302,45 +317,72 @@ public class TableUtil
 		return null;
 	}
 	
-	public static JRDesignTextElement getColumnHeaderTextElement(StandardColumn column) {
-		Cell header = column.getColumnHeader();
-		List<JRChild> detailElements = header == null ? null : header.getChildren();
-		
-		// only consider cells with a single text fields
-		if (detailElements == null || detailElements.size() != 1)
-		{
-			return null;
-		}
-
-		JRChild detailElement = detailElements.get(0);
-		if (detailElement instanceof JRDesignTextElement)
-		{
-			return (JRDesignTextElement) detailElement;
-		}
-
-		return null;
+	/**
+	 * @deprecated Replaced by {@link #getCellElement(Class, Cell, boolean)}.
+	 */
+	public static JRDesignTextElement getColumnHeaderTextElement(StandardColumn column) 
+	{
+		return getCellElement(JRDesignTextElement.class, column.getColumnHeader(), true);
 	}
 
+	/**
+	 * @deprecated Replaced by {@link #getCellElement(Class, Cell, boolean)}.
+	 */
+	public static JRDesignTextElement getCellTextElement(Cell cell, boolean oneElementPerCell) 
+	{
+		return getCellElement(JRDesignTextElement.class, cell, oneElementPerCell);
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getCellElement(Class, Cell, boolean)}.
+	 */
 	public static JRTextField getColumnDetailTextElement(Column column) {
-		Cell detailCell = column.getDetailCell();
-		List<JRChild> detailElements = detailCell == null ? null : detailCell.getChildren();
+		return getCellElement(JRTextField.class, column.getDetailCell(), true);
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getCellElement(Class, Cell, boolean)}.
+	 */
+	public static JRTextField getCellDetailTextElement(Cell cell, boolean oneElementPerCell) {
+		return getCellElement(JRTextField.class, cell, oneElementPerCell);
+	}
+
+	/**
+	 * 
+	 */
+	public static <T extends JRElement> T getCellElement(Class<T> type, Cell cell, boolean oneElementPerCell) 
+	{
+		List<JRChild> detailElements = cell == null ? null : cell.getChildren();
 		
-		// only consider cells with a single text fields
-		if (detailElements == null || detailElements.size() != 1)
+		if (detailElements == null || (detailElements != null && oneElementPerCell && detailElements.size() != 1)) 
 		{
 			return null;
 		}
 		
-		JRChild detailElement = detailElements.get(0);
-		if (detailElement instanceof JRTextField)
+		for (JRChild detailElement: detailElements) 
 		{
-			return (JRTextField) detailElement;
+			if (type.isInstance(detailElement) ) 
+			{
+				@SuppressWarnings("unchecked")
+				T de = (T) detailElement;
+				return de;
+			}
 		}
 		
 		return null;
 	}
 
-	public static boolean isSortableAndFilterable(JRTextField textField) 
+	public static boolean isFilterable(JRTextField textField) 
+	{
+		if (textField != null)
+		{
+			return EvaluationTimeEnum.NOW.equals(textField.getEvaluationTimeValue());
+		}
+		
+		return false;
+	}
+
+	public static boolean hasSingleChunkExpression(JRTextField textField) 
 	{
 		if (textField != null)
 		{
@@ -362,6 +404,52 @@ public class TableUtil
 	public static int getColumnIndex(Column column, TableComponent table) {
 		List<BaseColumn> columns = getAllColumns(table);
 		return columns.indexOf(column);
+	}
+
+	public static List<ColumnGroup> getHierarchicalColumnGroupsForColumn(BaseColumn column, List<BaseColumn> columns, TableComponent table) {
+		List<ColumnGroup> result = new ArrayList<ColumnGroup>();
+		List<BaseColumn> cols = columns != null ? columns : table.getColumns();
+		for (BaseColumn bc : cols) {
+			if (bc instanceof ColumnGroup){
+				if (((ColumnGroup)bc).getColumns().contains(column)) {
+					result.add((ColumnGroup)bc);
+					result.addAll(getHierarchicalColumnGroupsForColumn(bc, null, table));
+				} else {
+					result.addAll(getHierarchicalColumnGroupsForColumn(column, ((ColumnGroup) bc).getColumns(), table));
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * 
+	 */
+	public static <T extends JRElement> T getCellElement(Class<T> type, BaseColumn column, int sectionType, String groupName, TableComponent table) 
+	{
+		T element = TableUtil.getCellElement(type, getCell(column, sectionType, groupName), false);
+
+		if (element == null) 
+		{
+			List<ColumnGroup> colGroups = TableUtil.getHierarchicalColumnGroupsForColumn(column, table.getColumns(), table);
+
+			for (ColumnGroup colGroup: colGroups) 
+			{
+				if (colGroup.getGroupHeader(groupName) == null) 
+				{
+					continue;
+				}
+				element = TableUtil.getCellElement(type, getCell(colGroup, sectionType, groupName), false);
+				if (element != null)
+			   	{
+					break;
+			   	}
+			}
+
+		}
+
+		return element;
 	}
 
 }

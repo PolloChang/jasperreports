@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -50,7 +50,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignTextField.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignTextField.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignTextField extends JRDesignTextElement implements JRTextField
 {
@@ -97,6 +97,7 @@ public class JRDesignTextField extends JRDesignTextElement implements JRTextFiel
 	protected JRExpression patternExpression;
 	protected JRExpression anchorNameExpression;
 	protected JRExpression hyperlinkReferenceExpression;
+	protected JRExpression hyperlinkWhenExpression;
 	protected JRExpression hyperlinkAnchorExpression;
 	protected JRExpression hyperlinkPageExpression;
 	private JRExpression hyperlinkTooltipExpression;
@@ -236,6 +237,14 @@ public class JRDesignTextField extends JRDesignTextElement implements JRTextFiel
 	public JRExpression getHyperlinkReferenceExpression()
 	{
 		return this.hyperlinkReferenceExpression;
+	}
+
+	/**
+	 *
+	 */
+	public JRExpression getHyperlinkWhenExpression()
+	{
+		return this.hyperlinkWhenExpression;
 	}
 
 	/**
@@ -384,6 +393,16 @@ public class JRDesignTextField extends JRDesignTextElement implements JRTextFiel
 		Object old = this.hyperlinkReferenceExpression;
 		this.hyperlinkReferenceExpression = hyperlinkReferenceExpression;
 		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_REFERENCE_EXPRESSION, old, this.hyperlinkReferenceExpression);
+	}
+
+	/**
+	 *
+	 */
+	public void setHyperlinkWhenExpression(JRExpression hyperlinkWhenExpression)
+	{
+		Object old = this.hyperlinkWhenExpression;
+		this.hyperlinkWhenExpression = hyperlinkWhenExpression;
+		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_WHEN_EXPRESSION, old, this.hyperlinkWhenExpression);
 	}
 
 	/**
@@ -599,6 +618,7 @@ public class JRDesignTextField extends JRDesignTextElement implements JRTextFiel
 		clone.patternExpression = JRCloneUtils.nullSafeClone(patternExpression);
 		clone.anchorNameExpression = JRCloneUtils.nullSafeClone(anchorNameExpression);
 		clone.hyperlinkReferenceExpression = JRCloneUtils.nullSafeClone(hyperlinkReferenceExpression);
+		clone.hyperlinkWhenExpression = JRCloneUtils.nullSafeClone(hyperlinkWhenExpression);
 		clone.hyperlinkAnchorExpression = JRCloneUtils.nullSafeClone(hyperlinkAnchorExpression);
 		clone.hyperlinkPageExpression = JRCloneUtils.nullSafeClone(hyperlinkPageExpression);
 		clone.hyperlinkTooltipExpression = JRCloneUtils.nullSafeClone(hyperlinkTooltipExpression);

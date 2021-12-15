@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,15 +35,15 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.util.CompositeClassloader;
 import net.sf.jasperreports.engine.util.JRClassLoader;
+import net.sf.jasperreports.util.SecretsUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JdbcDataAdapterService.java 5426 2012-06-04 16:15:57Z chicuslavic $
+ * @version $Id: JdbcDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JdbcDataAdapterService extends AbstractClasspathAwareDataAdapterService 
 {
@@ -140,9 +140,7 @@ public class JdbcDataAdapterService extends AbstractClasspathAwareDataAdapterSer
 
 			try 
 			{
-				Thread.currentThread().setContextClassLoader(
-					new CompositeClassloader(getClassLoader(), oldThreadClassLoader)
-					);
+				Thread.currentThread().setContextClassLoader(getClassLoader(oldThreadClassLoader));
 				
 				Class<?> clazz = JRClassLoader.loadClassForRealName(jdbcDataAdapter.getDriver());
 				Driver driver = (Driver) clazz.newInstance();
@@ -160,9 +158,9 @@ public class JdbcDataAdapterService extends AbstractClasspathAwareDataAdapterSer
 				
 
 				String password = jdbcDataAdapter.getPassword();
-				if (!jdbcDataAdapter.isSavePassword()) {
-					password = getPassword();
-				}
+				SecretsUtil secretService = SecretsUtil.getInstance(getJasperReportsContext());
+				if (secretService != null)
+					password = secretService.getSecret(SECRETS_CATEGORY, password);
 
 				connectProps.setProperty("user", jdbcDataAdapter.getUsername());
 				connectProps.setProperty("password", password);
@@ -177,11 +175,7 @@ public class JdbcDataAdapterService extends AbstractClasspathAwareDataAdapterSer
 				throw new JRRuntimeException(e);
 			} catch (IllegalAccessException e) {
 				throw new JRRuntimeException(e);
-			} catch (JRException e) {
-				throw new JRRuntimeException(e);
-			}
-			finally
-			{
+			} finally {
 				Thread.currentThread().setContextClassLoader(oldThreadClassLoader);
 			}
 			return connection;

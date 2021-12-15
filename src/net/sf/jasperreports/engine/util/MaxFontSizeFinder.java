@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,7 @@ import java.text.AttributedCharacterIterator;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: MaxFontSizeFinder.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: MaxFontSizeFinder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class MaxFontSizeFinder//FIXMETAB deprecate?
 {
@@ -48,7 +48,7 @@ public abstract class MaxFontSizeFinder//FIXMETAB deprecate?
 			/**
 			 * 
 			 */
-			public int findMaxFontSize(AttributedCharacterIterator line, int defaultFontSize)
+			public float findMaxFontSize(AttributedCharacterIterator line, float defaultFontSize)
 			{
 				line.setIndex(0);
 				Float maxFontSize = ZERO;
@@ -64,7 +64,15 @@ public abstract class MaxFontSizeFinder//FIXMETAB deprecate?
 					line.setIndex(runLimit);
 				}
 	
-				return maxFontSize.intValue();
+				return maxFontSize;
+			}
+			
+			/**
+			 * @deprecated Replaced by {@link #findMaxFontSize(AttributedCharacterIterator, float)}.
+			 */
+			public int findMaxFontSize(AttributedCharacterIterator line, int defaultFontSize)
+			{
+				return (int)findMaxFontSize(line, (float)defaultFontSize);
 			}
 		};
 	
@@ -78,9 +86,17 @@ public abstract class MaxFontSizeFinder//FIXMETAB deprecate?
 			/**
 			 * 
 			 */
-			public int findMaxFontSize(AttributedCharacterIterator line, int defaultFontSize)
+			public float findMaxFontSize(AttributedCharacterIterator line, float defaultFontSize)
 			{
 				return defaultFontSize;
+			}
+
+			/**
+			 * @deprecated Replaced by {@link #findMaxFontSize(AttributedCharacterIterator, float)}.
+			 */
+			public int findMaxFontSize(AttributedCharacterIterator line, int defaultFontSize)
+			{
+				return (int)findMaxFontSize(line, (float)defaultFontSize);
 			}
 		};
 		
@@ -100,6 +116,12 @@ public abstract class MaxFontSizeFinder//FIXMETAB deprecate?
 		
 	/**
 	 * 
+	 */
+	public abstract float findMaxFontSize(AttributedCharacterIterator line, float defaultFontSize);
+
+	
+	/**
+	 * @deprecated Replaced by {@link #findMaxFontSize(AttributedCharacterIterator, float)}. 
 	 */
 	public abstract int findMaxFontSize(AttributedCharacterIterator line, int defaultFontSize);
 }

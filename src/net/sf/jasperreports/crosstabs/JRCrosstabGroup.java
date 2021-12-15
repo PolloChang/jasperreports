@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.JRVariable;
  * Base interface for crosstab row and column groups.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabGroup.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCrosstabGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCrosstabGroup extends JRCloneable
 {
@@ -83,7 +83,7 @@ public interface JRCrosstabGroup extends JRCloneable
 	 * <p>
 	 * The size of the header cell is computed based on the following rules
 	 * (only the row header rules are listed, the ones for columns can be
-	 * deducted by simmetrical duality):
+	 * deducted by symmetrical duality):
 	 * <ul>
 	 * 	<li>the width of the header is given by {@link JRCrosstabRowGroup#getWidth() JRCrosstabRowGroup.getWidth()}</li>
 	 * 	<li>the height of the last row group header is given by the height of the base cell</li>

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2005 - 2011 Works, Inc. All rights reserved.
+ * Copyright (C) 2005 - 2014 Works, Inc. All rights reserved.
  * http://www.works.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -49,7 +49,7 @@ import org.apache.commons.logging.LogFactory;
  * using it are only weakly referenced.
  * 
  * @author John Bindel
- * @version $Id: JRFileVirtualizer.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFileVirtualizer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 	

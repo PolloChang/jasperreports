@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,7 @@ import org.jfree.chart.renderer.xy.XYBubbleRenderer;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRBaseBubblePlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseBubblePlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseBubblePlot extends JRBaseChartPlot implements JRBubblePlot {
 
@@ -105,18 +105,18 @@ public class JRBaseBubblePlot extends JRBaseChartPlot implements JRBubblePlot {
 		scaleTypeValue = bubblePlot.getScaleTypeValue();
 		
 		xAxisLabelExpression = factory.getExpression( bubblePlot.getXAxisLabelExpression() );
-		xAxisLabelFont = factory.getFont(bubblePlot.getChart(), bubblePlot.getXAxisLabelFont());
+		xAxisLabelFont = factory.getFont(chart, bubblePlot.getXAxisLabelFont());
 		xAxisLabelColor = bubblePlot.getOwnXAxisLabelColor();
-		xAxisTickLabelFont = factory.getFont(bubblePlot.getChart(), bubblePlot.getXAxisTickLabelFont());
+		xAxisTickLabelFont = factory.getFont(chart, bubblePlot.getXAxisTickLabelFont());
 		xAxisTickLabelColor = bubblePlot.getOwnXAxisTickLabelColor();
 		xAxisTickLabelMask = bubblePlot.getXAxisTickLabelMask();
 		xAxisVerticalTickLabels = bubblePlot.getXAxisVerticalTickLabels();
 		xAxisLineColor = bubblePlot.getOwnXAxisLineColor();
 		
 		yAxisLabelExpression = factory.getExpression( bubblePlot.getYAxisLabelExpression() );
-		yAxisLabelFont = factory.getFont(bubblePlot.getChart(), bubblePlot.getYAxisLabelFont());
+		yAxisLabelFont = factory.getFont(chart, bubblePlot.getYAxisLabelFont());
 		yAxisLabelColor = bubblePlot.getOwnYAxisLabelColor();
-		yAxisTickLabelFont = factory.getFont(bubblePlot.getChart(), bubblePlot.getYAxisTickLabelFont());
+		yAxisTickLabelFont = factory.getFont(chart, bubblePlot.getYAxisTickLabelFont());
 		yAxisTickLabelColor = bubblePlot.getOwnYAxisTickLabelColor();
 		yAxisTickLabelMask = bubblePlot.getYAxisTickLabelMask();
 		yAxisVerticalTickLabels = bubblePlot.getYAxisVerticalTickLabels();

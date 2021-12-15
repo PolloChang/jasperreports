@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.renderers;
 
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
@@ -34,7 +35,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URL;
-import java.net.URLStreamHandlerFactory;
 import java.util.List;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
@@ -45,7 +45,6 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintImageAreaHyperlink;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
@@ -66,7 +65,7 @@ import org.w3c.dom.svg.SVGPreserveAspectRatio;
  * SVG renderer implementation based on <a href="http://xmlgraphics.apache.org/batik/">Batik</a>.
  *
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BatikRenderer.java 5346 2012-05-08 12:08:01Z teodord $
+ * @version $Id: BatikRenderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BatikRenderer extends JRAbstractSvgRenderer implements ImageMapRenderable
 {
@@ -86,6 +85,10 @@ public class BatikRenderer extends JRAbstractSvgRenderer implements ImageMapRend
 	private String svgDataLocation;
 	private List<JRPrintImageAreaHyperlink> areaHyperlinks;
 
+	private int minDPI;
+	private boolean antiAlias;
+	
+	
 	private transient GraphicsNode rootNode;
 	private transient Dimension2D documentSize;
 
@@ -259,7 +262,13 @@ public class BatikRenderer extends JRAbstractSvgRenderer implements ImageMapRend
 
 	protected Graphics2D createGraphics(BufferedImage bi)
 	{
-		return GraphicsUtil.createGraphics(bi);
+		Graphics2D graphics = GraphicsUtil.createGraphics(bi);
+		if (antiAlias)
+		{
+			graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			//FIXME use JPG instead of PNG for smaller size?
+		}
+		return graphics;
 	}
 
 	protected void setSvgDataLocation(String svgDataLocation)
@@ -339,7 +348,6 @@ public class BatikRenderer extends JRAbstractSvgRenderer implements ImageMapRend
 	 * @param location the location
 	 * @return a SVG renderer
 	 * @throws JRException
-	 * @see RepositoryUtil#getBytes(String)
 	 * @deprecated Replaced by {@link #getInstanceFromLocation(JasperReportsContext, String)}.
 	 */
 	public static BatikRenderer getInstanceFromLocation(String location) throws JRException
@@ -353,34 +361,11 @@ public class BatikRenderer extends JRAbstractSvgRenderer implements ImageMapRend
 	 * @param location the location
 	 * @return a SVG renderer
 	 * @throws JRException
-	 * @see RepositoryUtil#getBytes(String)
+	 * @see RepositoryUtil#getBytesFromLocation(String)
 	 */
 	public static BatikRenderer getInstanceFromLocation(JasperReportsContext jasperReportsContext, String location) throws JRException
 	{
 		byte[] data = RepositoryUtil.getInstance(jasperReportsContext).getBytesFromLocation(location);
-		return new BatikRenderer(data, null);
-	}
-
-	/**
-	 * Creates a SVG renderer by loading data from a generic location.
-	 *
-	 * @param location the location
-	 * @param classLoader the classloader to be used to resolve resources
-	 * @param urlHandlerFactory the URL handler factory used to resolve URLs
-	 * @param fileResolver the file resolver
-	 * @return a SVG renderer
-	 * @throws JRException
-	 * @see JRLoader#loadBytesFromLocation(String, ClassLoader, URLStreamHandlerFactory, FileResolver)
-	 * @deprecated Replaced by {@link #getInstanceFromLocation(String)}.
-	 */
-	public static BatikRenderer getInstanceFromLocation(
-		String location,
-		ClassLoader classLoader,
-		URLStreamHandlerFactory urlHandlerFactory,
-		FileResolver fileResolver
-		) throws JRException
-	{
-		byte[] data = JRLoader.loadBytesFromLocation(location, classLoader, urlHandlerFactory, fileResolver);
 		return new BatikRenderer(data, null);
 	}
 
@@ -401,5 +386,36 @@ public class BatikRenderer extends JRAbstractSvgRenderer implements ImageMapRend
 		BatikRenderer renderer = new BatikRenderer(null);
 		renderer.setSvgDataLocation(location);
 		return renderer;
+	}
+
+	@Override
+	protected int getImageDataDPI(JasperReportsContext jasperReportsContext)
+	{
+		int dpi = super.getImageDataDPI(jasperReportsContext);
+		if (minDPI > 0 && dpi < minDPI)
+		{
+			dpi = minDPI;
+		}
+		return dpi;
+	}
+
+	public int getMinDPI()
+	{
+		return minDPI;
+	}
+
+	public void setMinDPI(int minDPI)
+	{
+		this.minDPI = minDPI;
+	}
+
+	public boolean isAntiAlias()
+	{
+		return antiAlias;
+	}
+
+	public void setAntiAlias(boolean antiAlias)
+	{
+		this.antiAlias = antiAlias;
 	}
 }

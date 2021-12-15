@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,17 +30,19 @@ import java.io.Serializable;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
+import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * Standard {@link ListComponent} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardListComponent.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: StandardListComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StandardListComponent implements Serializable, ListComponent, JRChangeEventsSupport
 {
@@ -204,6 +206,15 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
 			printOrderValue = PrintOrderEnum.getByValue(printOrder);
+		}
+	}
+
+	@Override
+	public void visit(JRVisitor visitor)
+	{
+		if (ElementsVisitorUtils.visitDeepElements(visitor) && contents != null)
+		{
+			ElementsVisitorUtils.visitElements(visitor, contents.getChildren());
 		}
 	}
 	

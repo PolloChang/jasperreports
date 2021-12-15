@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,15 +23,28 @@
  */
 package net.sf.jasperreports.engine;
 
+import java.util.Locale;
+import java.util.MissingResourceException;
+
+import net.sf.jasperreports.engine.util.MessageProvider;
+import net.sf.jasperreports.engine.util.MessageUtil;
+
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRRuntimeException.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRRuntimeException.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRRuntimeException extends RuntimeException
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	public static final String ERROR_MESSAGES_BUNDLE = "jasperreports_messages";
+	
+	private Object[] args;
+	private String messageKey;
+	private String localizedMessage;
+	private boolean hasLocalizedMessage;
 
 
 	/**
@@ -58,5 +71,83 @@ public class JRRuntimeException extends RuntimeException
 	public JRRuntimeException(String message, Throwable t)
 	{
 		super(message, t);
+	}
+
+
+	/**
+	 *
+	 */
+	public JRRuntimeException(String messageKey, Object[] args, JasperReportsContext jasperReportsContext, Locale locale)
+	{
+		super(messageKey);
+		this.messageKey = messageKey;
+		this.args = args;
+		this.localizedMessage = resolveMessage(messageKey, args, jasperReportsContext, locale);
+	}
+
+
+	/**
+	 *
+	 */
+	public String getMessageKey()
+	{
+		return messageKey;
+	}
+
+
+	/**
+	 *
+	 */
+	public Object[] getArgs()
+	{
+		return args;
+	}
+
+
+	/**
+	 *
+	 */
+	public boolean hasLocalizedMessage()
+	{
+		return hasLocalizedMessage;
+	}
+
+
+	@Override
+	public String getMessage()
+	{
+		if (hasLocalizedMessage)
+		{
+			return localizedMessage;
+		}
+		return super.getMessage();
+	}
+
+
+	/**
+	 *
+	 */
+	protected String resolveMessage(String messageKey, Object[] args, JasperReportsContext jasperReportsContext, Locale locale)
+	{
+		if (messageKey != null)
+		{
+			try
+			{
+				hasLocalizedMessage = true;
+				String bundleName = getMessageBundleName();
+				MessageProvider messageProvider = MessageUtil.getInstance(jasperReportsContext).getMessageProvider(bundleName);
+				return messageProvider.getMessage(messageKey, args, locale);
+			}
+			catch (MissingResourceException e)
+			{
+			}
+		}
+		hasLocalizedMessage = false;
+		return messageKey;
+	}
+	
+	protected String getMessageBundleName()
+	{
+		return ERROR_MESSAGES_BUNDLE;
 	}
 }

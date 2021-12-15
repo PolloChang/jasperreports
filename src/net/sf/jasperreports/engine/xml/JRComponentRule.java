@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,7 @@ import org.apache.commons.digester.Rule;
  * and the node name is used as component name.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRComponentRule.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRComponentRule.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRComponentRule extends Rule
 {

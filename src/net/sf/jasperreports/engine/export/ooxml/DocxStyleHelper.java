@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,20 +23,21 @@
  */
 package net.sf.jasperreports.engine.export.ooxml;
 
-import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
-import java.util.Map;
 
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.design.JRDesignStyle;
 import net.sf.jasperreports.engine.util.JRDataUtils;
+import net.sf.jasperreports.export.ExporterInput;
+import net.sf.jasperreports.export.ExporterInputItem;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxStyleHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DocxStyleHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxStyleHelper extends BaseHelper
 {
@@ -49,39 +50,42 @@ public class DocxStyleHelper extends BaseHelper
 	/**
 	 * 
 	 */
-	public DocxStyleHelper(Writer writer, Map<String,String> fontMap, String exporterKey)
+	public DocxStyleHelper(JasperReportsContext jasperReportsContext, Writer writer, String exporterKey)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 		
-		paragraphHelper = new DocxParagraphHelper(writer, false);
-		runHelper = new DocxRunHelper(writer, fontMap, exporterKey);
+		paragraphHelper = new DocxParagraphHelper(jasperReportsContext, writer, false);
+		runHelper = new DocxRunHelper(jasperReportsContext, writer, exporterKey);
 	}
 
 	/**
 	 * 
 	 */
-	public void export(List<JasperPrint> jasperPrintList) throws IOException
+	public void export(ExporterInput exporterInput)
 	{
-		writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-		writer.write("<w:styles\n");
-		writer.write(" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"\n");
-		writer.write(" xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">\n");
-		writer.write(" <w:docDefaults>\n");
-		writer.write("  <w:rPrDefault>\n");
-		writer.write("   <w:rPr>\n");
-		writer.write("    <w:rFonts w:ascii=\"Times New Roman\" w:eastAsia=\"Times New Roman\" w:hAnsi=\"Times New Roman\" w:cs=\"Times New Roman\"/>\n");
-		writer.write("   </w:rPr>\n");
-		writer.write("  </w:rPrDefault>\n");
-		writer.write("  <w:pPrDefault>\n");
-		writer.write("  <w:pPr>\n");
-		writer.write("  <w:spacing w:line=\"" + DocxParagraphHelper.LINE_SPACING_FACTOR + "\"/>\n");
-		writer.write("  </w:pPr>\n");
-		writer.write("  </w:pPrDefault>\n");
-		writer.write(" </w:docDefaults>\n");
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		write("<w:styles\n");
+		write(" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"\n");
+		write(" xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">\n");
+		write(" <w:docDefaults>\n");
+		write("  <w:rPrDefault>\n");
+		write("   <w:rPr>\n");
+		write("    <w:rFonts w:ascii=\"Times New Roman\" w:eastAsia=\"Times New Roman\" w:hAnsi=\"Times New Roman\" w:cs=\"Times New Roman\"/>\n");
+		write("   </w:rPr>\n");
+		write("  </w:rPrDefault>\n");
+		write("  <w:pPrDefault>\n");
+		write("  <w:pPr>\n");
+		write("  <w:spacing w:line=\"" + DocxParagraphHelper.LINE_SPACING_FACTOR + "\"/>\n");
+		write("  </w:pPr>\n");
+		write("  </w:pPrDefault>\n");
+		write(" </w:docDefaults>\n");
 
-		for(int reportIndex = 0; reportIndex < jasperPrintList.size(); reportIndex++)
+		List<ExporterInputItem> items = exporterInput.getItems();
+
+		for(int reportIndex = 0; reportIndex < items.size(); reportIndex++)
 		{
-			JasperPrint jasperPrint = jasperPrintList.get(reportIndex);
+			ExporterInputItem item = items.get(reportIndex);
+			JasperPrint jasperPrint = item.getJasperPrint();
 			
 			String localeCode = jasperPrint.getLocaleCode();
 			
@@ -90,7 +94,7 @@ public class DocxStyleHelper extends BaseHelper
 				JRDesignStyle style = new JRDesignStyle();
 				style.setName("EMPTY_CELL_STYLE");
 				style.setParentStyle(jasperPrint.getDefaultStyle());
-				style.setFontSize(0);
+				style.setFontSize(0f);
 				exportHeader(style);
 				paragraphHelper.exportProps(style);
 				runHelper.exportProps(style, (localeCode == null ? null : JRDataUtils.getLocale(localeCode)));//FIXMEDOCX reuse exporter
@@ -111,36 +115,36 @@ public class DocxStyleHelper extends BaseHelper
 			}
 		}
 
-		writer.write("</w:styles>\n");
+		write("</w:styles>\n");
 	}
 	
 	/**
 	 * 
 	 */
-	private void exportHeader(JRStyle style) throws IOException
+	private void exportHeader(JRStyle style)
 	{
-		//writer.write(" <w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"" + style.getName() + "\">\n");
-		writer.write(" <w:style w:type=\"paragraph\" w:styleId=\"" + style.getName() + "\"");
+		//write(" <w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"" + style.getName() + "\">\n");
+		write(" <w:style w:type=\"paragraph\" w:styleId=\"" + style.getName() + "\"");
 		if (style.isDefault())
 		{
-			writer.write(" w:default=\"1\"");
+			write(" w:default=\"1\"");
 		}
-		writer.write(">\n");
-		writer.write("  <w:name w:val=\"" + style.getName() + "\" />\n");
-		writer.write("  <w:qFormat />\n");
+		write(">\n");
+		write("  <w:name w:val=\"" + style.getName() + "\" />\n");
+		write("  <w:qFormat />\n");
 		String styleNameReference = style.getStyle() == null ? null : style.getStyle().getName();//FIXMEDOCX why getStyleNameReference is not working?
 		if (styleNameReference != null)
 		{
-			writer.write("  <w:basedOn w:val=\"" + styleNameReference + "\" />\n");
+			write("  <w:basedOn w:val=\"" + styleNameReference + "\" />\n");
 		}
 	}
 	
 	/**
 	 * 
 	 */
-	private void exportFooter() throws IOException
+	private void exportFooter()
 	{
-		writer.write(" </w:style>\n");
+		write(" </w:style>\n");
 	}
 	
 }

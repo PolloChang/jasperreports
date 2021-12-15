@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,13 +30,13 @@ import net.sf.jasperreports.engine.xml.JRXmlConstants;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: HeaderToolbarElement.java 5406 2012-05-22 12:49:53Z lucianc $
+ * @version $Id: HeaderToolbarElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface HeaderToolbarElement {
 	
 	public static final String ELEMENT_NAME = "headertoolbar";
 	public static final JRGenericElementType ELEMENT_TYPE = new JRGenericElementType(JRXmlConstants.JASPERREPORTS_NAMESPACE, ELEMENT_NAME);
-	
+
 	public static final String PARAM_COLUMN_LABEL_PREFIX = "column.";
 
 	public static final String SORT_ORDER_ASC = "Asc";
@@ -45,10 +45,17 @@ public interface HeaderToolbarElement {
 	public static final String SORT_COLUMN_TOKEN_SEPARATOR = ":";
 	
 	public static final String PROPERTY_TABLE_UUID = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.tableUUID";
+	public static final String PROPERTY_TABLE_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.table.name";
+	public static final String PROPERTY_COLUMN_UUID = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.columnUUID";
+	public static final String PROPERTY_CELL_ID = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.cellID";
+	/**
+	 * @deprecated To be removed.
+	 */
+	public static final String PROPERTY_COLUMN_FIELD_OR_VARIABLE_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.field.or.variable";
 	public static final String PROPERTY_COLUMN_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.sortColumnName";
+	public static final String PROPERTY_COLUMN_COMPONENT_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.column.name";
 	public static final String PARAMETER_COLUMN_LABEL = "sortColumnLabel";
 	public static final String PROPERTY_COLUMN_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.sortColumnType";
-	public static final String PROPERTY_POPUP_ID = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.popupId";
 	public static final String PROPERTY_COLUMN_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.columnIndex";
 	
 	public static final String PROPERTY_FILTER_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.filter.type";
@@ -58,5 +65,10 @@ public interface HeaderToolbarElement {
 	public static final String PROPERTY_CAN_FILTER = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.can.filter";
 	public static final String PROPERTY_CAN_MOVE = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.can.move";
 	public static final String PROPERTY_CAN_RESIZE = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.can.resize";
+	/**
+	 * @deprecated To be removed.
+	 */
+	public static final String PROPERTY_CAN_FORMAT_CONDITIONALLY = JRPropertiesUtil.PROPERTY_PREFIX + "export.headertoolbar.can.format.conditionally";
+	public static final String PROPERTY_CONDTION_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "components.condition.type";
 
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,7 @@ import org.hibernate.type.Type;
  * Base abstract Hibernate data source.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRHibernateAbstractDataSource.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRHibernateAbstractDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRHibernateAbstractDataSource implements JRDataSource
 {
@@ -150,6 +150,7 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 		}
 		else
 		{
+			@SuppressWarnings("deprecation")
 			int firstNestedIdx = fieldMapping.indexOf(PropertyUtils.NESTED_DELIM);
 
 			if (firstNestedIdx >= 0 && aliasesMap.containsKey(fieldMapping.substring(0, firstNestedIdx)))
@@ -178,6 +179,7 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 		Integer fieldIdx = aliasesMap.get(fieldMapping);
 		if (fieldIdx == null)
 		{
+			@SuppressWarnings("deprecation")
 			int firstNestedIdx = fieldMapping.indexOf(PropertyUtils.NESTED_DELIM);
 			
 			if (firstNestedIdx < 0)

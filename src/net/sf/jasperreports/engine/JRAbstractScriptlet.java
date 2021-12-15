@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.fill.JRFillVariable;
  * in certain moments of the report filling process, such as report, column or group initialization. Scriptlets must implement
  * the abstract methods that define the behavior at the specified moments.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractScriptlet.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRAbstractScriptlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractScriptlet
 {

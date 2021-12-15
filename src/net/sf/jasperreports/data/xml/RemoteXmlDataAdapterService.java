@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,7 @@ import org.w3c.dom.Document;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RemoteXmlDataAdapterService.java 5346 2012-05-08 12:08:01Z teodord $
+ * @version $Id: RemoteXmlDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RemoteXmlDataAdapterService extends XmlDataAdapterService
 {
@@ -97,7 +97,7 @@ public class RemoteXmlDataAdapterService extends XmlDataAdapterService
 					InputStream dataStream = RepositoryUtil.getInstance(getJasperReportsContext()).getInputStreamFromLocation(remoteXmlDataAdapter.getFileName());
 					try
 					{
-						Document document = JRXmlUtils.parse(dataStream);
+						Document document = JRXmlUtils.parse(dataStream, remoteXmlDataAdapter.isNamespaceAware());
 						parameters.put(JRXPathQueryExecuterFactory.PARAMETER_XML_DATA_DOCUMENT, document);
 					}
 					finally

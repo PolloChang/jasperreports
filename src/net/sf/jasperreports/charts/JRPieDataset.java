@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,8 +29,11 @@ import net.sf.jasperreports.engine.JRHyperlink;
 
 
 /**
+ * This dataset is useful for rendering Pie or Pie 3D charts. Data required for such charts 
+ * comes in the form of key-value pairs. Each pair represents a slice in the pie chart.
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPieDataset.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPieDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRPieDataset extends JRChartDataset
 {
@@ -56,7 +59,9 @@ public interface JRPieDataset extends JRChartDataset
 	public void setMaxCount(Integer maxCount);
 
 	/**
-	 * 
+	 * @return an array of {@link JRPieSeries} objects representing the 
+	 * series for the Pie or Pie 3D chart
+	 * @see JRPieSeries
 	 */
 	public JRPieSeries[] getSeries();
 
@@ -64,6 +69,7 @@ public interface JRPieDataset extends JRChartDataset
 	 * 
 	 */
 	public JRExpression getOtherKeyExpression();
+	
 	/**
 	 * 
 	 */

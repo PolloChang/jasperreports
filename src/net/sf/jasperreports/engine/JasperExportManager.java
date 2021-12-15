@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,29 +28,36 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import net.sf.jasperreports.engine.export.JRHtmlExporter;
+import net.sf.jasperreports.engine.export.HtmlExporter;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 import net.sf.jasperreports.engine.export.JRXmlExporter;
-import net.sf.jasperreports.engine.export.JRXmlExporterParameter;
 import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleHtmlExporterOutput;
+import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import net.sf.jasperreports.export.SimpleWriterExporterOutput;
+import net.sf.jasperreports.export.SimpleXmlExporterOutput;
 
 
 /**
- * Fa�ade class for exporting generated reports into more popular
+ * Facade class for exporting generated reports into more popular
  * formats such as PDF, HTML and XML.
+ * <p>
  * This class contains convenience methods for exporting to only these 3 formats.
- * <p> 
+ * These methods can process data that comes from different
+ * sources and goes to different destinations (files, input and output streams, etc.).
+ * </p><p>
  * For exporting to XLS and CSV format or for using special exporter parameters, 
  * the specific exporter class should be used directly.  
  * 
  * @see net.sf.jasperreports.engine.JasperPrint
- * @see net.sf.jasperreports.engine.export.JRHtmlExporter
+ * @see net.sf.jasperreports.engine.export.HtmlExporter
  * @see net.sf.jasperreports.engine.export.JRPdfExporter
  * @see net.sf.jasperreports.engine.export.JRXmlExporter
  * @see net.sf.jasperreports.engine.export.JRXlsExporter
  * @see net.sf.jasperreports.engine.export.JRCsvExporter
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperExportManager.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JasperExportManager.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JasperExportManager
 {
@@ -144,8 +151,8 @@ public final class JasperExportManager
 		/*   */
 		JRPdfExporter exporter = new JRPdfExporter(jasperReportsContext);
 		
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-		exporter.setParameter(JRExporterParameter.OUTPUT_FILE_NAME, destFileName);
+		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+		exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(destFileName));
 		
 		exporter.exportReport();
 	}
@@ -185,8 +192,8 @@ public final class JasperExportManager
 	{
 		JRPdfExporter exporter = new JRPdfExporter(jasperReportsContext);
 		
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-		exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, outputStream);
+		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+		exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(outputStream));
 		
 		exporter.exportReport();
 	}
@@ -206,8 +213,8 @@ public final class JasperExportManager
 
 		JRPdfExporter exporter = new JRPdfExporter(jasperReportsContext);
 		
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-		exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, baos);
+		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+		exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(baos));
 		
 		exporter.exportReport();
 		
@@ -307,10 +314,11 @@ public final class JasperExportManager
 	{
 		JRXmlExporter exporter = new JRXmlExporter(jasperReportsContext);
 		
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-		exporter.setParameter(JRExporterParameter.OUTPUT_FILE_NAME, destFileName);
-		exporter.setParameter(JRXmlExporterParameter.IS_EMBEDDING_IMAGES,
-			isEmbeddingImages ? Boolean.TRUE : Boolean.FALSE);
+		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+		
+		SimpleXmlExporterOutput xmlOutput = new SimpleXmlExporterOutput(destFileName);
+		xmlOutput.setEmbeddingImages(isEmbeddingImages);
+		exporter.setExporterOutput(xmlOutput);
 		
 		exporter.exportReport();
 	}
@@ -352,8 +360,8 @@ public final class JasperExportManager
 	{
 		JRXmlExporter exporter = new JRXmlExporter(jasperReportsContext);
 		
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-		exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, outputStream);
+		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+		exporter.setExporterOutput(new SimpleWriterExporterOutput(outputStream));
 		
 		exporter.exportReport();
 	}
@@ -374,8 +382,8 @@ public final class JasperExportManager
 
 		JRXmlExporter exporter = new JRXmlExporter(jasperReportsContext);
 		
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-		exporter.setParameter(JRExporterParameter.OUTPUT_STRING_BUFFER, sbuffer);
+		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+		exporter.setExporterOutput(new SimpleWriterExporterOutput(sbuffer));
 		
 		exporter.exportReport();
 		
@@ -392,7 +400,7 @@ public final class JasperExportManager
 	 * 
 	 * @param sourceFileName source file containing the generated report
 	 * @return resulting HTML file name
-	 * @see net.sf.jasperreports.engine.export.JRHtmlExporter
+	 * @see net.sf.jasperreports.engine.export.HtmlExporter
 	 */
 	public String exportToHtmlFile(
 		String sourceFileName
@@ -456,10 +464,10 @@ public final class JasperExportManager
 		String destFileName
 		) throws JRException
 	{
-		JRHtmlExporter exporter = new JRHtmlExporter(jasperReportsContext);
+		HtmlExporter exporter = new HtmlExporter(jasperReportsContext);
 		
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-		exporter.setParameter(JRExporterParameter.OUTPUT_FILE_NAME, destFileName);
+		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+		exporter.setExporterOutput(new SimpleHtmlExporterOutput(destFileName));
 		
 		exporter.exportReport();
 	}

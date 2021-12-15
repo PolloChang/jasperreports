@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.query.AbstractQueryExecuterFactory;
-import net.sf.jasperreports.engine.query.JRAbstractQueryExecuterFactory;
 import net.sf.jasperreports.engine.query.JREmptyQueryExecuter;
 import net.sf.jasperreports.engine.query.JRQueryExecuter;
 import net.sf.jasperreports.olap.xmla.JRXmlaQueryExecuter;
@@ -42,7 +41,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMdxQueryExecuterFactory.java 5305 2012-04-26 15:17:33Z teodord $
+ * @version $Id: JRMdxQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRMdxQueryExecuterFactory extends AbstractQueryExecuterFactory
 {
@@ -50,6 +49,8 @@ public class JRMdxQueryExecuterFactory extends AbstractQueryExecuterFactory
 	private static final Log log = LogFactory.getLog(JRMdxQueryExecuterFactory.class);
 	
 	private final static Object[] MDX_BUILTIN_PARAMETERS;
+	
+	public static final String CANONICAL_LANGUAGE = "MDX";
 	
 	static
 	{

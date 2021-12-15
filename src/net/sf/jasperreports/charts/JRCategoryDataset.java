@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,14 +27,21 @@ import net.sf.jasperreports.engine.JRChartDataset;
 
 
 /**
+ * This dataset accommodates one or more data series consisting of values associated with 
+ * categories. It is used to render Bar, Bar 3D, Stacked Bar, Line, Area, and Stacked Area 
+ * charts 
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCategoryDataset.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCategoryDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCategoryDataset extends JRChartDataset
 {
 	
 	/**
+	 * @return an array of {@link JRCategorySeries} objects representing the 
+	 * series for category charts
 	 * 
+	 * @see JRCategorySeries
 	 */
 	public JRCategorySeries[] getSeries();
 

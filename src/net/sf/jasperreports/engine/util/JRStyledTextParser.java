@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -70,7 +70,7 @@ import org.xml.sax.SAXParseException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStyledTextParser.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRStyledTextParser.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRStyledTextParser implements ErrorHandler
 {
@@ -130,7 +130,6 @@ public class JRStyledTextParser implements ErrorHandler
 	private static final String SPACE = " ";
 	private static final String EQUAL_QUOTE = "=\"";
 	private static final String QUOTE = "\"";
-	private static final String SHARP = "#";
 	private static final String LESS = "<";
 	private static final String LESS_SLASH = "</";
 	private static final String GREATER = ">";
@@ -266,9 +265,8 @@ public class JRStyledTextParser implements ErrorHandler
 	
 		if (styledText == null)
 		{
-			styledText = new JRStyledText(locale);
-			styledText.append(text);
-			styledText.setGlobalAttributes(parentAttributes);
+			// using the original String object instead without creating a buffer and a String copy
+			styledText = new JRStyledText(locale, text, parentAttributes);
 		}
 		
 		return styledText;
@@ -914,7 +912,7 @@ public class JRStyledTextParser implements ErrorHandler
 			sbuffer.append(SPACE);
 			sbuffer.append(ATTRIBUTE_size);
 			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(((Float)value).intValue());
+			sbuffer.append(value);
 			sbuffer.append(QUOTE);
 		}
 
@@ -962,8 +960,7 @@ public class JRStyledTextParser implements ErrorHandler
 			sbuffer.append(SPACE);
 			sbuffer.append(ATTRIBUTE_forecolor);
 			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(SHARP);
-			sbuffer.append(JRColorUtil.getColorHexa((Color)value));
+			sbuffer.append(JRColorUtil.getCssColor((Color)value));
 			sbuffer.append(QUOTE);
 		}
 
@@ -975,8 +972,7 @@ public class JRStyledTextParser implements ErrorHandler
 			sbuffer.append(SPACE);
 			sbuffer.append(ATTRIBUTE_backcolor);
 			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(SHARP);
-			sbuffer.append(JRColorUtil.getColorHexa((Color)value));
+			sbuffer.append(JRColorUtil.getCssColor((Color)value));
 			sbuffer.append(QUOTE);
 		}
 		

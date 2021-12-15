@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.engine.util;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.export.PdfExporterConfiguration;
 
 
 /**
@@ -58,11 +59,10 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * </li>
  * </ul>
  * <p/>
- * After obtaining a valid ICC profile, create the {@link net.sf.jasperreports.engine.export.JRPdfExporterParameter#PDFA_ICC_PROFILE_PATH PDFA_ICC_PROFILE_PATH}
- * pdf exporter parameter with the path to the profile.
+ * After obtaining a valid ICC profile, use the path to the profile as value for the {@link PdfExporterConfiguration#getIccProfilePath()} configuration property.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JRPdfaIccProfileNotFoundException.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPdfaIccProfileNotFoundException.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPdfaIccProfileNotFoundException extends JRRuntimeException
 {

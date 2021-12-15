@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,7 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * filters produced by these factories for a specific exporter context.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultExporterFilterFactory.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: DefaultExporterFilterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  * @see #getFilter(JRExporterContext)
  */
 public class DefaultExporterFilterFactory implements ExporterFilterFactory
@@ -68,7 +68,7 @@ public class DefaultExporterFilterFactory implements ExporterFilterFactory
 	 */
 	public ExporterFilter getFilter(JRExporterContext exporterContext) throws JRException
 	{
-		List<ExporterFilterFactory> factories = getAllFilterFactories(exporterContext.getExportedReport());
+		List<ExporterFilterFactory> factories = getAllFilterFactories(exporterContext.getJasperReportsContext(), exporterContext.getExportedReport());
 		List<ExporterFilter> filters = new ArrayList<ExporterFilter>(factories.size());
 		for (Iterator<ExporterFilterFactory> it = factories.iterator(); it.hasNext();)
 		{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -128,21 +129,27 @@ import net.sf.jasperreports.engine.JRSubreport;
 import net.sf.jasperreports.engine.JRSubreportReturnValue;
 import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.analytics.dataset.FillMultiAxisData;
+import net.sf.jasperreports.engine.analytics.dataset.MultiAxisData;
 import net.sf.jasperreports.engine.base.JRBaseConditionalStyle;
 import net.sf.jasperreports.engine.base.JRBaseStyle;
 
-import org.apache.commons.collections.SequencedHashMap;
+import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 /**
  * A factory used to instantiate fill objects based on compiled report objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillObjectFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillObjectFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillObjectFactory extends JRAbstractObjectFactory
 {
 
+	private static final Log log = LogFactory.getLog(JRFillObjectFactory.class);
 
 	/**
 	 *
@@ -156,6 +163,8 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 
 	private List<JRFillElementDataset> elementDatasets = new ArrayList<JRFillElementDataset>();
 	private Map<String,List<JRFillElementDataset>> elementDatasetMap = new HashMap<String,List<JRFillElementDataset>>();
+	
+	private LinkedList<List<JRFillDatasetRun>> trackedDatasetRunsStack = new LinkedList<List<JRFillDatasetRun>>();
 	
 	private Map<String,List<JRStyleSetter>> delayedStyleSettersByName = new HashMap<String,List<JRStyleSetter>>();
 	
@@ -1263,6 +1272,23 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 
 		return fillReturnValue;
 	}
+	
+	
+	protected JRFillSubreportReturnValue getReturnValue(ReturnValue returnValue)
+	{
+		JRFillSubreportReturnValue fillReturnValue = null;
+
+		if (returnValue != null)
+		{
+			fillReturnValue = (JRFillSubreportReturnValue) get(returnValue);
+			if (fillReturnValue == null)
+			{
+				fillReturnValue = new JRFillSubreportReturnValue(returnValue, this, filler);
+			}
+		}
+
+		return fillReturnValue;
+	}
 
 
 	public void visitCrosstab(JRCrosstab crosstabElement)
@@ -1343,10 +1369,45 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 				elementDatasetsList = new ArrayList<JRFillElementDataset>();
 				elementDatasetMap.put(datasetName, elementDatasetsList);
 			}
+			
+			registerDatasetRun((JRFillDatasetRun) datasetRun);
 		}
 		elementDatasetsList.add(elementDataset);
 	}
 
+	public void trackDatasetRuns()
+	{
+		if (log.isDebugEnabled())
+		{
+			log.debug("tracking dataset runs");
+		}
+
+		ArrayList<JRFillDatasetRun> trackedDatasets = new ArrayList<JRFillDatasetRun>(2);
+		trackedDatasetRunsStack.push(trackedDatasets);
+	}
+	
+	public void registerDatasetRun(JRFillDatasetRun datasetRun)
+	{
+		if (!trackedDatasetRunsStack.isEmpty())
+		{
+			if (log.isDebugEnabled())
+			{
+				log.debug("added tracked dataset run " + datasetRun);
+			}
+			
+			trackedDatasetRunsStack.getFirst().add(datasetRun);
+		}
+	}
+	
+	public List<JRFillDatasetRun> getTrackedDatasetRuns()
+	{
+		if (log.isDebugEnabled())
+		{
+			log.debug("poping tracked dataset runs");
+		}
+
+		return trackedDatasetRunsStack.pop();
+	}
 
 	public JRFillDatasetRun getDatasetRun(JRDatasetRun datasetRun)
 	{
@@ -1476,7 +1537,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		Set<JRStyle> requestedStyles = collectRequestedStyles(styles);
 		
 		//collect used styles
-		Map<JRStyle,Object> usedStylesMap = new SequencedHashMap();
+		Map<JRStyle,Object> usedStylesMap = new LinkedMap();
 		Map<String,JRStyle> allStylesMap = new HashMap<String,JRStyle>();
 		for (Iterator<JRStyle> it = styles.iterator(); it.hasNext();)
 		{
@@ -1613,6 +1674,20 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 			}
 		}
 		setVisitResult(fill);
+	}
+
+	public FillMultiAxisData getBidimensionalData(MultiAxisData data)
+	{
+		FillMultiAxisData fillData = null;
+		if (data != null)
+		{
+			fillData = (FillMultiAxisData) get(data);
+			if (fillData == null)
+			{
+				fillData = new FillMultiAxisData(data, this);
+			}
+		}
+		return fillData;
 	}
 
 }

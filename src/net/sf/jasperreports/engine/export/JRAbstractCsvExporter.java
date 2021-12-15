@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,12 +28,7 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -41,46 +36,39 @@ import java.util.StringTokenizer;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.export.CsvExporterConfiguration;
+import net.sf.jasperreports.export.CsvReportConfiguration;
+import net.sf.jasperreports.export.ExporterInputItem;
+import net.sf.jasperreports.export.WriterExporterOutput;
 
 
 /**
  * Exports a JasperReports document to CSV format.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractCsvExporter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRAbstractCsvExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public abstract class JRAbstractCsvExporter extends JRAbstractExporter
+public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C extends CsvExporterConfiguration, E extends JRExporterContext> 
+	extends JRAbstractExporter<RC, C, WriterExporterOutput, E>
 {
-
-	private static final String CSV_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.csv.";
-
-	/**
-	 *
-	 */
-	protected String delimiter;	
+	protected static final String CSV_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.csv.";
 
 	/**
-	 *
+	 * The exporter key, as used in
+	 * {@link GenericElementHandlerEnviroment#getElementHandler(JRGenericElementType, String)}.
 	 */
-	protected String recordDelimiter;	
-	
-	/**
-	 * 
-	 */
-	protected String encoding;
+	public static final String CSV_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "csv";
 
 	/**
 	 *
 	 */
 	protected Writer writer;
 	
-	protected JRExportProgressMonitor progressMonitor;
 	protected ExporterNature nature;
 
 	
@@ -107,145 +95,50 @@ public abstract class JRAbstractCsvExporter extends JRAbstractExporter
 	 */
 	public void exportReport() throws JRException
 	{
-		progressMonitor = (JRExportProgressMonitor)parameters.get(JRExporterParameter.PROGRESS_MONITOR);
-		
 		/*   */
-		setOffset();
-
-		/*   */
-		setInput();
+		ensureJasperReportsContext();
+		ensureInput();
 		
-		if (!parameters.containsKey(JRExporterParameter.FILTER))
-		{
-			filter = createFilter(CSV_EXPORTER_PROPERTIES_PREFIX);
-		}
-
-		/*   */
-		if (!isModeBatch)
-		{
-			setPageRange();
-		}
+		initExport();
 		
-		setParameters();
+		ensureOutput();
 		
-		StringBuffer sb = (StringBuffer)parameters.get(JRExporterParameter.OUTPUT_STRING_BUFFER);
-		if (sb != null)
-		{
-			try
-			{
-				writer = new StringWriter();
-				exportReportToWriter();
-				sb.append(writer.toString());
-			}
-			catch (IOException e)
-			{
-				throw new JRException("Error writing to StringBuffer writer : " + jasperPrint.getName(), e);
-			}
-			finally
-			{
-				if (writer != null)
-				{
-					try
-					{
-						writer.close();
-					}
-					catch(IOException e)
-					{
-					}
-				}
-			}
-		}
-		else
-		{
-			writer = (Writer)parameters.get(JRExporterParameter.OUTPUT_WRITER);
-			if (writer != null)
-			{
-				try
-				{
-					exportReportToWriter();
-				}
-				catch (IOException e)
-				{
-					throw new JRException("Error writing to writer : " + jasperPrint.getName(), e);
-				}
-			}
-			else
-			{
-				OutputStream os = (OutputStream)parameters.get(JRExporterParameter.OUTPUT_STREAM);
-				if (os != null)
-				{
-					try
-					{
-						writer = new OutputStreamWriter(os, encoding); 
-						exportReportToWriter();
-					}
-					catch (IOException e)
-					{
-						throw new JRException("Error writing to OutputStream writer : " + jasperPrint.getName(), e);
-					}
-				}
-				else
-				{
-					File destFile = (File)parameters.get(JRExporterParameter.OUTPUT_FILE);
-					if (destFile == null)
-					{
-						String fileName = (String)parameters.get(JRExporterParameter.OUTPUT_FILE_NAME);
-						if (fileName != null)
-						{
-							destFile = new File(fileName);
-						}
-						else
-						{
-							throw new JRException("No output specified for the exporter.");
-						}
-					}
+		writer = getExporterOutput().getWriter();
 
-					try
-					{
-						os = new FileOutputStream(destFile);
-						writer = new OutputStreamWriter(os, encoding);
-						exportReportToWriter();
-					}
-					catch (IOException e)
-					{
-						throw new JRException("Error writing to file writer : " + jasperPrint.getName(), e);
-					}
-					finally
-					{
-						if (writer != null)
-						{
-							try
-							{
-								writer.close();
-							}
-							catch(IOException e)
-							{
-							}
-						}
-					}
-				}
-			}
+		try
+		{
+			exportReportToWriter();
+		}
+		catch (IOException e)
+		{
+			throw new JRException("Error writing to output writer : " + jasperPrint.getName(), e);
+		}
+		finally
+		{
+			getExporterOutput().close();
 		}
 	}
 
-
+	
 	/**
 	 *
 	 */
 	protected void exportReportToWriter() throws JRException, IOException
 	{
-		for(int reportIndex = 0; reportIndex < jasperPrintList.size(); reportIndex++)
+		List<ExporterInputItem> items = exporterInput.getItems();
+		
+		for(int reportIndex = 0; reportIndex < items.size(); reportIndex++)
 		{
-			setJasperPrint(jasperPrintList.get(reportIndex));
+			ExporterInputItem item = items.get(reportIndex);
+
+			setCurrentExporterInputItem(item);
 
 			List<JRPrintPage> pages = jasperPrint.getPages();
 			if (pages != null && pages.size() > 0)
 			{
-				if (isModeBatch)
-				{
-					startPageIndex = 0;
-					endPageIndex = pages.size() - 1;
-				}
+				PageRange pageRange = getPageRange();
+				int startPageIndex = (pageRange == null || pageRange.getStartPageIndex() == null) ? 0 : pageRange.getStartPageIndex();
+				int endPageIndex = (pageRange == null || pageRange.getEndPageIndex() == null) ? (pages.size() - 1) : pageRange.getEndPageIndex();
 
 				for(int i = startPageIndex; i <= endPageIndex; i++)
 				{
@@ -275,9 +168,9 @@ public abstract class JRAbstractCsvExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	protected JRStyledText getStyledText(JRPrintText textElement)
+	public JRStyledText getStyledText(JRPrintText textElement)
 	{
-		return textElement.getFullStyledText(JRStyledTextAttributeSelector.NONE);
+		return textElement.getFullStyledText(noneSelector);
 	}
 
 
@@ -292,8 +185,12 @@ public abstract class JRAbstractCsvExporter extends JRAbstractExporter
 		{
 			boolean putQuotes = false;
 			
+			CsvExporterConfiguration configuration = getCurrentConfiguration();
+			String fieldDelimiter = configuration.getFieldDelimiter();
+			String recordDelimiter = configuration.getRecordDelimiter();
+			
 			if (
-				source.indexOf(delimiter) >= 0
+				source.indexOf(fieldDelimiter) >= 0
 				|| source.indexOf(recordDelimiter) >= 0
 				)
 			{
@@ -335,45 +232,30 @@ public abstract class JRAbstractCsvExporter extends JRAbstractExporter
 	}
 	
 	
-	protected void setParameters()
+	@Override
+	protected void initExport()
 	{
-		
-		nature = getExporterNature();
-		
-		encoding = 
-			getStringParameterOrDefault(
-				JRExporterParameter.CHARACTER_ENCODING, 
-				JRExporterParameter.PROPERTY_CHARACTER_ENCODING
-				);
-		
-		delimiter = 
-			getStringParameterOrDefault(
-				JRCsvExporterParameter.FIELD_DELIMITER, 
-				JRCsvExporterParameter.PROPERTY_FIELD_DELIMITER
-				);
-		
-		recordDelimiter = 
-			getStringParameterOrDefault(
-				JRCsvExporterParameter.RECORD_DELIMITER, 
-				JRCsvExporterParameter.PROPERTY_RECORD_DELIMITER
-				);
+		super.initExport();
+	}
+	
+	
+	@Override
+	protected void initReport()
+	{
+		super.initReport();
+
+		nature = new JRCsvExporterNature(jasperReportsContext, filter);
 	}
 
 
-	protected ExporterNature getExporterNature()
+	public String getExporterKey()
 	{
-		if (nature == null)
-		{
-			nature = new JRCsvExporterNature(jasperReportsContext, filter);
-		}
-
-		return nature;
+		return CSV_EXPORTER_KEY;
 	}
 
-
-	protected String getExporterKey()
+	
+	public String getExporterPropertiesPrefix()
 	{
-		return null;
+		return CSV_EXPORTER_PROPERTIES_PREFIX;
 	}
-
 }

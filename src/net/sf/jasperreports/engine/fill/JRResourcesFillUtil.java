@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,19 +29,18 @@ import java.util.Map;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.JRResourcesUtil;
-import net.sf.jasperreports.repo.RepositoryUtil;
 
 /**
  * Resources utility class used for report fills.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRResourcesFillUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRResourcesFillUtil.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRResourcesUtil
- * @deprecated Replaced by {@link RepositoryUtil}.
  */
 public final class JRResourcesFillUtil
 {
 	
+	@SuppressWarnings("deprecation")
 	public static ResourcesFillContext setResourcesFillContext(Map<String,Object> parameterValues)
 	{
 		ResourcesFillContext context = new ResourcesFillContext();
@@ -73,6 +72,7 @@ public final class JRResourcesFillUtil
 		return context;
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void revertResourcesFillContext(ResourcesFillContext context)
 	{
 		if (context.getClassLoader() != null)

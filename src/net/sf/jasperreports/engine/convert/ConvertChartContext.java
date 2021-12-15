@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,10 +37,12 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import net.sf.jasperreports.charts.ChartContext;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRChart;
 import net.sf.jasperreports.engine.JRChartDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
@@ -73,7 +75,7 @@ import org.jfree.date.DateUtilities;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ConvertChartContext.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ConvertChartContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ConvertChartContext implements ChartContext
 {
@@ -82,6 +84,11 @@ public class ConvertChartContext implements ChartContext
 	protected ConvertChartContext(JRChart chart)
 	{
 		this.chart = chart;
+	}
+	
+	public JasperReportsContext getJasperReportsContext()
+	{
+		return DefaultJasperReportsContext.getInstance();//FIXMECONTEXT
 	}
 	
 	public String evaluateTextExpression(JRExpression expression) throws JRException 

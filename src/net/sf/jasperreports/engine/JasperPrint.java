@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -54,7 +54,7 @@ import net.sf.jasperreports.engine.type.OrientationEnum;
  * other formats like PDF, HTML, XLS, CSV or XML.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperPrint.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JasperPrint.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JasperPrint implements Serializable, JRPropertiesHolder
 {
@@ -66,6 +66,17 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 * @see JRPropertiesUtil#transferProperties(JRPropertiesHolder, JRPropertiesHolder, String)
 	 */
 	public static final String PROPERTIES_PRINT_TRANSFER_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "print.transfer.";
+
+	/**
+	 * 
+	 */
+	public static final String PROPERTY_CREATE_BOOKMARKS = JRPropertiesUtil.PROPERTY_PREFIX + "print.create.bookmarks";
+
+	/**
+	 * 
+	 */
+	public static final String PROPERTY_COLLAPSE_MISSING_BOOKMARK_LEVELS = 
+		JRPropertiesUtil.PROPERTY_PREFIX + "print.collapse.missing.bookmark.levels";
 	
 	/**
 	 * A small class for implementing just the style provider functionality.
@@ -127,6 +138,8 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	
 	private JRPropertiesMap propertiesMap;
 
+	private List<PrintBookmark> bookmarks;
+	
 
 	/**
 	 * Creates a new empty document. 
@@ -533,6 +546,34 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	{
 		anchorIndexes = null;
 		return pages.remove(index);
+	}
+
+	/**
+	 *
+	 */
+	public List<PrintBookmark> getBookmarks()
+	{
+		return bookmarks;
+	}
+
+	/**
+	 * Adds a new page to the document.
+	 */
+	public synchronized void addBookmark(PrintBookmark bookmark)
+	{
+		if (bookmarks == null)
+		{
+			bookmarks = new ArrayList<PrintBookmark>();
+		}
+		bookmarks.add(bookmark);
+	}
+	
+	/**
+	 *
+	 */
+	public void setBookmarks(List<PrintBookmark> bookmarks)
+	{
+		this.bookmarks = bookmarks;
 	}
 
 	/**

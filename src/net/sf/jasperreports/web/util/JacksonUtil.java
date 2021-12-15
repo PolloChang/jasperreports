@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,23 +25,30 @@ package net.sf.jasperreports.web.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
+import net.sf.jasperreports.engine.JRPrintHyperlink;
+import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
+import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.JRValueStringUtils;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.jsontype.NamedType;
-
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JacksonUtil.java 5349 2012-05-08 14:25:05Z teodord $
+ * @version $Id: JacksonUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JacksonUtil
 {
@@ -222,5 +229,80 @@ public class JacksonUtil
 	public String getEscapedJsonString(Object object)
 	{
 		return getJsonString(object).replaceAll("\\\"", "\\\\\\\"");
+	}
+
+
+	/**
+	 *
+	 */
+	public ObjectNode hyperlinkToJsonObject(JRPrintHyperlink hyperlink)
+	{
+		ObjectNode hyperlinkNode = getObjectMapper().createObjectNode();
+
+		addProperty(hyperlinkNode, "type", hyperlink.getLinkType());
+		addProperty(hyperlinkNode, "typeValue", hyperlink.getHyperlinkTypeValue().getName());
+		addProperty(hyperlinkNode, "target", hyperlink.getLinkTarget());
+		addProperty(hyperlinkNode, "targetValue", hyperlink.getHyperlinkTargetValue().getHtmlValue(), hyperlink.getLinkTarget());
+		addProperty(hyperlinkNode, "tooltip", hyperlink.getHyperlinkTooltip());
+		addProperty(hyperlinkNode, "anchor", hyperlink.getHyperlinkAnchor());
+		addProperty(hyperlinkNode, "page", String.valueOf(hyperlink.getHyperlinkPage()));
+		addProperty(hyperlinkNode, "reference", hyperlink.getHyperlinkReference());
+
+		JRPrintHyperlinkParameters hParams =  hyperlink.getHyperlinkParameters();
+		if (hParams != null && hParams.getParameters().size() > 0)
+		{
+			ObjectNode params = getObjectMapper().createObjectNode();
+
+			for (JRPrintHyperlinkParameter hParam: hParams.getParameters())
+			{
+				if (hParam.getValue() != null)
+				{
+					if (Collection.class.isAssignableFrom(hParam.getValue().getClass()))
+					{
+						ArrayNode paramValues = getObjectMapper().createArrayNode();
+						Collection col = (Collection) hParam.getValue();
+						for (Iterator it = col.iterator(); it.hasNext();)
+						{
+							Object next = it.next();
+							paramValues.add(JRValueStringUtils.serialize(next.getClass().getName(), next));
+						}
+						params.put(hParam.getName(), paramValues);
+					}
+					else
+					{
+						params.put(hParam.getName(), JRValueStringUtils.serialize(hParam.getValueClass(), hParam.getValue()));
+					}
+				}
+			}
+
+			hyperlinkNode.put("params", params);
+		}
+
+		return hyperlinkNode;
+	}
+
+
+	/**
+	 *
+	 */
+	public void addProperty(ObjectNode objectNode, String property, String value)
+	{
+		addProperty(objectNode, property, value, null);
+	}
+
+
+	/**
+	 *
+	 */
+	public void addProperty(ObjectNode objectNode, String property, String value, String altValue)
+	{
+		if (value != null && !value.equals("null"))
+		{
+			objectNode.put(property, value);
+		}
+		else if (altValue != null && !altValue.equals("null"))
+		{
+			objectNode.put(property, altValue);
+		}
 	}
 }

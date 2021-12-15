@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.components.sort;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.Locale;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
@@ -33,7 +34,7 @@ import net.sf.jasperreports.engine.util.FormatUtils;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: FieldNumberComparator.java 5280 2012-04-18 14:45:46Z narcism $
+ * @version $Id: FieldNumberComparator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FieldNumberComparator extends AbstractFieldComparator<Number> {
 
@@ -76,8 +77,17 @@ public class FieldNumberComparator extends AbstractFieldComparator<Number> {
 			throw new JRRuntimeException(e);
 		}
 		
+		Number formattedCompareTo = compareTo;
+		if (compareTo != null) {
+			try {
+				formattedCompareTo =  FormatUtils.getFormattedNumber((NumberFormat)formatter, formatter.format(compareTo), compareToClass);
+			} catch (ParseException e) {
+				throw new JRRuntimeException(e);
+			}
+		}
+		
 		FilterTypeNumericOperatorsEnum numericEnum = FilterTypeNumericOperatorsEnum.getByEnumConstantName(filterTypeOperator);
-		BigDecimal dbA = compareTo != null ? new BigDecimal(compareTo.toString()) : null;
+		BigDecimal dbA = formattedCompareTo != null ? new BigDecimal(formattedCompareTo.toString()) : null;
 		BigDecimal dbStart = compareStart != null ? new BigDecimal(compareStart.toString()) : null;
 		BigDecimal dbEnd = compareEnd != null ? new BigDecimal(compareEnd.toString()) : null;
 		

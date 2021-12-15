@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.engine.xml;
 
 import net.sf.jasperreports.engine.type.EnumUtil;
 import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,23 +33,34 @@ import org.apache.commons.logging.LogFactory;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: XmlConstantPropertyRule.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XmlConstantPropertyRule.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XmlConstantPropertyRule extends TransformedPropertyRule
 {
 
 	private static final Log log = LogFactory.getLog(XmlConstantPropertyRule.class);
 	
-	private final JREnum[] values;
+	private final NamedEnum[] values;
 
 	public XmlConstantPropertyRule(String attributeName, JREnum[] values)
+	{
+		this(attributeName, (NamedEnum[]) values);
+	}
+
+	public XmlConstantPropertyRule(String attributeName, String propertyName, 
+			JREnum[] values)
+	{
+		this(attributeName, propertyName, (NamedEnum[]) values);
+	}
+
+	public XmlConstantPropertyRule(String attributeName, NamedEnum[] values)
 	{
 		super(attributeName);
 		this.values = values;
 	}
 
 	public XmlConstantPropertyRule(String attributeName, String propertyName, 
-			JREnum[] values)
+			NamedEnum[] values)
 	{
 		super(attributeName, propertyName);
 		this.values = values;
@@ -56,7 +68,7 @@ public class XmlConstantPropertyRule extends TransformedPropertyRule
 
 	protected Object toPropertyValue(String attributeValue)
 	{
-		Object value = EnumUtil.getByName(values, attributeValue);
+		Object value = EnumUtil.getEnumByName(values, attributeValue);
 		if (value == null)
 		{
 			log.warn("Unrecognized attribute value \"" 

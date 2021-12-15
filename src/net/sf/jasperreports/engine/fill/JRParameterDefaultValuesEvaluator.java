@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,7 @@ import net.sf.jasperreports.engine.util.LocalJasperReportsContext;
  * without actually filling it.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRParameterDefaultValuesEvaluator.java 5292 2012-04-23 15:30:44Z teodord $
+ * @version $Id: JRParameterDefaultValuesEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRParameterDefaultValuesEvaluator
 {
@@ -82,6 +82,8 @@ public final class JRParameterDefaultValuesEvaluator
 		fillDataset.createCalculator(report);
 		fillDataset.initCalculator();
 
+		JRResourcesFillUtil.ResourcesFillContext resourcesContext = 
+			JRResourcesFillUtil.setResourcesFillContext(valuesMap);
 		try
 		{
 			fillDataset.setParameterValues(valuesMap);
@@ -104,6 +106,7 @@ public final class JRParameterDefaultValuesEvaluator
 		finally
 		{
 			fillDataset.disposeParameterContributors();
+			JRResourcesFillUtil.revertResourcesFillContext(resourcesContext);
 		}
 	}
 	

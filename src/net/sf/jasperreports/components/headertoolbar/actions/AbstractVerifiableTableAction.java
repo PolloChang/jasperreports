@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,27 +23,20 @@
  */
 package net.sf.jasperreports.components.headertoolbar.actions;
 
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import net.sf.jasperreports.components.table.StandardTable;
-import net.sf.jasperreports.engine.JRBand;
-import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRIdentifiable;
 import net.sf.jasperreports.engine.design.JRDesignComponentElement;
-import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.util.DefaultFormatFactory;
 import net.sf.jasperreports.engine.util.FormatFactory;
-import net.sf.jasperreports.repo.JasperDesignCache;
-import net.sf.jasperreports.repo.JasperDesignReportResource;
 import net.sf.jasperreports.web.actions.AbstractAction;
 import net.sf.jasperreports.web.actions.ActionException;
 import net.sf.jasperreports.web.commands.CommandTarget;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractVerifiableTableAction.java 5347 2012-05-08 12:50:30Z teodord $
+ * @version $Id: AbstractVerifiableTableAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractVerifiableTableAction extends AbstractAction 
 {
@@ -75,43 +68,6 @@ public abstract class AbstractVerifiableTableAction extends AbstractAction
 		return null;
 	}
 
-	/**
-	 * 
-	 */
-	public CommandTarget getCommandTarget(UUID uuid)
-	{
-		JasperDesignCache cache = JasperDesignCache.getInstance(getJasperReportsContext(), getReportContext());
-
-		Map<String, JasperDesignReportResource> cachedResources = cache.getCachedResources();
-		Set<String> uris = cachedResources.keySet();
-		for (String uri : uris)
-		{
-			CommandTarget target = new CommandTarget();
-			target.setUri(uri);
-			
-			JasperDesign jasperDesign = cache.getJasperDesign(uri);
-			
-			for (JRBand band : jasperDesign.getAllBands())
-			{
-				if (band != null)
-				{
-					for (JRElement element : band.getElements())
-					{
-						if (element instanceof JRDesignComponentElement) 
-						{
-							if (uuid.equals(element.getUUID()))
-							{
-								target.setIdentifiable(element);
-								return target;
-							}
-						}
-					}
-				}
-			}
-		}
-		return null;
-	}
-	
 	public void prepare() throws ActionException 
 	{
 		if (columnData == null) { 
@@ -127,7 +83,7 @@ public abstract class AbstractVerifiableTableAction extends AbstractAction
 			JRDesignComponentElement componentElement = identifiable instanceof JRDesignComponentElement ? (JRDesignComponentElement)identifiable : null;
 			
 			if (componentElement == null) {
-				errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.validate.no.table.match", new Object[] {columnData.getTableUuid()});
+				errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.validate.no.table.match", columnData.getTableUuid());
 			}
 			
 			table = (StandardTable)componentElement.getComponent();

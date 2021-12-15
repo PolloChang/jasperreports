@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillRectangle.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillRectangle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 {
@@ -69,7 +69,7 @@ public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 		
 	public Integer getOwnRadius()
 	{
-		return ((JRRectangle)this.parent).getOwnRadius();
+		return providerStyle == null || providerStyle.getOwnRadius() == null ? ((JRRectangle)this.parent).getOwnRadius() : providerStyle.getOwnRadius();
 	}
 
 	/**
@@ -116,6 +116,7 @@ public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 		
 		this.evaluatePrintWhenExpression(evaluation);
 		evaluateProperties(evaluation);
+		evaluateStyle(evaluation);
 		
 		setValueRepeating(true);
 	}
@@ -128,7 +129,8 @@ public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 	{
 		JRPrintRectangle printRectangle = null;
 
-		printRectangle = new JRTemplatePrintRectangle(this.getJRTemplateRectangle(), elementId);
+		printRectangle = new JRTemplatePrintRectangle(this.getJRTemplateRectangle(), printElementOriginator);
+		printRectangle.setUUID(this.getUUID());
 		printRectangle.setX(this.getX());
 		printRectangle.setY(this.getRelativeY());
 		printRectangle.setWidth(getWidth());

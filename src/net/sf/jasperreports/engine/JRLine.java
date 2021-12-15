@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,8 +28,27 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 
 /**
  * An abstract representation of a graphic element representing a straight line.
+ * <p/>
+ * When displaying a line element, JasperReports draws one of the two diagonals of the
+ * rectangle represented by the <code>x</code>, <code>y</code>, <code>width</code>, and 
+ * <code>height</code> attributes specified for this element.
+ * <p/>
+ * The <code>direction</code> attribute (see {@link #getDirectionValue()}) determines which 
+ * one of the two diagonals of the rectangle  should be drawn:
+ * <ul>
+ * <li><code>TopDown</code> - draws a diagonal line from the top-left corner of the
+ * rectangle to the bottom-right corner.</li>
+ * <li><code>BottomUp</code> - draws a diagonal line from the bottom-left corner to the
+ * upper-right corner.</li>
+ * </ul>
+ * <p/>
+ * The default direction for a line is top-down.
+ * <p/>
+ * One can draw vertical lines by specifying <code>width="1"</code> and horizontal lines by setting
+ * <code>height="1"</code>. For vertical lines, the direction is not important.
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRLine.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRLine.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRLine extends JRGraphicElement
 {

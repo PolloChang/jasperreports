@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,6 +27,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRConstants;
@@ -53,11 +54,12 @@ import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRStyledTextParser;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePrintText.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBasePrintText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 {
@@ -75,7 +77,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	protected Integer textTruncateIndex;
 	protected short[] lineBreakOffsets;
 	protected String textTruncateSuffix;
-	protected transient String truncatedText;
+	//protected transient String truncatedText;
 	protected Object value;
 	protected float lineSpacingFactor;
 	protected float leadingOffset;
@@ -112,7 +114,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	protected Boolean isItalic;
 	protected Boolean isUnderline;
 	protected Boolean isStrikeThrough;
-	protected Integer fontSize;
+	protected Float fontsize;
 	protected String pdfFontName;
 	protected String pdfEncoding;
 	protected Boolean isPdfEmbedded;
@@ -144,36 +146,11 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 		
 	/**
-	 *
+	 * @deprecated Replaced by {@link JRStyledTextUtil#getTruncatedText(JRPrintText)}.
 	 */
 	public String getText()
 	{
-		if (truncatedText == null && text != null)
-		{
-			if (getTextTruncateIndex() == null)
-			{
-				truncatedText = text;
-			}
-			else
-			{
-				if (!JRCommonText.MARKUP_NONE.equals(getMarkup()))
-				{
-					truncatedText = JRStyledTextParser.getInstance().write(
-							getFullStyledText(JRStyledTextAttributeSelector.ALL), 
-							0, getTextTruncateIndex().intValue());
-				}
-				else
-				{
-					truncatedText = text.substring(0, getTextTruncateIndex().intValue());
-				}
-			}
-			
-			if (textTruncateSuffix != null)
-			{
-				truncatedText += textTruncateSuffix;
-			}
-		}
-		return truncatedText;
+		return JRStyledTextUtil.getInstance(DefaultJasperReportsContext.getInstance()).getTruncatedText(this);
 	}
 		
 	/**
@@ -182,7 +159,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	public void setText(String text)
 	{
 		this.text = text;
-		this.truncatedText = null;
+		//this.truncatedText = null;
 	}
 
 	public Integer getTextTruncateIndex()
@@ -193,7 +170,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	public void setTextTruncateIndex(Integer textTruncateIndex)
 	{
 		this.textTruncateIndex = textTruncateIndex;
-		this.truncatedText = null;
+		//this.truncatedText = null;
 	}
 
 	public String getTextTruncateSuffix()
@@ -204,7 +181,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	public void setTextTruncateSuffix(String textTruncateSuffix)
 	{
 		this.textTruncateSuffix = textTruncateSuffix;
-		this.truncatedText = null;
+		//this.truncatedText = null;
 	}
 	
 	public short[] getLineBreakOffsets()
@@ -232,20 +209,12 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 		return text;
 	}
 
+	/**
+	 * @deprecated Replaced by {@link JRStyledTextUtil#getStyledText(JRPrintText, JRStyledTextAttributeSelector)}.
+	 */
 	public JRStyledText getStyledText(JRStyledTextAttributeSelector attributeSelector)
 	{
-		if (getText() == null)
-		{
-			return null;
-		}
-		
-		return 
-			JRStyledTextParser.getInstance().getStyledText(
-				attributeSelector.getStyledTextAttributes(this), 
-				getText(), 
-				!JRCommonText.MARKUP_NONE.equals(getMarkup()),
-				JRStyledTextAttributeSelector.getTextLocale(this)
-				);
+		return JRStyledTextUtil.getInstance(DefaultJasperReportsContext.getInstance()).getStyledText(this, attributeSelector);
 	}
 
 	public JRStyledText getFullStyledText(JRStyledTextAttributeSelector attributeSelector)
@@ -792,34 +761,57 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	/**
 	 *
 	 */
-	public int getFontSize()
+	public float getFontsize()
 	{
-		return JRStyleResolver.getFontSize(this);
+		return JRStyleResolver.getFontsize(this);
 	}
 
 	/**
 	 *
+	 */
+	public Float getOwnFontsize()
+	{
+		return fontsize;
+	}
+
+	/**
+	 * Method which allows also to reset the "own" size property.
+	 */
+	public void setFontSize(Float fontSize)
+	{
+		this.fontsize = fontSize;
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getFontsize()}.
+	 */
+	public int getFontSize()
+	{
+		return (int)getFontsize();
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getOwnFontsize()}.
 	 */
 	public Integer getOwnFontSize()
 	{
-		return fontSize;
+		return fontsize == null ? null : fontsize.intValue();
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(int fontSize)
 	{
-		setFontSize(Integer.valueOf(fontSize));
+		setFontSize((float)fontSize);
 	}
 
 	/**
-	 * Alternative setSize method which allows also to reset
-	 * the "own" size property.
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(Integer fontSize)
 	{
-		this.fontSize = fontSize;
+		setFontSize(fontSize == null ? null : fontSize.floatValue());
 	}
 
 	/**
@@ -1141,6 +1133,10 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	 * @deprecated
 	 */
 	private byte runDirection;
+	/**
+	 * @deprecated
+	 */
+	private Integer fontSize;
 	
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
@@ -1219,6 +1215,13 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 			paragraph = new JRBaseParagraph(this);
 			paragraph.setLineSpacing(lineSpacingValue);
 			lineSpacingValue = null;
+		}
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_5_5_2)
+		{
+			fontsize = fontSize == null ? null : fontSize.floatValue();
+
+			fontSize = null;
 		}
 	}
 

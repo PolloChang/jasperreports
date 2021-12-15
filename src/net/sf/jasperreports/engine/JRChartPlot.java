@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,7 @@ import org.jfree.chart.plot.PlotOrientation;
  * characteristics, depending on the chart type it belongs to. This is the superinterface for all plots and contains common
  * properties.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRChartPlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRChartPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRChartPlot extends JRCloneable
 {

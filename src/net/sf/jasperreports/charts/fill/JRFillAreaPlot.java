@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRFillAreaPlot.java 5180 2012-03-29 13:23:12Z teodord $ 
+ * @version $Id: JRFillAreaPlot.java 7199 2014-08-27 13:58:10Z teodord $ 
  */
 public class JRFillAreaPlot extends JRFillChartPlot implements JRAreaPlot 
 {
@@ -62,6 +62,7 @@ public class JRFillAreaPlot extends JRFillChartPlot implements JRAreaPlot
 	{
 		super( areaPlot, factory ); 
 
+		//FIXME should the font use the fill chart?
 		categoryAxisLabelFont = factory.getFont(areaPlot.getChart(), areaPlot.getCategoryAxisLabelFont()); 
 		categoryAxisLabelColor = areaPlot.getOwnCategoryAxisLabelColor();
 		categoryAxisTickLabelFont = factory.getFont(areaPlot.getChart(), areaPlot.getCategoryAxisTickLabelFont());

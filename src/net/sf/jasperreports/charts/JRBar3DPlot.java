@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,44 +26,54 @@ package net.sf.jasperreports.charts;
 
 
 /**
+ * Type of plot 
+ * used to render Bar 3D and the Stacked Bar 3D charts. 
+ * <br/>
+ * Like the {@link net.sf.jasperreports.charts.JRBarPlot JRBarPlot}, the JRBar3DPlot 
+ * allows customization of the labels for both of its axes and the display of the item labels
+ * 
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRBar3DPlot.java 5180 2012-03-29 13:23:12Z teodord $ 
+ * @version $Id: JRBar3DPlot.java 7199 2014-08-27 13:58:10Z teodord $ 
  */
 public interface JRBar3DPlot extends JRCategoryPlot
 {
 
 	/**
-	 * 
+	 * @return the x offset
 	 */
 	public Double getXOffsetDouble();
 	
 	/**
-	 * 
+	 * @return a {@link net.sf.jasperreports.charts.JRItemLabel JRItemLabel} object 
+	 * representing the item label
 	 */
 	public JRItemLabel getItemLabel();
 	
 	/**
-	 * 
+	 * Sets the x offset
+	 * @param xOffset the x offset
 	 */
 	public void setXOffset(Double xOffset);
 	
 	/**
-	 * 
+	 * @return the y offset
 	 */
 	public Double getYOffsetDouble();
 	
 	/**
-	 * 
+	 * Sets the y offset
+	 * @param yOffset the y offset
 	 */
 	public void setYOffset(Double yOffset);
 	
 	/**
-	 * 
+	 * @return a flag that specifies whether the labels are to be shown or not
 	 */
 	public Boolean getShowLabels();
 
 	/**
-	 * 
+	 * Sets a flag that specifies whether the labels are to be shown or not
+	 * @param isShowLabels the show labels flag
 	 */
 	public void setShowLabels(Boolean isShowLabels);
 

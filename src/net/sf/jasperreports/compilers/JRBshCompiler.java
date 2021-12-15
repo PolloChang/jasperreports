@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,7 @@ import net.sf.jasperreports.engine.fill.JREvaluator;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBshCompiler.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: JRBshCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBshCompiler extends JRAbstractCompiler
 {
@@ -128,17 +128,22 @@ public class JRBshCompiler extends JRAbstractCompiler
 		}
 
 		ClassLoader oldContextClassLoader = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(classLoader);
-
-		for (int i = 0; i < units.length; i++)
+		try
 		{
-			String script = units[i].getSourceCode();
-			
-			JRBshEvaluator bshEvaluator = new JRBshEvaluator(script);
-			bshEvaluator.verify(units[i].getExpressions());
-		}
+			Thread.currentThread().setContextClassLoader(classLoader);
 
-		Thread.currentThread().setContextClassLoader(oldContextClassLoader);
+			for (int i = 0; i < units.length; i++)
+			{
+				String script = units[i].getSourceCode();
+				
+				JRBshEvaluator bshEvaluator = new JRBshEvaluator(script);
+				bshEvaluator.verify(units[i].getExpressions());
+			}
+		}
+		finally
+		{
+			Thread.currentThread().setContextClassLoader(oldContextClassLoader);
+		}
 	}
 
 

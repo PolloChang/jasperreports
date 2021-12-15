@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,7 @@ package net.sf.jasperreports.engine;
  * Determines the field and variables values to be used when evaluating an expression.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: EvaluationType.java 4600 2011-09-12 10:32:17Z teodord $
+ * @version $Id: EvaluationType.java 7199 2014-08-27 13:58:10Z teodord $
  */
 //FIXME deprecate methods that take byte evaluation type in favor of this enum
 public enum EvaluationType

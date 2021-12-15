@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,13 +26,18 @@ package net.sf.jasperreports.charts;
 import net.sf.jasperreports.engine.JRChartDataset;
 
 /**
+ * This dataset accommodates one or more data series consisting of values associated with 
+ * tasks and subtasks. It is used to render the Gantt chart.
+ * 
  * @author Peter Risko (peter@risko.hu)
- * @version $Id: JRGanttDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRGanttDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRGanttDataset extends JRChartDataset {
 
 	/**
-	 *
+	 * @return an array of {@link JRGanttSeries} objects representing the 
+	 * series for the Gantt chart
+	 * @see JRGanttSeries
 	 */
 	public JRGanttSeries[] getSeries();
 

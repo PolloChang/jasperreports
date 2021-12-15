@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,19 +27,22 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.jasperreports.components.table.util.ColumnElementsVisitor;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
+import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardTable.java 5421 2012-05-29 10:46:56Z teodord $
+ * @version $Id: StandardTable.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StandardTable implements TableComponent, Serializable, JRChangeEventsSupport
 {
@@ -165,6 +168,19 @@ public class StandardTable implements TableComponent, Serializable, JRChangeEven
 		}
 		
 		return eventSupport;
+	}
+
+	@Override
+	public void visit(JRVisitor visitor)
+	{
+		if (ElementsVisitorUtils.visitDeepElements(visitor))
+		{
+			ColumnElementsVisitor columnElementsVisitor = new ColumnElementsVisitor(visitor);
+			for (BaseColumn column : columns)
+			{
+				column.visitColumn(columnElementsVisitor);
+			}
+		}
 	}
 	
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.fill;
 
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -34,12 +35,32 @@ import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
+import net.sf.jasperreports.functions.FunctionSupport;
 
 /**
  * Base class for the dynamically generated expression evaluator classes.
+ * This class also provides some built-in functions that will be described next.
+ * <h3>Built-in Functions</h3>
+ * Report expressions can perform method calls on various objects that are available during
+ * report filling, such as parameters, fields, or variable values, but can also call methods on
+ * a special object that is already available as the <code>this</code> reference. This is the calculator
+ * object. It has public utility methods that are ready to use inside report expressions.
+ * <p>
+ * Currently, there are only a few utility methods of the calculator object available as built-in
+ * functions inside report expressions. These are the following:</p>
+ * <ul>
+ * <li><code>msg</code> - this function offers a convenient way to format messages based on the current
+ * report locale, just as you would normally do when using a
+ * <code>java.text.MessageFormat</code> instance. Furthermore, several signatures for this
+ * function take up to three message parameters in order to make the formatting
+ * functionality easier to use.</li>
+ * <li><code>str</code> - this function is the equivalent of the <code>$R{}</code> syntax. It gives access 
+ * to locale specific resources from the associated resource bundle.</li>
+ * </ul>
+ * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JREvaluator.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JREvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JREvaluator implements DatasetExpressionEvaluator
 {
@@ -58,6 +79,16 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 	 */
 	private JRFillParameter locale;
 	
+	/**
+	 * The function objects.
+	 */
+	private Map<String, FunctionSupport> functions;
+	
+	/**
+	 *
+	 */
+	private FillFunctionContext functionContext;
+
 	/**
 	 * Default constructor.
 	 */
@@ -82,16 +113,45 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 			WhenResourceMissingTypeEnum resourceMissingType
 			) throws JRException
 	{
-		this.whenResourceMissingType = resourceMissingType;
-		this.resourceBundle = parametersMap.get(JRParameter.REPORT_RESOURCE_BUNDLE);
-		this.locale = parametersMap.get(JRParameter.REPORT_LOCALE);
+		whenResourceMissingType = resourceMissingType;
+		resourceBundle = parametersMap.get(JRParameter.REPORT_RESOURCE_BUNDLE);
+		locale = parametersMap.get(JRParameter.REPORT_LOCALE);
+		
+		functions = new HashMap<String, FunctionSupport>();
+		functionContext = new FillFunctionContext(parametersMap);
+		
 		customizedInit(parametersMap, fieldsMap, variablesMap);
 	}
 
 	
-	
-	
-	
+	/**
+	 * 
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends FunctionSupport> T getFunctionSupport(Class<T> clazz)
+	{
+		String classId = clazz.getName();
+		if (!functions.containsKey(classId))
+		{
+			try
+			{
+				FunctionSupport functionSupport = clazz.newInstance();
+				functionSupport.init(functionContext);
+				functions.put(classId, functionSupport);
+			}
+			catch (IllegalAccessException e)
+			{
+				throw new JRRuntimeException(e);
+			}
+			catch (InstantiationException e)
+			{
+				throw new JRRuntimeException(e);
+			}
+			
+		}
+		return (T)functions.get(classId);
+	}
+
 	/**
 	 * Constructs a message using a pattern with one parameter.
 	 * 

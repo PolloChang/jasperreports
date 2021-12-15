@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.engine;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -40,14 +39,14 @@ import net.sf.jasperreports.extensions.ExtensionsEnvironment;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultJasperReportsContext.java 5396 2012-05-21 01:06:15Z teodord $
+ * @version $Id: DefaultJasperReportsContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultJasperReportsContext implements JasperReportsContext
 {
 	/**
 	 * The default properties file.
 	 */
-	private static final String DEFAULT_PROPERTIES_FILE = "jasperreports.properties";
+	public static final String DEFAULT_PROPERTIES_FILE = "jasperreports.properties";
 	
 	/**
 	 * The name of the system property that specifies the properties file name.
@@ -59,7 +58,7 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 	 */
 	private static final DefaultJasperReportsContext INSTANCE = new DefaultJasperReportsContext();
 	
-	private Map<String, Object> values = new HashMap<String, Object>();
+	private Map<String, Object> values = new ConcurrentHashMap<String, Object>(16, .75f, 1);// assume low update concurrency
 
 	// FIXME remove volatile after we get rid of restoreProperties()
 	protected volatile ConcurrentHashMap<String, String> properties;
@@ -75,7 +74,7 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 	/**
 	 *
 	 */
-	public static DefaultJasperReportsContext getInstance()
+	public static DefaultJasperReportsContext getInstance()//FIXMECONTEXT check this use of this
 	{
 		return INSTANCE;
 	}

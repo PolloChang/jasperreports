@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,44 +29,48 @@
 
 package net.sf.jasperreports.engine.export.oasis;
 
-import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.JRGenericPrintElement;
+import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.ExporterFilter;
+import net.sf.jasperreports.engine.export.GenericElementHandler;
+import net.sf.jasperreports.engine.export.JRXlsAbstractExporterNature;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JROdsExporterNature.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JROdsExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JROdsExporterNature extends JROpenDocumentExporterNature
+public class JROdsExporterNature extends JRXlsAbstractExporterNature
 {
 
-	public JROdsExporterNature(ExporterFilter filter)
-	{
-		super(filter);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.sf.jasperreports.engine.export.oasis.JROpenDocumentExporterNature#getOpenDocumentNature()
-	 */
-	protected byte getOpenDocumentNature() {
-
-		return JROpenDocumentExporterNature.ODS_NATURE;
-	}
-
 	/**
 	 * 
 	 */
-	public boolean isDeep(JRPrintFrame frame)
+	public JROdsExporterNature(
+		JasperReportsContext jasperReportsContext,
+		ExporterFilter filter, 
+		boolean isIgnoreGraphics, 
+		boolean isIgnorePageMargins
+		)
 	{
-		return true;
+		super(jasperReportsContext, filter, isIgnoreGraphics, isIgnorePageMargins);
+	}
+
+	public boolean isToExport(JRPrintElement element)
+	{
+		boolean isToExport = true;
+		if (element instanceof JRGenericPrintElement)
+		{
+			JRGenericPrintElement genericElement = (JRGenericPrintElement) element;
+			GenericElementHandler handler = handlerEnvironment.getElementHandler(
+					genericElement.getGenericType(), JROdsExporter.ODS_EXPORTER_KEY);
+			if (handler == null || !handler.toExport(genericElement))
+			{
+				isToExport = false;
+			}
+		}
+
+		return isToExport && super.isToExport(element);
 	}
 	
-	/**
-	 * 
-	 */
-	public boolean isSplitSharedRowSpan()
-	{
-		return false;
-	}
-
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.web.servlets;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -43,14 +44,14 @@ import org.apache.commons.logging.LogFactory;
  * before the entire report has been generated.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: AsyncJasperPrintAccessor.java 5299 2012-04-25 14:49:49Z lucianc $
+ * @version $Id: AsyncJasperPrintAccessor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class AsyncJasperPrintAccessor implements JasperPrintAccessor, AsynchronousFilllListener, FillListener
 {
 
 	private static final Log log = LogFactory.getLog(AsyncJasperPrintAccessor.class);
 	
-	private final FillHandle fillHandle;
+	private FillHandle fillHandle;
 	private final Lock lock;
 	private final Condition pageCondition;
 	private final Map<Integer, Long> trackedPages = new HashMap<Integer, Long>();
@@ -126,7 +127,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 			return ReportPageStatus.NO_SUCH_PAGE;
 		}
 		
-		if ((done && !cancelled && error == null) || fillHandle.isPageFinal(pageIdx))
+		if (done || fillHandle.isPageFinal(pageIdx))
 		{
 			trackedPages.remove(pageIdx);
 			return ReportPageStatus.PAGE_FINAL;
@@ -159,6 +160,40 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		return jasperPrint;
 	}
 
+	public boolean waitForFinalJasperPrint(int milliseconds)
+	{
+		if (!done)
+		{
+			lock();
+			try
+			{
+				long waitNanos = TimeUnit.MILLISECONDS.toNanos(milliseconds);
+				// wait until the report generation is done or the time expires
+				while (!done && waitNanos > 0)
+				{
+					if (log.isDebugEnabled())
+					{
+						log.debug("waiting for report end");
+					}
+					
+					//FIXME use a condition dedicated to report completion
+					waitNanos = pageCondition.awaitNanos(waitNanos);
+				}
+			}
+			catch (InterruptedException e)
+			{
+				log.error("Error while waiting for final JasperPrint", e);
+				return false;
+			}
+			finally
+			{
+				unlock();
+			}
+		}
+		
+		return done;
+	}
+	
 	public JasperPrint getFinalJasperPrint()
 	{
 		if (!done)
@@ -217,6 +252,9 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 			
 			pageCount = jasperPrint.getPages().size();
 			done = true;
+			
+			// clear fillHandle to release filler references
+			fillHandle = null;
 			trackedPages.clear();
 			
 			pageCondition.signalAll();
@@ -244,6 +282,9 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 			// store an error as cancelled status
 			error = new JRRuntimeException("Report generation cancelled");
 			
+			// clear fillHandle to release filler references
+			fillHandle = null;
+			
 			// signal to pageStatus
 			pageCondition.signalAll();
 		}
@@ -263,6 +304,9 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 			error = t;
 			done = true;
 			pageCount = jasperPrint == null ? 0 : jasperPrint.getPages().size();
+			
+			// clear fillHandle to release filler references
+			fillHandle = null;
 			
 			// signal to pageStatus
 			pageCondition.signalAll();

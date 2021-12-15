@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,19 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.io.IOException;
 import java.util.Set;
 
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
 
 
 /**
  * Print image implementation that supports recorded values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRRecordedValuesPrintImage.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRRecordedValuesPrintImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRRecordedValuesPrintImage extends JRTemplatePrintImage implements JRRecordedValuesPrintElement
 {
@@ -40,6 +43,10 @@ public class JRRecordedValuesPrintImage extends JRTemplatePrintImage implements 
 
 	private JRRecordedValues recordedValues;
 
+	public JRRecordedValuesPrintImage()
+	{
+	}
+	
 	/**
 	 * 
 	 * @param image
@@ -54,10 +61,21 @@ public class JRRecordedValuesPrintImage extends JRTemplatePrintImage implements 
 	 * 
 	 * @param image
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRRecordedValuesPrintImage(JRTemplateImage, PrintElementOriginator)}
 	 */
 	public JRRecordedValuesPrintImage(JRTemplateImage image, int sourceElementId)
 	{
 		super(image, sourceElementId);
+	}
+
+	/**
+	 * 
+	 * @param image
+	 * @param originator
+	 */
+	public JRRecordedValuesPrintImage(JRTemplateImage image, PrintElementOriginator originator)
+	{
+		super(image, originator);
 	}
 
 	public JRRecordedValues getRecordedValues()
@@ -73,5 +91,21 @@ public class JRRecordedValuesPrintImage extends JRTemplatePrintImage implements 
 	public void initRecordedValues(Set<JREvaluationTime> evaluationTimes)
 	{
 		recordedValues = new JRRecordedValues(evaluationTimes);
+	}
+
+	@Override
+	public void writeVirtualized(VirtualizationOutput out) throws IOException
+	{
+		super.writeVirtualized(out);
+		
+		out.writeJRObject(recordedValues);
+	}
+
+	@Override
+	public void readVirtualized(VirtualizationInput in) throws IOException
+	{
+		super.readVirtualized(in);
+		
+		recordedValues = (JRRecordedValues) in.readJRObject();
 	}
 }

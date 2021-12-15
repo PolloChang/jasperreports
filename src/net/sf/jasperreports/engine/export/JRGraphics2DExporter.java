@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,67 +43,125 @@ import java.util.List;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.draw.FrameDrawer;
-import net.sf.jasperreports.engine.export.legacy.BorderOffset;
 import net.sf.jasperreports.engine.util.JRGraphEnvInitializer;
-import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.export.Graphics2DExporterConfiguration;
+import net.sf.jasperreports.export.Graphics2DExporterOutput;
+import net.sf.jasperreports.export.Graphics2DReportConfiguration;
+import net.sf.jasperreports.export.ReportExportConfiguration;
 
 
 /**
- * Exports a JasperReports document to a <tt>Graphics2D</tt> object. Since all font measurement and layout
- * calculation during report filling is done using AWT, this is considered the perfect exporter, unlike the others,
- * which are only approximations of the initial document.
- * <p>
- * As its name indicates, this exporter is special because it does not produce files or does not send character
- * or binary data to an output stream.
+ * Exports a JasperReports document to a <code>Graphics2D</code> object. 
+ * <p/>
+ * JasperReports relies on AWT for text measurements and all sorts of layout calculations
+ * during report filling, so documents created using AWT will certainly look perfect when
+ * rendered with AWT on a <code>java.awt.Graphics2D</code> context. For this reason, the
+ * {@link net.sf.jasperreports.engine.export.JRGraphics2DExporter} is the perfect
+ * exporter. The output it produces is considered to be the reference in terms of layout
+ * capabilities and element styling.
+ * <p/>
+ * Generally speaking, the document quality produced by all the other exporters is only an
+ * approximation of the perfect output that the Graphics2D exporter can produce. As its
+ * name indicates, this exporter is special because it does not produce files or send character
+ * or binary data to an output stream. Instead, its only target for rendering the content of a
+ * page is a <code>java.awt.Graphics2D</code> object. This exporter is also special because it can
+ * export only one page at a time.
+ * <p/>
+ * This exporter is used by the built-in Swing viewer to render the content of each page, and
+ * it is also used when printing the documents. The documents are printed page by page,
+ * and the exporter is invoked to draw each document page on the graphic context
+ * associated with the selected printer job.
+ * <p/>
+ * Because we are relying on the same code (same exporter) when viewing the documents
+ * using the built-in viewer and when printing them, JasperReports is a perfect WYSIWYG
+ * tool. The document quality on paper is the same as on the screen.
+ * <p/>
+ * In terms of exporter input, note that this exporter does not work in batch mode. If a
+ * <code>java.util.List</code> of JasperPrint documents is supplied to it through a
+ * {@link net.sf.jasperreports.export.SimpleExporterInput} instance, the exporter 
+ * considers only the first one for exporting and ignores all the others.
+ * <p/>
+ * Furthermore, this exporter can export only a single page at a time. The index of the page
+ * to be exported can be set using either the 
+ * {@link net.sf.jasperreports.export.ReportExportConfiguration#getStartPageIndex() getStartPageIndex()}
+ * exporter configuration setting or the
+ * {@link net.sf.jasperreports.export.ReportExportConfiguration#getPageIndex() getPageIndex()}.
+ * Note that if present, {@link net.sf.jasperreports.export.ReportExportConfiguration#getPageIndex() getPageIndex()} overrides the value of
+ * {@link net.sf.jasperreports.export.ReportExportConfiguration#getStartPageIndex() getStartPageIndex()}. 
+ * Therefore, this exporter actually exports only the first page from
+ * the specified page range, no matter how the page range is specified.
+ * <p/>
+ * As already mentioned, this exporter needs a target <code>java.awt.Graphics2D</code> object onto
+ * which to render the specified page. This Graphics2D object can be set using the special
+ * exporter output setting {@link net.sf.jasperreports.export.Graphics2DExporterOutput#getGraphics2D() getGraphics2D()}. 
+ * If this setting is not present, the exporter will throw an
+ * exception signaling to the caller program that no output target was specified for the
+ * export process.
+ * <p/>
+ * By default, the exporter renders the content of the page at normal proportions. However,
+ * it can also render it at different proportions if needed. For instance, when used inside the
+ * Swing viewer, the Graphics2D exporter must render the page using the user-defined
+ * zoom ratio. To set the zoom ratio for the exporter, supply a <code>java.lang.Float</code> value
+ * ranging from 0 to 1 as the value for the 
+ * {@link net.sf.jasperreports.export.Graphics2DReportConfiguration#getZoomRatio() getZoomRatio()} export 
+ * configuration setting.
+ * <p/>
+ * The Graphics2D exporter is also used when printing directly from Java. The Java Print
+ * Service exporter relies on the Graphics2D exporter
+ * and delegates to it all the rendering that needs to be performed on the printer's graphic
+ * context. Some of the existing JVM implementations have problems related to the huge
+ * size of the printer spool jobs that are created even for small documents. To avoid this, a
+ * bug fix was introduced in the Graphics2D exporter to minimize the impact of this
+ * problem and reduce the size of print spool jobs, while preserving document quality when
+ * printing. However, the bug fix itself is not perfect, and users might experience problems
+ * when printing bidirectional writing texts such as Arabic and Hebrew.
+ * <p/>
+ * This is why the special
+ * {@link net.sf.jasperreports.export.Graphics2DReportConfiguration#isMinimizePrinterJobSize() isMinimizePrinterJobSize()} 
+ * export configuration setting was introduced, along with a configuration property called
+ * <code>net.sf.jasperreports.export.graphics2d.min.job.size</code>, to allow users to turn
+ * on and off this rendering optimization, depending on their actual needs. The
+ * configuration property value is used only in the absence of the export configuration setting.
+ * 
+ * @see net.sf.jasperreports.export.Graphics2DExporterOutput
+ * @see net.sf.jasperreports.export.Graphics2DReportConfiguration
+ * @see net.sf.jasperreports.export.ReportExportConfiguration
+ * @see net.sf.jasperreports.export.SimpleExporterInput
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRGraphics2DExporter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRGraphics2DExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRGraphics2DExporter extends JRAbstractExporter
+public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportConfiguration, Graphics2DExporterConfiguration, Graphics2DExporterOutput, JRGraphics2DExporterContext>
 {
-
 	private static final float DEFAULT_ZOOM = 1f;
 
 	/**
-	 * Property that provides a default value for the 
-	 * {@link net.sf.jasperreports.engine.export.JRGraphics2DExporterParameter#MINIMIZE_PRINTER_JOB_SIZE JRGraphics2DExporterParameter.MINIMIZE_PRINTER_JOB_SIZE}
-	 * Graphics2D exporter parameter.
-	 * 
-	 * @see net.sf.jasperreports.engine.export.JRGraphics2DExporterParameter#MINIMIZE_PRINTER_JOB_SIZE
+	 * @deprecated Replaced by {@link Graphics2DReportConfiguration#MINIMIZE_PRINTER_JOB_SIZE}.
 	 */
-	public static final String MINIMIZE_PRINTER_JOB_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "export.graphics2d.min.job.size";
+	public static final String MINIMIZE_PRINTER_JOB_SIZE = Graphics2DReportConfiguration.MINIMIZE_PRINTER_JOB_SIZE;
 
 	private static final String GRAPHICS2D_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.graphics2d.";
 
 	/**
 	 * The exporter key, as used in
-	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
+	 * {@link GenericElementHandlerEnviroment#getElementHandler(JRGenericElementType, String)}.
 	 */
 	public static final String GRAPHICS2D_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "graphics2d";
 	
 	/**
 	 *
 	 */
-	protected Graphics2D grx;
-	protected JRExportProgressMonitor progressMonitor;
-	protected float zoom = DEFAULT_ZOOM;
-
 	protected AwtTextRenderer textRenderer;
 	protected FrameDrawer frameDrawer;
 
 	protected class ExporterContext extends BaseExporterContext implements JRGraphics2DExporterContext
 	{
-		public String getExportPropertiesPrefix()
-		{
-			return GRAPHICS2D_EXPORTER_PROPERTIES_PREFIX;
-		}
 	}
-
-	protected JRGraphics2DExporterContext exporterContext = new ExporterContext();
 	
 	/**
 	 * @see #JRGraphics2DExporter(JasperReportsContext)
@@ -122,6 +180,39 @@ public class JRGraphics2DExporter extends JRAbstractExporter
 		super(jasperReportsContext);
 		
 		JRGraphEnvInitializer.initializeGraphEnv();
+
+		exporterContext = new ExporterContext();
+	}
+
+
+	/**
+	 *
+	 */
+	protected Class<Graphics2DExporterConfiguration> getConfigurationInterface()
+	{
+		return Graphics2DExporterConfiguration.class;
+	}
+
+
+	/**
+	 *
+	 */
+	protected Class<Graphics2DReportConfiguration> getItemConfigurationInterface()
+	{
+		return Graphics2DReportConfiguration.class;
+	}
+	
+
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	protected void ensureOutput()
+	{
+		if (exporterOutput == null)
+		{
+			exporterOutput = new net.sf.jasperreports.export.parameters.ParametersGraphics2DExporterOutput(parameters);
+		}
 	}
 	
 
@@ -130,89 +221,53 @@ public class JRGraphics2DExporter extends JRAbstractExporter
 	 */
 	public void exportReport() throws JRException
 	{
-		progressMonitor = (JRExportProgressMonitor)parameters.get(JRExporterParameter.PROGRESS_MONITOR);
-		
 		/*   */
-		setOffset(false);
+		ensureJasperReportsContext();
+		ensureInput();
 
+		initExport();
+		
+		ensureOutput();
+
+		Graphics2D grx = getExporterOutput().getGraphics2D();
+		
 		try
 		{
-			/*   */
-			setExportContext();
-	
-			/*   */
-			setInput();
-			
-			if (!parameters.containsKey(JRExporterParameter.FILTER))
-			{
-				filter = createFilter(GRAPHICS2D_EXPORTER_PROPERTIES_PREFIX);
-			}
-
-			/*   */
-			setPageRange();
-	
-			/*   */
-			setTextRenderer();
-			
-			grx = (Graphics2D)parameters.get(JRGraphics2DExporterParameter.GRAPHICS_2D);
-			if (grx == null)
-			{
-				throw new JRException("No output specified for the exporter. java.awt.Graphics2D object expected.");
-			}
-			
-			BorderOffset.setLegacy(
-				getPropertiesUtil().getBooleanProperty(jasperPrint, BorderOffset.PROPERTY_LEGACY_BORDER_OFFSET, false)
-				);
-
-			/*   */
-			setDrawers();
-
-			Float zoomRatio = (Float)parameters.get(JRGraphics2DExporterParameter.ZOOM_RATIO);
-			if (zoomRatio != null)
-			{
-				zoom = zoomRatio.floatValue();
-				if (zoom <= 0)
-				{
-					throw new JRException("Invalid zoom ratio : " + zoom);
-				}
-			}
-			else
-			{
-				zoom = DEFAULT_ZOOM;
-			}
-	
-			exportReportToGraphics2D();
+			exportReportToGraphics2D(grx);
 		}
 		finally
 		{
 			resetExportContext();
 		}
 	}
-		
 
-	protected void setTextRenderer()
+
+	@Override
+	protected void initExport()
 	{
-		boolean isMinimizePrinterJobSize = true;
-		Boolean isMinimizePrinterJobSizeParam = (Boolean) parameters.get(JRGraphics2DExporterParameter.MINIMIZE_PRINTER_JOB_SIZE);
-		if (isMinimizePrinterJobSizeParam == null)
-		{
-			isMinimizePrinterJobSize = getPropertiesUtil().getBooleanProperty(MINIMIZE_PRINTER_JOB_SIZE);//FIXMENOW check other potential report properties
-		}
-		else
-		{
-			isMinimizePrinterJobSize = isMinimizePrinterJobSizeParam.booleanValue();
-		}
+		super.initExport();
+	}
+
+
+	@Override
+	protected void initReport()
+	{
+		super.initReport();
+		
+		setOffset(false);
+
+		Graphics2DReportConfiguration configuration = getCurrentItemConfiguration();
+		
+		Boolean isMinimizePrinterJobSize = configuration.isMinimizePrinterJobSize();
+		Boolean isIgnoreMissingFont = configuration.isIgnoreMissingFont();
 		
 		textRenderer = 
 			new AwtTextRenderer(
-				isMinimizePrinterJobSize,
-				getPropertiesUtil().getBooleanProperty(jasperPrint, JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT, false)
+				jasperReportsContext,
+				isMinimizePrinterJobSize == null ? Boolean.TRUE : isMinimizePrinterJobSize,
+				isIgnoreMissingFont == null ? Boolean.FALSE : isIgnoreMissingFont
 				);
-	}
 
-	
-	protected void setDrawers()
-	{
 		frameDrawer = new FrameDrawer(exporterContext, filter, textRenderer);
 	}
 
@@ -220,21 +275,32 @@ public class JRGraphics2DExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	public void exportReportToGraphics2D() throws JRException
+	public void exportReportToGraphics2D(Graphics2D grx) throws JRException
 	{
 		grx.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		//grx.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 		grx.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 		grx.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 
+		setCurrentExporterInputItem(exporterInput.getItems().get(0));
+		
+		ReportExportConfiguration configuration = getCurrentItemConfiguration();
+		
 		AffineTransform atrans = new AffineTransform();
-		atrans.translate(globalOffsetX, globalOffsetY);
+		atrans.translate(
+			configuration.getOffsetX() == null ? 0 : configuration.getOffsetX(), 
+			configuration.getOffsetY() == null ? 0 : configuration.getOffsetY()
+			);
+		float zoom = getZoom();
 		atrans.scale(zoom, zoom);
 		grx.transform(atrans);
 
 		List<JRPrintPage> pages = jasperPrint.getPages();
 		if (pages != null)
 		{
+			PageRange pageRange = getPageRange();
+			int startPageIndex = (pageRange == null || pageRange.getStartPageIndex() == null) ? 0 : pageRange.getStartPageIndex();
+
 			Shape oldClipShape = grx.getClip();
 	
 			grx.clip(new Rectangle(0, 0, jasperPrint.getPageWidth(), jasperPrint.getPageHeight()));
@@ -242,7 +308,7 @@ public class JRGraphics2DExporter extends JRAbstractExporter
 			try
 			{
 				JRPrintPage page = pages.get(startPageIndex);
-				exportPage(page);
+				exportPage(grx, page);
 			}
 			finally
 			{
@@ -255,7 +321,7 @@ public class JRGraphics2DExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	protected void exportPage(JRPrintPage page) throws JRException
+	protected void exportPage(Graphics2D grx, JRPrintPage page) throws JRException
 	{
 		grx.setColor(Color.white);
 		grx.fillRect(
@@ -271,6 +337,7 @@ public class JRGraphics2DExporter extends JRAbstractExporter
 		/*   */
 		frameDrawer.draw(grx, page.getElements(), getOffsetX(), getOffsetY());
 		
+		JRExportProgressMonitor progressMonitor = getCurrentItemConfiguration().getProgressMonitor();
 		if (progressMonitor != null)
 		{
 			progressMonitor.afterPageExport();
@@ -280,9 +347,17 @@ public class JRGraphics2DExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	protected String getExporterKey()
+	public String getExporterKey()
 	{
 		return GRAPHICS2D_EXPORTER_KEY;
+	}
+
+	/**
+	 * 
+	 */
+	public String getExporterPropertiesPrefix()
+	{
+		return GRAPHICS2D_EXPORTER_PROPERTIES_PREFIX;
 	}
 
 
@@ -292,5 +367,23 @@ public class JRGraphics2DExporter extends JRAbstractExporter
 	public FrameDrawer getFrameDrawer()
 	{
 		return this.frameDrawer;
+	}
+
+
+	private float getZoom()//FIXMEEXPORT
+	{
+		float zoom = DEFAULT_ZOOM;
+		
+		Float zoomRatio = getCurrentItemConfiguration().getZoomRatio();
+		if (zoomRatio != null)
+		{
+			zoom = zoomRatio.floatValue();
+			if (zoom <= 0)
+			{
+				throw new JRRuntimeException("Invalid zoom ratio : " + zoom);
+			}
+		}
+
+		return zoom;
 	}
 }

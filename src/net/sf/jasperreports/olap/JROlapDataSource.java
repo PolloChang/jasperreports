@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -65,7 +65,7 @@ import antlr.ANTLRException;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JROlapDataSource.java 4992 2012-02-10 15:17:08Z lucianc $
+ * @version $Id: JROlapDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JROlapDataSource implements JRDataSource, MappingMetadata
 {
@@ -312,11 +312,16 @@ public class JROlapDataSource implements JRDataSource, MappingMetadata
 			{
 				JRField field = fields[i];
 				String fieldMapping = getFieldMapping(field);
+				if (log.isDebugEnabled())
+				{
+					log.debug("Mapping field: " + field.getName() + " - description: " + fieldMapping);
+				}
 
 				MappingLexer lexer = new MappingLexer(new StringReader(fieldMapping));
 				MappingParser parser = new MappingParser(lexer);
 				parser.setMappingMetadata(this);
 				Mapping mapping;
+				
 				try
 				{
 					mapping = parser.mapping();
@@ -425,24 +430,12 @@ public class JROlapDataSource implements JRDataSource, MappingMetadata
 	{
 		JROlapHierarchy[] hierarchies = axes[axis.getIdx()].getHierarchiesOnAxis();
 		int dimensionIndex = -1;
-		for (int i = 0; i < hierarchies.length; i++)
+		for (int i = 0; dimensionIndex == -1 && i < hierarchies.length; i++)
 		{
 			JROlapHierarchy hierarchy = hierarchies[i];
-			if (dimension.equals(hierarchy.getDimensionName()))
+			if (matchesDimensionName(hierarchy, dimension))
 			{
 				dimensionIndex = i;
-			}
-		}
-		// MPenningroth 21-April-2009 deal with case when dimension is <dimension>.<hierarchy> form
-		if (dimensionIndex == -1 && dimension.indexOf('.')!= -1 ) {
-			String hierName = "[" + dimension + "]";
-			for (int i = 0; i < hierarchies.length; i++)
-			{
-				JROlapHierarchy hierarchy = hierarchies[i];
-				if (hierName.equals(hierarchy.getHierarchyUniqueName()))
-				{
-					dimensionIndex = i;
-				}
 			}
 		}
 
@@ -452,6 +445,19 @@ public class JROlapDataSource implements JRDataSource, MappingMetadata
 		}
 
 		return dimensionIndex;
+	}
+	
+	protected boolean matchesDimensionName(JROlapHierarchy hierarchy, String dimensionName)
+	{
+		if (dimensionName.equals(hierarchy.getDimensionName()) 
+				|| dimensionName.equals(hierarchy.getHierarchyUniqueName()))
+		{
+			return true;
+		}
+		
+		// MPenningroth 21-April-2009 deal with case when dimension is <dimension>.<hierarchy> form
+		String hierName = "[" + dimensionName + "]";
+		return hierName.equals(hierarchy.getHierarchyUniqueName());
 	}
 
 	public int getLevelDepth(TuplePosition pos, String levelName)
@@ -536,7 +542,7 @@ public class JROlapDataSource implements JRDataSource, MappingMetadata
 			if (memberInfo.getDepth() == null)
 			{
 				// The actual member object of the given dimension
-				return member.getMondrianMember();
+				return member.getMember();
 			}
 			else if (property != null)
 			{

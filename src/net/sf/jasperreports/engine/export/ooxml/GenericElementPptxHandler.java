@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,14 @@
  */
 package net.sf.jasperreports.engine.export.ooxml;
 
-import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.export.GenericElementHandler;
 
 /**
  * A generic print element PPTX export handler.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: GenericElementPptxHandler.java 5060 2012-03-13 08:55:42Z teodord $
+ * @version $Id: GenericElementPptxHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface GenericElementPptxHandler extends GenericElementHandler
 {
@@ -51,13 +49,5 @@ public interface GenericElementPptxHandler extends GenericElementHandler
 		JRPptxExporterContext exporterContext, 
 		JRGenericPrintElement element 
 		);
-	
-	/**
-	 * Creates an equivalent image of the {@link JRGenericPrintElement} element to be exported instead.
-	 * 
-	 * @param element the generic element to export
-	 * @return JRPrintImage the equivalent image
-	 */
-	JRPrintImage getImage(JRPptxExporterContext exporterContext, JRGenericPrintElement element) throws JRException;
 	
 }

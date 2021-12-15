@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,17 +23,17 @@
  */
 package net.sf.jasperreports.engine.export.ooxml;
 
-import java.io.IOException;
 import java.io.Writer;
 
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.export.LengthUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxSettingsHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DocxSettingsHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxSettingsHelper extends BaseHelper
 {
@@ -41,23 +41,23 @@ public class DocxSettingsHelper extends BaseHelper
 	/**
 	 * 
 	 */
-	public DocxSettingsHelper(Writer writer)
+	public DocxSettingsHelper(JasperReportsContext jasperReportsContext, Writer writer)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 	}
 
 	/**
 	 * 
 	 */
-	public void export(JasperPrint jasperPrint) throws IOException
+	public void export(JasperPrint jasperPrint)
 	{
-		writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
-		writer.write("<w:settings\n");
-		writer.write(" xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">\n"); 
-		writer.write("  <w:defaultTabStop w:val=\"" +
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n");
+		write("<w:settings\n");
+		write(" xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">\n"); 
+		write("  <w:defaultTabStop w:val=\"" +
 				LengthUtil.twip(new JRBasePrintText(jasperPrint.getDefaultStyleProvider()).getParagraph().getTabStopWidth()) +
 				"\"/>\n");
-		writer.write("</w:settings>");
+		write("</w:settings>");
 	}
 	
 }

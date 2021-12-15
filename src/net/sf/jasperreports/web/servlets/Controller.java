@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.web.servlets;
 import net.sf.jasperreports.data.cache.ColumnDataCacheHandler;
 import net.sf.jasperreports.data.cache.DataCacheHandler;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
@@ -47,7 +46,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: Controller.java 5378 2012-05-14 00:39:27Z teodord $
+ * @version $Id: Controller.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Controller
 {
@@ -77,9 +76,7 @@ public class Controller
 		Action action
 		) throws JRException, JRInteractiveException
 	{
-		JRPropertiesUtil propUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
-		String reportUriParamName = propUtil.getProperty(WebUtil.PROPERTY_REQUEST_PARAMETER_REPORT_URI);
-		String reportUri = (String)webReportContext.getParameterValue(reportUriParamName);
+		String reportUri = (String)webReportContext.getParameterValue(WebUtil.REQUEST_PARAMETER_REPORT_URI);
 		int initialStackSize = 0;
 		CommandStack commandStack = (CommandStack)webReportContext.getParameterValue(AbstractAction.PARAM_COMMAND_STACK);
 		if (commandStack != null) {
@@ -98,23 +95,29 @@ public class Controller
 			if (action != null) 
 			{
 				action.run();
+				if (log.isDebugEnabled()) {
+					log.debug("action requires refill: " + action.requiresRefill());
+				}
+				if (!action.requiresRefill()) { // stop here because this action does not modify jasperDesign
+					return;
+				}
 			}
 
 			jasperReport = RepositoryUtil.getInstance(jasperReportsContext).getReport(webReportContext, reportUri);
 		}
-		
+
+
 		if (jasperReport == null)
 		{
 			throw new JRException("Report not found at : " + reportUri);
 		}
 		
-		String asyncParamName = propUtil.getProperty(WebUtil.PROPERTY_REQUEST_PARAMETER_ASYNC_REPORT);
-		Boolean async = (Boolean)webReportContext.getParameterValue(asyncParamName);
+		Boolean async = (Boolean)webReportContext.getParameterValue(WebUtil.REQUEST_PARAMETER_ASYNC_REPORT);
 		if (async == null)
 		{
 			async = Boolean.FALSE;
 		}
-		webReportContext.setParameterValue(asyncParamName, async);
+		webReportContext.setParameterValue(WebUtil.REQUEST_PARAMETER_ASYNC_REPORT, async);
 		
 		try {
 			runReport(webReportContext, jasperReport, async.booleanValue());

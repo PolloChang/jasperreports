@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,8 +28,17 @@ import net.sf.jasperreports.engine.JRExpression;
 
 
 /**
+ * Used only in combination with High-Low charts, this type of plot lets users customize 
+ * the labels for both axes, like all the other axis-oriented plots.
+ * <br/>
+ * This special type of plot draws the items as vertical lines that start at the high value and 
+ * go downward to the low value. On each line the plot displays by default small ticks to 
+ * indicate the open and close values corresponding to the current item. To suppress these 
+ * ticks, set to false the two flags available inside the plot definition: <code>isShowCloseTicks</code> 
+ * and <code>isShowOpenTicks</code>. 
+ * 
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRHighLowPlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRHighLowPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRHighLowPlot extends JRChartPlot, JRTimeAxisFormat, JRValueAxisFormat
 {

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,7 @@ import java.io.Writer;
 import net.sf.jasperreports.engine.JRParagraph;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.export.LengthUtil;
 import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
@@ -36,7 +37,7 @@ import net.sf.jasperreports.engine.type.TabStopAlignEnum;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: DocxParagraphHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DocxParagraphHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxParagraphHelper extends BaseHelper
 {
@@ -65,9 +66,9 @@ public class DocxParagraphHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public DocxParagraphHelper(Writer writer, boolean pageBreak)
+	public DocxParagraphHelper(JasperReportsContext jasperReportsContext, Writer writer, boolean pageBreak)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 		
 		this.pageBreak = pageBreak;
 	}
@@ -257,13 +258,29 @@ public class DocxParagraphHelper extends BaseHelper
 	 */
 	public void exportEmptyParagraph()
 	{
+		exportEmptyParagraph(false, 0l, null);
+	}
+	
+	/**
+	 *
+	 */
+	public void exportEmptyParagraph(boolean startPage, long bookmarkIndex, String pageAnchor)
+	{
 		write("     <w:p><w:pPr><w:pStyle w:val=\"EMPTY_CELL_STYLE\"/>\n");
 		if (pageBreak)
 		{
 			write("        <w:pageBreakBefore/>\n");
 			pageBreak = false;
 		}
-		write("     </w:pPr></w:p>\n");
+		write("     </w:pPr>");
+		if(startPage)
+		{
+			write("<w:bookmarkStart w:id=\"" + bookmarkIndex);
+			write("\" w:name=\"" + pageAnchor);
+			write("\"/><w:bookmarkEnd w:id=\"" + bookmarkIndex);
+			write("\"/>");
+		}
+		write("</w:p>\n");
 	}
 
 	/**
@@ -310,4 +327,21 @@ public class DocxParagraphHelper extends BaseHelper
 		}
 		return null;
 	}
+	
+	/**
+	 * 
+	 */
+	public void exportEmptyPage(String pageAnchor, long bookmarkIndex, boolean twice) 
+	{
+		if(twice)
+		{
+			write("  <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n");
+		}
+		write("  <w:p><w:bookmarkStart w:id=\"" + bookmarkIndex);
+		write("\" w:name=\"" + pageAnchor);
+		write("\"/><w:bookmarkEnd w:id=\"" + bookmarkIndex);
+		write("\"/></w:p>\n");
+		write("  <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n");
+	}
+	
 }

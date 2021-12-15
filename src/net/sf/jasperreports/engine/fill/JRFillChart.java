@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -97,6 +97,7 @@ import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRVisitor;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
@@ -120,7 +121,7 @@ import org.jfree.data.general.Dataset;
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
  * @author Some enhancements by Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRFillChart.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillChart.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillChart extends JRFillElement implements JRChart
 {
@@ -137,7 +138,9 @@ public class JRFillChart extends JRFillElement implements JRChart
 	protected JRFont titleFont;
 	protected JRFont subtitleFont;
 	protected JRFont legendFont;
-	protected final JRLineBox lineBox;
+
+	protected final JRLineBox initLineBox;
+	protected JRLineBox lineBox;
 
 	/**
 	 *
@@ -150,6 +153,7 @@ public class JRFillChart extends JRFillElement implements JRChart
 	protected Renderable renderer;
 	private String anchorName;
 	private String hyperlinkReference;
+	private Boolean hyperlinkWhen;
 	private String hyperlinkAnchor;
 	private Integer hyperlinkPage;
 	private String hyperlinkTooltip;
@@ -280,9 +284,10 @@ public class JRFillChart extends JRFillElement implements JRChart
 
 		titleFont = factory.getFont(chart, chart.getTitleFont());
 		subtitleFont = factory.getFont(chart, chart.getSubtitleFont());
+		//FIXME this is inconsistent with the lines above
 		legendFont =  factory.getFont(this, chart.getLegendFont());
 		
-		lineBox = chart.getLineBox().clone(this);
+		initLineBox = chart.getLineBox().clone(this);
 
 		evaluationGroup = factory.getGroup(chart.getEvaluationGroup());
 
@@ -311,6 +316,34 @@ public class JRFillChart extends JRFillElement implements JRChart
 		if(themeName == null)
 		{
 			themeName = filler.getPropertiesUtil().getProperty(getParentProperties(), JRChart.PROPERTY_CHART_THEME);
+		}
+	}
+
+	@Override
+	public void setBand(JRFillBand band)
+	{
+		super.setBand(band);
+		
+		dataset.setBand(band);
+		((JRFillChartPlot) plot).setBand(band);
+	}
+
+
+	/**
+	 *
+	 */
+	protected void evaluateStyle(
+		byte evaluation
+		) throws JRException
+	{
+		super.evaluateStyle(evaluation);
+
+		lineBox = null;
+		
+		if (providerStyle != null)
+		{
+			lineBox = initLineBox.clone(this);
+			JRStyleResolver.appendBox(lineBox, providerStyle.getLineBox());
 		}
 	}
 
@@ -389,7 +422,7 @@ public class JRFillChart extends JRFillElement implements JRChart
 	 */
 	public JRLineBox getLineBox()
 	{
-		return lineBox;
+		return lineBox == null ? initLineBox : lineBox;
 	}
 
 	/**
@@ -613,6 +646,14 @@ public class JRFillChart extends JRFillElement implements JRChart
 	/**
 	 *
 	 */
+	public JRExpression getHyperlinkWhenExpression()
+	{
+		return ((JRChart)parent).getHyperlinkWhenExpression();
+	}
+
+	/**
+	 *
+	 */
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return ((JRChart)parent).getHyperlinkAnchorExpression();
@@ -790,6 +831,7 @@ public class JRFillChart extends JRFillElement implements JRChart
 	{
 		evaluateProperties(evaluation);
 		evaluateDatasetRun(evaluation);
+		evaluateStyle(evaluation);
 
 		ChartTheme theme = ChartUtil.getInstance(filler.getJasperReportsContext()).getTheme(themeName);
 		
@@ -811,6 +853,7 @@ public class JRFillChart extends JRFillElement implements JRChart
 
 		anchorName = (String) evaluateExpression(getAnchorNameExpression(), evaluation);
 		hyperlinkReference = (String) evaluateExpression(getHyperlinkReferenceExpression(), evaluation);
+		hyperlinkWhen = (Boolean) evaluateExpression(getHyperlinkWhenExpression(), evaluation);
 		hyperlinkAnchor = (String) evaluateExpression(getHyperlinkAnchorExpression(), evaluation);
 		hyperlinkPage = (Integer) evaluateExpression(getHyperlinkPageExpression(), evaluation);
 		hyperlinkTooltip = (String) evaluateExpression(getHyperlinkTooltipExpression(), evaluation);
@@ -925,12 +968,14 @@ public class JRFillChart extends JRFillElement implements JRChart
 	 */
 	protected JRPrintElement fill()
 	{
-		JRTemplatePrintImage printImage = new JRTemplatePrintImage(getJRTemplateImage(), elementId);
+		JRTemplatePrintImage printImage = new JRTemplatePrintImage(getJRTemplateImage(), printElementOriginator);
 
+		printImage.setUUID(getUUID());
 		printImage.setX(getX());
 		printImage.setY(getRelativeY());
 		printImage.setWidth(getWidth());
 		printImage.setHeight(getStretchHeight());
+		printImage.setBookmarkLevel(getBookmarkLevel());
 
 		EvaluationTimeEnum evaluationTime = getEvaluationTimeValue();
 		if (evaluationTime == EvaluationTimeEnum.NOW)
@@ -953,11 +998,17 @@ public class JRFillChart extends JRFillElement implements JRChart
 	{
 		printImage.setRenderable(getRenderable());
 		printImage.setAnchorName(getAnchorName());
-		printImage.setHyperlinkReference(getHyperlinkReference());
+		if (getHyperlinkWhenExpression() == null || hyperlinkWhen == Boolean.TRUE)
+		{
+			printImage.setHyperlinkReference(getHyperlinkReference());
+		}
+		else
+		{
+			printImage.setHyperlinkReference(null);
+		}
 		printImage.setHyperlinkAnchor(getHyperlinkAnchor());
 		printImage.setHyperlinkPage(getHyperlinkPage());
 		printImage.setHyperlinkTooltip(getHyperlinkTooltip());
-		printImage.setBookmarkLevel(getBookmarkLevel());
 		printImage.setHyperlinkParameters(hyperlinkParameters);
 		transferProperties(printImage);
 	}
@@ -1334,6 +1385,7 @@ public class JRFillChart extends JRFillElement implements JRChart
 		evaluateRenderer(evaluation);
 
 		copy((JRPrintImage) element);
+		filler.getFillContext().updateBookmark(element);
 	}
 
 
@@ -1393,6 +1445,13 @@ public class JRFillChart extends JRFillElement implements JRChart
 		protected FillChartContext(byte evaluation)
 		{
 			this.evaluation = evaluation;
+			
+			JRFillChart.this.filler.getJasperReportsContext();
+		}
+		
+		public JasperReportsContext getJasperReportsContext()
+		{
+			return JRFillChart.this.filler.getJasperReportsContext();
 		}
 		
 		public String evaluateTextExpression(JRExpression expression) throws JRException {

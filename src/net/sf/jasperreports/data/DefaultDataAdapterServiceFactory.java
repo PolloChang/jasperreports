@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,6 +33,8 @@ import net.sf.jasperreports.data.ejbql.EjbqlDataAdapter;
 import net.sf.jasperreports.data.ejbql.EjbqlDataAdapterService;
 import net.sf.jasperreports.data.empty.EmptyDataAdapter;
 import net.sf.jasperreports.data.empty.EmptyDataAdapterService;
+import net.sf.jasperreports.data.excel.ExcelDataAdapter;
+import net.sf.jasperreports.data.excel.ExcelDataAdapterService;
 import net.sf.jasperreports.data.hibernate.HibernateDataAdapter;
 import net.sf.jasperreports.data.hibernate.HibernateDataAdapterService;
 import net.sf.jasperreports.data.hibernate.spring.SpringHibernateDataAdapter;
@@ -50,6 +52,7 @@ import net.sf.jasperreports.data.provider.DataSourceProviderDataAdapter;
 import net.sf.jasperreports.data.provider.DataSourceProviderDataAdapterService;
 import net.sf.jasperreports.data.qe.QueryExecuterDataAdapter;
 import net.sf.jasperreports.data.qe.QueryExecuterDataAdapterService;
+import net.sf.jasperreports.data.xls.AbstractXlsDataAdapterService;
 import net.sf.jasperreports.data.xls.XlsDataAdapter;
 import net.sf.jasperreports.data.xls.XlsDataAdapterService;
 import net.sf.jasperreports.data.xlsx.XlsxDataAdapter;
@@ -60,12 +63,13 @@ import net.sf.jasperreports.data.xml.XmlDataAdapter;
 import net.sf.jasperreports.data.xml.XmlDataAdapterService;
 import net.sf.jasperreports.data.xmla.XmlaDataAdapter;
 import net.sf.jasperreports.data.xmla.XmlaDataAdapterService;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultDataAdapterServiceFactory.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: DefaultDataAdapterServiceFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultDataAdapterServiceFactory implements DataAdapterServiceFactory
 {
@@ -118,14 +122,36 @@ public class DefaultDataAdapterServiceFactory implements DataAdapterServiceFacto
 		{
 			dataAdapterService = new QueryExecuterDataAdapterService(jasperReportsContext, (QueryExecuterDataAdapter)dataAdapter);
 		}
-		else if (dataAdapter instanceof XlsDataAdapter)
+		
+		// these following three adapters must be kept in order of inheritance hierarchy
+		else if (dataAdapter instanceof ExcelDataAdapter)
 		{
-			dataAdapterService = new XlsDataAdapterService(jasperReportsContext, (XlsDataAdapter)dataAdapter);
+			dataAdapterService = new ExcelDataAdapterService(jasperReportsContext, (ExcelDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof XlsxDataAdapter)
 		{
 			dataAdapterService = new XlsxDataAdapterService(jasperReportsContext, (XlsxDataAdapter)dataAdapter);
 		}
+		else if (dataAdapter instanceof XlsDataAdapter)
+		{
+			if (
+				JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(
+					AbstractXlsDataAdapterService.PROPERTY_DATA_ADAPTER_USE_LEGACY_JEXCELAPI,
+					false
+					)
+				)
+			{
+				@SuppressWarnings("deprecation")
+				DataAdapterService dep = new net.sf.jasperreports.data.xls.JxlDataAdapterService(jasperReportsContext, (XlsDataAdapter)dataAdapter);
+				dataAdapterService = dep;
+			}
+			else
+			{
+				dataAdapterService = new XlsDataAdapterService(jasperReportsContext, (XlsDataAdapter)dataAdapter);
+			}
+		}
+		// end excel
+
 		else if (dataAdapter instanceof RemoteXmlDataAdapter)
 		{
 			dataAdapterService = new RemoteXmlDataAdapterService(jasperReportsContext, (RemoteXmlDataAdapter)dataAdapter);

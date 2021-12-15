@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,9 +23,7 @@
  */
 package net.sf.jasperreports.engine.export.ooxml;
 
-import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.export.GenericElementHandler;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 
@@ -33,7 +31,7 @@ import net.sf.jasperreports.engine.export.JRExporterGridCell;
  * A generic print element DOCX export handler.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: GenericElementDocxHandler.java 5060 2012-03-13 08:55:42Z teodord $
+ * @version $Id: GenericElementDocxHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface GenericElementDocxHandler extends GenericElementHandler
 {
@@ -49,13 +47,5 @@ public interface GenericElementDocxHandler extends GenericElementHandler
 	 * @param element the generic element to export
 	 */
 	void exportElement(JRDocxExporterContext exporterContext, JRGenericPrintElement element, JRExporterGridCell gridCell);
-	
-	/**
-	 * Creates an equivalent image of the {@link JRGenericPrintElement} element to be exported instead.
-	 * 
-	 * @param element the generic element to export
-	 * @return JRPrintImage the equivalent image
-	 */
-	JRPrintImage getImage(JRDocxExporterContext exporterContext, JRGenericPrintElement element) throws JRException;
 	
 }

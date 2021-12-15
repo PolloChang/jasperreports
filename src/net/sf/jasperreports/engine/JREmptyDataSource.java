@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,8 +28,15 @@ package net.sf.jasperreports.engine;
  * A simple data source implementation that simulates a data source with a given number of virtual records inside.
  * It is called empty data source because even though it has one or more records inside, all the report fields
  * are null for all the virtual records of the data source.
+ * <p>
+ * The simplest implementation of the {@link net.sf.jasperreports.engine.JRDataSource}
+ * interface, this class can be used in reports that do not display data from the supplied data
+ * source, but rather from parameters, and when only the number of virtual rows in the data
+ * source is important.
+ * 
+ * @see net.sf.jasperreports.engine.JRDataSource
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JREmptyDataSource.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JREmptyDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JREmptyDataSource implements JRRewindableDataSource
 {

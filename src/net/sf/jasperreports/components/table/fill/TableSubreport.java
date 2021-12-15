@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,30 +23,36 @@
  */
 package net.sf.jasperreports.components.table.fill;
 
+import java.util.List;
+import java.util.ListIterator;
+
 import net.sf.jasperreports.engine.ElementDecorator;
+import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRDatasetParameter;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRSubreport;
 import net.sf.jasperreports.engine.JRSubreportParameter;
 import net.sf.jasperreports.engine.JRSubreportReturnValue;
-import net.sf.jasperreports.engine.component.FillContext;
+import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.type.OverflowType;
 
 /**
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableSubreport.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TableSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableSubreport extends ElementDecorator implements JRSubreport
 {
 	
 	private final JRDatasetRun datasetRun;
 	private final JRSubreportParameter[] parameters;
+	private final JRSubreportReturnValue[] returnValues;
 
-	public TableSubreport(JRDatasetRun datasetRun, FillContext fillContext)
+	public TableSubreport(JRDatasetRun datasetRun, JRComponentElement componentElement)
 	{
-		super(fillContext.getComponentElement());
+		super(componentElement);
 		
 		this.datasetRun = datasetRun;
 		
@@ -64,6 +70,21 @@ public class TableSubreport extends ElementDecorator implements JRSubreport
 				TableSubreportParameter subreportParameter = 
 					new TableSubreportParameter(datasetParameter);
 				this.parameters[i] = subreportParameter;
+			}
+		}
+		
+		List<ReturnValue> datasetReturnValues = datasetRun.getReturnValues();
+		if (datasetReturnValues == null || datasetReturnValues.isEmpty())
+		{
+			returnValues = null;
+		}
+		else
+		{
+			returnValues = new JRSubreportReturnValue[datasetReturnValues.size()];
+			for (ListIterator<ReturnValue> it = datasetReturnValues.listIterator(); it.hasNext();)
+			{
+				ReturnValue returnValue = it.next();
+				returnValues[it.previousIndex()] = new SubreportReturnValueAdapter(returnValue);
 			}
 		}
 	}
@@ -96,8 +117,7 @@ public class TableSubreport extends ElementDecorator implements JRSubreport
 
 	public JRSubreportReturnValue[] getReturnValues()
 	{
-		// no return values
-		return null;
+		return returnValues;
 	}
 
 	/**
@@ -132,6 +152,19 @@ public class TableSubreport extends ElementDecorator implements JRSubreport
 	}
 
 	public void setUsingCache(Boolean isUsingCache)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public OverflowType getOverflowType()
+	{
+		// default
+		return null;
+	}
+
+	@Override
+	public void setOverflowType(OverflowType overflowType)
 	{
 		throw new UnsupportedOperationException();
 	}

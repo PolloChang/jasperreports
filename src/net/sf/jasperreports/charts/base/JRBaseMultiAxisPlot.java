@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.charts.base;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -34,13 +35,12 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpressionCollector;
 import net.sf.jasperreports.engine.base.JRBaseChartPlot;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
-import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * An immutable representation of the layout options of a multiple axis chart.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRBaseMultiAxisPlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseMultiAxisPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisPlot
 {
@@ -57,7 +57,7 @@ public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisP
 	 * axis.  All entries in the list are of the type
 	 * <code>{@link JRChartAxis}</code>
 	 */
-	protected List<JRChartAxis> axes = new java.util.ArrayList<JRChartAxis>();
+	protected List<JRChartAxis> axes = new ArrayList<JRChartAxis>();
 
 
 
@@ -130,7 +130,21 @@ public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisP
 	public Object clone(JRChart parentChart) 
 	{
 		JRBaseMultiAxisPlot clone = (JRBaseMultiAxisPlot)super.clone(parentChart);
-		clone.axes = JRCloneUtils.cloneList(axes);
+		List<JRChartAxis> cloneAxes;
+		if (axes == null)// should not be null but it's protected so let's be safe
+		{
+			cloneAxes = null;
+		}
+		else
+		{
+			cloneAxes = new ArrayList<JRChartAxis>(axes.size());
+			for (JRChartAxis axis : axes)
+			{
+				JRChartAxis axisClone = axis == null ? null : axis.clone(axis.getChart());
+				cloneAxes.add(axisClone);
+			}
+		}
+		clone.axes = cloneAxes;
 		return clone;
 	}
 }

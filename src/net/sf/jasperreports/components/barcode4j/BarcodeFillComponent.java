@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,7 @@ import org.krysalis.barcode4j.impl.AbstractBarcodeBean;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeFillComponent.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: BarcodeFillComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeFillComponent extends BaseFillComponent
 {
@@ -101,8 +101,9 @@ public class BarcodeFillComponent extends BaseFillComponent
 	{
 		JRTemplateImage templateImage = getTemplateImage();
 		
-		JRTemplatePrintImage image = new JRTemplatePrintImage(templateImage, elementId);
+		JRTemplatePrintImage image = new JRTemplatePrintImage(templateImage, printElementOriginator);
 		JRComponentElement element = fillContext.getComponentElement();
+		image.setUUID(element.getUUID());
 		image.setX(element.getX());
 		image.setY(fillContext.getElementPrintY());
 		image.setWidth(element.getWidth());

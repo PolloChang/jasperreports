@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,82 +24,42 @@
 package net.sf.jasperreports.web.servlets;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import net.sf.jasperreports.engine.JRConstants;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.util.MessageUtil;
-import net.sf.jasperreports.web.util.VelocityUtil;
-import net.sf.jasperreports.web.util.WebUtil;
+import net.sf.jasperreports.web.util.WebResourceHandler;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ResourceServlet.java 5413 2012-05-24 14:43:12Z narcism $
+ * @version $Id: ResourceServlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ResourceServlet extends AbstractServlet
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+	/**
+	 * 
+	 */
 	public void service(
 		HttpServletRequest request,
 		HttpServletResponse response
 		) throws IOException, ServletException
 	{
-		WebUtil webUtil = WebUtil.getInstance(getJasperReportsContext());
-		String resource = webUtil.getResourceUri(request);
-		boolean isDynamicResource = webUtil.isDynamicResource(request);
-		String resourceBundleName = webUtil.getResourceBundleForResource(request);
-		Locale locale = webUtil.getResourceLocale(request);
-		
-		try {
-			byte[] bytes = null;
-			
-			if(
-				resource != null 
-				&& resource.indexOf(".vm.") != -1 
-				&& (isDynamicResource || resourceBundleName != null || locale != null)
-				) 
+		List<WebResourceHandler> resourceHandlers = getJasperReportsContext().getExtensions(WebResourceHandler.class);
+		if (resourceHandlers != null) 
+		{
+			for (WebResourceHandler handler: resourceHandlers) 
 			{
-				Map<String, Object> contextMap = new HashMap<String, Object>();
-				contextMap.put("path", request.getContextPath() + webUtil.getResourcesBasePath());
-				locale = locale == null ? Locale.getDefault() : locale;
-				contextMap.put("msgProvider", MessageUtil.getInstance(getJasperReportsContext()).getLocalizedMessageProvider(resourceBundleName, locale)); 
-				String resourceString = VelocityUtil.processTemplate(resource, contextMap);
-				if (resourceString != null) {
-					bytes = resourceString.getBytes("UTF-8");
+				if (handler.handleResource(getJasperReportsContext(), request, response)) 
+				{
+					break;
 				}
-			} else 
-			{
-				bytes = JRLoader.loadBytesFromResource(resource);
 			}
-			
-			if (resource.endsWith(".js")) {//FIXMEJIVE revisit this
-				response.setContentType("text/javascript; charset=UTF-8");
-			} else if (resource.endsWith(".css")) {
-				response.setContentType("text/css");
-			}
-			
-			// Set to expire far in the past.
-			response.setHeader("Expires", "Sat, 6 May 1995 12:00:00 GMT");
-			// Set standard HTTP/1.1 no-cache headers.
-			response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-			// Set IE extended HTTP/1.1 no-cache headers (use addHeader).
-			response.addHeader("Cache-Control", "post-check=0, pre-check=0");
-			// Set standard HTTP/1.0 no-cache header.
-			response.setHeader("Pragma", "no-cache");
-
-			response.getOutputStream().write(bytes);
-		} catch (JRException e) {
-			e.printStackTrace();
 		}
 	}
-	
 }

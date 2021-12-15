@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.engine.fill;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRSubreportReturnValue;
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.ReturnValue;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 
@@ -35,11 +36,15 @@ import net.sf.jasperreports.engine.util.JRClassLoader;
  * used by the filler.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillSubreportReturnValue.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillSubreportReturnValue.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillSubreportReturnValue implements JRSubreportReturnValue
 {
-	protected final JRSubreportReturnValue parent;
+	protected final String fromVariable;
+	protected final String toVariable;
+	protected final String incrementerFactoryClassName;
+	protected final CalculationEnum calculation;
+	private boolean derived;
 
 	protected JRIncrementer incrementer;
 	
@@ -53,29 +58,45 @@ public class JRFillSubreportReturnValue implements JRSubreportReturnValue
 	{
 		factory.put(returnValue, this);
 
-		parent = returnValue;
+		fromVariable = returnValue.getSubreportVariable();
+		toVariable = returnValue.getToVariable();
+		incrementerFactoryClassName = returnValue.getIncrementerFactoryClassName();
+		calculation = returnValue.getCalculationValue();
+		
+		this.filler = filler;
+	}
+
+	public JRFillSubreportReturnValue(ReturnValue returnValue,
+			JRFillObjectFactory factory, JRBaseFiller filler)
+	{
+		factory.put(returnValue, this);
+
+		fromVariable = returnValue.getFromVariable();
+		toVariable = returnValue.getToVariable();
+		incrementerFactoryClassName = returnValue.getIncrementerFactoryClassName();
+		calculation = returnValue.getCalculation();
 		
 		this.filler = filler;
 	}
 
 	public String getSubreportVariable()
 	{
-		return parent.getSubreportVariable();
+		return fromVariable;
 	}
 
 	public String getToVariable()
 	{
-		return parent.getToVariable();
+		return toVariable;
 	}
 		
 	public String getIncrementerFactoryClassName()
 	{
-		return parent.getIncrementerFactoryClassName();
+		return incrementerFactoryClassName;
 	}
 		
 	public CalculationEnum getCalculationValue()
 	{
-		return parent.getCalculationValue();
+		return calculation;
 	}
 
 		
@@ -111,6 +132,16 @@ public class JRFillSubreportReturnValue implements JRSubreportReturnValue
 		}
 		
 		return incrementer;
+	}
+
+	public boolean isDerived()
+	{
+		return derived;
+	}
+
+	public void setDerived(boolean derived)
+	{
+		this.derived = derived;
 	}
 	
 	/**

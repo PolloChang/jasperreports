@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,21 +31,55 @@ package net.sf.jasperreports.engine.export;
 import java.io.IOException;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.export.CsvExporterConfiguration;
+import net.sf.jasperreports.export.CsvReportConfiguration;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 
 /**
  * Exports a JasperReports document to CSV format. It has character output type and exports the document to a
  * grid-based layout.
+ * <p/>
+ * Because CSV is a data-oriented file format, exporting rich content documents to
+ * CSV results in a tremendous loss of quality. The CSV exporter will completely ignore graphic elements present in
+ * the source document that needs to be exported. It will only deal will text elements, and
+ * from those, it will only extract the text value, completely ignoring the style properties.
+ * <p/>
+ * CSV is a character-based file format whose content is structured in rows and columns, so
+ * the {@link net.sf.jasperreports.engine.export.JRCsvExporter} is a grid exporter 
+ * because it must transform the free-form content of
+ * each page from the source document into a grid-like structure using the special grid layout algorithm.
+ * <p/>
+ * By default, the CSV exporter uses commas to separate column values and newline
+ * characters to separate rows in the resulting file. However, one can redefine the delimiters
+ * using the two special exporter configuration settings in the 
+ * {@link net.sf.jasperreports.export.CsvExporterConfiguration} class:
+ * <ul>
+ * <li>{@link net.sf.jasperreports.export.CsvExporterConfiguration#getFieldDelimiter() getFieldDelimiter()}</li>
+ * <li>{@link net.sf.jasperreports.export.CsvExporterConfiguration#getRecordDelimiter() getRecordDelimiter()}</li>
+ * <ul>
+ * which both provide <code>java.lang.String</code> values.
+ * 
+ * @see net.sf.jasperreports.export.CsvExporterConfiguration
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCsvExporter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCsvExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRCsvExporter extends JRAbstractCsvExporter
+public class JRCsvExporter extends JRAbstractCsvExporter<CsvReportConfiguration, CsvExporterConfiguration, JRCsvExporterContext>
 {
+	private static final Log log = LogFactory.getLog(JRCsvExporter.class);
+
+	protected class ExporterContext extends BaseExporterContext implements JRCsvExporterContext
+	{
+	}
+
 	/**
 	 * @see #JRCsvExporter(JasperReportsContext)
 	 */
@@ -61,48 +95,94 @@ public class JRCsvExporter extends JRAbstractCsvExporter
 	public JRCsvExporter(JasperReportsContext jasperReportsContext)
 	{
 		super(jasperReportsContext);
+		
+		exporterContext = new ExporterContext();
 	}
 
+
+	/**
+	 *
+	 */
+	protected Class<CsvExporterConfiguration> getConfigurationInterface()
+	{
+		return CsvExporterConfiguration.class;
+	}
+
+
+	/**
+	 *
+	 */
+	protected Class<CsvReportConfiguration> getItemConfigurationInterface()
+	{
+		return CsvReportConfiguration.class;
+	}
 	
+
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	protected void ensureOutput()
+	{
+		if (exporterOutput == null)
+		{
+			exporterOutput = 
+				new net.sf.jasperreports.export.parameters.ParametersWriterExporterOutput(
+					getJasperReportsContext(),
+					getParameters(),
+					getCurrentJasperPrint()
+					);
+		}
+	}
+	
+
 	/**
 	 *
 	 */
 	protected void exportPage(JRPrintPage page) throws IOException
 	{
+		CsvExporterConfiguration configuration = getCurrentConfiguration();
+		
+		String fieldDelimiter = configuration.getFieldDelimiter();
+		String recordDelimiter = configuration.getRecordDelimiter();
+		
+		CsvReportConfiguration lcItemConfiguration = getCurrentItemConfiguration();
+		
 		JRGridLayout layout = 
 			new JRGridLayout(
 				nature,
 				page.getElements(), 
 				jasperPrint.getPageWidth(), 
 				jasperPrint.getPageHeight(), 
-				globalOffsetX, 
-				globalOffsetY,
+				lcItemConfiguration.getOffsetX() == null ? 0 : lcItemConfiguration.getOffsetX(), 
+				lcItemConfiguration.getOffsetY() == null ? 0 : lcItemConfiguration.getOffsetY(),
 				null //address
 				);
 		
-		JRExporterGridCell[][] grid = layout.getGrid();
+		Grid grid = layout.getGrid();
 
 		CutsInfo xCuts = layout.getXCuts();
 		CutsInfo yCuts = layout.getYCuts();
 
 		StringBuffer rowbuffer = null;
 		
-		JRPrintElement element = null;
-		String text = null;
 		boolean isFirstColumn = true;
-		for(int y = 0; y < grid.length; y++)
+		int rowCount = grid.getRowCount();
+		for(int y = 0; y < rowCount; y++)
 		{
 			rowbuffer = new StringBuffer();
 
 			if (yCuts.isCutNotEmpty(y))
 			{
 				isFirstColumn = true;
-				for(int x = 0; x < grid[y].length; x++)
+				GridRow row = grid.getRow(y);
+				int rowSize = row.size();
+				for(int x = 0; x < rowSize; x++)
 				{
-					if(grid[y][x].getWrapper() != null)
+					JRPrintElement element = row.get(x).getElement();
+					if(element != null)
 					{
-						element = grid[y][x].getWrapper().getElement();
-	
+						String text = null;
 						if (element instanceof JRPrintText)
 						{
 							JRStyledText styledText = getStyledText((JRPrintText)element);
@@ -114,10 +194,36 @@ public class JRCsvExporter extends JRAbstractCsvExporter
 							{
 								text = styledText.getText();
 							}
+						}
+						else if (element instanceof JRGenericPrintElement)
+						{
+							JRGenericPrintElement genericPrintElement = (JRGenericPrintElement)element;
+							GenericElementCsvHandler handler = (GenericElementCsvHandler) 
+								GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
+										genericPrintElement.getGenericType(), CSV_EXPORTER_KEY);
 							
+							if (handler == null)
+							{
+								if (log.isDebugEnabled())
+								{
+									log.debug("No CSV generic element handler for " 
+											+ genericPrintElement.getGenericType());
+								}
+								
+								// it shouldn't get to this due to JRCsvExporterNature.isToExport, but let's be safe
+								text = "";
+							}
+							else
+							{
+								text = handler.getTextValue(exporterContext, genericPrintElement);
+							}
+						}
+
+						if (text != null)
+						{
 							if (!isFirstColumn)
 							{
-								rowbuffer.append(delimiter);
+								rowbuffer.append(fieldDelimiter);
 							}
 							rowbuffer.append(
 								prepareText(text)
@@ -131,7 +237,7 @@ public class JRCsvExporter extends JRAbstractCsvExporter
 						{
 							if (!isFirstColumn)
 							{
-								rowbuffer.append(delimiter);
+								rowbuffer.append(fieldDelimiter);
 							}
 							isFirstColumn = false;
 						}
@@ -146,10 +252,10 @@ public class JRCsvExporter extends JRAbstractCsvExporter
 			}
 		}
 		
+		JRExportProgressMonitor progressMonitor  = lcItemConfiguration.getProgressMonitor();
 		if (progressMonitor != null)
 		{
 			progressMonitor.afterPageExport();
 		}
 	}
-
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,7 @@ import net.sf.jasperreports.crosstabs.JRCrosstabBucket;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.analytics.dataset.BucketOrder;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 import net.sf.jasperreports.engine.type.SortOrderEnum;
 import net.sf.jasperreports.engine.util.JRClassLoader;
@@ -40,7 +41,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base read-only implementation of {@link net.sf.jasperreports.crosstabs.JRCrosstabBucket JRCrosstabBucket}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstabBucket.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseCrosstabBucket.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCrosstabBucket implements JRCrosstabBucket, Serializable
 {
@@ -50,7 +51,11 @@ public class JRBaseCrosstabBucket implements JRCrosstabBucket, Serializable
 	protected String valueClassRealName;
 	protected Class<?> valueClass;
 
+	// only used for deserialization
+	@Deprecated
 	protected SortOrderEnum orderValue = SortOrderEnum.ASCENDING;
+	protected BucketOrder bucketOrder = BucketOrder.ASCENDING;
+	
 	protected JRExpression expression;
 	protected JRExpression orderByExpression;
 	protected JRExpression comparatorExpression;
@@ -64,7 +69,7 @@ public class JRBaseCrosstabBucket implements JRCrosstabBucket, Serializable
 		factory.put(bucket, this);
 		
 		this.valueClassName = bucket.getValueClassName();
-		this.orderValue = bucket.getOrderValue();
+		this.bucketOrder = bucket.getOrder();
 		this.expression = factory.getExpression(bucket.getExpression());
 		this.orderByExpression = factory.getExpression(bucket.getOrderByExpression());
 		this.comparatorExpression = factory.getExpression(bucket.getComparatorExpression());
@@ -75,9 +80,16 @@ public class JRBaseCrosstabBucket implements JRCrosstabBucket, Serializable
 		return valueClassName;
 	}
 
+	@Deprecated
 	public SortOrderEnum getOrderValue()
 	{
-		return orderValue;
+		return BucketOrder.toSortOrderEnum(bucketOrder);
+	}
+
+	@Override
+	public BucketOrder getOrder()
+	{
+		return bucketOrder;
 	}
 
 	public JRExpression getExpression()
@@ -164,7 +176,14 @@ public class JRBaseCrosstabBucket implements JRCrosstabBucket, Serializable
 		
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
-			orderValue = SortOrderEnum.getByValue(order);
+			SortOrderEnum sortOrder = SortOrderEnum.getByValue(order);
+			bucketOrder = BucketOrder.fromSortOrderEnum(sortOrder);
+		}
+		else if (orderValue != null && bucketOrder == null)
+		{
+			// deserializing old version object
+			bucketOrder = BucketOrder.fromSortOrderEnum(orderValue);
+			orderValue = null;
 		}
 
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_4_0_3)

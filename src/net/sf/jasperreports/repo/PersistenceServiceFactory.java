@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,7 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PersistenceServiceFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: PersistenceServiceFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface PersistenceServiceFactory
 {
@@ -36,11 +36,6 @@ public interface PersistenceServiceFactory
 	/**
 	 *
 	 */
-	public <K extends RepositoryService, L extends Resource, M extends PersistenceService> M getPersistenceService(JasperReportsContext jasperReportsContext, Class<K> repositoryServiceType, Class<L> resourceType);
-
-	/**
-	 * @deprecated Replaced by {@link #getPersistenceService(JasperReportsContext, Class, Class)}.
-	 */
-	public <K extends RepositoryService, L extends Resource, M extends PersistenceService> M getPersistenceService(Class<K> repositoryServiceType, Class<L> resourceType);
+	public <K extends RepositoryService, L extends Resource> PersistenceService getPersistenceService(JasperReportsContext jasperReportsContext, Class<K> repositoryServiceType, Class<L> resourceType);
   
 }

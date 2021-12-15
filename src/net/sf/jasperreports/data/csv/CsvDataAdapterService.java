@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,8 +23,7 @@
  */
 package net.sf.jasperreports.data.csv;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Map;
@@ -39,7 +38,7 @@ import net.sf.jasperreports.engine.query.JRCsvQueryExecuterFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CsvDataAdapterService.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: CsvDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CsvDataAdapterService extends AbstractDataAdapterService 
 {
@@ -73,9 +72,13 @@ public class CsvDataAdapterService extends AbstractDataAdapterService
 		{
 			String datePattern = csvDataAdapter.getDatePattern();
 			String numberPattern = csvDataAdapter.getNumberPattern();
-			if (csvDataAdapter.isQueryExecuterMode())//FIXME check this
+			if (csvDataAdapter.isQueryExecuterMode())
 			{	
 				parameters.put(JRCsvQueryExecuterFactory.CSV_SOURCE, csvDataAdapter.getFileName());
+				if (csvDataAdapter.getEncoding() != null)
+				{
+					parameters.put(JRCsvQueryExecuterFactory.CSV_ENCODING, csvDataAdapter.getEncoding());
+				}
 				if (datePattern != null && datePattern.length() > 0)
 				{
 					parameters.put( JRCsvQueryExecuterFactory.CSV_DATE_FORMAT, new SimpleDateFormat(datePattern) );
@@ -93,29 +96,40 @@ public class CsvDataAdapterService extends AbstractDataAdapterService
 					parameters.put( JRCsvQueryExecuterFactory.CSV_COLUMN_NAMES_ARRAY, getColumnNames(csvDataAdapter));
 				}
 			}else{
-				try {
-					JRCsvDataSource ds = new JRCsvDataSource( new File( csvDataAdapter.getFileName()));								
-					if (datePattern != null && datePattern.length() > 0)
-					{
-						ds.setDateFormat( new SimpleDateFormat(datePattern) );
-					}
-					if (numberPattern != null && numberPattern.length() > 0)
-					{
-						ds.setNumberFormat( new DecimalFormat(numberPattern) );
-					}
-					ds.setFieldDelimiter( csvDataAdapter.getFieldDelimiter().charAt(0) );
-					ds.setRecordDelimiter( csvDataAdapter.getRecordDelimiter() );				
-					ds.setUseFirstRowAsHeader( csvDataAdapter.isUseFirstRowAsHeader() );
-					
-					if (!csvDataAdapter.isUseFirstRowAsHeader())
-					{ 
-						ds.setColumnNames( getColumnNames(csvDataAdapter) );
-					}
-					
-					parameters.put(JRParameter.REPORT_DATA_SOURCE, ds);
-				} catch (FileNotFoundException e) {
-					throw new JRException(e);
+				JRCsvDataSource ds = null;
+				if (csvDataAdapter.getEncoding() == null)
+				{
+					ds = new JRCsvDataSource(getJasperReportsContext(), csvDataAdapter.getFileName());
 				}
+				else
+				{
+					try
+					{
+						ds = new JRCsvDataSource(getJasperReportsContext(), csvDataAdapter.getFileName(), csvDataAdapter.getEncoding());
+					}
+					catch (UnsupportedEncodingException e)
+					{
+						throw new JRException(e);
+					}
+				}
+				if (datePattern != null && datePattern.length() > 0)
+				{
+					ds.setDateFormat( new SimpleDateFormat(datePattern) );
+				}
+				if (numberPattern != null && numberPattern.length() > 0)
+				{
+					ds.setNumberFormat( new DecimalFormat(numberPattern) );
+				}
+				ds.setFieldDelimiter( csvDataAdapter.getFieldDelimiter().charAt(0) );
+				ds.setRecordDelimiter( csvDataAdapter.getRecordDelimiter() );				
+				ds.setUseFirstRowAsHeader( csvDataAdapter.isUseFirstRowAsHeader() );
+				
+				if (!csvDataAdapter.isUseFirstRowAsHeader())
+				{ 
+					ds.setColumnNames( getColumnNames(csvDataAdapter) );
+				}
+				
+				parameters.put(JRParameter.REPORT_DATA_SOURCE, ds);
 			}
 		}
 	}

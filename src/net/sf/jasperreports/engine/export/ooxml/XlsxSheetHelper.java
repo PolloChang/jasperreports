@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,11 +36,12 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 import net.sf.jasperreports.engine.export.XlsRowLevelInfo;
 import net.sf.jasperreports.engine.export.ooxml.type.PaperSizeEnum;
 import net.sf.jasperreports.engine.util.FileBufferedWriter;
+import net.sf.jasperreports.export.XlsReportConfiguration;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxSheetHelper.java 5359 2012-05-09 16:07:51Z shertage $
+ * @version $Id: XlsxSheetHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxSheetHelper extends BaseHelper
 {
@@ -50,14 +51,12 @@ public class XlsxSheetHelper extends BaseHelper
 	private FileBufferedWriter mergedCellsWriter = new FileBufferedWriter();
 	private FileBufferedWriter hyperlinksWriter = new FileBufferedWriter();
 	
-	private boolean isCollapseRowSpan;
-	
 	/**
 	 *
 	 */
 	private XlsxSheetRelsHelper sheetRelsHelper;//FIXMEXLSX truly embed the rels helper here and no longer have it available from outside; check drawing rels too
-	private JasperReportsContext jasperReportsContext;
-	private JRPropertiesUtil propertiesUtil;
+	private final JRPropertiesUtil propertiesUtil;
+	private final XlsReportConfiguration configuration;
 
 	/**
 	 * 
@@ -66,15 +65,14 @@ public class XlsxSheetHelper extends BaseHelper
 		JasperReportsContext jasperReportsContext,
 		Writer writer, 
 		XlsxSheetRelsHelper sheetRelsHelper,
-		boolean isCollapseRowSpan
+		XlsReportConfiguration configuration
 		)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 		
-		this.jasperReportsContext = jasperReportsContext;
 		this.sheetRelsHelper = sheetRelsHelper;
-		this.isCollapseRowSpan = isCollapseRowSpan;
 		this.propertiesUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
+		this.configuration = configuration;
 	}
 
 	/**
@@ -102,7 +100,7 @@ public class XlsxSheetHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public void exportHeader(int scale, int rowFreeze, int columnFreeze, JasperPrint jasperPrint)
+	public void exportHeader(boolean showGridlines, int scale, int rowFreeze, int columnFreeze, JasperPrint jasperPrint)
 	{
 		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 		write("<worksheet\n");
@@ -111,17 +109,21 @@ public class XlsxSheetHelper extends BaseHelper
 		
 		/* the scale factor takes precedence over fitWidth and fitHeight properties */
 		boolean noScale = scale < 10 || scale > 400;
-		String fitWidth = propertiesUtil.getProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_FIT_WIDTH);
-		String fitHeight = propertiesUtil.getProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_FIT_HEIGHT);
+		Integer fitWidth = configuration.getFitWidth();
+		Integer fitHeight = configuration.getFitHeight();
 		String fitToPage = noScale && (fitHeight != null || fitWidth != null) ? "<pageSetUpPr fitToPage=\"1\"/>" : "";
 		write("<sheetPr><outlinePr summaryBelow=\"0\"/>" + fitToPage + "</sheetPr><dimension ref=\"A1\"/><sheetViews><sheetView workbookViewId=\"0\"");
+		if(!showGridlines)
+		{
+			write(" showGridLines=\"0\"");
+		}
 		
 		if(rowFreeze > 0 || columnFreeze > 0)
 		{
 			write(">\n<pane" + (columnFreeze > 0 ? (" xSplit=\"" + columnFreeze + "\"") : "") + (rowFreeze > 0 ? (" ySplit=\"" + rowFreeze + "\"") : ""));
-			String columnName = propertiesUtil.getProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_FREEZE_COLUMN) == null 
-				? "A" 
-				: propertiesUtil.getProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_FREEZE_COLUMN);
+			String columnName = propertiesUtil.getProperty(jasperPrint, XlsReportConfiguration.PROPERTY_FREEZE_COLUMN) == null 
+					? "A" 
+							: propertiesUtil.getProperty(jasperPrint, XlsReportConfiguration.PROPERTY_FREEZE_COLUMN);
 			write(" topLeftCell=\"" + columnName + (rowFreeze + 1) + "\"");
 			String activePane = (rowFreeze > 0 ? "bottom" : "top") + (columnFreeze > 0 ? "Right" : "Left");
 			write(" activePane=\"" + activePane + "\" state=\"frozen\"/>\n");
@@ -138,11 +140,20 @@ public class XlsxSheetHelper extends BaseHelper
 		write("<sheetFormatPr defaultRowHeight=\"15\"/>\n");
 	}
 	
-
+	
 	/**
 	 *
 	 */
-	public void exportFooter(int index, JasperPrint jasperPrint, boolean isIgnorePageMargins)
+	public void exportHeader(int scale, int rowFreeze, int columnFreeze, JasperPrint jasperPrint)
+	{
+		exportHeader(true, scale, rowFreeze, columnFreeze, jasperPrint);
+	}
+	
+
+	/**
+	 *
+	 *
+	public void exportFooter(int index, JasperPrint jasperPrint, boolean isIgnorePageMargins)//FIXMEODT no longer used?
 	{
 		exportFooter(index, jasperPrint, isIgnorePageMargins, null, null);
 	}
@@ -150,16 +161,16 @@ public class XlsxSheetHelper extends BaseHelper
 	
 	/**
 	 *
-	 */
-	public void exportFooter(int index, JasperPrint jasperPrint, boolean isIgnorePageMargins, String autoFilter)
+	 *
+	public void exportFooter(int index, JasperPrint jasperPrint, boolean isIgnorePageMargins, String autoFilter)//FIXMEODT no longer used?
 	{
 		exportFooter(index, jasperPrint, isIgnorePageMargins, autoFilter, null);
 	}
 	
 	/**
 	 *
-	 */
-	public void exportFooter(int index, JasperPrint jasperPrint, boolean isIgnorePageMargins, String autoFilter, Integer scale)
+	 *
+	public void exportFooter(int index, JasperPrint jasperPrint, boolean isIgnorePageMargins, String autoFilter, Integer scale)//FIXMEODT no longer used?
 	{
 		exportFooter(index, jasperPrint, isIgnorePageMargins, autoFilter, null, null, true);
 	}
@@ -235,13 +246,13 @@ public class XlsxSheetHelper extends BaseHelper
 		}
 		else
 		{
-			String fitWidth = propertiesUtil.getProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_FIT_WIDTH);
-			if(fitWidth != null && !"1".equals(fitWidth))
+			Integer fitWidth = configuration.getFitWidth();
+			if(fitWidth != null && fitWidth !=  1)
 			{
 				write(" fitToWidth=\"" + fitWidth + "\"");
 			}
-			String fitHeight = propertiesUtil.getProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_FIT_HEIGHT);
-			if(fitHeight != null && !"1".equals(fitHeight))
+			Integer fitHeight = configuration.getFitHeight();
+			if(fitHeight != null && fitHeight != 1)
 			{
 				write(" fitToHeight=\"" + fitHeight + "\"");
 			}
@@ -309,8 +320,8 @@ public class XlsxSheetHelper extends BaseHelper
 			write("<sheetData>\n");
 		}
 		rowIndex++;
-		boolean isAutoFit = yCut.getPropertiesMap().containsKey(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW) 
-				&& (Boolean)yCut.getPropertiesMap().get(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW);
+		boolean isAutoFit = yCut.hasProperty(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW) 
+				&& (Boolean)yCut.getProperty(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW);
 		write("<row r=\"" + rowIndex + "\""  + (isAutoFit ? " customHeight=\"0\" bestFit=\"1\"" : " customHeight=\"1\"") + " ht=\"" + rowHeight + "\"");
 		if (levelInfo.getLevelMap().size() > 0)
 		{
@@ -322,7 +333,7 @@ public class XlsxSheetHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public void exportRow(int rowHeight) 
+	public void exportRow(int rowHeight) //FIXMEODT check how this ended up being no longer used
 	{
 		if (rowIndex > 0)
 		{
@@ -348,7 +359,7 @@ public class XlsxSheetHelper extends BaseHelper
 	 */
 	public void exportMergedCells(int row, int col, int rowSpan, int colSpan) 
 	{
-		rowSpan = isCollapseRowSpan ? 1 : rowSpan;
+		rowSpan = configuration.isCollapseRowSpan() ? 1 : rowSpan;
 		
 		if (rowSpan > 1	|| colSpan > 1)
 		{
@@ -372,12 +383,24 @@ public class XlsxSheetHelper extends BaseHelper
 	 */
 	public void exportHyperlink(int row, int col, String href) 
 	{
+		exportHyperlink(row, col, href, false);
+	}
+	
+	/**
+	 *
+	 */
+	public void exportHyperlink(int row, int col, String href, boolean isLocal) 
+	{
 		String ref = 
 			XlsxCellHelper.getColumIndexLetter(col) + (row + 1);
 		
 		try
 		{
-			hyperlinksWriter.write("<hyperlink ref=\"" + ref + "\" r:id=\"rIdLnk" + sheetRelsHelper.getHyperlink(href) + "\"/>\n");
+			if(isLocal){
+				hyperlinksWriter.write("<hyperlink ref=\"" + ref + "\" location=\"" + href + "\"/>\n");
+			} else {
+				hyperlinksWriter.write("<hyperlink ref=\"" + ref + "\" r:id=\"rIdLnk" + sheetRelsHelper.getHyperlink(href) + "\"/>\n");
+			}
 		}
 		catch (IOException e)
 		{

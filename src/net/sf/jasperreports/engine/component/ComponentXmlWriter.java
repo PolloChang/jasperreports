@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.engine.component;
 
 import java.io.IOException;
 
+import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
 
 /**
@@ -36,23 +37,26 @@ import net.sf.jasperreports.engine.xml.JRXmlWriter;
  * transforms XML fragments into object instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentXmlWriter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ComponentXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface ComponentXmlWriter
 {
 
 	/**
+	 * Specifies whether this component should be written out. This is useful for versioning.
+	 */
+	boolean isToWrite(JRComponentElement componentElement, JRXmlWriter reportWriter);
+
+	/**
 	 * Outputs the XML representation of a component.
 	 * 
-	 * @param componentKey the component type key
-	 * @param component the component instance
+	 * @param componentElement the component element
 	 * @param reportWriter the report writer to which output is to be written
 	 * @throws IOException exceptions produced while writing to the
 	 * output stream
 	 * @see ComponentKey#getNamespacePrefix()
 	 * @see JRXmlWriter#getXmlWriteHelper()
 	 */
-	void writeToXml(ComponentKey componentKey, Component component, 
-			JRXmlWriter reportWriter) throws IOException;
+	void writeToXml(JRComponentElement componentElement, JRXmlWriter reportWriter) throws IOException;
 
 }

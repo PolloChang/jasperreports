@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -45,7 +45,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRAbstractStyleFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRAbstractStyleFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractStyleFactory extends JRBaseFactory
 {
@@ -354,7 +354,7 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 		}
 		if (atts.getValue(JRXmlConstants.ATTRIBUTE_fontSize) != null)
 		{
-			style.setFontSize(Integer.valueOf(atts.getValue(JRXmlConstants.ATTRIBUTE_fontSize)));
+			style.setFontSize(Float.valueOf(atts.getValue(JRXmlConstants.ATTRIBUTE_fontSize)));
 		}
 		if (atts.getValue(JRXmlConstants.ATTRIBUTE_pdfFontName) != null)
 		{

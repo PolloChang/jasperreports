@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,10 +25,12 @@ package net.sf.jasperreports.crosstabs.fill.calculation;
 
 import java.util.Comparator;
 
+import net.sf.jasperreports.crosstabs.fill.BucketOrderer;
+import net.sf.jasperreports.crosstabs.fill.calculation.BucketValueOrderDecorator.OrderPosition;
 import net.sf.jasperreports.crosstabs.type.CrosstabTotalPositionEnum;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExpression;
-import net.sf.jasperreports.engine.type.SortOrderEnum;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.analytics.dataset.BucketOrder;
 
 import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.collections.comparators.ReverseComparator;
@@ -39,7 +41,7 @@ import org.apache.commons.logging.LogFactory;
  * Bucket definition.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BucketDefinition.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: BucketDefinition.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BucketDefinition
 {
@@ -73,40 +75,44 @@ public class BucketDefinition
 	
 	protected final Comparator<Object> bucketValueComparator;
 
-	protected final JRExpression orderByExpression;
-	protected final Comparator<Object> orderValueComparator;
+	protected final BucketOrderer orderer;
 	private final CrosstabTotalPositionEnum totalPosition;
+
+	private final BucketOrder order;
 	
 	private boolean computeTotal;
-
 	
 	/**
 	 * Creates a bucket.
 	 * 
 	 * @param valueClass the class of the bucket values
-	 * @param orderByExpression expression that provides order by values
+	 * @param orderer bucket entries orderer
 	 * @param comparator the comparator to use for bucket sorting
-	 * @param order the order type, {@link SortOrderEnum#ASCENDING} or {@link SortOrderEnum#DESCENDING} descending
+	 * @param order the order type, {@link BucketOrder#ASCENDING}, {@link BucketOrder#DESCENDING} or {@link BucketOrder#NONE}
 	 * @param totalPosition the position of the total bucket
 	 * @throws JRException
 	 */
 	public BucketDefinition(Class<?> valueClass, 
-			JRExpression orderByExpression, Comparator<Object> comparator, SortOrderEnum order, 
+			BucketOrderer orderer, Comparator<Object> comparator, BucketOrder order, 
 			CrosstabTotalPositionEnum totalPosition) throws JRException
 	{
-		if (comparator == null && orderByExpression == null 
-				&& !Comparable.class.isAssignableFrom(valueClass))
-		{
-			throw new JRException("The bucket expression values are not comparable and no comparator specified.");
-		}
+		this.orderer = orderer;
+		this.order = order;
 		
-		this.orderByExpression = orderByExpression;
-		if (orderByExpression == null)
+		if (orderer == null)
 		{
-			// we don't have an order by expression
-			// the buckets are ordered using the bucket values
-			this.bucketValueComparator = createOrderComparator(comparator, order);
-			this.orderValueComparator = null;
+			// we don't have a bucket orderer
+			if (order == BucketOrder.NONE)
+			{
+				// no ordering, values are inserted in the order in which they come
+				this.bucketValueComparator = null;
+			}
+			else
+			{
+				// the buckets are ordered using the bucket values
+				// if there's no comparator, we're assuming that the values are Comparable
+				this.bucketValueComparator = createOrderComparator(comparator, order);
+			}
 		}
 		else
 		{
@@ -120,6 +126,7 @@ public class BucketDefinition
 			else
 			{
 				// using an arbitrary rank comparator
+				// TODO lucianc couldn't we just set here bucketValueComparator to null?
 				if (log.isDebugEnabled())
 				{
 					log.debug("Using arbitrary rank comparator for bucket");
@@ -127,17 +134,14 @@ public class BucketDefinition
 				
 				this.bucketValueComparator = new ArbitraryRankComparator();
 			}
-			
-			// the comparator is used for order by values
-			this.orderValueComparator = createOrderComparator(comparator, order);
 		}
 		
 		this.totalPosition = totalPosition;
-		computeTotal = totalPosition != CrosstabTotalPositionEnum.NONE;
+		computeTotal = totalPosition != CrosstabTotalPositionEnum.NONE || orderer != null;
 	}
 
 	
-	protected static Comparator<Object> createOrderComparator(Comparator<Object> comparator, SortOrderEnum order)
+	public static Comparator<Object> createOrderComparator(Comparator<Object> comparator, BucketOrder order)
 	{
 		Comparator<Object> orderComparator;
 		switch (order)
@@ -155,7 +159,6 @@ public class BucketDefinition
 				break;
 			}
 			case ASCENDING:				
-			default:
 			{
 				if (comparator == null)
 				{
@@ -167,8 +170,16 @@ public class BucketDefinition
 				}
 				break;
 			}
+			case NONE:
+			default:
+				throw new JRRuntimeException("Unsupported order type " + order);
 		}
 		return orderComparator;
+	}
+	
+	public boolean isSorted()
+	{
+		return bucketValueComparator != null;
 	}
 	
 	/**
@@ -202,25 +213,19 @@ public class BucketDefinition
 	{
 		return totalPosition;
 	}
+	
+	
+	public BucketOrderer getOrderer()
+	{
+		return orderer;
+	}
+	
+	public BucketOrder getOrder()
+	{
+		return order;
+	}
 
-	
-	public JRExpression getOrderByExpression()
-	{
-		return orderByExpression;
-	}
-	
-	
-	public boolean hasOrderValues()
-	{
-		return orderByExpression != null;
-	}
-	
-	
-	public int compareOrderValues(Object v1, Object v2)
-	{
-		return orderValueComparator.compare(v1, v2);
-	}
-	
+
 	/**
 	 * Creates a {@link Bucket BucketValue} object for a given value.
 	 * 
@@ -232,6 +237,12 @@ public class BucketDefinition
 		if (value == null)
 		{
 			return VALUE_NULL;
+		}
+		
+		if (value instanceof BucketValueOrderDecorator)
+		{
+			// create only when orderPosition != normal?
+			return new OrderDecoratorBucket((BucketValueOrderDecorator<?>) value);
 		}
 		
 		return new Bucket(value);
@@ -270,6 +281,12 @@ public class BucketDefinition
 		{
 			this.value = value;
 			this.type = VALUE_TYPE_VALUE;
+		}
+		
+		public Bucket(Object value, byte type)
+		{
+			this.value = value;
+			this.type = type;
 		}
 		
 		
@@ -343,10 +360,16 @@ public class BucketDefinition
 			{
 				return 0;
 			}
+
+			OrderPosition orderPosition = getOrderPosition();
+			OrderPosition otherOrderPosition = val.getOrderPosition();
+			if (orderPosition != otherOrderPosition)
+			{
+				return orderPosition.comparePosition(otherOrderPosition);
+			}
 			
 			return bucketValueComparator.compare(value, val.value);
 		}
-		
 		
 		/**
 		 * Decides whether this is a total bucket.
@@ -356,6 +379,29 @@ public class BucketDefinition
 		public boolean isTotal()
 		{
 			return type == VALUE_TYPE_TOTAL;
+		}
+		
+		public OrderPosition getOrderPosition()
+		{
+			return OrderPosition.NORMAL;
+		}
+	}
+	
+	public class OrderDecoratorBucket extends Bucket
+	{
+		private OrderPosition orderPosition;
+
+		protected OrderDecoratorBucket(BucketValueOrderDecorator<?> value)
+		{
+			super(value.getValue());
+			
+			orderPosition = value.getOrderPosition();
+		}
+
+		@Override
+		public OrderPosition getOrderPosition()
+		{
+			return orderPosition;
 		}
 	}
 }

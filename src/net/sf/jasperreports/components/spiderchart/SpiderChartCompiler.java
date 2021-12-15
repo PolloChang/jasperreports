@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,7 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 /**
  * 
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: SpiderChartCompiler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SpiderChartCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SpiderChartCompiler implements ComponentCompiler
 {
@@ -90,6 +90,7 @@ public class SpiderChartCompiler implements ComponentCompiler
 			collector.addExpression(chart.getSubtitleExpression());
 			collector.addExpression(chart.getAnchorNameExpression());
 			collector.addExpression(chart.getHyperlinkReferenceExpression());
+			collector.addExpression(chart.getHyperlinkWhenExpression());
 			collector.addExpression(chart.getHyperlinkAnchorExpression());
 			collector.addExpression(chart.getHyperlinkPageExpression());
 			collector.addExpression(chart.getHyperlinkTooltipExpression());

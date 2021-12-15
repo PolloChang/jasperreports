@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,8 @@ import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRLineBox;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.base.JRBaseElementGroup;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
@@ -42,7 +44,7 @@ import net.sf.jasperreports.engine.util.JRBoxUtil;
  * Base read-only implementation of {@link net.sf.jasperreports.crosstabs.JRCellContents JRCellContents}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCellContents.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseCellContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCellContents extends JRBaseElementGroup implements JRCellContents
 {
@@ -57,6 +59,8 @@ public class JRBaseCellContents extends JRBaseElementGroup implements JRCellCont
 	protected JRLineBox lineBox;
 	protected int width;
 	protected int height;
+	
+	private JRPropertiesMap propertiesMap;
 
 	public JRBaseCellContents(JRCellContents cell, JRBaseObjectFactory factory)
 	{
@@ -70,6 +74,7 @@ public class JRBaseCellContents extends JRBaseElementGroup implements JRCellCont
 		lineBox = cell.getLineBox().clone(this);
 		width = cell.getWidth();
 		height = cell.getHeight();
+		this.propertiesMap = JRPropertiesMap.getPropertiesClone(cell);
 	}
 
 	public Color getBackcolor()
@@ -160,6 +165,26 @@ public class JRBaseCellContents extends JRBaseElementGroup implements JRCellCont
 	{
 		JRBaseCellContents clone = (JRBaseCellContents) super.clone();
 		clone.lineBox = lineBox == null ? null : (JRLineBox) lineBox.clone(clone);
+		clone.propertiesMap = JRPropertiesMap.getPropertiesClone(this);
 		return clone;
+	}
+
+	public boolean hasProperties()
+	{
+		return propertiesMap != null && propertiesMap.hasProperties();
+	}
+
+	public JRPropertiesMap getPropertiesMap()
+	{
+		if (propertiesMap == null)
+		{
+			propertiesMap = new JRPropertiesMap();
+		}
+		return propertiesMap;
+	}
+
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
 	}
 }

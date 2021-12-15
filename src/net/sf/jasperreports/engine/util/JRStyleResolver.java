@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -60,7 +60,7 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStyleResolver.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRStyleResolver.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRStyleResolver
 {
@@ -1183,31 +1183,31 @@ public final class JRStyleResolver
 	 *
 	 */
 	@SuppressWarnings("deprecation")
-	public static int getFontSize(JRFont font)
+	public static float getFontsize(JRFont font)
 	{
-		Integer ownFontSize = font.getOwnFontSize();
+		Float ownFontSize = font.getOwnFontsize();
 		if (ownFontSize != null)
 		{
-			return ownFontSize.intValue();
+			return ownFontSize.floatValue();
 		}
 		JRStyle baseStyle = getBaseStyle(font);
 		if (baseStyle != null)
 		{
-			Integer fontSize = baseStyle.getFontSize();
+			Float fontSize = baseStyle.getFontsize();
 			if (fontSize != null)
 			{
-				return fontSize.intValue();
+				return fontSize.floatValue();
 			}
 		}
-		return JRProperties.getIntegerProperty(JRFont.DEFAULT_FONT_SIZE);
+		return JRProperties.getFloatProperty(JRFont.DEFAULT_FONT_SIZE);
 	}
 	
 	/**
 	 *
 	 */
-	public static Integer getFontSize(JRStyle style)
+	public static Float getFontsize(JRStyle style)
 	{
-		Integer ownFontSize = style.getOwnFontSize();
+		Float ownFontSize = style.getOwnFontsize();
 		if (ownFontSize != null)
 		{
 			return ownFontSize;
@@ -1215,9 +1215,26 @@ public final class JRStyleResolver
 		JRStyle baseStyle = getBaseStyle(style);
 		if (baseStyle != null)
 		{
-			return baseStyle.getFontSize();
+			return baseStyle.getFontsize();
 		}
 		return null;
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getFontsize(JRFont)}.
+	 */
+	public static int getFontSize(JRFont font)
+	{
+		return (int)getFontsize(font);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #getFontsize(JRStyle)}.
+	 */
+	public static Integer getFontSize(JRStyle style)
+	{
+		Float fontSize = getFontsize(style);
+		return fontSize == null ? null : fontSize.intValue();
 	}
 
 	/**
@@ -1558,9 +1575,9 @@ public final class JRStyleResolver
 		{
 			destStyle.setStrikeThrough(srcStyle.isOwnStrikeThrough());
 		}
-		if (srcStyle.getOwnFontSize() != null)
+		if (srcStyle.getOwnFontsize() != null)
 		{
-			destStyle.setFontSize(srcStyle.getOwnFontSize());
+			destStyle.setFontSize(srcStyle.getOwnFontsize());
 		}
 		if (srcStyle.getOwnPdfFontName() != null)
 		{
@@ -1579,7 +1596,7 @@ public final class JRStyleResolver
 	/**
 	 * Merges two pens, by appending the properties of the source pen to the ones of the destination pen.
 	 */
-	private static void appendPen(JRPen destPen, JRPen srcPen)
+	public static void appendPen(JRPen destPen, JRPen srcPen)
 	{
 		if (srcPen.getOwnLineWidth() != null)
 		{
@@ -1598,7 +1615,7 @@ public final class JRStyleResolver
 	/**
 	 * Merges two boxes, by appending the properties of the source box to the ones of the destination box.
 	 */
-	private static void appendBox(JRLineBox destBox, JRLineBox srcBox)
+	public static void appendBox(JRLineBox destBox, JRLineBox srcBox)
 	{
 		appendPen(destBox.getPen(), srcBox.getPen());
 		appendPen(destBox.getTopPen(), srcBox.getTopPen());
@@ -1631,7 +1648,7 @@ public final class JRStyleResolver
 	/**
 	 * Merges two paragraphs, by appending the properties of the source paragraph to the ones of the destination paragraph.
 	 */
-	private static void appendParagraph(JRParagraph destParagraph, JRParagraph srcParagraph)
+	public static void appendParagraph(JRParagraph destParagraph, JRParagraph srcParagraph)
 	{
 		if (srcParagraph.getOwnLineSpacing() != null)
 		{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,6 +29,8 @@ import java.io.ObjectInputStream;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
@@ -40,7 +42,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * summary, page header, page footer, last page footer, column header and column footer.
  * @see JRBaseSection
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseBand.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseBand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEventsSupport
 {
@@ -67,6 +69,8 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 	 */
 	protected JRExpression printWhenExpression;
 	
+	private JRPropertiesMap propertiesMap;
+	
 
 	/**
 	 *
@@ -79,6 +83,7 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 		splitTypeValue = band.getSplitTypeValue();
 
 		printWhenExpression = factory.getExpression(band.getPrintWhenExpression());
+		this.propertiesMap = JRPropertiesMap.getPropertiesClone(band);
 	}
 		
 
@@ -123,6 +128,7 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 	{
 		JRBaseBand clone = (JRBaseBand)super.clone();
 		clone.printWhenExpression = JRCloneUtils.nullSafeClone(printWhenExpression);
+		clone.propertiesMap = JRPropertiesMap.getPropertiesClone(this);
 		clone.eventSupport = null;
 		return clone;
 	}
@@ -170,6 +176,25 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 			
 			splitType = null;
 		}
+	}
+
+	public boolean hasProperties()
+	{
+		return propertiesMap != null && propertiesMap.hasProperties();
+	}
+
+	public JRPropertiesMap getPropertiesMap()
+	{
+		if (propertiesMap == null)
+		{
+			propertiesMap = new JRPropertiesMap();
+		}
+		return propertiesMap;
+	}
+
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
 	}
 
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,14 +24,15 @@
 package net.sf.jasperreports.crosstabs.xml;
 
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabBucket;
-import net.sf.jasperreports.engine.type.SortOrderEnum;
+import net.sf.jasperreports.engine.analytics.dataset.BucketOrder;
+import net.sf.jasperreports.engine.type.EnumUtil;
 import net.sf.jasperreports.engine.xml.JRBaseFactory;
 
 import org.xml.sax.Attributes;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabBucketFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCrosstabBucketFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCrosstabBucketFactory extends JRBaseFactory
 {
@@ -49,7 +50,7 @@ public class JRCrosstabBucketFactory extends JRBaseFactory
 		
 		bucket.setValueClassName(attributes.getValue(ATTRIBUTE_class));
 
-		SortOrderEnum order = SortOrderEnum.getByName(attributes.getValue(ATTRIBUTE_order));
+		BucketOrder order = EnumUtil.getEnumByName(BucketOrder.values(), attributes.getValue(ATTRIBUTE_order));
 		if (order != null)
 		{
 			bucket.setOrder(order);

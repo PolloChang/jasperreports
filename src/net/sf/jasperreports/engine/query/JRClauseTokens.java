@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,13 +30,20 @@ import net.sf.jasperreports.engine.JRQueryChunk;
  * Query clause chunk wrapper.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRClauseTokens.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRClauseTokens.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRQueryChunk#getTokens()
  * @see JRQueryChunk#TYPE_CLAUSE_TOKENS
  */
 public class JRClauseTokens
 {
 
+	/**
+	 * The position of the clause Id token.
+	 * 
+	 * @see #getClauseId()
+	 */
+	public static final int CLAUSE_ID_POSITION = 0;
+	
 	private final String[] tokens;
 
 	/**
@@ -47,6 +54,16 @@ public class JRClauseTokens
 	public JRClauseTokens(final String[] tokens)
 	{
 		this.tokens = tokens;
+	}
+	
+	/**
+	 * Returns the clause Id, which is the first token in the clause.
+	 * 
+	 * @return the clause Id
+	 */
+	public String getClauseId()
+	{
+		return getToken(CLAUSE_ID_POSITION);
 	}
 	
 	/**

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,16 +35,17 @@ import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRParagraph;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRTextElement;
+import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
 import net.sf.jasperreports.engine.type.LineSpacingEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.JRSingletonCache;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
@@ -56,10 +57,13 @@ import net.sf.jasperreports.engine.util.MarkupProcessorFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillTextElement.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillTextElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRFillTextElement extends JRFillElement implements JRTextElement
 {
+	
+	public static final String PROPERTY_CONSUME_SPACE_ON_OVERFLOW = 
+			JRPropertiesUtil.PROPERTY_PREFIX + "consume.space.on.overflow";
 
 	/**
 	 *
@@ -75,7 +79,9 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	private JRTextMeasurer textMeasurer;
 	private float lineSpacingFactor;
 	private float leadingOffset;
+	private float textWidth;
 	private float textHeight;
+	private int elementStretchHeightDelta;
 	private int textStart;
 	private int textEnd;
 	private short[] lineBreakOffsets;
@@ -84,8 +90,18 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	private JRStyledText styledText;
 	private Map<JRStyle,Map<Attribute,Object>> styledTextAttributesMap = new HashMap<JRStyle,Map<Attribute,Object>>();
 	
-	protected final JRLineBox lineBox;
-	protected final JRParagraph paragraph;
+	protected final JRLineBox initLineBox;
+	protected final JRParagraph initParagraph;
+	private final boolean consumeSpaceOnOverflow;
+	protected JRLineBox lineBox;
+	protected JRParagraph paragraph;
+
+	private JRStyle currentFillStyle;
+	private FillStyleObjects fillStyleObjects;
+	private Map<JRStyle, FillStyleObjects> fillStyleObjectsMap;
+	
+	private boolean defaultKeepFullText;
+	private boolean dynamicKeepFullText;
 
 	/**
 	 *
@@ -98,8 +114,20 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	{
 		super(filler, textElement, factory);
 
-		lineBox = textElement.getLineBox().clone(this);
-		paragraph = textElement.getParagraph().clone(this);
+		initLineBox = textElement.getLineBox().clone(this);
+		initParagraph = textElement.getParagraph().clone(this);
+
+		// not supporting property expressions for this
+		this.consumeSpaceOnOverflow = JRPropertiesUtil.getInstance(filler.getJasperReportsContext()).getBooleanProperty(
+				textElement, PROPERTY_CONSUME_SPACE_ON_OVERFLOW, true);
+		
+		this.defaultKeepFullText = filler.getPropertiesUtil().getBooleanProperty( 
+				JRTextElement.PROPERTY_PRINT_KEEP_FULL_TEXT, false,
+				// manually falling back to report properties as getParentProperties() is null for textElement
+				textElement, filler.getJasperReport());
+		this.dynamicKeepFullText = hasDynamicProperty(JRTextElement.PROPERTY_PRINT_KEEP_FULL_TEXT);
+		
+		this.fillStyleObjectsMap = new HashMap<JRStyle, JRFillTextElement.FillStyleObjects>();
 	}
 	
 
@@ -107,8 +135,13 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	{
 		super(textElement, factory);
 		
-		lineBox = textElement.getLineBox().clone(this);
-		paragraph = textElement.getParagraph().clone(this);
+		initLineBox = textElement.getLineBox().clone(this);
+		initParagraph = textElement.getParagraph().clone(this);
+		this.consumeSpaceOnOverflow = textElement.consumeSpaceOnOverflow;
+		
+		this.defaultKeepFullText = textElement.defaultKeepFullText;
+		this.dynamicKeepFullText = textElement.dynamicKeepFullText;
+		this.fillStyleObjectsMap = textElement.fillStyleObjectsMap;
 	}
 
 
@@ -122,6 +155,60 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		if (textMeasurer == null)
 		{
 			createTextMeasurer();
+		}
+	}
+
+
+	/**
+	 *
+	 */
+	protected void evaluateStyle(
+		byte evaluation
+		) throws JRException
+	{
+		super.evaluateStyle(evaluation);
+
+		if (providerStyle == null)
+		{
+			lineBox = null;
+			paragraph = null;
+			
+			setFillStyleObjects();
+		}
+		else
+		{
+			lineBox = initLineBox.clone(this);
+			paragraph = initParagraph.clone(this);
+			JRStyleResolver.appendBox(lineBox, providerStyle.getLineBox());
+			JRStyleResolver.appendParagraph(paragraph, providerStyle.getParagraph());
+			
+			fillStyleObjects = null;
+		}
+	}
+
+	private void setFillStyleObjects()
+	{
+		JRStyle evaluatedStyle = getStyle();
+		// quick check for fast exit (avoid map lookup) when the style has not changed
+		//FIXME keep two previous styles to catch common alternating row styles?
+		if (fillStyleObjects != null && currentFillStyle == evaluatedStyle)
+		{
+			return;
+		}
+		
+		// update current style
+		currentFillStyle = evaluatedStyle;
+		
+		// search cached per style
+		fillStyleObjects = fillStyleObjectsMap.get(evaluatedStyle);
+		if (fillStyleObjects == null)
+		{
+			// create fill style objects
+			CachingLineBox cachedLineBox = new CachingLineBox(initLineBox);
+			CachingParagraph cachedParagraph = new CachingParagraph(initParagraph);
+			fillStyleObjects = new FillStyleObjects(cachedLineBox, cachedParagraph);
+			
+			fillStyleObjectsMap.put(evaluatedStyle, fillStyleObjects);
 		}
 	}
 
@@ -144,7 +231,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		
 	public HorizontalAlignEnum getOwnHorizontalAlignmentValue()
 	{
-		return ((JRTextElement)this.parent).getOwnHorizontalAlignmentValue();
+		return providerStyle == null || providerStyle.getOwnHorizontalAlignmentValue() == null ? ((JRTextElement)this.parent).getOwnHorizontalAlignmentValue() : providerStyle.getOwnHorizontalAlignmentValue();
 	}
 
 	/**
@@ -165,7 +252,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		
 	public VerticalAlignEnum getOwnVerticalAlignmentValue()
 	{
-		return ((JRTextElement)this.parent).getOwnVerticalAlignmentValue();
+		return providerStyle == null || providerStyle.getOwnVerticalAlignmentValue() == null ? ((JRTextElement)this.parent).getOwnVerticalAlignmentValue() : providerStyle.getOwnVerticalAlignmentValue();
 	}
 
 	/**
@@ -186,7 +273,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		
 	public RotationEnum getOwnRotationValue()
 	{
-		return ((JRTextElement)this.parent).getOwnRotationValue();
+		return providerStyle == null || providerStyle.getOwnRotationValue() == null ? ((JRTextElement)this.parent).getOwnRotationValue() : providerStyle.getOwnRotationValue();
 	}
 
 	/**
@@ -234,7 +321,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public String getOwnMarkup()
 	{
-		return ((JRTextElement)parent).getOwnMarkup();
+		return providerStyle == null || providerStyle.getOwnMarkup() == null ? ((JRTextElement)parent).getOwnMarkup() : providerStyle.getOwnMarkup();
 	}
 
 	/**
@@ -245,12 +332,24 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		throw new UnsupportedOperationException();
 	}
 
+	protected JRLineBox getPrintLineBox()
+	{
+		return lineBox == null ? initLineBox : lineBox;
+	}
+	
 	/**
 	 *
 	 */
 	public JRLineBox getLineBox()
 	{
-		return lineBox;
+		return lineBox == null 
+				? (fillStyleObjects == null ? initLineBox : fillStyleObjects.lineBox) 
+				: lineBox;
+	}
+
+	protected JRParagraph getPrintParagraph()
+	{
+		return paragraph == null ? initParagraph : paragraph;
 	}
 
 	/**
@@ -258,7 +357,9 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public JRParagraph getParagraph()
 	{
-		return paragraph;
+		return paragraph == null 
+				? (fillStyleObjects == null ? initParagraph : fillStyleObjects.paragraph) 
+				: paragraph;
 	}
 
 	/**
@@ -281,7 +382,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		{
 			styledTextAttributes = new HashMap<Attribute,Object>(); 
 			//JRFontUtil.getAttributes(styledTextAttributes, this, filler.getLocale());
-			JRFontUtil.getAttributesWithoutAwtFont(styledTextAttributes, this);
+			FontUtil.getInstance(filler.getJasperReportsContext()).getAttributesWithoutAwtFont(styledTextAttributes, this);
 			styledTextAttributes.put(TextAttribute.FOREGROUND, getForecolor());
 			if (getModeValue() == ModeEnum.OPAQUE)
 			{
@@ -333,6 +434,22 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		return isLeftToRight ? RunDirectionEnum.LTR : RunDirectionEnum.RTL;
 	}
 		
+	/**
+	 *
+	 */
+	public float getTextWidth()
+	{
+		return textWidth;
+	}
+		
+	/**
+	 *
+	 */
+	protected void setTextWidth(float textWidth)
+	{
+		this.textWidth = textWidth;
+	}
+
 	/**
 	 *
 	 */
@@ -397,6 +514,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		textEnd = 0;
 		textTruncateSuffix = null;
 		lineBreakOffsets = null;
+		elementStretchHeightDelta = 0;
 	}
 	
 	/**
@@ -420,7 +538,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	/**
 	 *
 	 */
-	protected void reset()
+	public void reset()
 	{
 		super.reset();
 		
@@ -428,13 +546,14 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		lineSpacingFactor = 0;
 		leadingOffset = 0;
 		textHeight = 0;
+		elementStretchHeightDelta = 0;
 	}
 
 
 	/**
 	 *
 	 */
-	protected void rewind()
+	public void rewind()
 	{
 		resetTextChunk();
 	}
@@ -500,30 +619,59 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 			return;
 		}
 
-		/*   */
+		boolean canOverflow = canOverflow();
 		JRMeasuredText measuredText = textMeasurer.measure(
 			tmpStyledText,
 			getTextEnd(),
 			availableStretchHeight,
-			canOverflow()
+			canOverflow
 			);
 		
 		isLeftToRight = measuredText.isLeftToRight();
+		setTextWidth(measuredText.getTextWidth());
 		setTextHeight(measuredText.getTextHeight());
+		
+		elementStretchHeightDelta = 0;
 		if (getRotationValue().equals(RotationEnum.NONE))
 		{
-			setStretchHeight((int)getTextHeight() + getLineBox().getTopPadding().intValue() + getLineBox().getBottomPadding().intValue());
+			//FIXME truncating to int here seems wrong as the text measurer compares 
+			// the exact text height against the available height
+			int elementTextHeight = (int) getTextHeight() + getLineBox().getTopPadding() + getLineBox().getBottomPadding();
+			boolean textEnded = measuredText.getTextOffset() >= tmpStyledText.getText().length();
+			if (textEnded || !canOverflow || !consumeSpaceOnOverflow)
+			{
+				setStretchHeight(elementTextHeight);
+			}
+			else
+			{
+				// occupy all remaining space so that no other element renders there
+				// but do not change the print element height
+				int stretchHeight = getHeight() + availableStretchHeight;
+				setStretchHeight(stretchHeight);
+				
+				// store the difference between the consumed stretch height and the text stretch height.
+				// this will be used in fill() to set the print element height, 
+				// which doesn't take into account the consumed empty space
+				int textStretchHeight = elementTextHeight > getHeight() ? elementTextHeight : getHeight();
+				elementStretchHeightDelta = getStretchHeight() - textStretchHeight;
+			}
 		}
 		else
 		{
 			setStretchHeight(getHeight());
 		}
+		
 		setTextStart(getTextEnd());
 		setTextEnd(measuredText.getTextOffset());
 		setLineBreakOffsets(measuredText.getLineBreakOffsets());
 		setTextTruncateSuffix(measuredText.getTextSuffix());
 		setLineSpacingFactor(measuredText.getLineSpacingFactor());
 		setLeadingOffset(measuredText.getLeadingOffset());
+	}
+	
+	public int getPrintElementHeight()
+	{
+		return getStretchHeight() - elementStretchHeightDelta;
 	}
 	
 	protected abstract boolean canOverflow();
@@ -542,7 +690,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public String getOwnFontName()
 	{
-		return ((JRFont)parent).getOwnFontName();
+		return providerStyle == null || providerStyle.getOwnFontName() == null ? ((JRFont)parent).getOwnFontName() : providerStyle.getOwnFontName();
 	}
 
 	/**
@@ -567,7 +715,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public Boolean isOwnBold()
 	{
-		return ((JRFont)parent).isOwnBold();
+		return providerStyle == null || providerStyle.isOwnBold() == null ? ((JRFont)parent).isOwnBold() : providerStyle.isOwnBold();
 	}
 
 	/**
@@ -601,7 +749,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public Boolean isOwnItalic()
 	{
-		return ((JRFont)parent).isOwnItalic();
+		return providerStyle == null || providerStyle.isOwnItalic() == null ? ((JRFont)parent).isOwnItalic() : providerStyle.isOwnItalic();
 	}
 
 	/**
@@ -634,7 +782,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public Boolean isOwnUnderline()
 	{
-		return ((JRFont)parent).isOwnUnderline();
+		return providerStyle == null || providerStyle.isOwnUnderline() == null ? ((JRFont)parent).isOwnUnderline() : providerStyle.isOwnUnderline();
 	}
 
 	/**
@@ -667,7 +815,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public Boolean isOwnStrikeThrough()
 	{
-		return ((JRFont)parent).isOwnStrikeThrough();
+		return providerStyle == null || providerStyle.isOwnStrikeThrough() == null ? ((JRFont)parent).isOwnStrikeThrough() : providerStyle.isOwnStrikeThrough();
 	}
 
 	/**
@@ -690,34 +838,58 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	/**
 	 *
 	 */
-	public int getFontSize()
+	public float getFontsize()
 	{
-		return JRStyleResolver.getFontSize(this);
+		return JRStyleResolver.getFontsize(this);
 	}
 
 	/**
 	 *
+	 */
+	public Float getOwnFontsize()
+	{
+		return providerStyle == null || providerStyle.getOwnFontsize() == null ? ((JRFont)parent).getOwnFontsize() : providerStyle.getOwnFontsize();
+	}
+
+	/**
+	 * 
+	 */
+	public void setFontSize(Float size)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getFontsize()}.
+	 */
+	public int getFontSize()
+	{
+		return (int)getFontsize();
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getOwnFontsize()}.
 	 */
 	public Integer getOwnFontSize()
 	{
-		return ((JRFont)parent).getOwnFontSize();
+		Float fontSize = getOwnFontsize();
+		return fontSize == null ? null : fontSize.intValue();
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(int size)
 	{
-		throw new UnsupportedOperationException();
+		setFontSize((float)size);
 	}
 
 	/**
-	 * Alternative setSize method which allows also to reset
-	 * the "own" size property.
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(Integer size)
 	{
-		throw new UnsupportedOperationException();
+		setFontSize(size == null ? null : size.floatValue());
 	}
 
 	/**
@@ -733,7 +905,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public String getOwnPdfFontName()
 	{
-		return ((JRFont)parent).getOwnPdfFontName();
+		return providerStyle == null || providerStyle.getOwnPdfFontName() == null ? ((JRFont)parent).getOwnPdfFontName() : providerStyle.getOwnPdfFontName();
 	}
 
 	/**
@@ -758,7 +930,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public String getOwnPdfEncoding()
 	{
-		return ((JRFont)parent).getOwnPdfEncoding();
+		return providerStyle == null || providerStyle.getOwnPdfEncoding() == null ? ((JRFont)parent).getOwnPdfEncoding() : providerStyle.getOwnPdfEncoding();
 	}
 
 	/**
@@ -783,7 +955,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	public Boolean isOwnPdfEmbedded()
 	{
-		return ((JRFont)parent).isOwnPdfEmbedded();
+		return providerStyle == null || providerStyle.isOwnPdfEmbedded() == null ? ((JRFont)parent).isOwnPdfEmbedded() : providerStyle.isOwnPdfEmbedded();
 	}
 
 	/**
@@ -886,8 +1058,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		JRStyledText fullStyledText = getStyledText();
 		String fullText = fullStyledText.getText();
 		
-		boolean keepAllText = !canOverflow() 
-				&& filler.getPropertiesUtil().getBooleanProperty(this, JRTextElement.PROPERTY_PRINT_KEEP_FULL_TEXT, false);
+		boolean keepAllText = !canOverflow() && keepFullText();
 		if (keepAllText)
 		{
 			//assert getTextStart() == 0
@@ -901,11 +1072,11 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 				//rewrite as styled text
 				String styledText = filler.getStyledTextParser().write(
 						fullStyledText);
-				printText.setText(styledText);
+				setPrintText(printText, styledText);
 			}
 			else
 			{
-				printText.setText(fullText);
+				setPrintText(printText, fullText);
 			}
 			
 			if (endIndex < fullText.length())
@@ -924,13 +1095,35 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 			}
 			else
 			{
+				// relying on substring to return the same String object when whole substring
 				printedText = fullText.substring(startIndex, endIndex);
 			}
-			printText.setText(printedText);
+			
+			setPrintText(printText, printedText);
 		}
 		
 		printText.setTextTruncateSuffix(getTextTruncateSuffix());
 		printText.setLineBreakOffsets(getLineBreakOffsets());
+	}
+	
+	protected boolean keepFullText()
+	{
+		boolean keepFullText = defaultKeepFullText;
+		if (dynamicKeepFullText)
+		{
+			String keepFullTextProp = getDynamicProperties().getProperty(
+					JRTextElement.PROPERTY_PRINT_KEEP_FULL_TEXT);
+			if (keepFullTextProp != null)
+			{
+				keepFullText = JRPropertiesUtil.asBoolean(keepFullTextProp);
+			}
+		}
+		return keepFullText;
+	}
+	
+	protected void setPrintText(JRPrintText printText, String text)
+	{
+		printText.setText(text);
 	}
 
 	protected String getTextTruncateSuffix()
@@ -943,4 +1136,15 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		this.textTruncateSuffix = textTruncateSuffix;
 	}
 
+	private static class FillStyleObjects
+	{
+		private final JRLineBox lineBox;
+		private final JRParagraph paragraph;
+		
+		public FillStyleObjects(JRLineBox lineBox, JRParagraph paragraph)
+		{
+			this.lineBox = lineBox;
+			this.paragraph = paragraph;
+		}
+	}
 }

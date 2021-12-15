@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,13 +28,14 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.fill.JRTemplateElement;
+import net.sf.jasperreports.engine.fill.PrintElementOriginator;
 
 
 /**
  * A base abstract implementation of a fill component.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseFillComponent.java 4808 2011-11-21 13:44:22Z lucianc $
+ * @version $Id: BaseFillComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BaseFillComponent implements FillComponent
 {
@@ -43,11 +44,18 @@ public abstract class BaseFillComponent implements FillComponent
 	 * The fill context, as set by {@link #initialize(FillContext)}.
 	 */
 	protected FillContext fillContext;
+	protected PrintElementOriginator printElementOriginator;
+	
+	/**
+	 * @deprecated replaced by {@link #printElementOriginator}
+	 */
 	protected int elementId;
 	
 	public void initialize(FillContext fillContext)
 	{
 		this.fillContext = fillContext;
+		
+		this.printElementOriginator = fillContext.getPrintElementOriginator();
 		this.elementId = fillContext.getElementSourceId();
 	}
 

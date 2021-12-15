@@ -1,4 +1,8 @@
-button::-moz-focus-inner {
+table.jrPage span.jr_search_result.highlight span {
+    background-color: yellow;
+}
+
+#jive_foobar button::-moz-focus-inner, #jive_dialog button::-moz-focus-inner {
     padding: 0 !important;
     border: 0 none !important;
 }
@@ -43,6 +47,7 @@ button::-moz-focus-inner {
     height:20px;
     background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/foobar.bg.png) repeat-x #fff;
     background-position:0 1px;
+    width: 100px;
     z-index:11;
 }
 
@@ -75,16 +80,13 @@ button::-moz-focus-inner {
 }
 
 .jive_dialog {
-    position:absolute;
-    z-index:2;
-    border:solid 1px #ccc;
-    background:#fff;
-    -moz-box-shadow: 0 0 4px 4px rgba(51,51,51,0.5);
-    -webkit-box-shadow: 0 0 4px 4px rgba(51,51,51,0.5);
-    box-shadow: 0 0 4px 4px rgba(51,51,51,0.5);
-    zoom:1;
+    background: none repeat scroll 0 0 #FFFFFF;
+    border: 1px solid #CCCCCC;
+    box-shadow: 0 0 4px 4px rgba(51, 51, 51, 0.5);
+    font-family: Verdana;
     font-size: 11px;
-    font-family: Arial;
+    position: absolute;
+    z-index: 2;
 }
 .jive_dialog > div.msshadow  {
     position:absolute;
@@ -111,10 +113,13 @@ button::-moz-focus-inner {
 }
 
 .jive_dialog div.dialogBody {
-    position:relative;
-    padding:3px;
-    zoom:1;
-    height:auto;
+	max-height: 480px;
+    *max-height:460px; /* IE7 */
+    overflow-y: auto;
+    overflow-x:hidden;
+    padding: 3px;
+    position: relative;
+    margin: 0 10px;
 }
 
 .jive_dialog div.dialogFooter {
@@ -124,8 +129,11 @@ button::-moz-focus-inner {
     text-align: left;
     border-top:solid 1px #d3d5d6;
     overflow:hidden;
-.overflow:visible;
     }
+
+.jive_dialog button#dialogOk, .jive_dialog button#dialogCancel {
+    float: right;
+}
 
 .jive_dialog button {
     display:block;
@@ -154,7 +162,7 @@ button::-moz-focus-inner {
     z-index:3;
 }
 
-.pmenu {
+#jive_dropdown .pmenu, #jive_menus .pmenu {
     position:absolute;
     background:#fff;
     z-index:10000;
@@ -168,62 +176,63 @@ button::-moz-focus-inner {
     font-family: arial;
 }
 
-.pmenuitem {
-    padding:0 12px;
-    cursor:pointer;
-    color:#666;
-    height:24px;
-    line-height:2em;
-    font-size:12px;
+#jive_dropdown .pmenuitem, #jive_menus .pmenuitem {
+    color: #666666;
+    cursor: pointer;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    height: 24px;
+    line-height: 2em;
+    padding: 0 12px;
 }
 
-.pmenuitem.hover {background:#fc870e; color:#fff;}
+#jive_dropdown .pmenuitem.hover, #jive_menus .pmenuitem.hover {background:#fc870e; color:#fff;}
 
-button.action {
+#jive_dialog button.action {
     /* from(e7e7e7), to(c1c1c1) */
     background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/action.png) repeat-x;
     color: #666;
 }
 
-button.action.over {
+#jive_dialog button.action.over {
     /* from(e4e0e0), to(5a5a5b) */
     background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/action.over.png) repeat-x;
 }
 
-button.action.pressed {
+#jive_dialog button.action.pressed {
     /* from(e4e0e0), to(5a5a5b) */
     background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/action.pressed.png) repeat-x;
 }
 
-button.action.primary {
+#jive_dialog button.action.primary {
     /* from(3fb8fa), to(2881bb) */
     background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/action.primary.png) repeat-x !important;
     color: #fff;
 }
 
-button.action.primary.over {
+#jive_dialog button.action.primary.over {
     /* from(#faac1f), to(#f9771d) */
     background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/action.primary.over.png) repeat-x !important;
 }
 
-button.action.primary.pressed {
+#jive_dialog button.action.primary.pressed {
     background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/action.primary.pressed.png) repeat-x !important;
 }
 
-div.dialogFooter button.disabled {
+#jive_dialog div.dialogFooter button.disabled {
     background: #e7e7e7 !important;
     color:#aaa !important;
 }
 
-.tabContainer {
+#jive_dialog .tabContainer {
     position:absolute;
-    right:8px;
+    right:22px;
     top:3px;
     z-index:2;
     width:auto;
 }
 
-.tab {
+#jive_dialog .tab {
     display:inline-block;
     *display:inline;
     zoom:1;
@@ -234,8 +243,8 @@ div.dialogFooter button.disabled {
 }
 
 /* multisheet tabs */
-.tab.multisheet,
-.tab.dialog {
+#jive_dialog .tab.multisheet,
+#jive_dialog .tab.dialog {
     min-width:100px;
     cursor:pointer;
     white-space:nowrap;
@@ -248,19 +257,19 @@ div.dialogFooter button.disabled {
     margin: 0 2px;
 }
 
-.tab.multisheet span,
-.tab.dialog span	{
-    height:100%;
-    min-width:100px;
-    width:auto;
-    line-height:19px;
-    display:block;
-    text-align:center;
-    padding: 0 4px;
+#jive_dialog .tab.multisheet span,
+#jive_dialog .tab.dialog span	{
+    display: block;
+    height: 100%;
+    line-height: 19px;
+    min-width: 100px;
+    padding: 0 8px;
+    text-align: center;
+    width: auto;
 }
 
-.tab.multisheet.active,
-.tab.dialog.active {
+#jive_dialog .tab.multisheet.active,
+#jive_dialog .tab.dialog.active {
     height:22px;
     top:1px;
     border:1px solid #c5c5c5;
@@ -268,8 +277,8 @@ div.dialogFooter button.disabled {
     border-bottom:transparent;
 }
 
-.tab.multisheet.active span,
-.tab.dialog.active span {
+#jive_dialog .tab.multisheet.active span,
+#jive_dialog .tab.dialog.active span {
     line-height:23px;
     font-weight:bold;
     border:1px solid #f8f8f8;
@@ -278,14 +287,13 @@ div.dialogFooter button.disabled {
     background: #ededed; /*fallback for non-CSS3 browsers*/
 }
 
-.tab.dialog.active span {
+#jive_dialog .tab.dialog.active span {
     background:#fff;
     border-bottom:1px solid #ffffff;
 }
 
 .jive_form table {
     margin-bottom:2px;
-    border-collapse: collapse;
 }
 
 .jive_form td {
@@ -300,9 +308,18 @@ div.dialogFooter button.disabled {
     vertical-align: middle;
 }
 
-div.thick.wrapper {position:relative;padding:10px 10px;z-index:1;overflow:hidden;}
-div.wrapper {position:relative;padding:4px 10px;z-index:1;overflow:hidden;}
-
+#jive_dialog div.thick.wrapper {position:relative;padding:10px 10px;z-index:1;overflow:hidden;}
+#jive_dialog div.wrapper {
+	overflow: hidden;
+    padding: 4px 10px 6px 10px;
+    position: relative;
+    z-index: 1;
+}
+#jive_dialog div.wrapper.label {
+	padding:8px 10px 0px 10px;
+	margin-bottom:0px;
+}
+#jive_dialog div.t_wrap {padding-right: 4px;}
 .jive_form input,
 .jive_form select {
     font-size: 11px;
@@ -323,7 +340,7 @@ div.wrapper {position:relative;padding:4px 10px;z-index:1;overflow:hidden;}
 
 .jive_form input[type="radio"]{width:auto;height:auto;float:left;position:relative;display:block;border:none;}
 
-.jive_form select.showList {height:auto; !important}
+.jive_form select.showList {height:auto; !important; display: inherit;}
 .jive_form select.wFreeText {margin-top:8px; !important}
 
 .jive_form .colorbar {height:24px;border:solid 1px #ccc;}
@@ -331,31 +348,73 @@ div.wrapper {position:relative;padding:4px 10px;z-index:1;overflow:hidden;}
 .jive_inputLabel {float:left;position:relative;margin-left:8px;}
 
 .jive_inputbutton {
-    float:left;
-    position:relative;
-    cursor:pointer;
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/dialog_button_capsule_sprite.png);
-    background-position: -50px 0;
-    width:28px;
-    height:28px;
-    border-right:solid 1px #c1c1c1;
-    -webkit-user-select: none;
     -moz-user-select: none;
+    background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/dialog_button_capsule_sprite.png) repeat scroll 0 0 transparent;
+    cursor: pointer;
+    float: left;
+    height: 26px;
+    margin-left: 0px;
+    margin-right: 4px;
+    position: relative;
+    width: 26px;
 }
+
+.jive_inputbutton.plain {
+	background:none;
+}
+
 .jive_inputbutton.over {background-position:-50px -45px;}
 .jive_inputbutton.pressed {background-position:-50px -103px;}
-.jive_inputbutton.selected {background-position:-50px -154px;}
-.jive_inputbutton.first {background-position: 0 0;}
-.jive_inputbutton.first.over {background-position: 0 -45px;}
-.jive_inputbutton.first.pressed {background-position: 0 -103px;}
-.jive_inputbutton.first.selected {background-position: 0 -154px;}
-.jive_inputbutton.last {background-position: -100px 0;border-right:none;}
-.jive_inputbutton.last.over {background-position: -100px -45px;}
-.jive_inputbutton.last.pressed {background-position: -100px -103px;}
-.jive_inputbutton.last.selected {background-position: -100px -154px;}
+.jive_inputbutton.selected {background-position: 0 -50px;}
+.jive_inputbutton.unchanged {background-position: -124px 0px;}
+.jive_inputbutton.drop {background-position: -58px 0; width: 34px;}
+.jive_inputbutton.drop.unchanged {background-position: -182px 0;}
+#jive_form_basicFormat .jive_inputbutton.drop > .jive_bIcon {
+    margin-left: 0;
+    height: 30px;
+    margin-top: 1px;
+    width: 28px;
+}
+.jive_inputbutton.disabled {cursor: default;}
 
-.jive_inputbutton.drop {width:35px;background-position:-238px 0;}
-.jive_inputbutton > div.colorpick {position:absolute;top:16px;margin-left:5px;height:4px;width:14px;}
+#jive_dialog .selected .boldIcon {
+    background-position: -30px -3px;
+}
+
+#jive_dialog .selected .italicIcon {
+    background-position: -30px -49px;
+}
+
+#jive_dialog .selected .underlineIcon {
+    background-position: -30px -94px;
+}
+
+#jive_dialog .unchanged .boldIcon {
+	background-position: -60px -3px;
+}
+
+#jive_dialog .unchanged .italicIcon {
+    background-position: -60px -49px;
+}
+
+#jive_dialog .unchanged .underlineIcon {
+    background-position: -60px -94px;
+}
+
+.jive_inputbutton > div.colorpick {
+    cursor: pointer;
+    position: absolute;
+    top: 18px;
+    height:4px;
+}
+#jive_dialog div.colorpick.normal {
+    width:16px;
+    margin-left:6px;
+}
+#jive_dialog div.colorpick.wide {
+    width: 18px;
+    margin-left:5px;
+}
 
 .jive_listTextInputTouch {display:block;}
 
@@ -367,28 +426,35 @@ div.wrapper {position:relative;padding:4px 10px;z-index:1;overflow:hidden;}
     cursor:pointer;
 }
 
-.jive_bIcon {display:inline-block;.display:inline;zoom:1;width:20px;height:20px;margin:3px;}
+.jive_bIcon {
+	background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
+    display: inline-block;
+    height: 22px;
+    margin: 3px;
+    width: 20px;
+}
+
 .jive_freeTextButton .jive_bIcon {
     width:16px;
     height:16px;
     margin:6px;
 }
 
-.sortDescIcon {
+#jive_foobar .sortDescIcon {
     background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/iv_format_button_sprite.png);
     background-position:3px -94px;
     top:2px;
     left:3px;
 }
-.sortAscIcon {
+#jive_foobar .sortAscIcon {
     background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/iv_format_button_sprite.png);
     background-position:3px -63px;
 }
-.filterIcon {
+#jive_foobar .filterIcon {
     background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/iv_format_button_sprite.png);
     background-position:4px -31px;
 }
-.formatIcon {
+#jive_foobar .formatIcon {
     background: url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/iv_format_button_sprite.png);
     background-position:2px 2px;
 }
@@ -413,65 +479,167 @@ div.wrapper {position:relative;padding:4px 10px;z-index:1;overflow:hidden;}
 .jive_foobar_button.disabled .filterIcon{
     background-position:-34px -31px;
 }
-.boldIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
+#jive_dialog .boldIcon {
     background-position:0 -3px;
 }
-.italicIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
+#jive_dialog .italicIcon {
     background-position:0 -49px;
 }
-.underlineIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -95px;
+#jive_dialog .underlineIcon {
+    background-position:0 -94px;
 }
-.leftIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -141px;
+#jive_dialog .backgroundColorIcon {
+    background-position: 2px -551px;
 }
-.centerIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -187px;
+#jive_dialog .unchanged .backgroundColorIcon {
+    background-position: -60px -551px;
 }
-.rightIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -233px;
+#jive_form_columnConditionalFormatting .moveUpIcon {
+    background-position: 0 -598px;
 }
-.currencyIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -279px;
+
+#jive_form_columnConditionalFormatting .moveDownIcon {
+    background-position: 0 -640px;
+}
+
+#jive_form_columnConditionalFormatting .deleteIcon {
+    background-position: 0 -680px;
+}
+#jive_form_basicFormat .leftIcon {
+    background-position:-2px -142px;
+}
+#jive_form_basicFormat .selected .leftIcon {
+    background-position: -32px -142px;
+}
+#jive_form_basicFormat .centerIcon {
+    background-position: -1px -188px;
+}
+#jive_form_basicFormat .selected .centerIcon {
+    background-position: -31px -188px;
+}
+#jive_form_basicFormat .rightIcon {
+    background-position: 0 -234px;
+}
+#jive_form_basicFormat .selected .rightIcon {
+    background-position: -30px -234px;
+}
+#jive_form_basicFormat .currencyIcon {
+    background-position:-1px -277px;
     width: 23px;
 }
-.percentageIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -326px;
+#jive_form_basicFormat .percentageIcon {
+    background-position:-1px -326px;
 }
-.commaIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -371px;
+#jive_form_basicFormat .commaIcon {
+    background-position:-1px -371px;
 }
-.increaseDecimalsIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -417px;
+#jive_form_basicFormat .increaseDecimalsIcon {
+    background-position:-2px -417px;
 }
-.decreaseDecimalsIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png);
-    background-position:0 -463px;
+#jive_form_basicFormat .decreaseDecimalsIcon {
+    background-position:-1px -463px;
 }
-.fontColorIcon {
-    background:url(${path}net/sf/jasperreports/components/headertoolbar/resources/images/jive/button_formatting_sprite.png) no-repeat;
-    background-position:0 -507px;
-    margin-left:5px;
-    margin-top:1px;
-    width:28px;
+#jive_dialog .fontColorIcon {
+    background-position:2px -508px;
+}
+#jive_dialog .unchanged .fontColorIcon {
+    background-position: -60px -508px;
 }
 
 #jive_colorpicker {z-index:10000;}
-#jive_colorpicker td {background:#fff;border:solid 1px #fff;}
+#jive_colorpicker td {background:#fff;border:solid 1px #fff;padding:0;}
 #jive_colorpicker td.selected {background:#eee;border:solid 1px #eee;}
-div.colorpick {width:16px;height:16px;margin:4px;cursor:pointer;}
+#jive_colorpicker .pick {width:16px;height:16px;margin:4px;cursor:pointer;}
+#jive_colorpicker table {border-collapse: collapse;}
+#jive_colorpicker tr.transparent_pick div.pick{border: 1px solid black; width: 240px;}
+#jive_colorpicker tr.reset_pick div.pick{border: 1px solid black; width: 240px;}
+table.jrPage .interactiveElement{cursor:pointer;}
 
-.columnHeader{cursor:pointer;}
+/* CONDITION LIST */
+#jive_form_columnConditionalFormatting .conditionList {
+	border-collapse: separate;
+	border:1px solid #c0c0c0;
+	border-spacing: 0;
+	color:#666666;
+}
 
-div.ui-datepicker {font-size: 11px;}
+#jive_form_columnConditionalFormatting .conditionList tr {
+	height:26px;
+}
 
+#jive_form_columnConditionalFormatting .conditionList th {
+	background-color: #D4DEE9; /* fallback/image non-cover color */
+	background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#E1E9F3), to(#D4DEE9)); /* Safari 4+, Chrome 1-9 */
+	background-image: -webkit-linear-gradient(top, #E1E9F3, #D4DEE9); /* Safari 5.1+, Mobile Safari, Chrome 10+ */
+	background-image: -moz-linear-gradient(top, #E1E9F3, #D4DEE9); /* Firefox 3.6+ */
+	background-image: -ms-linear-gradient(top, #E1E9F3, #D4DEE9); /* IE 10+ */
+	background-image: -o-linear-gradient(top, #E1E9F3, #D4DEE9);	/* Opera 11.10+ */
+	vertical-align:middle;
+	padding:0 6px;
+	font-weight:normal;
+	border-top:none;
+	border-right:1px solid #c0c0c0;
+	border-bottom:1px solid #c0c0c0;
+	*border-bottom:2px solid #c0c0c0;
+	border-left:1px solid #ffffff;
+}
+
+#jive_form_columnConditionalFormatting .conditionList td {
+	position:relative;
+	vertical-align:middle;
+	padding:4px 2px;
+	*padding:2px;
+	border-top:1px solid #ffffff;
+	border-right:1px solid #e3e9ef;
+	border-bottom:1px solid #ececec;
+	border-left:1px solid #ffffff;
+	*border-right:1px solid #ffffff;
+	*border-left:1px solid #e3e9ef;
+}
+
+#jive_form_columnConditionalFormatting .conditionList tr.add td{
+	background-color:#f6f6f6;
+}
+
+#jive_form_columnConditionalFormatting .conditionList tr.add td .jive_inputbutton {
+	height: auto;
+}
+
+#jive_form_columnConditionalFormatting .conditionList .last {
+	border-right:none;
+}
+
+#jive_form_columnConditionalFormatting .conditionList td.condition_between_start {
+	border-right: none;
+}
+
+#jive_form_columnConditionalFormatting .conditionList td.condition_between_end {
+	border-left: none;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+	#jive_dialog div.wrapper.label { /* CHROME/SAFARI STYLES */
+		margin-top:2px;
+		margin-bottom:0px;
+	}
+}
+
+#jive_form_columnConditionalFormatting {
+	width:700px;
+	display: block;
+    margin: 0 10px 20px 10px;
+}
+
+#jive_form_columnConditionalFormatting .jive_textLabel>div.wrapper.label {
+	padding:8px 10px 2px 0;
+}
+
+/* ApplyTo Selector */
+#jive_dialog .applytoWrapper {
+    padding: 4px;
+    margin: 0 20px;
+    position: relative;
+}
+#jive_dialog .applytoTitle, #jive_dialog .applytoSelector {
+    display: inline;
+}

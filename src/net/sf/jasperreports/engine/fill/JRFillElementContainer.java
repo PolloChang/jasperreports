@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -53,9 +53,9 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * This is the base for band, frame and crosstab cell fillers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillElementContainer.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillElementContainer.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public abstract class JRFillElementContainer extends JRFillElementGroup
+public abstract class JRFillElementContainer extends JRFillElementGroup implements FillContainerContext
 {
 	protected JRBaseFiller filler;
 	
@@ -66,6 +66,8 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 	
 	private boolean willOverflow;
 	protected boolean isOverflow;
+	private boolean currentOverflow;
+	private boolean currentOverflowAllowed;
 	
 	private int stretchHeight;
 	private int firstY;
@@ -104,7 +106,7 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 	}
 
 
-	private void initDeepElements()
+	protected void initDeepElements()
 	{
 		if (elements == null)
 		{
@@ -310,7 +312,8 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 		boolean isOverflowAllowed
 		) throws JRException
 	{
-		boolean tmpWillOverflow = false;
+		currentOverflow = false;
+		currentOverflowAllowed = isOverflowAllowed;
 
 		int maxBandStretch = 0;
 		int bandStretch = 0;
@@ -325,12 +328,12 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 			{
 				JRFillElement element = ySortedElements[i];
 
-				tmpWillOverflow = 
+				currentOverflow = 
 					element.prepare(
 						availableHeight + getElementFirstY(element),
 						isOverflow
 						) 
-					|| tmpWillOverflow;
+					|| currentOverflow;
 
 				element.moveDependantElements();
 
@@ -362,11 +365,11 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 
 		if (maxBandStretch > availableHeight - getContainerHeight() + firstY)
 		{
-			tmpWillOverflow = true;
+			currentOverflow = true;
 		}
 		
 		// stretchHeight includes firstY, which is subtracted in fillElements
-		if (tmpWillOverflow)
+		if (currentOverflow)
 		{
 			stretchHeight = availableHeight + firstY;
 		}
@@ -375,9 +378,19 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 			stretchHeight = getContainerHeight() + maxBandStretch;
 		}
 
-		willOverflow = tmpWillOverflow && isOverflowAllowed;
+		willOverflow = currentOverflow && isOverflowAllowed;
 	}
 
+	public boolean isCurrentOverflow()
+	{
+		return currentOverflow;
+	}
+
+	public boolean isCurrentOverflowAllowed()
+	{
+		return currentOverflowAllowed;
+	}
+	
 	private int getElementFirstY(JRFillElement element)
 	{
 		int elemFirstY;

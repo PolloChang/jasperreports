@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,15 +26,17 @@ package net.sf.jasperreports.crosstabs.design;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.JRCrosstabColumnGroup;
 import net.sf.jasperreports.crosstabs.type.CrosstabColumnPositionEnum;
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * Crosstab column group implementation to be used for report designing. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstabColumnGroup.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignCrosstabColumnGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implements JRCrosstabColumnGroup
 {
@@ -44,8 +46,11 @@ public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implement
 
 	public static final String PROPERTY_POSITION = "position";
 
+	public static final String PROPERTY_CROSSTAB_HEADER = "crosstabHeader";
+
 	protected int height;
 	protected CrosstabColumnPositionEnum positionValue = CrosstabColumnPositionEnum.LEFT;
+	protected JRCellContents crosstabHeader;
 
 	
 	/**
@@ -122,6 +127,41 @@ public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implement
 		setCellOrigin(this.totalHeader, 
 				new JRCrosstabOrigin(getParent(), JRCrosstabOrigin.TYPE_COLUMN_GROUP_TOTAL_HEADER,
 						null, getName()));
+		setCrosstabHeaderOrigin();
+	}
+
+	@Override
+	public JRCellContents getCrosstabHeader()
+	{
+		return crosstabHeader;
+	}
+
+	public void setCrosstabHeader(JRDesignCellContents crosstabHeader)
+	{
+		Object old = this.crosstabHeader;
+		this.crosstabHeader = crosstabHeader;
+		getEventSupport().firePropertyChange(PROPERTY_CROSSTAB_HEADER, old, this.crosstabHeader);
+		
+		setCrosstabHeaderOrigin();
+	}
+
+	protected void setCrosstabHeaderOrigin()
+	{
+		if (this.crosstabHeader != null)
+		{
+			JRCrosstabOrigin origin = new JRCrosstabOrigin(getParent(), 
+					JRCrosstabOrigin.TYPE_COLUMN_GROUP_CROSSTAB_HEADER,
+					null, getName());
+			setCellOrigin(this.crosstabHeader, origin);
+		}
+	}
+
+	@Override
+	public Object clone()
+	{
+		JRDesignCrosstabColumnGroup clone = (JRDesignCrosstabColumnGroup) super.clone();
+		clone.crosstabHeader = JRCloneUtils.nullSafeClone(crosstabHeader);
+		return clone;
 	}
 
 	

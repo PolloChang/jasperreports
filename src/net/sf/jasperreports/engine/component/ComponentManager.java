@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,15 @@
  */
 package net.sf.jasperreports.engine.component;
 
+import net.sf.jasperreports.engine.JasperReportsContext;
+
 /**
  * A component manager is the entry point through which the handlers for a
  * single component type can be accessed.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentManager.java 4595 2011-09-08 15:55:10Z teodord $
- * @see ComponentsEnvironment#getComponentManager(ComponentKey)
+ * @version $Id: ComponentManager.java 7199 2014-08-27 13:58:10Z teodord $
+ * @see ComponentsEnvironment#getManager(ComponentKey)
  * @see ComponentsBundle#getComponentManager(String)
  */
 public interface ComponentManager
@@ -40,21 +42,21 @@ public interface ComponentManager
 	 * 
 	 * @return the component compiler
 	 */
-	ComponentCompiler getComponentCompiler();
+	ComponentCompiler getComponentCompiler(JasperReportsContext jasperReportsContext);
 
 	/**
 	 * Returns the component XML writer.
 	 * 
 	 * @return the component XML writer
 	 */
-	ComponentXmlWriter getComponentXmlWriter();
+	ComponentXmlWriter getComponentXmlWriter(JasperReportsContext jasperReportsContext);
 	
 	/**
 	 * Returns the factory of fill component instances.
 	 * 
 	 * @return the factory of fill component instances
 	 */
-	ComponentFillFactory getComponentFillFactory();
+	ComponentFillFactory getComponentFillFactory(JasperReportsContext jasperReportsContext);
 
 	
 	/**
@@ -67,6 +69,6 @@ public interface ComponentManager
 	 * @return the design component preview converter, or <code>null</code>
 	 * if no such converter exists for the component.
 	 */
-	ComponentDesignConverter getDesignConverter();
+	ComponentDesignConverter getDesignConverter(JasperReportsContext jasperReportsContext);
 	
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,41 +23,12 @@
  */
 package net.sf.jasperreports.data.xlsx;
 
-import java.util.List;
-
-import net.sf.jasperreports.data.DataAdapter;
+import net.sf.jasperreports.data.xls.XlsDataAdapter;
 
 /**
  * @author sanda zaharia(shertage@users.sourceforge.net)
- * @version $Id: XlsxDataAdapter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: XlsxDataAdapter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface XlsxDataAdapter extends DataAdapter 
+public interface XlsxDataAdapter extends XlsDataAdapter 
 {
-	public String getDatePattern();
-
-	public String getNumberPattern();
-
-	public String getFileName();
-
-	public void setFileName(String filename);
-	
-	public boolean isUseFirstRowAsHeader();
-	
-	public List<String> getColumnNames();
-
-	public List<Integer> getColumnIndexes();
-	
-	public void setColumnNames(List<String> columnNames);
-
-	public void setColumnIndexes(List<Integer> columnIndexes);
-
-	public void setUseFirstRowAsHeader(boolean useFirstRowAsHeader);
-
-	public void setDatePattern(String datePattern);
-
-	public void setNumberPattern(String numberPattern);
-	
-	public boolean isQueryExecuterMode();
-
-	public void setQueryExecuterMode(boolean queryExecuterMode);
 }

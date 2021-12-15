@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,18 +23,24 @@
  */
 package net.sf.jasperreports.components.map;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.engine.export.GenericElementHtmlHandler;
-import net.sf.jasperreports.engine.export.JRHtmlExporter;
+import net.sf.jasperreports.engine.export.HtmlExporter;
 import net.sf.jasperreports.engine.export.JRHtmlExporterContext;
-import net.sf.jasperreports.engine.export.JRXhtmlExporter;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
+import net.sf.jasperreports.export.Exporter;
+import net.sf.jasperreports.export.ExporterInput;
+import net.sf.jasperreports.export.HtmlExporterConfiguration;
+import net.sf.jasperreports.export.HtmlExporterOutput;
+import net.sf.jasperreports.export.HtmlReportConfiguration;
+import net.sf.jasperreports.web.util.JacksonUtil;
 import net.sf.jasperreports.web.util.VelocityUtil;
-import net.sf.jasperreports.web.util.WebUtil;
-
-import org.apache.velocity.VelocityContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
@@ -44,9 +50,10 @@ public class MapElementHtmlHandler implements GenericElementHtmlHandler
 {
 	private static final MapElementHtmlHandler INSTANCE = new MapElementHtmlHandler();
 	
-	private static final String RESOURCE_MAP_JS = "net/sf/jasperreports/components/map/resources/map.js";
 	private static final String MAP_ELEMENT_HTML_TEMPLATE = "net/sf/jasperreports/components/map/resources/templates/MapElementHtmlTemplate.vm";
 	
+	private static final String FIRST_ATTEMPT_PARAM = "exporter_first_attempt";
+
 	public static MapElementHtmlHandler getInstance()
 	{
 		return INSTANCE;
@@ -54,50 +61,108 @@ public class MapElementHtmlHandler implements GenericElementHtmlHandler
 
 	public String getHtmlFragment(JRHtmlExporterContext context, JRGenericPrintElement element)
 	{
-		Float latitude = (Float)element.getParameterValue(MapPrintElement.PARAMETER_LATITUDE);
-		latitude = latitude == null ? MapPrintElement.DEFAULT_LATITUDE : latitude;
+        ReportContext reportContext = context.getExporterRef().getReportContext();
+		Map<String, Object> contextMap = new HashMap<String, Object>();
 
-		Float longitude = (Float)element.getParameterValue(MapPrintElement.PARAMETER_LONGITUDE);
-		longitude = longitude == null ? MapPrintElement.DEFAULT_LONGITUDE : longitude;
-		
-		Integer zoom = (Integer)element.getParameterValue(MapPrintElement.PARAMETER_ZOOM);
-		zoom = zoom == null ? MapPrintElement.DEFAULT_ZOOM : zoom;
+        contextMap.put("mapCanvasId", "map_canvas_" + element.hashCode());
 
-		VelocityContext velocityContext = new VelocityContext();
-		ReportContext reportContext = context.getExporter().getReportContext();
-		if (reportContext != null)
-		{
-			velocityContext.put("resourceMapJs", WebUtil.getInstance(context.getJasperReportsContext()).getResourcePath(MapElementHtmlHandler.RESOURCE_MAP_JS));
-		}
-		velocityContext.put("gotReportContext", reportContext != null);
-		velocityContext.put("latitude", latitude);
-		velocityContext.put("longitude", longitude);
-		velocityContext.put("zoom", zoom);
-//		velocityContext.put("divId", element.getPropertiesMap().getProperty("net.sf.jasperreports.export.html.id"));
-//		velocityContext.put("divClass", element.getPropertiesMap().getProperty("net.sf.jasperreports.export.html.class"));
-		if(context.getExporter() instanceof JRXhtmlExporter)
-		{
-			velocityContext.put("xhtml", "xhtml");
-			velocityContext.put("elementX", ((JRXhtmlExporter)context.getExporter()).toSizeUnit(element.getX()));
-			velocityContext.put("elementY", ((JRXhtmlExporter)context.getExporter()).toSizeUnit(element.getY()));
-		}
-		else
-		{
-			velocityContext.put("elementX", ((JRHtmlExporter)context.getExporter()).toSizeUnit(element.getX()));
-			velocityContext.put("elementY", ((JRHtmlExporter)context.getExporter()).toSizeUnit(element.getY()));
-		}
-		velocityContext.put("elementWidth", element.getWidth());
-		velocityContext.put("elementHeight", element.getHeight());
+        Exporter<ExporterInput, ? extends HtmlReportConfiguration, ? extends HtmlExporterConfiguration, HtmlExporterOutput> exporter = context.getExporterRef();
+        HtmlExporter htmlExporter2 = exporter instanceof HtmlExporter ? (HtmlExporter)exporter : null;
+        if (htmlExporter2 == null)
+        {
+            xhtmlExport(exporter, contextMap, element);
+        }
+        else
+        {
+            contextMap.put("elementX", htmlExporter2.toSizeUnit(element.getX()));
+            contextMap.put("elementY", htmlExporter2.toSizeUnit(element.getY()));
+        }
+
+        contextMap.put("elementWidth", element.getWidth());
+        contextMap.put("elementHeight", element.getHeight());
+
+        if (element.getModeValue() == ModeEnum.OPAQUE)
+        {
+            contextMap.put("backgroundColor", JRColorUtil.getColorHexa(element.getBackcolor()));
+        }
+
+        contextMap.put("gotReportContext", reportContext != null);
+
+        if (reportContext == null)
+        {
+            Float latitude = (Float)element.getParameterValue(MapPrintElement.PARAMETER_LATITUDE);
+            latitude = latitude == null ? MapPrintElement.DEFAULT_LATITUDE : latitude;
+
+            Float longitude = (Float)element.getParameterValue(MapPrintElement.PARAMETER_LONGITUDE);
+            longitude = longitude == null ? MapPrintElement.DEFAULT_LONGITUDE : longitude;
+
+            Integer zoom = (Integer)element.getParameterValue(MapPrintElement.PARAMETER_ZOOM);
+            zoom = zoom == null ? MapPrintElement.DEFAULT_ZOOM : zoom;
+
+            String mapType = (String)element.getParameterValue(MapPrintElement.PARAMETER_MAP_TYPE);
+            mapType = (mapType == null ? MapPrintElement.DEFAULT_MAP_TYPE.getName() : mapType).toUpperCase();
+
+            contextMap.put("latitude", latitude);
+            contextMap.put("longitude", longitude);
+            contextMap.put("zoom", zoom);
+            contextMap.put("mapType", mapType);
+
+            List<Map<String,Object>> markerList = (List<Map<String,Object>>)element.getParameterValue(MapPrintElement.PARAMETER_MARKERS);
+            String markers = markerList == null || markerList.isEmpty() ? "[]" : JacksonUtil.getInstance(context.getJasperReportsContext()).getJsonString(markerList);
+            contextMap.put("markerList", markers);
+
+            List<Map<String,Object>> pathList = (List<Map<String,Object>>)element.getParameterValue(MapPrintElement.PARAMETER_PATHS);
+            String paths = pathList == null || pathList.isEmpty() ? "[]" : JacksonUtil.getInstance(context.getJasperReportsContext()).getJsonString(pathList);
+            contextMap.put("pathsList", paths);
+
+            String reqParams = (String)element.getParameterValue(MapPrintElement.PARAMETER_REQ_PARAMS);
+            if(reqParams != null)
+            {
+                contextMap.put(MapPrintElement.PARAMETER_REQ_PARAMS, reqParams);
+            }
+
+            if (context.getValue(FIRST_ATTEMPT_PARAM) == null)
+            {
+                context.setValue(FIRST_ATTEMPT_PARAM, true);
+
+                //FIXME: support for parametrized http://maps.google.com/maps/api/js script (see MapElementHtmlTemplate.vm)
+                contextMap.put("exporterFirstAttempt", true);
+            }
+        }
 		
-		if (element.getModeValue() == ModeEnum.OPAQUE)
-		{
-			velocityContext.put("backgroundColor", JRColorUtil.getColorHexa(element.getBackcolor()));
-		}
-		return VelocityUtil.processTemplate(MAP_ELEMENT_HTML_TEMPLATE, velocityContext);
+		return VelocityUtil.processTemplate(MAP_ELEMENT_HTML_TEMPLATE, contextMap);
 	}
 
-	public boolean toExport(JRGenericPrintElement element) {
+	public boolean toExport(JRGenericPrintElement element)
+    {
 		return true;
 	}
 	
+	@SuppressWarnings("deprecation")
+	private void xhtmlExport(
+		Exporter<ExporterInput, ? extends HtmlReportConfiguration, ? extends HtmlExporterConfiguration, HtmlExporterOutput> exporter,
+		Map<String, Object> contextMap,
+		JRGenericPrintElement element
+		)
+	{
+		net.sf.jasperreports.engine.export.JRXhtmlExporter xhtmlExporter = 
+			exporter instanceof net.sf.jasperreports.engine.export.JRXhtmlExporter 
+			? (net.sf.jasperreports.engine.export.JRXhtmlExporter)exporter 
+			: null; 
+		if (xhtmlExporter == null)
+		{
+			net.sf.jasperreports.engine.export.JRHtmlExporter htmlExporter = 
+				exporter instanceof net.sf.jasperreports.engine.export.JRHtmlExporter 
+				? (net.sf.jasperreports.engine.export.JRHtmlExporter)exporter 
+				: null; 
+			contextMap.put("elementX", htmlExporter.toSizeUnit(element.getX()));
+			contextMap.put("elementY", htmlExporter.toSizeUnit(element.getY()));
+		}
+		else
+		{
+			contextMap.put("xhtml", "xhtml");
+			contextMap.put("elementX", xhtmlExporter.toSizeUnit(element.getX()));
+			contextMap.put("elementY", xhtmlExporter.toSizeUnit(element.getY()));
+		}
+	}
 }

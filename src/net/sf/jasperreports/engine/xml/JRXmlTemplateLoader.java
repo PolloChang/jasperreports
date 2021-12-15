@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -53,7 +53,7 @@ import org.xml.sax.SAXException;
  * Utility class that loads {@link JRTemplate templates} from XML representations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlTemplateLoader.java 5346 2012-05-08 12:08:01Z teodord $
+ * @version $Id: JRXmlTemplateLoader.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlTemplateLoader
 {
@@ -103,7 +103,7 @@ public class JRXmlTemplateLoader
 	 * 	Can be a URL, a file path or a classloader resource name.
 	 * @return the template object
 	 * @throws JRException when the location cannot be resolved or read
-	 * @see RepositoryUtil#getBytes(String)
+	 * @see RepositoryUtil#getBytesFromLocation(String)
 	 */
 	public JRTemplate loadTemplate(String location) throws JRException
 	{

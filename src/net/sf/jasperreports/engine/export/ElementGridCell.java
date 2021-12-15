@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,40 +23,137 @@
  */
 package net.sf.jasperreports.engine.export;
 
+import net.sf.jasperreports.engine.JRLineBox;
+import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.JRRuntimeException;
+
 	
 	
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ElementGridCell.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ElementGridCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ElementGridCell extends JRExporterGridCell
 {
+	
+	private GridCellSize size;
 
+	// TODO lucianc do not keep a reference to the container here but require exporters to use the cell with the container
+	private JRGridLayout container;
+
+	private PrintElementIndex parentIndex;
+	private int elementIndex;
 
 	/**
 	 *
 	 */
 	public ElementGridCell(
-		ElementWrapper wrapper, 
-		int width, 
-		int height,
-		int colSpan, 
-		int rowSpan
+		JRGridLayout container,
+		PrintElementIndex parentIndex,
+		int elementIndex,
+		GridCellSize size
 		)
 	{
-		super(
-			wrapper, 
-			width, 
-			height,
-			colSpan, 
-			rowSpan
-			);
+		this.size = size;
+		
+		this.container = container;
+		this.parentIndex = parentIndex;
+		this.elementIndex = elementIndex;
 	}
 
+	@Override
+	public GridCellSize getSize()
+	{
+		return size;
+	}
 
+	@Override
 	public byte getType()
 	{
 		return TYPE_ELEMENT_CELL;
+	}
+	
+	@Override
+	public JRPrintElement getElement()
+	{
+		return container.getElement(parentIndex, elementIndex);
+	}
+	
+	public String getProperty(String propName)
+	{
+		JRPrintElement element = getElement();
+		if (element.hasProperties()
+				&& element.getPropertiesMap().containsProperty(propName))
+		{
+			return element.getPropertiesMap().getProperty(propName);
+		}
+
+		PrintElementIndex ancestorIndex = parentIndex;
+		while (ancestorIndex != null)
+		{
+			JRPrintElement ancestor = container.getElement(
+					ancestorIndex.getParentIndex(), ancestorIndex.getIndex());
+			if (ancestor.hasProperties()
+					&& ancestor.getPropertiesMap().containsProperty(propName))
+			{
+				return ancestor.getPropertiesMap().getProperty(propName);
+			}
+			
+			ancestorIndex = ancestorIndex.getParentIndex();
+		}
+			
+		return null;
+	}
+
+	public PrintElementIndex getParentIndex()
+	{
+		return parentIndex;
+	}
+
+	public int getElementIndex()
+	{
+		return elementIndex;
+	}
+
+	@Override
+	public String getElementAddress()
+	{
+		return PrintElementIndex.asAddress(parentIndex, elementIndex);
+	}
+
+	public JRGridLayout getLayout()
+	{
+		JRPrintElement element = getElement();
+		if (!(element instanceof JRPrintFrame))
+		{
+			// should not happen
+			throw new JRRuntimeException("Element at address " + getElementAddress() + " is not a frame");
+		}
+		
+		JRPrintFrame frame = (JRPrintFrame) element;
+		PrintElementIndex frameIndex = new PrintElementIndex(getParentIndex(), getElementIndex());
+		return new JRGridLayout(
+				container, 
+				frame.getElements(),
+				frame.getWidth(), 
+				frame.getHeight(),
+				0, //offsetX
+				0, //offsetY
+				frameIndex
+		);
+	}
+
+	@Override
+	public void setBox(JRLineBox box)
+	{
+		GridCellStyle newStyle = container.cellStyle(getBackcolor(), getForecolor(), box);
+		setStyle(newStyle);
+	}
+
+	protected JRGridLayout getContainer()
+	{
+		return container;
 	}
 
 }

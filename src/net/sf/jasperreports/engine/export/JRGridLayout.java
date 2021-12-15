@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,10 +30,10 @@
 package net.sf.jasperreports.engine.export;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRBoxContainer;
@@ -41,34 +41,40 @@ import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintPage;
-import net.sf.jasperreports.engine.base.JRBasePrintFrame;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
+import net.sf.jasperreports.engine.util.Pair;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Utility class used by grid exporters to create a grid for page layout.
  *
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRGridLayout.java 5377 2012-05-11 13:50:50Z shertage $
+ * @version $Id: JRGridLayout.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRGridLayout
 {
+	private static final Log log = LogFactory.getLog(JRGridLayout.class);
+	
 	private final ExporterNature nature;
+	private final List<JRPrintElement> elementList;
+	
+	private final Map<GridCellSize, GridCellSize> cellSizes;
+	private final Map<GridCellStyle, GridCellStyle> cellStyles;
+	private final Map<Pair<GridCellSize, GridCellStyle>, EmptyGridCell> emptyCells;
 
 	private int width;
 	private int height;
 	private int offsetX;
 	private int offsetY;
-	private final String address;
 
 	private CutsInfo xCuts;
 	private CutsInfo yCuts;
-	private JRExporterGridCell[][] grid;
+	private Grid grid;
 
 	private Map<BoxKey,JRLineBox> boxesCache;
-
-	private int virtualFrameIndex;
-
 	private boolean hasTopMargin = true;
 	private boolean hasBottomMargin = true;
 	private boolean hasLeftMargin = true;
@@ -126,129 +132,83 @@ public class JRGridLayout
 		)
 	{
 		this.nature = nature;
+		this.elementList = elements;
+		
+		// TODO lucianc cache these across report pages?
+		this.cellSizes = new HashMap<GridCellSize, GridCellSize>();
+		this.cellStyles = new HashMap<GridCellStyle, GridCellStyle>();
+		this.emptyCells = new HashMap<Pair<GridCellSize,GridCellStyle>, EmptyGridCell>();
+		
 		this.height = height;
 		this.width = width;
 		this.offsetX = offsetX;
 		this.offsetY = offsetY;
-		this.address = null;
 		this.xCuts = xCuts;
 
 		boxesCache = new HashMap<BoxKey,JRLineBox>();
 
-		virtualFrameIndex = elements.size();
-
-		layoutGrid(createWrappers(null, elements, address));
-
-		if (nature.isSplitSharedRowSpan())
-		{
-			splitSharedRowSpanIntoNestedGrids();
-		}
+		layoutGrid(null, elements);
 	}
 
 	/**
 	 * Constructor.
 	 *
-	 * @param wrappers the element wrappers that should arranged in a grid
 	 * @param width the width available for the grid
 	 * @param height the height available for the grid
 	 * @param offsetX horizontal element position offset
 	 * @param offsetY vertical element position offset
-	 * @param address element address
 	 */
 	protected JRGridLayout(
-		ExporterNature nature,
-		ElementWrapper[] wrappers,
+		JRGridLayout parent,
+		List<JRPrintElement> elements,
 		int width,
 		int height,
 		int offsetX,
 		int offsetY,
-		String address
+		PrintElementIndex parentElementIndex
 		)
 	{
-		this.nature = nature;
+		this.nature = parent.nature;
+		this.elementList = parent.elementList;
+		
+		this.cellSizes = parent.cellSizes;
+		this.cellStyles = parent.cellStyles;
+		this.emptyCells = parent.emptyCells;
+		
 		this.height = height;
 		this.width = width;
 		this.offsetX = offsetX;
 		this.offsetY = offsetY;
-		this.address = address;
 
 		//this constructor is called only in nested grids:
 		this.isNested = true;
 
 		boxesCache = new HashMap<BoxKey,JRLineBox>();
 		
-		layoutGrid(wrappers);
-
-		if (nature.isSplitSharedRowSpan())
-		{
-			splitSharedRowSpanIntoNestedGrids();
-		}
+		layoutGrid(parentElementIndex, elements);
 	}
-
-
-	/**
-	 *
-	 */
-	private void createNestedGrid(
-		int row1,
-		int col1,
-		int row2,
-		int col2
-		)
+	
+	public JRPrintElement getElement(PrintElementIndex parentIndex, int index)
 	{
-		JRBasePrintFrame frame = new JRBasePrintFrame(null);
-		List<ElementWrapper> wrappers = new ArrayList<ElementWrapper>();
-
-		frame.setWidth(xCuts.getCutOffset(col2) - xCuts.getCutOffset(col1));
-		frame.setHeight(yCuts.getCutOffset(row2) - yCuts.getCutOffset(row1));
-
-		String virtualAddress = (address == null ? "" : address + "_") + getNextVirtualFrameIndex();
-
-		JRExporterGridCell gridCell =
-			new ElementGridCell(
-				new ElementWrapper(null, frame, virtualAddress),
-				frame.getWidth(),
-				frame.getHeight(),
-				col2 - col1,
-				row2 - row1
-				);
-
-		OccupiedGridCell occupiedGridCell = new OccupiedGridCell(gridCell);
-		for(int row = row1; row < row2; row++)
+		// TODO lucianc keep a cache of current element position?
+		JRPrintElement element;
+		if (parentIndex == null)
 		{
-			for(int col = col1; col < col2; col++)
-			{
-				JRExporterGridCell gCell = grid[row][col];
-				grid[row][col] = occupiedGridCell;
-				ElementWrapper wrapper = gCell.getWrapper();
-				if (gCell.getType() == JRExporterGridCell.TYPE_ELEMENT_CELL)
-				{
-					wrappers.add(wrapper);
-					frame.addElement(wrapper.getElement());//FIXMEODT do we need this?
-				}
-			}
+			element = elementList.get(index);
 		}
-
-		gridCell.setLayout(
-			new JRGridLayout(
-				nature,
-				wrappers.toArray(new ElementWrapper[wrappers.size()]),
-				frame.getWidth(),
-				frame.getHeight(),
-				offsetX -xCuts.getCutOffset(col1),
-				offsetY -yCuts.getCutOffset(row1),
-				virtualAddress
-				)
-			);
-
-		grid[row1][col1] = gridCell;
+		else
+		{
+			JRPrintFrame parentFrame = (JRPrintFrame) getElement(parentIndex.getParentIndex(), parentIndex.getIndex());
+			element = parentFrame.getElements().get(index);
+		}
+		return element;
 	}
-
 
 	/**
 	 * Constructs the element grid.
+	 * @param parentElementIndex 
 	 */
-	protected void layoutGrid(ElementWrapper[] wrappers)
+	protected void layoutGrid(PrintElementIndex parentElementIndex, List<JRPrintElement> elements)
 	{
 
 		boolean createXCuts = (xCuts == null);
@@ -258,31 +218,28 @@ public class JRGridLayout
 
 		if(!isNested && nature.isIgnorePageMargins()) //FIXMEXLS left and right margins are not ignored when all pages on a single sheet
 		{
-			setMargins(wrappers);
+			// TODO lucianc this is an extra virtualization iteration
+			setMargins(elements);
 
 			if(createXCuts)
 			{
-				List<Integer> xCutsList = xCuts.getCutOffsets();
-
 				if(hasLeftMargin)
 				{
-					xCutsList.remove(Integer.valueOf(0));
+					xCuts.removeCutOffset(0);
 				}
 			}
 
-			List<Integer> yCutsList = yCuts.getCutOffsets();
-
 			if(hasTopMargin)
 			{
-				yCutsList.remove(Integer.valueOf(0));
+				yCuts.removeCutOffset(0);
 			}
 			if(hasBottomMargin)
 			{
-				yCutsList.remove(Integer.valueOf(height));
+				yCuts.removeCutOffset(height);
 			}
 		}
 
-		createCuts(wrappers, offsetX, offsetY, createXCuts);
+		createCuts(elements, offsetX, offsetY, createXCuts);
 
 		// add a cut at the width if it's a nested grid, or if the right margin
 		// is not to be removed and no element goes beyond the width
@@ -299,37 +256,52 @@ public class JRGridLayout
 		int colCount = Math.max(xCuts.size() - 1, 0);
 		int rowCount = Math.max(yCuts.size() - 1, 0);
 
-		grid = new JRExporterGridCell[rowCount][colCount];
+		grid = new Grid(rowCount, colCount);
 
 		for(int row = 0; row < rowCount; row++)
 		{
 			for(int col = 0; col < colCount; col++)
 			{
-				grid[row][col] =
-					new EmptyGridCell(
-						xCuts.getCutOffset(col + 1) - xCuts.getCutOffset(col),
-						yCuts.getCutOffset(row + 1) - yCuts.getCutOffset(row),
-						1,
-						1
-						);
+				GridCellSize size = cellSize(
+					xCuts.getCutOffset(col + 1) - xCuts.getCutOffset(col),
+					yCuts.getCutOffset(row + 1) - yCuts.getCutOffset(row),
+					1,
+					1
+					);
+				grid.set(row, col, emptyCell(size, null));
 			}
 		}
 
-		setGridElements(wrappers,
+		setGridElements(parentElementIndex, elements, 
 				offsetX, offsetY,
 				0, 0, rowCount, colCount);
 
 		width = xCuts.getTotalLength();
 		height = yCuts.getTotalLength();
 	}
-
-	protected void createCuts(ElementWrapper[] wrappers, int elementOffsetX, int elementOffsetY, boolean createXCuts)
+	
+	protected GridCellSize cellSize(int width, int height, int colSpan, int rowSpan)
 	{
-		for(int elementIndex = 0; elementIndex < wrappers.length; elementIndex++)
+		GridCellSize key = new GridCellSize(width, height, colSpan, rowSpan);
+		GridCellSize size = cellSizes.get(key);
+		if (size == null)
 		{
-			ElementWrapper wrapper = wrappers[elementIndex];
-			JRPrintElement element = wrapper.getElement();
+			size = key;
+			cellSizes.put(key, size);
+			
+			if (log.isTraceEnabled())
+			{
+				log.trace(this + " added cell size " + size);
+			}
+		}
+		return size;
+	}
 
+	protected void createCuts(List<JRPrintElement> elements, int elementOffsetX, int elementOffsetY, boolean createXCuts)
+	{
+		for (Iterator<JRPrintElement> it = elements.iterator(); it.hasNext();)
+		{
+			JRPrintElement element = it.next();
 			if (nature.isToExport(element))
 			{
 				if (createXCuts)
@@ -345,7 +317,7 @@ public class JRGridLayout
 				if (frame != null && nature.isDeep(frame))
 				{
 					createCuts(
-						wrapper.getWrappers(),
+						frame.getElements(),
 						element.getX() + elementOffsetX + frame.getLineBox().getLeftPadding().intValue(),
 						element.getY() + elementOffsetY + frame.getLineBox().getTopPadding().intValue(),
 						createXCuts
@@ -355,13 +327,11 @@ public class JRGridLayout
 		}
 	}
 
-	protected void setMargins(ElementWrapper[] wrappers)
+	protected void setMargins(List<JRPrintElement> elements)
 	{
-		for(int elementIndex = 0; elementIndex < wrappers.length; elementIndex++)
+		for (Iterator<JRPrintElement> it = elements.iterator(); it.hasNext();)
 		{
-			ElementWrapper wrapper = wrappers[elementIndex];
-			JRPrintElement element = wrapper.getElement();
-
+			JRPrintElement element = it.next();
 			if (nature.isToExport(element))
 			{
 				if(hasLeftMargin && element.getX() <= 0)
@@ -383,21 +353,20 @@ public class JRGridLayout
 				{
 					hasBottomMargin = false;
 				}
-
 			}
 		}
 	}
 
 
-	protected void setGridElements(ElementWrapper[] wrappers,
+	protected void setGridElements(PrintElementIndex parentIndex, List<JRPrintElement> elements, 
 			int elementOffsetX, int elementOffsetY,
 			int startRow, int startCol, int endRow, int endCol)
 	{
-		for(int elementIndex = wrappers.length - 1; elementIndex >= 0; elementIndex--)
+		for (ListIterator<JRPrintElement> it = elements.listIterator(elements.size()); it.hasPrevious();)
 		{
-			ElementWrapper wrapper = wrappers[elementIndex];
-			JRPrintElement element = wrapper.getElement();
-
+			JRPrintElement element = it.previous();
+			int elementIndex = it.nextIndex();
+			
 			if (nature.isToExport(element))
 			{
 				int x = element.getX() + elementOffsetX;
@@ -413,8 +382,9 @@ public class JRGridLayout
 					JRPrintFrame frame = element instanceof JRPrintFrame ? (JRPrintFrame)element : null;
 					if (frame != null && nature.isDeep(frame))
 					{
+						PrintElementIndex frameIndex = new PrintElementIndex(parentIndex, elementIndex);
 						setGridElements(
-							wrapper.getWrappers(),
+							frameIndex, frame.getElements(),
 							x + frame.getLineBox().getLeftPadding().intValue(),
 							y + frame.getLineBox().getTopPadding().intValue(),
 							row1, col1, row2, col2
@@ -424,7 +394,7 @@ public class JRGridLayout
 					}
 					else
 					{
-						setGridElement(wrapper, row1, col1, row2, col2);
+						setGridElement(element, parentIndex, elementIndex, row1, col1, row2, col2);
 					}
 				}
 			}
@@ -436,6 +406,23 @@ public class JRGridLayout
 		}
 	}
 
+	protected EmptyGridCell emptyCell(GridCellSize size, GridCellStyle style)
+	{
+		Pair<GridCellSize, GridCellStyle> key = new Pair<GridCellSize, GridCellStyle>(size, style);
+		EmptyGridCell cell = emptyCells.get(key);
+		if (cell == null)
+		{
+			cell = new EmptyGridCell(size, style);
+			emptyCells.put(key, cell);
+			
+			if (log.isDebugEnabled())
+			{
+				log.debug(this + " created empty cell for " + size + " and " + style);
+			}
+		}
+		return cell;
+	}
+	
 	protected void horizontallyMergeEmptyCells(int startRow, int startCol, int endRow, int endCol)
 	{
 		for (int row = startRow; row < endRow; ++row)
@@ -445,8 +432,8 @@ public class JRGridLayout
 			int col = startCol;
 			for (; col < endCol; ++col)
 			{
-				JRExporterGridCell cell = grid[row][col];
-				if (cell.isEmpty())
+				JRExporterGridCell cell = grid.get(row, col);
+				if (isEmpty(cell))
 				{
 					if (startSpan == -1)
 					{
@@ -458,10 +445,7 @@ public class JRGridLayout
 				{
 					if (startSpan != -1 && col - startSpan > 1)
 					{
-						JRExporterGridCell spanCell = grid[row][startSpan];
-						spanCell.setColSpan(col - startSpan);
-						spanCell.setWidth(spanWidth);
-						//TODO set OCCUPIED_CELL?
+						spanEmptyCell(row, startSpan, spanWidth, col - startSpan);
 					}
 					startSpan = -1;
 					spanWidth = 0;
@@ -469,11 +453,23 @@ public class JRGridLayout
 			}
 			if (startSpan != -1 && col - startSpan > 1)
 			{
-				JRExporterGridCell spanCell = grid[row][startSpan];
-				spanCell.setColSpan(col - startSpan);
-				spanCell.setWidth(spanWidth);
+				spanEmptyCell(row, startSpan, spanWidth, col - startSpan);
 			}
 		}
+	}
+
+	protected void spanEmptyCell(int row, int col, int spanWidth, int colSpan)
+	{
+		EmptyGridCell spanCell = (EmptyGridCell) grid.get(row, col);
+		GridCellSize newSize = cellSize(spanWidth, spanCell.getHeight(), 
+				colSpan, spanCell.getRowSpan());
+		grid.set(row, col, emptyCell(newSize, spanCell.getStyle()));
+		//TODO set OCCUPIED_CELL?
+	}
+	
+	protected boolean isEmpty(JRExporterGridCell cell)
+	{
+		return cell.getType() == JRExporterGridCell.TYPE_EMPTY_CELL && ((EmptyGridCell) cell).isEmpty();
 	}
 
 	protected boolean isOverlap(int row1, int col1, int row2, int col2)
@@ -486,7 +482,7 @@ public class JRGridLayout
 			{
 				for (int col = col1; col < col2; col++)
 				{
-					if (!grid[row][col].isEmpty())
+					if (!isEmpty(grid.get(row, col)))
 					{
 						isOverlap = true;
 						break is_overlap_out;
@@ -496,31 +492,31 @@ public class JRGridLayout
 		}
 		else
 		{
-			isOverlap = grid[row1][col1].getWrapper() != null;
+			isOverlap = !isEmpty(grid.get(row1, col1));
 		}
 		return isOverlap;
 	}
 
 
-	protected void setGridElement(ElementWrapper wrapper, int row1, int col1, int row2, int col2)
+	protected void setGridElement(JRPrintElement element, PrintElementIndex parentIndex, int elementIndex,
+			int row1, int col1, int row2, int col2)
 	{
 		yCuts.addUsage(row1, Cut.USAGE_NOT_EMPTY);
 		xCuts.addUsage(col1, Cut.USAGE_NOT_EMPTY);
 
-		JRPrintElement element = wrapper.getElement();
-		JRPrintFrame frame = element instanceof JRPrintFrame ? (JRPrintFrame) element : null;
-
 		int rowSpan = nature.isSpanCells() ? row2 - row1 : 1;
 		int colSpan = nature.isSpanCells() ? col2 - col1 : 1;
 
-		JRExporterGridCell gridCell =
-			new ElementGridCell(
-				wrapper,
-				element.getWidth(),
-				element.getHeight(),
-				colSpan,
-				rowSpan
-				);
+		JRExporterGridCell gridCell = new ElementGridCell(
+				this,
+				parentIndex,
+				elementIndex,
+				cellSize(
+						element.getWidth(),
+						element.getHeight(),
+						colSpan,
+						rowSpan
+				));
 
 		nature.setXProperties(xCuts, element, row1, col1, row2, col2);
 		nature.setYProperties(yCuts, element, row1, col1, row2, col2);
@@ -532,7 +528,7 @@ public class JRGridLayout
 			{
 				for (int col = col1; col < col2; col++)
 				{
-					grid[row][col] = occupiedGridCell;
+					grid.set(row, col, occupiedGridCell);
 				}
 				yCuts.addUsage(row, Cut.USAGE_SPANNED);
 			}
@@ -545,22 +541,8 @@ public class JRGridLayout
 
 		if (col2 - col1 != 0 && row2 - row1 != 0)
 		{
-			if (frame != null)//FIXMEODT if deep, does this make sense?
-			{
-				gridCell.setLayout(
-					new JRGridLayout(
-						nature,
-						wrapper.getWrappers(),
-						frame.getWidth(),
-						frame.getHeight(),
-						0, //offsetX
-						0, //offsetY
-						wrapper.getAddress()
-						)
-					);
-			}
-
-			gridCell.setBox((element instanceof JRBoxContainer)?((JRBoxContainer)element).getLineBox():null);
+			JRLineBox box = (element instanceof JRBoxContainer)?((JRBoxContainer)element).getLineBox():null;
+			gridCell.setStyle(cellStyle(null, null, box));
 
 			if (nature.isBreakBeforeRow(element))
 			{
@@ -571,8 +553,30 @@ public class JRGridLayout
 				yCuts.addUsage(row1 + rowSpan,  Cut.USAGE_BREAK);
 			}
 
-			grid[row1][col1] = gridCell;
+			grid.set(row1, col1, gridCell);
 		}
+	}
+	
+	protected GridCellStyle cellStyle(Color backcolor, Color forecolor, JRLineBox box)
+	{
+		if (backcolor == null && forecolor == null && box == null)
+		{
+			return null;
+		}
+
+		GridCellStyle key = new GridCellStyle(backcolor, forecolor, box);
+		GridCellStyle style = cellStyles.get(key);
+		if (style == null)
+		{
+			style = key;
+			cellStyles.put(key, style);
+			
+			if (log.isTraceEnabled())
+			{
+				log.trace(this + " added cell style " + style);
+			}
+		}
+		return style;
 	}
 
 
@@ -584,19 +588,24 @@ public class JRGridLayout
 		{
 			for (int col = col1; col < col2; col++)
 			{
-				JRExporterGridCell cell = grid[row][col];
+				JRExporterGridCell cell = grid.get(row, col);
 
-				if (cell.getBackcolor() == null)
+				boolean modifiedStyle = false;
+				Color cellBackcolor = cell.getBackcolor();
+				if (cellBackcolor == null)
 				{
 					if (frame.getModeValue() == ModeEnum.OPAQUE)
 					{
-						cell.setBackcolor(backcolor);
+						cellBackcolor = backcolor;
+						modifiedStyle = true;
 					}
 				}
 
-				if (cell.getForecolor() == null)
+				Color cellForecolor = cell.getForecolor();
+				if (cellForecolor == null)
 				{
-					cell.setForecolor(frame.getForecolor());
+					cellForecolor = frame.getForecolor();
+					modifiedStyle = true;
 				}
 
 				boolean keepLeft = col == col1;
@@ -604,9 +613,9 @@ public class JRGridLayout
 				boolean keepTop = row == row1;
 				boolean keepBottom = row == row2 - cell.getRowSpan();
 
+				JRLineBox cellBox = cell.getBox();
 				if (keepLeft || keepRight || keepTop || keepBottom)
 				{
-					JRLineBox cellBox = cell.getBox();
 					BoxKey key = new BoxKey(frame.getLineBox(), cellBox, keepLeft, keepRight, keepTop, keepBottom);
 					JRLineBox modBox = boxesCache.get(key);
 					if (modBox == null)
@@ -615,101 +624,30 @@ public class JRGridLayout
 						boxesCache.put(key, modBox);
 					}
 
-					cell.setBox(modBox);
+					cellBox = modBox;
+					modifiedStyle = true;
+				}
+				
+				if (modifiedStyle)
+				{
+					GridCellStyle newStyle = cellStyle(cellBackcolor, cellForecolor, cellBox);
+					grid.set(row, col, changeStyle(cell, newStyle));
 				}
 			}
 		}
 	}
-
-	private void splitSharedRowSpanIntoNestedGrids()
+	
+	protected JRExporterGridCell changeStyle(JRExporterGridCell cell, GridCellStyle newStyle)
 	{
-		for(int row = 0; row < grid.length;)
+		if (cell.getType() == JRExporterGridCell.TYPE_EMPTY_CELL)
 		{
-			int rowSpan = getSharedRowSpan(row);
-			//negative row span means it is not shared row span
-			if (rowSpan > 0)
-			{
-				splitSharedColSpanIntoNestedGrids(row, row + rowSpan);
-			}
-			row += Math.abs(rowSpan);
+			// empty cells are shared so they should not be modified
+			return emptyCell(cell.getSize(), newStyle);
 		}
-	}
-
-	private void splitSharedColSpanIntoNestedGrids(int row1, int row2)
-	{
-		for(int col = 0; col < grid[row1].length;)
-		{
-			int colSpan = getSharedColSpan(row1, row2, col);
-			//negative col span means it is not shared col span
-			if (colSpan > 0)
-			{
-				if (
-					!(row1 == 0
-					&& row2 == grid.length
-					&& col == 0
-					&& colSpan == grid[0].length)
-					)
-				{
-					this.createNestedGrid(
-						row1,
-						col,
-						row2,
-						col + colSpan
-						);
-				}
-			}
-			col += Math.abs(colSpan);
-		}
-	}
-
-	private int getSharedRowSpan(int row1)
-	{
-		int rowSpan = 1;
-		int sharedSpanCount = 0;
-
-		for(int row = 0; row < rowSpan; row++)
-		{
-			for(int col = 0; col < grid[0].length; col++)
-			{
-				JRExporterGridCell gridCell = grid[row1 + row][col];
-				if (row + gridCell.getRowSpan() > rowSpan)
-				{
-					sharedSpanCount++;
-					rowSpan = row + gridCell.getRowSpan();
-				}
-			}
-		}
-
-		// we have "shared row span" only if at least two merged cells share at least one row;
-		// negative row span is used to skip row span that is not shared
-		return sharedSpanCount > 1 ? rowSpan : -rowSpan;
-	}
-
-	private int getSharedColSpan(int row1, int row2, int col1)
-	{
-		int colSpan = 1;
-		boolean isSharedSpan = false;
-
-		for(int col = 0; col < colSpan; col++)
-		{
-			for(int row = row1; row < row2; row++)
-			{
-				JRExporterGridCell gridCell = grid[row][col1 + col];
-				if (col + gridCell.getColSpan() > colSpan)
-				{
-					isSharedSpan = true;
-					colSpan = col + gridCell.getColSpan();
-				}
-				else if (gridCell.getRowSpan() > 1)
-				{
-					isSharedSpan = true;
-				}
-			}
-		}
-
-		// we have "shared col span" only if at least two merged cells share at least one col;
-		// negative col span is used to skip col span that is not shared
-		return isSharedSpan ? colSpan : -colSpan;
+		
+		// other types of cells can be modified
+		cell.setStyle(newStyle);
+		return cell;
 	}
 
 	/**
@@ -717,7 +655,7 @@ public class JRGridLayout
 	 *
 	 * @return the constructed element grid
 	 */
-	public JRExporterGridCell[][] getGrid()
+	public Grid getGrid()
 	{
 		return grid;
 	}
@@ -770,11 +708,12 @@ public class JRGridLayout
 
 	public int getMaxRowHeight(int rowIndex)
 	{
-		JRExporterGridCell[] row = grid[rowIndex];
-		int maxRowHeight = row[0].getHeight();
-		for (int col = 0; col < row.length; col++)
+		GridRow row = grid.getRow(rowIndex);
+		int maxRowHeight = row.get(0).getHeight();
+		int rowSize = row.size();
+		for (int col = 0; col < rowSize; col++)
 		{
-			JRExporterGridCell cell = row[col];
+			JRExporterGridCell cell = row.get(col);
 
 			if (cell.getType() != JRExporterGridCell.TYPE_OCCUPIED_CELL)
 			{
@@ -788,22 +727,23 @@ public class JRGridLayout
 	}
 
 
-	public static int getRowHeight(JRExporterGridCell[] row)//FIXMEODT are we still using this?
+	public static int getRowHeight(GridRow row)//FIXMEODT are we still using this?
 	{
-		if (row[0].getRowSpan() == 1 && row[0].getType() != JRExporterGridCell.TYPE_OCCUPIED_CELL) //quick exit
+		JRExporterGridCell firstCell = row.get(0);
+		if (firstCell.getRowSpan() == 1 && firstCell.getType() != JRExporterGridCell.TYPE_OCCUPIED_CELL) //quick exit
 		{
-			return row[0].getHeight();
+			return firstCell.getHeight();
 		}
 
 		int rowHeight = 0;
 		int minSpanIdx = 0;
 
-		int colCount = row.length;
+		int colCount = row.size();
 
 		int col;
 		for (col = 0; col < colCount; col++)
 		{
-			JRExporterGridCell cell = row[col];
+			JRExporterGridCell cell = row.get(col);
 
 			if (cell.getType() != JRExporterGridCell.TYPE_OCCUPIED_CELL)
 			{
@@ -813,7 +753,7 @@ public class JRGridLayout
 					break;
 				}
 
-				if (cell.getRowSpan() < row[minSpanIdx].getRowSpan())
+				if (cell.getRowSpan() < row.get(minSpanIdx).getRowSpan())
 				{
 					minSpanIdx = col;
 				}
@@ -822,7 +762,7 @@ public class JRGridLayout
 
 		if (col >= colCount) //no cell with rowSpan = 1 was found, getting the height of the cell with min rowSpan
 		{
-			rowHeight = row[minSpanIdx].getHeight();
+			rowHeight = row.get(minSpanIdx).getHeight();
 		}
 
 		return rowHeight;
@@ -899,46 +839,6 @@ public class JRGridLayout
 				nature.setXProperties(xCuts.getPropertiesMap(), element);
 			}
 		}
-	}
-
-	/**
-	 *
-	 */
-	protected int getNextVirtualFrameIndex()
-	{
-		return virtualFrameIndex++;
-	}
-
-
-	/**
-	 *
-	 */
-	private static ElementWrapper[] createWrappers(ElementWrapper parentWrapper, List<JRPrintElement> elementsList, String parentAddress)
-	{
-		ElementWrapper[] wrappers = new ElementWrapper[elementsList.size()];
-
-		for (int elementIndex = 0; elementIndex < elementsList.size(); elementIndex++)
-		{
-			JRPrintElement element = elementsList.get(elementIndex);
-
-			String address = (parentAddress == null ? "" : parentAddress + "_") + elementIndex;
-
-			ElementWrapper wrapper = 
-				new ElementWrapper(
-					parentWrapper,
-					element,
-					address
-					);
-			
-			if (element instanceof JRPrintFrame)
-			{
-				wrapper.setWrappers(createWrappers(wrapper, ((JRPrintFrame)element).getElements(), address));
-			}
-
-			wrappers[elementIndex] = wrapper;
-		}
-
-		return wrappers;
 	}
 	
 	

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.components.sort;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,14 +43,12 @@ import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 
 /**
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SortParameterContributor.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: SortParameterContributor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortParameterContributor implements ParameterContributor
 {
@@ -237,7 +234,4 @@ public class SortParameterContributor implements ParameterContributor
 	public void dispose() {
 	}
 	
-	public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
-	}
-
 }

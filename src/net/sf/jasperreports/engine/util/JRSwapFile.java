@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -46,7 +46,7 @@ import org.apache.commons.logging.LogFactory;
  * only one thread would do a read or write at one moment.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSwapFile.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRSwapFile.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRSwapFile
 {
@@ -60,7 +60,7 @@ public class JRSwapFile
 	 */
 	public static final String PROPERTY_DELETE_ON_EXIT = JRFileVirtualizer.PROPERTY_TEMP_FILES_SET_DELETE_ON_EXIT;
 
-	private final File swapFile;
+	protected final File swapFile;
 	protected final RandomAccessFile file;
 	private final int blockSize;
 	private final int minGrowCount;
@@ -119,7 +119,12 @@ public class JRSwapFile
 			throw new JRRuntimeException(e);
 		}
 	}
-
+	
+	@Override
+	public String toString()
+	{
+		return "JRSwapFile " + swapFile.getAbsolutePath();
+	}
 
 	/**
 	 * Allocates an area in the swap file and writes data in it.

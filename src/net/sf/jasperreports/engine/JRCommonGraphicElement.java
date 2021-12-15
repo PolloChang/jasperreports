@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,8 +29,23 @@ import net.sf.jasperreports.engine.type.FillEnum;
 /**
  * An abstract representation of a report graphic element. It provides basic functionality for images, lines, rectangles
  * and ellipses.
+ * <p/>
+ * Graphic elements are the second major category of report elements. This category
+ * includes lines, rectangles, ellipses and images. They all have some properties in common, which
+ * are grouped under the attributes of the <code>&lt;graphicElement&gt;</code> tag.
+ * <h3>Background Fill Style</h3>
+ * The <code>fill</code> attribute specifies the style of the background of the graphic elements. The
+ * only style currently supported is the solid fill style, which is also the default
+ * (<code>fill="Solid"</code>). The {@link #getFillValue()} method can 
+ * be used to access the fill setting.
+ * <h3>Line Settings</h3>
+ * Other common settings for graphic elements are the line width, line style and the line color. These are 
+ * grouped together into the <code>&lt;pen&gt;</code> tag and can be accessed using the {@link #getLinePen()} 
+ * method.
+ * 
+ * @see net.sf.jasperreports.engine.JRPen
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCommonGraphicElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCommonGraphicElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCommonGraphicElement extends JRCommonElement, JRPenContainer
 {

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignQueryChunk.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignQueryChunk.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignQueryChunk extends JRBaseQueryChunk implements JRChangeEventsSupport
 {
@@ -46,6 +46,8 @@ public class JRDesignQueryChunk extends JRBaseQueryChunk implements JRChangeEven
 	public static final String PROPERTY_TEXT = "text";
 	
 	public static final String PROPERTY_TOKENS = "tokens";
+
+	public static final String PROPERTY_TOKEN_SEPARATOR = "tokenSeparator";
 	
 	public static final String PROPERTY_TYPE = "type";
 
@@ -81,6 +83,19 @@ public class JRDesignQueryChunk extends JRBaseQueryChunk implements JRChangeEven
 		Object old = this.tokens;
 		this.tokens = tokens;
 		getEventSupport().firePropertyChange(PROPERTY_TOKENS, old, this.tokens);
+	}
+
+	/**
+	 * Sets the clause tokens separator character for chunks of type {@link JRQueryChunk#TYPE_CLAUSE_TOKENS TYPE_CLAUSE_TOKENS}.
+	 * 
+	 * @param tokenSeparator the clause tokens separator character
+	 * @see #getTokens()
+	 */
+	public void setTokenSeparator(Character tokenSeparator)
+	{
+		Character old = this.tokenSeparator;
+		this.tokenSeparator = tokenSeparator;
+		getEventSupport().firePropertyChange(PROPERTY_TOKEN_SEPARATOR, old, this.tokenSeparator);
 	}
 	
 	/**

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,6 +29,7 @@ import java.io.Writer;
 import net.sf.jasperreports.engine.JRAlignment;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
@@ -38,7 +39,7 @@ import net.sf.jasperreports.engine.util.JRColorUtil;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: DocxCellHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DocxCellHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxCellHelper extends BaseHelper
 {
@@ -57,11 +58,11 @@ public class DocxCellHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public DocxCellHelper(Writer writer)
+	public DocxCellHelper(JasperReportsContext jasperReportsContext, Writer writer)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 		
-		borderHelper = new DocxBorderHelper(writer);
+		borderHelper = new DocxBorderHelper(jasperReportsContext, writer);
 	}
 		
 	/**
@@ -109,7 +110,7 @@ public class DocxCellHelper extends BaseHelper
 	 */
 	public void exportProps(JRPrintElement element, JRExporterGridCell gridCell)
 	{
-		exportBackcolor(element.getModeValue(), element.getBackcolor());
+		exportBackcolor(ModeEnum.OPAQUE, gridCell.getCellBackcolor());
 		
 		borderHelper.export(gridCell.getBox());
 
@@ -120,13 +121,13 @@ public class DocxCellHelper extends BaseHelper
 		if (align != null)
 		{
 			JRPrintText text = element instanceof JRPrintText ? (JRPrintText)element : null;
-			RotationEnum ownRotation = text == null ? null : text.getOwnRotationValue();
+			RotationEnum rotation = text == null ? null : text.getRotationValue();
 			
 			String verticalAlignment = 
 				getVerticalAlignment(
-					align.getOwnVerticalAlignmentValue() 
+					align.getVerticalAlignmentValue() 
 					);
-			String textRotation = getTextDirection(ownRotation);
+			String textRotation = getTextDirection(rotation);
 
 			exportAlignmentAndRotation(verticalAlignment, textRotation);
 		}
@@ -138,7 +139,7 @@ public class DocxCellHelper extends BaseHelper
 	 */
 	public void exportProps(JRExporterGridCell gridCell)
 	{
-		exportBackcolor(ModeEnum.OPAQUE, gridCell.getBackcolor());//FIXMEDOCX check this
+		exportBackcolor(ModeEnum.OPAQUE, gridCell.getCellBackcolor());
 		
 		borderHelper.export(gridCell.getBox());
 	}
@@ -151,7 +152,7 @@ public class DocxCellHelper extends BaseHelper
 	{
 		if (mode == ModeEnum.OPAQUE && backcolor != null)
 		{
-			write("      <w:shd w:val=\"clear\" w:color=\"auto\"	w:fill=\"" + JRColorUtil.getColorHexa(backcolor) + "\" />\n");
+			write("      <w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"" + JRColorUtil.getColorHexa(backcolor) + "\" />\n");
 		}
 	}
 

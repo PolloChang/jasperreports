@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,39 +27,44 @@ import net.sf.jasperreports.engine.JRChartPlot;
 import net.sf.jasperreports.engine.JRExpression;
 
 /**
+ * This type of plot is similar to the Line plot and Scatter plot in that it lets users configure 
+ * the labels for both axes, the rendering of lines to connect the item points, and the rendering 
+ * of the small shapes that mark each item point on the target plot area. It is used only in 
+ * combination with Time Series charts. 
+ * 
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRTimeSeriesPlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTimeSeriesPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRTimeSeriesPlot extends JRChartPlot, JRTimeAxisFormat, JRValueAxisFormat, JRCommonLinePlot
 {
 
 	/**
-	 * 
+	 * @return the time axis label expression
 	 */
 	public JRExpression getTimeAxisLabelExpression();
 
 	/**
-	 * 
+	 * @return the value axis label expression
 	 */
 	public JRExpression getValueAxisLabelExpression();
 
 	/**
-	 * 
+	 * @return the minimum value expression for the domain axis
 	 */
 	public JRExpression getDomainAxisMinValueExpression();
 
 	/**
-	 * 
+	 * @return the maximum value expression for the domain axis
 	 */
 	public JRExpression getDomainAxisMaxValueExpression();
 
 	/**
-	 * 
+	 * @return the minimum value expression for the range axis
 	 */
 	public JRExpression getRangeAxisMinValueExpression();
 
 	/**
-	 * 
+	 * @return the maximum value expression for the range axis
 	 */
 	public JRExpression getRangeAxisMaxValueExpression();
 	

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,8 +29,6 @@
 
 package net.sf.jasperreports.engine.export;
 
-import java.util.Map;
-
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -39,7 +37,8 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRHtmlExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
+ * @version $Id: JRHtmlExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated To be removed.
  */
 public class JRHtmlExporterNature extends AbstractExporterNature
 {
@@ -81,8 +80,7 @@ public class JRHtmlExporterNature extends AbstractExporterNature
 		if (element instanceof JRGenericPrintElement)
 		{
 			JRGenericPrintElement genericElement = (JRGenericPrintElement) element;
-			GenericElementHtmlHandler handler = (GenericElementHtmlHandler) 
-			GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
+			GenericElementHtmlHandler handler = (GenericElementHtmlHandler)handlerEnvironment.getElementHandler(
 					genericElement.getGenericType(), JRHtmlExporter.HTML_EXPORTER_KEY);
 			if (handler == null || !handler.toExport(genericElement))
 			{
@@ -108,14 +106,6 @@ public class JRHtmlExporterNature extends AbstractExporterNature
 			return !getPropertiesUtil().getBooleanProperty(frame, JRHtmlExporterParameter.PROPERTY_FRAMES_AS_NESTED_TABLES, !deep);
 		}
 		return deep;
-	}
-	
-	/**
-	 * 
-	 */
-	public boolean isSplitSharedRowSpan()
-	{
-		return false;
 	}
 
 	/**

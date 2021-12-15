@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,7 @@ import javax.sql.DataSource;
 
 /**
  * @author Veaceslav Chicu (schicu@users.sourceforge.net)
- * @version $Id: SimpleSQLDataSource.java 5426 2012-06-04 16:15:57Z chicuslavic $
+ * @version $Id: SimpleSQLDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleSQLDataSource implements DataSource {
 	private MondrianDataAdapterService connection;
@@ -60,11 +60,6 @@ public class SimpleSQLDataSource implements DataSource {
 		return loginTimeout;
 	}
 
-	@Override
-	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		return null;
-	}
-
 	public <T> T unwrap(Class<T> iface) throws SQLException {
 		return null;
 	}
@@ -82,4 +77,7 @@ public class SimpleSQLDataSource implements DataSource {
 		return connection.getConnection();
 	}
 
+	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+		throw new SQLFeatureNotSupportedException();
+	}
 }

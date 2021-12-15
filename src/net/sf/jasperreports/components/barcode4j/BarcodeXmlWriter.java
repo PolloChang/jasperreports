@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,18 +26,22 @@ package net.sf.jasperreports.components.barcode4j;
 import java.io.IOException;
 
 import net.sf.jasperreports.components.ComponentsExtensionsRegistryFactory;
+import net.sf.jasperreports.engine.JRComponentElement;
+import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.component.ComponentKey;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
+import net.sf.jasperreports.engine.util.VersionComparator;
 import net.sf.jasperreports.engine.util.XmlNamespace;
-import net.sf.jasperreports.engine.xml.JRXmlWriter;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
+import net.sf.jasperreports.engine.xml.JRXmlWriter;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeXmlWriter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarcodeXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeXmlWriter implements BarcodeVisitor
 {
@@ -45,13 +49,21 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 	private final JRXmlWriteHelper xmlWriteHelper;
 	private final BarcodeComponent barcodeComponent;
 	private final ComponentKey componentKey;
+	private final String version;
+	private final VersionComparator versionComparator;
 	
-	public BarcodeXmlWriter(JRXmlWriter reportWriter, 
-			BarcodeComponent barcode, ComponentKey componentKey)
+	public BarcodeXmlWriter(JRXmlWriter reportWriter, JRComponentElement componentElement)
+	{
+		this(reportWriter, componentElement, null, new VersionComparator());
+	}
+	
+	public BarcodeXmlWriter(JRXmlWriter reportWriter, JRComponentElement componentElement, String version, VersionComparator versionComparator)
 	{
 		this.xmlWriteHelper = reportWriter.getXmlWriteHelper();
-		this.barcodeComponent = barcode;
-		this.componentKey = componentKey;
+		this.barcodeComponent = (BarcodeComponent) componentElement.getComponent();
+		this.componentKey = componentElement.getComponentKey();
+		this.version = version;
+		this.versionComparator = versionComparator;
 	}
 	
 	public void writeBarcode()
@@ -93,10 +105,8 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 	
 	protected void writeBaseContents(BarcodeComponent barcode) throws IOException
 	{
-		xmlWriteHelper.writeExpression("codeExpression", 
-				barcode.getCodeExpression());
-		xmlWriteHelper.writeExpression("patternExpression", 
-				barcode.getPatternExpression());
+		writeExpression("codeExpression", barcode.getCodeExpression(), false);
+		writeExpression("patternExpression", barcode.getPatternExpression(), false);
 	}
 	
 	public void visitCodabar(CodabarComponent codabar)
@@ -150,6 +160,10 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 			startBarcode(ean128);
 			xmlWriteHelper.addAttribute("checksumMode", ean128.getChecksumMode());
 			writeBaseContents(ean128);
+			if(isNewerVersionOrEqual(version, JRConstants.VERSION_5_1_2))
+			{
+				writeExpression("templateExpression", ean128.getTemplateExpression(), false);
+			}
 			endBarcode();
 		}
 		catch (IOException e)
@@ -333,5 +347,22 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 			throw new JRRuntimeException(e);
 		}
 	}
+	
+	@SuppressWarnings("deprecation")
+	protected void writeExpression(String name, JRExpression expression, boolean writeClass)  throws IOException
+	{
+		if(versionComparator.compare(version, JRConstants.VERSION_4_1_1) >= 0 )
+		{
+			xmlWriteHelper.writeExpression(name, expression);
+		}
+		else
+		{
+			xmlWriteHelper.writeExpression(name, expression, writeClass);
+		}
+	}
 
+	protected boolean isNewerVersionOrEqual(String currentVersion, String oldVersion) 
+	{
+		return versionComparator.compare(currentVersion, oldVersion) >= 0;
+	}
 }

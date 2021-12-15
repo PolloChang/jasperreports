@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.export;
 
+import net.sf.jasperreports.export.XlsExporterConfiguration;
 
 
 /**
@@ -31,13 +32,12 @@ package net.sf.jasperreports.engine.export;
  * The XLS exporter can send data to an output stream or file on disk. The engine looks among the export parameters in
  * order to find the selected output type in this order: OUTPUT_STREAM, OUTPUT_FILE, OUTPUT_FILE_NAME.
  *
+ * @deprecated Replaced by {@link XlsExporterConfiguration}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsExporterParameter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRXlsExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXlsExporterParameter extends JRXlsAbstractExporterParameter
 {
-
-
 	/**
 	 *
 	 */

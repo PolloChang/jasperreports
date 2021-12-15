@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,7 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
  * Base abstract implementation of {@link net.sf.jasperreports.engine.fill.JRExtendedIncrementerFactory JRExtendedIncrementerFactory}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRAbstractExtendedIncrementerFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRAbstractExtendedIncrementerFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractExtendedIncrementerFactory implements JRExtendedIncrementerFactory
 {
@@ -42,7 +42,7 @@ public abstract class JRAbstractExtendedIncrementerFactory implements JRExtended
 	}
 
 	/**
-	 * This implementation simply calls {@link JRExtendedIncrementerFactory#getExtendedIncrementer(byte) getExtendedIncrementer}.
+	 * This implementation simply calls {@link JRExtendedIncrementerFactory#getExtendedIncrementer(CalculationEnum) getExtendedIncrementer}.
 	 */
 	public JRIncrementer getIncrementer(CalculationEnum calculation)
 	{

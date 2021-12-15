@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillLine.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillLine.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillLine extends JRFillGraphicElement implements JRLine
 {
@@ -103,6 +103,7 @@ public class JRFillLine extends JRFillGraphicElement implements JRLine
 		
 		this.evaluatePrintWhenExpression(evaluation);
 		evaluateProperties(evaluation);
+		evaluateStyle(evaluation);
 		
 		setValueRepeating(true);
 	}
@@ -113,7 +114,8 @@ public class JRFillLine extends JRFillGraphicElement implements JRLine
 	 */
 	protected JRPrintElement fill()
 	{
-		JRTemplatePrintLine printLine = new JRTemplatePrintLine(this.getJRTemplateLine(), elementId);
+		JRTemplatePrintLine printLine = new JRTemplatePrintLine(this.getJRTemplateLine(), printElementOriginator);
+		printLine.setUUID(this.getUUID());
 		printLine.setX(this.getX());
 		printLine.setY(this.getRelativeY());
 		printLine.setWidth(getWidth());

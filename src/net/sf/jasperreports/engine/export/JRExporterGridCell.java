@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.type.ModeEnum;
 	
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRExporterGridCell.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRExporterGridCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRExporterGridCell
 {
@@ -44,111 +44,56 @@ public abstract class JRExporterGridCell
 	public static final byte TYPE_ELEMENT_CELL = 3; 
 
 
-	/**
-	 *
-	 */
-	private ElementWrapper wrapper; 
 	
-	private Color backcolor;
-	private Color forecolor;
-	private JRLineBox box;
-	
-	private int width;
-	private int height;
-	private int colSpan;
-	private int rowSpan;
-
-	private JRGridLayout layout;
-
+	private GridCellStyle style;
 
 	/**
 	 *
 	 */
-	public JRExporterGridCell(
-		ElementWrapper wrapper, 
-		int width, 
-		int height,
-		int colSpan, 
-		int rowSpan
-		)
+	public JRExporterGridCell()
 	{
-		this.wrapper = wrapper;
-		this.width = width;
-		this.height = height;
-		this.colSpan = colSpan;
-		this.rowSpan = rowSpan;
 	}
 
-
-	public ElementWrapper getWrapper()
+	protected JRExporterGridCell(GridCellStyle style)
 	{
-		return wrapper;
+		this.style = style;
 	}
+
+	public abstract GridCellSize getSize();
 	
-	
-	public JRPrintElement getElement()
-	{
-		return wrapper == null ? null : wrapper.getElement();
-	}
-
-
 	public int getWidth()
 	{
-		return width;
+		return getSize().getWidth();
 	}
-
-
-	public void setWidth(int width)
-	{
-		this.width = width;
-	}
-
 
 	public int getHeight()
 	{
-		return height;
+		return getSize().getHeight();
 	}
-
 
 	public int getColSpan()
 	{
-		return colSpan;
+		return getSize().getColSpan();
 	}
-
-
-	public void setColSpan(int colSpan)
-	{
-		this.colSpan = colSpan;
-	}
-
 
 	public int getRowSpan()
 	{
-		return rowSpan;
+		return getSize().getRowSpan();
 	}
 
-
-	public JRGridLayout getLayout()
+	public GridCellStyle getStyle()
 	{
-		return layout;
+		return style;
 	}
 
-
-	public void setLayout(JRGridLayout layout)
+	public void setStyle(GridCellStyle style)
 	{
-		this.layout = layout;
+		this.style = style;
 	}
-
 
 	public Color getBackcolor()//FIXMENOW who uses this and why?
 	{
-		return backcolor;
-	}
-
-
-	public void setBackcolor(Color backcolor)
-	{
-		this.backcolor = backcolor;
+		return style == null ? null : style.getBackcolor();
 	}
 
 
@@ -157,27 +102,20 @@ public abstract class JRExporterGridCell
 	 */
 	public JRLineBox getBox()
 	{
-		return box;
+		return style == null ? null : style.getBox();
 	}
-
 
 	public void setBox(JRLineBox box)
 	{
-		this.box = box;
+		// should not happen
+		throw new UnsupportedOperationException("Cannot set the box on a cell of type " + getType());
 	}
 
 
 	public Color getForecolor()
 	{
-		return forecolor;
+		return style == null ? null : style.getForecolor();
 	}
-
-
-	public void setForecolor(Color forecolor)
-	{
-		this.forecolor = forecolor;
-	}
-
 
 	public Color getCellBackcolor()
 	{
@@ -189,17 +127,16 @@ public abstract class JRExporterGridCell
 		}
 		else
 		{
-			color = backcolor;
+			color = getBackcolor();
 		}
 		return color;
 	}
-	
-	
-	public boolean isEmpty()
-	{
-		return wrapper == null && backcolor == null && box == null;
-	}
 
 	public abstract byte getType();
+	
+	public abstract JRPrintElement getElement();
+	
+	public abstract String getElementAddress();
 
+	public abstract String getProperty(String propName);
 }

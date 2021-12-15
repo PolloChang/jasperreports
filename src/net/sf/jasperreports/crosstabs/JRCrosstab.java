@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,13 +29,14 @@ import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.type.HorizontalPosition;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 
 /**
  * Crosstab element interface.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstab.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCrosstab.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCrosstab extends JRElement, JRBoxContainer
 {
@@ -334,4 +335,28 @@ public interface JRCrosstab extends JRElement, JRBoxContainer
 	 * @see #setIgnoreWidth(Boolean)
 	 */
 	public void setIgnoreWidth(boolean ignoreWidth);
+	
+	/**
+	 * Returns the position of the crosstab within its element box.
+	 * 
+	 * @return the position of the crosstab within its element box, 
+	 * <code>null</code> if no position is specified
+	 */
+	public HorizontalPosition getHorizontalPosition();
+	
+	/**
+	 * Sets the position of the crosstab within its element box.
+	 * 
+	 * @param horizontalPosition the crosstab position, 
+	 * if <code>null</code> the default position is applied
+	 */
+	public void setHorizontalPosition(HorizontalPosition horizontalPosition);
+	
+	/**
+	 * Returns the title cell, which renders once at the beginning of the crosstab.
+	 * 
+	 * @return the title cell
+	 */
+	public CrosstabColumnCell getTitleCell();
+
 }

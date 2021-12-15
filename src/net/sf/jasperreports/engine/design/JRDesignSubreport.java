@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,13 +40,14 @@ import net.sf.jasperreports.engine.JRSubreportReturnValue;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.base.JRBaseSubreport;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.type.OverflowType;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignSubreport.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 {
@@ -75,6 +76,7 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	protected Boolean isUsingCache;
 
 	private Boolean runToBottom;
+	private OverflowType overflowType;
 
 	/**
 	 *
@@ -372,6 +374,20 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 		getEventSupport().firePropertyChange(JRBaseSubreport.PROPERTY_RUN_TO_BOTTOM, old, this.runToBottom);
 	}
 
+	@Override
+	public OverflowType getOverflowType()
+	{
+		return overflowType;
+	}
+
+	@Override
+	public void setOverflowType(OverflowType overflowType)
+	{
+		Object old = this.overflowType;
+		this.overflowType = overflowType;
+		getEventSupport().firePropertyChange(JRBaseSubreport.PROPERTY_OVERFLOW_TYPE, old, this.overflowType);
+	}
+
 	
 	/**
 	 * 
@@ -385,7 +401,8 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 			clone.parametersMap = new LinkedHashMap<String, JRSubreportParameter>();
 			for(Iterator<String> it = parametersMap.keySet().iterator(); it.hasNext();)
 			{
-				clone.parametersMap.put(key, JRCloneUtils.nullSafeClone(parametersMap.get(it.next())));
+				String name = it.next();
+				clone.parametersMap.put(name, JRCloneUtils.nullSafeClone(parametersMap.get(name)));
 			}
 		}
 

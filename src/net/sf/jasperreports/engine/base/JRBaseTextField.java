@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -46,7 +46,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * This class is used for representing a text field.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseTextField.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseTextField.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 {
@@ -57,7 +57,7 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	public static final String PROPERTY_STRETCH_WITH_OVERFLOW = "stretchWithOverflow";
+	public static final String PROPERTY_STRETCH_WITH_OVERFLOW = "isStretchWithOverflow";
 
 	/**
 	 *
@@ -78,6 +78,7 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 	protected JRExpression patternExpression;
 	protected JRExpression anchorNameExpression;
 	protected JRExpression hyperlinkReferenceExpression;
+	protected JRExpression hyperlinkWhenExpression;
 	protected JRExpression hyperlinkAnchorExpression;
 	protected JRExpression hyperlinkPageExpression;
 	private JRExpression hyperlinkTooltipExpression;
@@ -108,6 +109,7 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		patternExpression = factory.getExpression(textField.getPatternExpression());
 		anchorNameExpression = factory.getExpression(textField.getAnchorNameExpression());
 		hyperlinkReferenceExpression = factory.getExpression(textField.getHyperlinkReferenceExpression());
+		hyperlinkWhenExpression = factory.getExpression(textField.getHyperlinkWhenExpression());
 		hyperlinkAnchorExpression = factory.getExpression(textField.getHyperlinkAnchorExpression());
 		hyperlinkPageExpression = factory.getExpression(textField.getHyperlinkPageExpression());
 		hyperlinkTooltipExpression = factory.getExpression(textField.getHyperlinkTooltipExpression());
@@ -265,6 +267,14 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 	/**
 	 *
 	 */
+	public JRExpression getHyperlinkWhenExpression()
+	{
+		return this.hyperlinkWhenExpression;
+	}
+
+	/**
+	 *
+	 */
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return this.hyperlinkAnchorExpression;
@@ -334,6 +344,7 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		clone.patternExpression = JRCloneUtils.nullSafeClone(patternExpression);
 		clone.anchorNameExpression = JRCloneUtils.nullSafeClone(anchorNameExpression);
 		clone.hyperlinkReferenceExpression = JRCloneUtils.nullSafeClone(hyperlinkReferenceExpression);
+		clone.hyperlinkWhenExpression = JRCloneUtils.nullSafeClone(hyperlinkWhenExpression);
 		clone.hyperlinkAnchorExpression = JRCloneUtils.nullSafeClone(hyperlinkAnchorExpression);
 		clone.hyperlinkPageExpression = JRCloneUtils.nullSafeClone(hyperlinkPageExpression);
 		clone.hyperlinkTooltipExpression = JRCloneUtils.nullSafeClone(hyperlinkTooltipExpression);

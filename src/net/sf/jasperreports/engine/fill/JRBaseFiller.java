@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -46,6 +46,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.sf.jasperreports.engine.BookmarkHelper;
 import net.sf.jasperreports.engine.JRAbstractScriptlet;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRDataSource;
@@ -100,12 +101,14 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseFiller.java 5415 2012-05-25 10:05:56Z lucianc $
+ * @version $Id: JRBaseFiller.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRBaseFiller implements JRDefaultStyleProvider
 {
 
 	private static final Log log = LogFactory.getLog(JRBaseFiller.class);
+	
+	private static final int PAGE_HEIGHT_PAGINATION_IGNORED = 0x7d000000;//less than Integer.MAX_VALUE to avoid 
 
 	protected final Map<Integer, JRFillElement> fillElements = new HashMap<Integer, JRFillElement>();
 	protected final int fillerId;
@@ -228,6 +231,8 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 	protected JasperPrint jasperPrint;
 
 	protected JRPrintPage printPage;
+	
+	protected BookmarkHelper bookmarkHelper;
 
 	protected int printPageStretchHeight;
 
@@ -258,6 +263,7 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 	 */
 	private JasperReportsContext jasperReportsContext;
 	private JRPropertiesUtil propertiesUtil;
+	private List<String> printTransferPropertyPrefixes;
 
 	/**
 	 * The report.
@@ -335,11 +341,13 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 
 		if (parentFiller == null)
 		{
-			fillContext = new JRFillContext(jasperReportsContext);
+			fillContext = new JRFillContext(this);
+			printTransferPropertyPrefixes = readPrintTransferPropertyPrefixes();
 		}
 		else
 		{
 			fillContext = parentFiller.fillContext;
+			printTransferPropertyPrefixes = parentFiller.printTransferPropertyPrefixes;
 		}
 		
 		this.fillerId = fillContext.generatedFillerId();
@@ -370,6 +378,24 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 		whenResourceMissingType = jasperReport.getWhenResourceMissingTypeValue();
 
 		jasperPrint = new JasperPrint();
+
+		boolean isCreateBookmarks = 
+			propertiesUtil.getBooleanProperty(
+				jasperReport, 
+				JasperPrint.PROPERTY_CREATE_BOOKMARKS,
+				false
+				);
+		if (isCreateBookmarks)
+		{
+			bookmarkHelper = 
+				new BookmarkHelper(
+					propertiesUtil.getBooleanProperty(
+						jasperReport, 
+						JasperPrint.PROPERTY_COLLAPSE_MISSING_BOOKMARK_LEVELS,
+						false
+						)
+					);
+		}
 		
 		getPropertiesUtil().transferProperties(jasperReport, jasperPrint, 
 				JasperPrint.PROPERTIES_PRINT_TRANSFER_PREFIX);
@@ -531,7 +557,6 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 		initBands();
 	}
 
-
 	/**
 	 * Returns the report parameters indexed by name.
 	 *
@@ -583,7 +608,7 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 	 */
 	protected JRFillVariable getVariable(String variableName)
 	{
-		return mainDataset.variablesMap.get(variableName);
+		return mainDataset.getVariable(variableName);
 	}
 
 
@@ -696,6 +721,27 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 		return propertiesUtil;
 	}
 
+	private List<String> readPrintTransferPropertyPrefixes()
+	{
+		List<JRPropertiesUtil.PropertySuffix> transferProperties = propertiesUtil.getProperties(
+				JasperPrint.PROPERTIES_PRINT_TRANSFER_PREFIX);
+		List<String> prefixes = new ArrayList<String>(transferProperties.size());
+		for (JRPropertiesUtil.PropertySuffix property : transferProperties)
+		{
+			String transferPrefix = property.getValue();
+			if (transferPrefix != null && transferPrefix.length() > 0)
+			{
+				prefixes.add(transferPrefix);
+			}
+		}
+		return prefixes;
+	}
+
+	protected List<String> getPrintTransferPropertyPrefixes()
+	{
+		return printTransferPropertyPrefixes;
+	}
+
 	/**
 	 *
 	 */
@@ -736,6 +782,11 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 	protected boolean isSubreport()
 	{
 		return (parentFiller != null);
+	}
+
+	protected boolean isMasterReport()
+	{
+		return parentFiller == null;
 	}
 
 	protected boolean isSubreportRunToBottom()
@@ -850,8 +901,6 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 
 	public JasperPrint fill(Map<String,Object> parameterValues) throws JRException
 	{
-		setParametersToContext(parameterValues);
-		
 		if (parameterValues == null)
 		{
 			parameterValues = new HashMap<String,Object>();
@@ -862,7 +911,12 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 			log.debug("Fill " + fillerId + ": filling report");
 		}
 
+		setParametersToContext(parameterValues);
+
 		fillingThread = Thread.currentThread();
+		
+		JRResourcesFillUtil.ResourcesFillContext resourcesContext = 
+			JRResourcesFillUtil.setResourcesFillContext(parameterValues);
 		
 		boolean success = false;
 		try
@@ -948,6 +1002,13 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 
 			//kill the subreport filler threads
 			killSubfillerThreads();
+			
+			if (parentFiller == null)
+			{
+				fillContext.dispose();
+			}
+
+			JRResourcesFillUtil.revertResourcesFillContext(resourcesContext);
 		}
 	}
 
@@ -1399,7 +1460,11 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 					groups[i].setStartNewColumn(false);
 				}
 			}
-			setPageHeight(Integer.MAX_VALUE);
+			
+			if (isMasterReport())//subreport page height is already set by master
+			{
+				setPageHeight(PAGE_HEIGHT_PAGINATION_IGNORED);
+			}
 		}
 	}
 
@@ -1451,10 +1516,15 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 	/**
 	 *
 	 */
-	protected Format getDateFormat(String pattern)
+	public Format getDateFormat(String pattern)
+	{
+		return getDateFormat(pattern, null);
+	}
+	
+	protected Format getDateFormat(String pattern, TimeZone timeZone)
 	{
 		Locale lc = getLocale();
-		TimeZone tz = getTimeZone();
+		TimeZone tz = timeZone == null ? getTimeZone() : timeZone;// default to filler timezone
 		String key = pattern + "|" + JRDataUtils.getLocaleCode(lc) + "|" + JRDataUtils.getTimeZoneId(tz);
 		Format format = dateFormatCache.get(key);
 		if (format == null)
@@ -1472,7 +1542,7 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 	/**
 	 *
 	 */
-	protected Format getNumberFormat(String pattern)
+	public Format getNumberFormat(String pattern)
 	{
 		Locale lc = getLocale();
 		String key = pattern + "|" + JRDataUtils.getLocaleCode(lc);
@@ -1794,8 +1864,32 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 				fillListener.pageGenerated(jasperPrint, pageCount - 1);
 			}
 
+			addLastPageBookmarks();
+
 			jasperPrint.addPage(page);
 			fillContext.setPrintPage(page);
+		}
+	}
+
+
+	protected void addLastPageBookmarks()
+	{
+		if (bookmarkHelper != null)
+		{
+			int pageIndex = jasperPrint.getPages() == null ? -1 : (jasperPrint.getPages().size() - 1);
+			if (pageIndex >= 0)
+			{
+				JRPrintPage page = jasperPrint.getPages().get(pageIndex);
+				bookmarkHelper.addBookmarks(page, pageIndex);
+			}
+		}
+	}
+
+	protected void updateBookmark(JRPrintElement element)
+	{
+		if (bookmarkHelper != null)
+		{
+			bookmarkHelper.updateBookmark(element);
 		}
 	}
 
@@ -2214,11 +2308,13 @@ public abstract class JRBaseFiller implements JRDefaultStyleProvider
 		return fillerId;
 	}
 
-	public int assignElementId(JRFillElement fillElement)
+	protected PrintElementOriginator assignElementId(JRFillElement fillElement)
 	{
 		int id = getFillContext().generateFillElementId();
 		fillElements.put(id, fillElement);
-		return id;
+		
+		DefaultPrintElementOriginator originator = new DefaultPrintElementOriginator(id);
+		return originator;
 	}
 }
 
@@ -2467,7 +2563,7 @@ class ElementEvaluationVirtualizationListener implements VirtualizationListener<
 							ElementEvaluationAction action = (ElementEvaluationAction) actionsMap.remove(element);
 							if (action != null)
 							{
-								elementEvaluations.put(element, action.element.elementId);
+								elementEvaluations.put(element, action.element.printElementOriginator.getSourceElementId());
 								
 								if (log.isDebugEnabled())
 								{

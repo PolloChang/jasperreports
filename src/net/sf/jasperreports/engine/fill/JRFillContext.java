@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,10 +43,10 @@ import net.sf.jasperreports.engine.JRTemplate;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReportContext;
+import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.query.JRQueryExecuter;
 import net.sf.jasperreports.engine.util.DeduplicableRegistry;
 import net.sf.jasperreports.engine.util.FormatFactory;
-import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.Pair;
 
 /**
@@ -55,11 +55,13 @@ import net.sf.jasperreports.engine.util.Pair;
  * The context is created by the master filler and inherited by the subfillers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillContext.java 5414 2012-05-25 09:51:28Z lucianc $
+ * @version $Id: JRFillContext.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.fill.JRBaseFiller
  */
 public class JRFillContext
 {
+	private final JRBaseFiller masterFiller;
+	
 	private Map<Object,JRPrintImage> loadedImages;
 	private Map<Object,JasperReport> loadedSubreports;
 	private Map<Object,JRTemplate> loadedTemplates;
@@ -86,24 +88,31 @@ public class JRFillContext
 	
 	private final AtomicInteger fillerIdSeq = new AtomicInteger();
 	private final AtomicInteger fillElementSeq = new AtomicInteger();
+	
+	private Map<String, Object> fillCaches = new HashMap<String, Object>();
 
 	
 	/**
 	 * Constructs a fill context.
 	 */
-	public JRFillContext(JasperReportsContext jasperReportsContext)
+	public JRFillContext(JRBaseFiller masterFiller)
 	{
-		this.jasperReportsContext = jasperReportsContext;
+		this.masterFiller = masterFiller;
+		this.jasperReportsContext = masterFiller.getJasperReportsContext();
 		
 		loadedImages = new HashMap<Object,JRPrintImage>();
 		loadedSubreports = new HashMap<Object,JasperReport>();
 		loadedTemplates = new HashMap<Object,JRTemplate>();
 		deduplicableRegistry = new DeduplicableRegistry();
 		
-		JRFontUtil.resetThreadMissingFontsCache();
+		FontUtil.getInstance(jasperReportsContext).resetThreadMissingFontsCache();
 	}
-	
-	
+
+	public JRBaseFiller getMasterFiller()
+	{
+		return masterFiller;
+	}
+
 	/**
 	 * Checks whether an image given by source has already been loaded and cached.
 	 * 
@@ -526,5 +535,37 @@ public class JRFillContext
 	public boolean isCanceled()
 	{
 		return canceled;
+	}
+	
+	public void updateBookmark(JRPrintElement element)
+	{
+		// bookmarks are in the master filler
+		masterFiller.updateBookmark(element);
+	}
+	
+	public Object getFillCache(String key)
+	{
+		return fillCaches.get(key);
+	}
+	
+	public void setFillCache(String key, Object value)
+	{
+		fillCaches.put(key, value);
+	}
+
+	public void dispose()
+	{
+		for (Object cacheObject : fillCaches.values())
+		{
+			if (cacheObject instanceof FillCacheDisposable)
+			{
+				((FillCacheDisposable) cacheObject).dispose();
+			}
+		}
+	}
+	
+	public static interface FillCacheDisposable
+	{
+		void dispose();
 	}
 }

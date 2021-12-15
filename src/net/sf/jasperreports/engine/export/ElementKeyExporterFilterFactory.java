@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
@@ -39,7 +40,7 @@ import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
  * be filtered on export.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ElementKeyExporterFilterFactory.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: ElementKeyExporterFilterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ElementKeyExporterFilterFactory implements ExporterFilterFactory
 {
@@ -68,31 +69,37 @@ public class ElementKeyExporterFilterFactory implements ExporterFilterFactory
 	public ExporterFilter getFilter(JRExporterContext exporterContext)
 			throws JRException
 	{
-		String excludeKeyPrefix = 
-			exporterContext.getExportPropertiesPrefix() + PROPERTY_EXCLUDED_KEY_PREFIX;
-		List<PropertySuffix> props = JRPropertiesUtil.getProperties(
-				exporterContext.getExportedReport(), excludeKeyPrefix);
-		ExporterFilter filter;
-		if (props.isEmpty())
-		{
-			filter = null;
-		}
-		else
-		{
-			Set<String> excludedKeys = new HashSet<String>();
-			for (Iterator<PropertySuffix> it = props.iterator(); it.hasNext();)
-			{
-				PropertySuffix prop = it.next();
-				String key = prop.getValue();
-				if (key == null || key.length() == 0)
-				{
-					key = prop.getSuffix();
-				}
-				excludedKeys.add(key);
-			}
+		ExporterFilter filter = null;
+
+		JRAbstractExporter<?, ?, ?, ?> exporter = 
+			exporterContext.getExporterRef() instanceof JRAbstractExporter<?, ?, ?, ?> 
+			? (JRAbstractExporter<?, ?, ?, ?>)exporterContext.getExporterRef() 
+			: null;
 			
-			filter = new ElementKeyExporterFilter(excludedKeys);
+		if (exporter != null)
+		{
+			String excludeKeyPrefix = 
+				exporter.getExporterPropertiesPrefix() + PROPERTY_EXCLUDED_KEY_PREFIX;
+			List<PropertySuffix> props = JRPropertiesUtil.getProperties(
+					exporterContext.getExportedReport(), excludeKeyPrefix);
+			if (!props.isEmpty())
+			{
+				Set<String> excludedKeys = new HashSet<String>();
+				for (Iterator<PropertySuffix> it = props.iterator(); it.hasNext();)
+				{
+					PropertySuffix prop = it.next();
+					String key = prop.getValue();
+					if (key == null || key.length() == 0)
+					{
+						key = prop.getSuffix();
+					}
+					excludedKeys.add(key);
+				}
+				
+				filter = new ElementKeyExporterFilter(excludedKeys);
+			}
 		}
+		
 		return filter;
 	}
 

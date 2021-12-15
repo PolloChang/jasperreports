@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,16 +32,17 @@ import java.util.List;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.CompositeClassloader;
 import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.SimpleFileResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractClasspathAwareDataAdapterService.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: AbstractClasspathAwareDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractClasspathAwareDataAdapterService extends AbstractDataAdapterService 
 {
-
+	public static final String CURRENT_CLASS_LOADER = "CURRENT_CLASS_LOADER";
 	/**
 	 *
 	 */
@@ -61,8 +62,15 @@ public abstract class AbstractClasspathAwareDataAdapterService extends AbstractD
 	/**
 	 *
 	 */
-	protected ClassLoader getClassLoader()
-	{
+	protected ClassLoader getClassLoader(ClassLoader cloader)
+	{ 
+		Object obj = getJasperReportsContext().getValue(CURRENT_CLASS_LOADER);
+		if(obj != null && obj instanceof ClassLoader)
+			cloader = (ClassLoader)obj ; 
+		return new CompositeClassloader(getPathClassloader(), cloader); 
+	}
+
+	private ClassLoader getPathClassloader() {
 		FileResolver fileResolver = null;//FIXMECONTEXT JRResourcesUtil.getFileResolver(null);
 		if (fileResolver == null)
 		{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,9 +26,17 @@ package net.sf.jasperreports.engine;
 
 /**
  * An abstract representation of a report static text. It provides functionality for static texts.
+ * <p/>
+ * Static texts are text elements with fixed content, which does not change during the
+ * report-filling process. They are used mostly to introduce static text labels into the
+ * generated documents.
+ * <p/>
+ * Besides the general element properties and the common text-specific properties, a static text 
+ * definition has only the <code>&lt;text&gt;</code> tag, which introduces the fixed text content 
+ * of the static text element. The text content can be collected using the {@link #getText()} method.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStaticText.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRStaticText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRStaticText extends JRTextElement
 {

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.fill.JRFillCrosstabObjectFactory;
@@ -41,17 +42,19 @@ import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRStyleSetter;
 import net.sf.jasperreports.engine.type.ModeEnum;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 
 /**
  * Crosstab cell contents filler.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillCellContents.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillCellContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillCellContents extends JRFillElementContainer implements JRCellContents, JRStyleSetter
 {
@@ -59,7 +62,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 	private final Map<BoxContents,JRFillCellContents> boxContentsCache;
 	private final JRClonePool clonePool;
 	private final JROriginProvider originProvider;
-	private final int elementId;
+	private final PrintElementOriginator printElementOriginator;
 	
 	private JRFillCellContents original;
 	
@@ -82,6 +85,8 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 	private JRDefaultStyleProvider defaultStyleProvider;
 	private JRStyle initStyle;
 	private int prepareStretchHeight;
+	
+	private Map<String, String> printProperties = new HashMap<String, String>();
 
 	public JRFillCellContents(JRBaseFiller filler, JRCellContents cell, String cellType, 
 			JRFillCrosstabObjectFactory factory)
@@ -92,7 +97,10 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		
 		parentCell = cell;
 		this.cellType = cellType;
-		elementId = filler.getFillContext().generateFillElementId();
+		
+		
+		int elementId = filler.getFillContext().generateFillElementId();
+		printElementOriginator = new DefaultPrintElementOriginator(elementId);
 		
 		lineBox = cell.getLineBox().clone(this);
 		
@@ -128,7 +136,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		
 		parentCell = cellContents.parentCell;
 		cellType = cellContents.cellType;
-		elementId = cellContents.elementId;
+		printElementOriginator = cellContents.printElementOriginator;
 		
 		lineBox = cellContents.getLineBox().clone(this);
 		
@@ -378,6 +386,10 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		prepareStretchHeight = getStretchHeight();
 	}
 
+	public void setPrintProperty(String name, String value)
+	{
+		printProperties.put(name, value);
+	}
 	
 	protected JRPrintFrame fill() throws JRException
 	{
@@ -385,7 +397,8 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		moveBandBottomElements();
 		removeBlankElements();
 
-		JRTemplatePrintFrame printCell = new JRTemplatePrintFrame(getTemplateFrame(), elementId);
+		JRTemplatePrintFrame printCell = new JRTemplatePrintFrame(getTemplateFrame(), printElementOriginator);
+		//printCell.setUUID();
 		printCell.setX(x);
 		printCell.setY(y);
 		printCell.setWidth(width);
@@ -414,6 +427,14 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 			printCell.getPropertiesMap().setProperty(
 					JRCellContents.PROPERTY_COLUMN_SPAN, Integer.toString(horizontalSpan));
 		}
+		
+		// TODO lucianc find a way to put this in templates
+		for (Entry<String, String> propEntry : printProperties.entrySet())
+		{
+			printCell.getPropertiesMap().setProperty(propEntry.getKey(), propEntry.getValue());
+		}
+
+		// not transferring cell properties for now
 	}
 
 	
@@ -646,6 +667,8 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 
 	protected void evaluate(byte evaluation) throws JRException
 	{
+		printProperties.clear();
+		
 		evaluateConditionalStyles(evaluation);
 		super.evaluate(evaluation);
 	}
@@ -709,6 +732,39 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 	public Color getDefaultLineColor() 
 	{
 		return parentCell.getDefaultLineColor();
+	}
+	
+	public boolean hasProperties()
+	{
+		return parentCell.hasProperties();
+	}
+
+	// not doing anything with the properties at fill time
+	public JRPropertiesMap getPropertiesMap()
+	{
+		return parentCell.getPropertiesMap();
+	}
+	
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
+	}
+	
+	protected void addElement(int index, JRFillElement element)
+	{
+		children.add(index, element);
+		
+		// recreate elements array
+		this.elements = null;
+		getElements();
+		initDeepElements();
+		
+		// we need to reinit elements
+		initElements();
+		
+		// assuming that the element is not deep and that it does not bring new conditional styles
+		element.setConditionalStylesContainer(this);
+		element.setOriginProvider(originProvider);
 	}
 
 }

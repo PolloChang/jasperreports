@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.util.DeduplicableRegistry;
  * previously created identical instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: Deduplicable.java 4647 2011-10-06 10:19:07Z lucianc $
+ * @version $Id: Deduplicable.java 7199 2014-08-27 13:58:10Z teodord $
  * @see DeduplicableRegistry
  */
 public interface Deduplicable

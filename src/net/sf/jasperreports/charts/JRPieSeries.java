@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,24 +29,31 @@ import net.sf.jasperreports.engine.JRHyperlink;
 
 
 /**
+ * Represents the series for the Pie dataset.
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPieSeries.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPieSeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRPieSeries extends JRCloneable
 {
 	
 	/**
-	 * 
+	 * @return a <code>java.lang.Comparable</code> object representing 
+	 * the categories that will make up the slices in the pie chart.
 	 */
 	public JRExpression getKeyExpression();
 
 	/**
-	 * 
+	 * @return a numeric expression that produces the values corresponding 
+	 * to each category/key in the dataset.
 	 */
 	public JRExpression getValueExpression();
 
 	/**
-	 * 
+	 * @return the label expression. If this expression is missing, the chart 
+	 * will display default labels for each slice in the pie chart. Use this 
+	 * expression, which returns <code>java.lang.String</code> values, to customize 
+	 * the item labels for the pie chart.
 	 */
 	public JRExpression getLabelExpression();
 

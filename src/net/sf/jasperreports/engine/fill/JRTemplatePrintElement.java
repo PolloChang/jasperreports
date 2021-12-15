@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,9 +36,13 @@ import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.PrintElementVisitor;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationSerializable;
 
 
 /**
@@ -47,9 +51,9 @@ import net.sf.jasperreports.engine.type.ModeEnum;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintElement.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTemplatePrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRTemplatePrintElement implements JRPrintElement, Serializable
+public class JRTemplatePrintElement implements JRPrintElement, Serializable, VirtualizationSerializable
 {
 
 
@@ -57,19 +61,33 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable
 	 *
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	private static final int SERIALIZATION_FLAG_CACHED_TEMPLATE = 1;
+	private static final int SERIALIZATION_FLAG_HAS_UUID = 1 << 1;
+	private static final int SERIALIZATION_FLAG_HAS_PROPERTIES = 1 << 2;
+	private static final int SERIALIZATION_FLAG_CUSTOM_PROPERTIES = 1 << 3;
 
 	/**
 	 *
 	 */
 	protected JRTemplateElement template;
 
+	private UUID uuid;
 	private int x;
 	private int y;
 	private int height;
 	private int width;
 
 	private JRPropertiesMap properties;
+	//FIXME do we need both uuid and sourceElementId?
 	private int sourceElementId;
+	
+	private int printElementId;
+	
+	public JRTemplatePrintElement()
+	{
+		// used internally
+	}
 	
 	/**
 	 *
@@ -84,11 +102,33 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable
 	 * 
 	 * @param element
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRTemplatePrintElement(JRTemplateElement, PrintElementOriginator)}
 	 */
 	protected JRTemplatePrintElement(JRTemplateElement element, int sourceElementId)
 	{
 		template = element;
 		this.sourceElementId = sourceElementId;
+		this.printElementId = UNSET_PRINT_ELEMENT_ID;
+	}
+	
+	/**
+	 * @param element
+	 * @param originator
+	 */
+	protected JRTemplatePrintElement(JRTemplateElement element, PrintElementOriginator originator)
+	{
+		template = element;
+		
+		if (originator == null)
+		{
+			this.sourceElementId = UNSET_SOURCE_ELEMENT_ID;
+			this.printElementId = UNSET_PRINT_ELEMENT_ID;
+		}
+		else
+		{
+			this.sourceElementId = originator.getSourceElementId();
+			this.printElementId = originator.generatePrintElementId();
+		}
 	}
 
 	/**
@@ -114,7 +154,15 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable
 	 */
 	public UUID getUUID()
 	{
-		return template.getUUID();
+		return uuid;
+	}
+
+	/**
+	 *
+	 */
+	public void setUUID(UUID uuid)
+	{
+		this.uuid = uuid;
 	}
 
 	/**
@@ -317,6 +365,7 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable
 		return getForecolor();
 	}
 
+	//FIXME lucianc optimize by making unsynchronized 
 	public synchronized boolean hasProperties()
 	{
 		return properties != null && properties.hasProperties()
@@ -365,6 +414,12 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable
 		return sourceElementId;
 	}
 
+	@Override
+	public int getPrintElementId()
+	{
+		return printElementId;
+	}
+
 	/**
 	 * Sets the source/fill element Id for the print element.
 	 * 
@@ -389,6 +444,157 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable
 			{
 				// collision with the unset value, using a different value
 				sourceElementId = Integer.MIN_VALUE;
+			}
+		}
+		
+		// UNSET_PRINT_ELEMENT_ID is 0, so it will be assigned automatically when missing
+	}
+	
+	public void writeVirtualized(VirtualizationOutput out) throws IOException
+	{
+		JRVirtualizationContext virtualizationContext = out.getVirtualizationContext();
+		String templateId = template.getId();
+		boolean hasCachedTemplate = templateId != null && virtualizationContext.hasCachedTemplate(templateId);
+		boolean hasUUID = uuid != null;
+		
+		boolean hasProperties = properties != null && properties.hasProperties();
+		boolean customProperties = false;
+		if (hasProperties)
+		{
+			if (!properties.getClass().equals(JRPropertiesMap.class))
+			{
+				customProperties = true;
+			}
+			else
+			{
+				// check whether the base properties are the same as the template properties
+				JRPropertiesMap baseProperties = properties.getBaseProperties();
+				customProperties = baseProperties == null ? template.hasProperties()
+						: baseProperties != template.getPropertiesMap();// object identity
+			}
+		}
+		
+		int flags = 0;
+		if (hasCachedTemplate)
+		{
+			flags |= SERIALIZATION_FLAG_CACHED_TEMPLATE;
+		}
+		if (hasUUID)
+		{
+			flags |= SERIALIZATION_FLAG_HAS_UUID;
+		}
+		if (hasProperties)
+		{
+			flags |= SERIALIZATION_FLAG_HAS_PROPERTIES;
+		}
+		if (customProperties)
+		{
+			flags |= SERIALIZATION_FLAG_CUSTOM_PROPERTIES;
+		}
+		
+		out.writeByte(flags);
+		
+		if (hasCachedTemplate)
+		{
+			//FIXME write an index instead of a String
+			out.writeJRObject(templateId);
+		}
+		else
+		{
+			// not usually the case
+			// TODO lucianc happens (FirstJasper)
+			out.writeJRObject(template);
+		}
+		
+		if (hasUUID)
+		{
+			// usually the case
+			// FIXME uuids generally repeat, should we keep them in memory?
+			out.writeJRObject(uuid);
+		}
+		
+		out.writeIntCompressed(sourceElementId);
+		out.writeIntCompressed(printElementId);
+		out.writeIntCompressed(x);
+		out.writeIntCompressed(y);
+		out.writeIntCompressed(height);
+		out.writeIntCompressed(width);
+		
+		if (hasProperties)
+		{
+			if (customProperties)
+			{
+				out.writeJRObject(properties);
+			}
+			else
+			{
+				//FIXME property name sets usually repeat, store in memory?
+				String[] names = properties.getOwnPropertyNames();
+				out.writeIntCompressed(names.length);
+				for (int i = 0; i < names.length; i++)
+				{
+					String propName = names[i];
+					out.writeJRObject(propName);
+					String value = properties.getProperty(propName);
+					out.writeJRObject(value);
+				}
+			}
+		}
+	}
+
+	@Override
+	public void readVirtualized(VirtualizationInput in) throws IOException
+	{
+		JRVirtualizationContext virtualizationContext = in.getVirtualizationContext();
+		
+		int flags = in.readUnsignedByte();
+		if ((flags & SERIALIZATION_FLAG_CACHED_TEMPLATE) != 0)
+		{
+			String templateId = (String) in.readJRObject();
+			template = virtualizationContext.getCachedTemplate(templateId);
+			if (template == null)
+			{
+				throw new JRRuntimeException("Did not find template with id " + templateId);
+			}
+		}
+		else
+		{
+			template = (JRTemplateElement) in.readJRObject();
+		}
+		
+		if ((flags & SERIALIZATION_FLAG_HAS_UUID) != 0)
+		{
+			uuid = (UUID) in.readJRObject();
+		}
+
+		sourceElementId = in.readIntCompressed();
+		printElementId = in.readIntCompressed();
+		x = in.readIntCompressed();
+		y = in.readIntCompressed();
+		height = in.readIntCompressed();
+		width = in.readIntCompressed();
+		
+		if ((flags & SERIALIZATION_FLAG_HAS_PROPERTIES) != 0)
+		{
+			if ((flags & SERIALIZATION_FLAG_CUSTOM_PROPERTIES) != 0)
+			{
+				properties = (JRPropertiesMap) in.readJRObject();
+			}
+			else
+			{
+				int propSize = in.readIntCompressed();
+				if (propSize > 0)
+				{
+					properties = new JRPropertiesMap();
+					properties.setBaseProperties(template.hasProperties() ? template.getPropertiesMap() : null);
+					
+					for (int i = 0; i < propSize; i++)
+					{
+						String propName = (String) in.readJRObject();
+						String value = (String) in.readJRObject();
+						properties.setProperty(propName, value);
+					}
+				}
 			}
 		}
 	}

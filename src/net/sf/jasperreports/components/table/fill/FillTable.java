@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElement;
 import net.sf.jasperreports.components.table.BaseColumn;
 import net.sf.jasperreports.components.table.Column;
 import net.sf.jasperreports.components.table.ColumnGroup;
@@ -51,7 +53,9 @@ import net.sf.jasperreports.engine.component.BaseFillComponent;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
 import net.sf.jasperreports.engine.design.JRAbstractCompiler;
 import net.sf.jasperreports.engine.design.JRReportCompileData;
-import net.sf.jasperreports.engine.export.JRHtmlExporter;
+import net.sf.jasperreports.engine.fill.JRFillComponentElement;
+import net.sf.jasperreports.engine.fill.JRFillContext;
+import net.sf.jasperreports.engine.fill.JRFillDatasetRun;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 import net.sf.jasperreports.engine.fill.JRTemplateFrame;
 import net.sf.jasperreports.engine.fill.JRTemplatePrintFrame;
@@ -65,12 +69,14 @@ import org.apache.commons.logging.LogFactory;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillTable.java 5338 2012-05-04 09:24:49Z teodord $
+ * @version $Id: FillTable.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillTable extends BaseFillComponent
 {
 
 	private static final Log log = LogFactory.getLog(FillTable.class);
+	
+	protected static final String FILL_CACHE_KEY_TABLE_INSTANCE_COUNTER = FillTable.class.getName() + "#instanceCounter";
 	
 	private final TableComponent table;
 	private final JRFillObjectFactory factory;
@@ -87,6 +93,11 @@ public class FillTable extends BaseFillComponent
 	{
 		this.table = table;
 		this.factory = factory;
+		
+		// we need to do this for return values with derived variables
+		JRFillDatasetRun fillDatasetRun = factory.getDatasetRun(table.getDatasetRun());
+		// this is needed for returned variables with evaluationTime=Auto
+		factory.registerDatasetRun(fillDatasetRun);
 	}
 
 	public void evaluate(byte evaluation) throws JRException
@@ -103,8 +114,29 @@ public class FillTable extends BaseFillComponent
 		if (!fillColumns.isEmpty())
 		{
 			createFillSubreport();
+			setTableInstanceCounter();
 			fillSubreport.evaluateSubreport(evaluation);
 		}
+	}
+	
+	protected void setTableInstanceCounter()
+	{
+		JRFillContext fillerContext = fillContext.getFiller().getFillContext();
+		AtomicInteger counter = (AtomicInteger) fillerContext.getFillCache(FILL_CACHE_KEY_TABLE_INSTANCE_COUNTER);
+		if (counter == null)
+		{
+			// we just need a mutable integer, there's no actual concurrency here
+			counter = new AtomicInteger();
+			fillerContext.setFillCache(FILL_CACHE_KEY_TABLE_INSTANCE_COUNTER, counter);
+		}
+		
+		int instanceIndex = counter.getAndIncrement();
+		if (log.isDebugEnabled())
+		{
+			log.debug("table instance index is " + instanceIndex);
+		}
+		
+		fillSubreport.getTableReport().getBaseReport().setTableInstanceIndex(instanceIndex);
 	}
 
 	protected boolean toPrintColumn(BaseColumn column, byte evaluation) throws JRException
@@ -265,13 +297,13 @@ public class FillTable extends BaseFillComponent
 	protected FillTableSubreport createFillTableSubreport() throws JRException
 	{
 		JasperReport parentReport = fillContext.getFiller().getJasperReport();
+		JasperReport containingReport = containingReport(parentReport);
 		JRDataset reportSubdataset = JRReportUtils.findSubdataset(table.getDatasetRun(), 
-				parentReport);
+				containingReport);
 		
-		Map<JRExpression, BuiltinExpressionEvaluator> builtinEvaluators = 
-			new HashMap<JRExpression, BuiltinExpressionEvaluator>();
+		BuiltinExpressionEvaluatorFactory builtinEvaluatorFactory = new BuiltinExpressionEvaluatorFactory();
 		
-		String tableReportName = JRAbstractCompiler.getUnitName(parentReport, reportSubdataset);
+		String tableReportName = JRAbstractCompiler.getUnitName(containingReport, reportSubdataset);
 		
 		// clone the table subdataset in order to have a different instance for other
 		// elements that might be using it.
@@ -281,7 +313,7 @@ public class FillTable extends BaseFillComponent
 		JRDataset tableSubdataset = DatasetCloneObjectFactory.cloneDataset(reportSubdataset);
 		TableReportDataset reportDataset = new TableReportDataset(tableSubdataset, tableReportName);
 
-		TableReport tableReport = new TableReport(fillContext, table, reportDataset, fillColumns, builtinEvaluators);
+		TableReport tableReport = new TableReport(fillContext, table, reportDataset, fillColumns, builtinEvaluatorFactory);
 		
 		if (log.isDebugEnabled())
 		{
@@ -290,18 +322,33 @@ public class FillTable extends BaseFillComponent
 		}
 		
 		JRReportCompileData tableReportCompileData = createTableReportCompileData(
-				parentReport, reportDataset);//reportSubdataset); //FIXMEJIVE check this
+				containingReport, reportSubdataset);
 		
-		JasperReport compiledTableReport = new JasperReport(tableReport, 
-				parentReport.getCompilerClass(), 
+		TableJasperReport compiledTableReport = new TableJasperReport(parentReport, tableReport, 
 				tableReportCompileData, 
 				new TableReportBaseObjectFactory(reportDataset),
 				"");// no suffix as already included in the report name
 		
-		TableSubreport subreport = new TableSubreport(table.getDatasetRun(), fillContext);
-		return new FillTableSubreport(
-				fillContext.getFiller(), subreport, factory, compiledTableReport,
-				builtinEvaluators);
+		TableSubreport subreport = 
+			new TableSubreport(
+				table.getDatasetRun(), 
+				((JRFillComponentElement)fillContext.getComponentElement()).getParent()
+				);
+		return 
+			new FillTableSubreport(
+				fillContext, subreport, factory, compiledTableReport,
+				builtinEvaluatorFactory
+				);
+	}
+
+	protected JasperReport containingReport(JasperReport parentReport)
+	{
+		JasperReport containingReport = parentReport;
+		while (containingReport instanceof TableJasperReport)
+		{
+			containingReport = ((TableJasperReport) containingReport).getParentReport();
+		}
+		return containingReport;
 	}
 	
 	protected JRReportCompileData createTableReportCompileData(
@@ -319,7 +366,7 @@ public class FillTable extends BaseFillComponent
 		Serializable datasetCompileData = reportCompileData.getDatasetCompileData(
 				reportSubdataset);
 		
-		JRReportCompileData tableReportCompileData = new TableReportCompileData(
+		TableReportCompileData tableReportCompileData = new TableReportCompileData(
 				parentReport);
 		tableReportCompileData.setMainDatasetCompileData(datasetCompileData);
 		
@@ -332,6 +379,7 @@ public class FillTable extends BaseFillComponent
 				tableReportCompileData.setDatasetCompileData(dataset, compileData);
 			}
 		}
+		tableReportCompileData.copyCrosstabCompileData(reportCompileData);
 		return tableReportCompileData;
 	}
 	
@@ -345,7 +393,7 @@ public class FillTable extends BaseFillComponent
 				return FillPrepareResult.NO_PRINT_NO_OVERFLOW;
 			}
 			
-			JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate(), elementId);
+			JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate(), printElementOriginator);
 			JRLineBox lineBox = printFrame.getLineBox();
 
 			FillPrepareResult result = 
@@ -364,11 +412,12 @@ public class FillTable extends BaseFillComponent
 
 	public JRPrintElement fill()
 	{
-		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate(), elementId);
-		printFrame.getPropertiesMap().setProperty(JRHtmlExporter.PROPERTY_HTML_UUID, fillContext.getComponentElement().getUUID().toString());
+		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate(), printElementOriginator);
+		printFrame.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_TABLE_UUID, fillContext.getComponentElement().getUUID().toString());
 
 		JRLineBox lineBox = printFrame.getLineBox();
 		
+		printFrame.setUUID(fillContext.getComponentElement().getUUID());
 		printFrame.setX(fillContext.getComponentElement().getX());
 		printFrame.setY(fillContext.getElementPrintY());
 		printFrame.setWidth(fillWidth + lineBox.getLeftPadding() + lineBox.getRightPadding());

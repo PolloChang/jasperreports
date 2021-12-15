@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,7 @@ import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.util.JRFontUtil;
+import net.sf.jasperreports.engine.fonts.FontUtil;
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
@@ -53,7 +53,7 @@ import org.jfree.ui.RectangleEdge;
  * Spider Chart design evaluator.
  * 
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: SpiderChartRendererEvaluator.java 5397 2012-05-21 01:10:02Z teodord $
+ * @version $Id: SpiderChartRendererEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SpiderChartRendererEvaluator
 {
@@ -148,7 +148,7 @@ public class SpiderChartRendererEvaluator
 		}
 		if(plot.getLabelFont() != null)
 		{
-			spiderWebPlot.setLabelFont(JRFontUtil.getAwtFont(plot.getLabelFont(), Locale.getDefault()));
+			spiderWebPlot.setLabelFont(FontUtil.getInstance(jasperReportsContext).getAwtFont(plot.getLabelFont(), Locale.getDefault()));
 		}
 		if(plot.getLabelGap() != null)
 		{
@@ -179,7 +179,7 @@ public class SpiderChartRendererEvaluator
 		spiderWebPlot.setLabelGenerator(labelGenerator);
 		
 		Font titleFont = chartSettings.getTitleFont() != null 
-			? JRFontUtil.getAwtFont(chartSettings.getTitleFont(), Locale.getDefault())
+			? FontUtil.getInstance(jasperReportsContext).getAwtFont(chartSettings.getTitleFont(), Locale.getDefault())
 			: TextTitle.DEFAULT_FONT;
 
 		String titleText = spiderchartBean.getTitleText();
@@ -221,7 +221,7 @@ public class SpiderChartRendererEvaluator
 			if(chartSettings.getSubtitleColor() != null)
 			{
 				Font subtitleFont = chartSettings.getSubtitleFont() != null 
-				? JRFontUtil.getAwtFont(chartSettings.getSubtitleFont(), Locale.getDefault())
+				? FontUtil.getInstance(jasperReportsContext).getAwtFont(chartSettings.getSubtitleFont(), Locale.getDefault())
 				: TextTitle.DEFAULT_FONT;
 				subtitle.setFont(subtitleFont);
 			}
@@ -250,7 +250,7 @@ public class SpiderChartRendererEvaluator
 	
 				if(chartSettings.getLegendFont() != null)
 				{
-					legend.setItemFont(JRFontUtil.getAwtFont(chartSettings.getLegendFont(), Locale.getDefault()));
+					legend.setItemFont(FontUtil.getInstance(jasperReportsContext).getAwtFont(chartSettings.getLegendFont(), Locale.getDefault()));
 				}
 				legend.setPosition(getEdge(chartSettings.getLegendPosition(), RectangleEdge.BOTTOM));
 			}

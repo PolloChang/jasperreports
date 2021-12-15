@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,6 +43,7 @@ import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRElementDataset;
@@ -50,6 +51,7 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGroup;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.design.JRDesignChart;
 import net.sf.jasperreports.engine.design.JRDesignDataset;
 import net.sf.jasperreports.engine.design.JRDesignElement;
@@ -68,8 +70,16 @@ import org.xml.sax.SAXException;
 
 
 /**
+ * Utility class that helps parsing a JRXML file into a 
+ * {@link net.sf.jasperreports.engine.design.JasperDesign} object.
+ * <p>
+ * This can be done using one of the <code>load(...)</code> or <code>loadXml</code> 
+ * methods published by this class. Applications might need to do this in cases where report
+ * templates kept in their source form (JRXML) must be modified at runtime based on
+ * some user input and then compiled on the fly for filling with data.
+ * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlLoader.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRXmlLoader.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlLoader
 {
@@ -77,6 +87,7 @@ public class JRXmlLoader
 	/**
 	 *
 	 */
+	private final JasperReportsContext jasperReportsContext;
 	private JasperDesign jasperDesign;
 	private LinkedList<XmlLoaderReportContext> contextStack = 
 		new LinkedList<XmlLoaderReportContext>();
@@ -94,11 +105,28 @@ public class JRXmlLoader
 	private boolean ignoreConsistencyProblems;
 		
 	/**
-	 *
+	 * @deprecated Replaced by {@link #JRXmlLoader(JasperReportsContext, Digester)}.
 	 */
 	public JRXmlLoader(Digester digester)
 	{
+		this(DefaultJasperReportsContext.getInstance(), digester);
+	}
+
+	/**
+	 *
+	 */
+	public JRXmlLoader(JasperReportsContext jasperReportsContext, Digester digester)
+	{
+		this.jasperReportsContext = jasperReportsContext;
 		this.digester = digester;
+	}
+
+	/**
+	 *
+	 */
+	public JasperReportsContext getJasperReportsContext()
+	{
+		return jasperReportsContext;
 	}
 
 	/**
@@ -149,18 +177,36 @@ public class JRXmlLoader
 
 
 	/**
-	 *
+	 * @see #load(JasperReportsContext, String)
 	 */
 	public static JasperDesign load(String sourceFileName) throws JRException//FIXMEREPO consider renaming
 	{
-		return load(new File(sourceFileName));
+		return load(DefaultJasperReportsContext.getInstance(),  sourceFileName);
 	}
 
 
 	/**
 	 *
 	 */
+	public static JasperDesign load(JasperReportsContext jasperReportsContext, String sourceFileName) throws JRException//FIXMEREPO consider renaming
+	{
+		return load(jasperReportsContext, new File(sourceFileName));
+	}
+
+
+	/**
+	 * @see #load(JasperReportsContext, File)
+	 */
 	public static JasperDesign load(File file) throws JRException
+	{
+		return load(DefaultJasperReportsContext.getInstance(), file);
+	}
+
+
+	/**
+	 *
+	 */
+	public static JasperDesign load(JasperReportsContext jasperReportsContext, File file) throws JRException
 	{
 		JasperDesign jasperDesign = null;
 
@@ -169,7 +215,7 @@ public class JRXmlLoader
 		try
 		{
 			fis = new FileInputStream(file);
-			jasperDesign = JRXmlLoader.load(fis);
+			jasperDesign = JRXmlLoader.load(jasperReportsContext, fis);
 		}
 		catch(IOException e)
 		{
@@ -194,9 +240,18 @@ public class JRXmlLoader
 
 
 	/**
-	 *
+	 * @see #load(JasperReportsContext, InputStream)
 	 */
 	public static JasperDesign load(InputStream is) throws JRException
+	{
+		return load(DefaultJasperReportsContext.getInstance(), is);
+	}
+
+
+	/**
+	 *
+	 */
+	public static JasperDesign load(JasperReportsContext jasperReportsContext, InputStream is) throws JRException
 	{
 		JasperDesign jasperDesign = null;
 
@@ -204,7 +259,7 @@ public class JRXmlLoader
 
 		try 
 		{
-			xmlLoader = new JRXmlLoader(JRXmlDigesterFactory.createDigester());
+			xmlLoader = new JRXmlLoader(jasperReportsContext, JRXmlDigesterFactory.createDigester());
 		}
 		catch (ParserConfigurationException e) 
 		{
@@ -219,7 +274,6 @@ public class JRXmlLoader
 
 		return jasperDesign;
 	}
-
 
 
 	/**

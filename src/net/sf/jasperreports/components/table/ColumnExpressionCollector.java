@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.JRExpressionCollector;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ColumnExpressionCollector.java 5106 2012-03-20 11:35:24Z teodord $
+ * @version $Id: ColumnExpressionCollector.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ColumnExpressionCollector implements ColumnVisitor<Void>
 {

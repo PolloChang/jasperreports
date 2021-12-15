@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,27 +29,35 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
+import net.sf.jasperreports.export.XlsReportConfiguration;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxBorderHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxBorderHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxBorderHelper extends BaseHelper
 {
 	private Map<String,Integer> borderCache = new HashMap<String,Integer>();//FIXMEXLSX use soft cache? check other exporter caches as well
 	
-	private boolean isIgnoreCellBorder;
+	private XlsReportConfiguration configuration;
 	
 	/**
 	 *
 	 */
-	public XlsxBorderHelper(Writer writer, boolean isIgnoreCellBorder)
+	public XlsxBorderHelper(JasperReportsContext jasperReportsContext, Writer writer)
 	{
-		super(writer);
-		
-		this.isIgnoreCellBorder = isIgnoreCellBorder;
+		super(jasperReportsContext, writer);
+	}
+	
+	/**
+	 * 
+	 */
+	public void setConfiguration(XlsReportConfiguration configuration)
+	{
+		this.configuration = configuration;
 	}
 	
 	/**
@@ -57,7 +65,7 @@ public class XlsxBorderHelper extends BaseHelper
 	 */
 	public int getBorder(JRExporterGridCell gridCell)
 	{
-		if (isIgnoreCellBorder || gridCell.getBox() == null)
+		if (configuration.isIgnoreCellBorder() || gridCell.getBox() == null)
 		{
 			return -1;			
 		}

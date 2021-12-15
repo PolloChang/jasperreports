@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,6 +29,7 @@
 package net.sf.jasperreports.engine.export;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReportsContext;
 
@@ -37,7 +38,7 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * This is a modified version of the JRXmlExporter class, which produces an XML document that is used by the Flash viewer.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXml4SwfExporter.java 5166 2012-03-28 13:11:05Z teodord $
+ * @version $Id: JRXml4SwfExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXml4SwfExporter extends JRXmlExporter
 {
@@ -48,7 +49,7 @@ public class JRXml4SwfExporter extends JRXmlExporter
 
 	/**
 	 * The exporter key, as used in
-	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
+	 * {@link GenericElementHandlerEnviroment#getElementHandler(JRGenericElementType, String)}.
 	 */
 	public static final String XML4SWF_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "xml4swf";
 	
@@ -74,16 +75,17 @@ public class JRXml4SwfExporter extends JRXmlExporter
 	/**
 	 *
 	 */
-	protected String getExporterPropertiesPrefix()
+	public String getExporterKey()
 	{
-		return XML4SWF_EXPORTER_PROPERTIES_PREFIX;
+		return XML4SWF_EXPORTER_KEY;
 	}
 
+	
 	/**
 	 *
 	 */
-	protected String getExporterKey()
+	public String getExporterPropertiesPrefix()
 	{
-		return XML4SWF_EXPORTER_KEY;
+		return XML4SWF_EXPORTER_PROPERTIES_PREFIX;
 	}
 }

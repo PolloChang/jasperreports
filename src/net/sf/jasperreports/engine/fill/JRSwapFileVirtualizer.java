@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,29 +23,19 @@
  */
 package net.sf.jasperreports.engine.fill;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
-import net.sf.jasperreports.engine.JRVirtualizable;
 import net.sf.jasperreports.engine.util.JRSwapFile;
+import net.sf.jasperreports.engine.util.StreamCompression;
+import net.sf.jasperreports.engine.util.SwapFileVirtualizerStore;
 
 
 /**
  * A virtualizer that uses a single swap file to serialize virtual data.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSwapFileVirtualizer.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRSwapFileVirtualizer.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRSwapFileVirtualizer extends JRAbstractLRUVirtualizer
+public class JRSwapFileVirtualizer extends StoreVirtualizer
 {
-	private final JRSwapFile swap;
-	private final boolean swapOwner;
-	private final Map<String,JRSwapFile.SwapHandle> handles;
-	
 	
 	/**
 	 * Creates a virtualizer that uses a swap file.
@@ -72,66 +62,22 @@ public class JRSwapFileVirtualizer extends JRAbstractLRUVirtualizer
 	 */
 	public JRSwapFileVirtualizer(int maxSize, JRSwapFile swap, boolean swapOwner)
 	{
-		super(maxSize);
-
-		this.swap = swap;
-		this.swapOwner = swapOwner;
-		handles = Collections.synchronizedMap(new HashMap<String,JRSwapFile.SwapHandle>());
+		super(maxSize, new SwapFileVirtualizerStore(swap, swapOwner));
 	}
-
-	protected void pageOut(JRVirtualizable o) throws IOException
-	{
-		if (!handles.containsKey(o.getUID()))
-		{
-			ByteArrayOutputStream bout = new ByteArrayOutputStream(3000);
-			writeData(o, bout);
-			byte[] data = bout.toByteArray();
-			
-			JRSwapFile.SwapHandle handle = swap.write(data);
-			handles.put(o.getUID(), handle);
-		}
-		else
-		{
-			if (!isReadOnly(o))
-			{
-				throw new IllegalStateException("Cannot virtualize data because the data for object UID \"" + o.getUID() + "\" already exists.");
-			}
-		}
-	}
-
-	protected void pageIn(JRVirtualizable o) throws IOException
-	{
-		JRSwapFile.SwapHandle handle = handles.get(o.getUID());
-		byte[] data = swap.read(handle, !isReadOnly(o));
-
-		readData(o, new ByteArrayInputStream(data));
-		
-		if (!isReadOnly(o))
-		{
-			handles.remove(o.getUID());
-		}
-	}
-
-	protected void dispose(String id)
-	{
-		JRSwapFile.SwapHandle handle = handles.remove(id);
-		if (handle != null)
-		{
-			swap.free(handle);
-		}
-	}
-
 	
 	/**
-	 * Disposes the swap file used if this virtualizer owns it.
-	 * @see #JRSwapFileVirtualizer(int, JRSwapFile, boolean)
+	 * Creates a virtualizer that uses a swap file.
+	 * 
+	 * @param maxSize the maximum size (in JRVirtualizable objects) of the paged in cache.
+	 * @param swap the swap file to use for data virtualization
+	 * @param swapOwner whether the virtualizer is the owner (single user) of the swap file.
+	 * If <code>true</code>, the virtualizer will dispose the swap file on
+	 * {@link #cleanup() cleanup}.
+	 * @param compression stream compression to apply to serialized data
 	 */
-	public void cleanup()
+	public JRSwapFileVirtualizer(int maxSize, JRSwapFile swap, boolean swapOwner,
+			StreamCompression compression)
 	{
-		handles.clear();
-		if (swapOwner)
-		{
-			swap.dispose();
-		}
+		super(maxSize, new SwapFileVirtualizerStore(swap, swapOwner, compression));
 	}
 }

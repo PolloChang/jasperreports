@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseGroup.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 {
@@ -59,13 +59,13 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 	
 	public static final String PROPERTY_KEEP_TOGETHER = "keepTogether";
 	
-	public static final String PROPERTY_RESET_PAGE_NUMBER = "resetPageNumber";
+	public static final String PROPERTY_RESET_PAGE_NUMBER = "isResetPageNumber";
 	
-	public static final String PROPERTY_REPRINT_HEADER_ON_EACH_PAGE = "reprintHeaderOnEachPage";
+	public static final String PROPERTY_REPRINT_HEADER_ON_EACH_PAGE = "isReprintHeaderOnEachPage";
 	
-	public static final String PROPERTY_START_NEW_COLUMN = "startNewColumn";
+	public static final String PROPERTY_START_NEW_COLUMN = "isStartNewColumn";
 	
-	public static final String PROPERTY_START_NEW_PAGE = "startNewPage";
+	public static final String PROPERTY_START_NEW_PAGE = "isStartNewPage";
 
 	/**
 	 *

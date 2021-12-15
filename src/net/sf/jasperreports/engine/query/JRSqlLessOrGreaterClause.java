@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.engine.query;
 
-import net.sf.jasperreports.engine.JRRuntimeException;
 
 
 /**
@@ -41,21 +40,10 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * </p> 
  * 
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRSqlLessOrGreaterClause.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRSqlLessOrGreaterClause.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRSqlLessOrGreaterClause implements JRClauseFunction
+public class JRSqlLessOrGreaterClause extends SQLLessOrGreaterBaseClause
 {
-	
-	protected static final int POSITION_CLAUSE_ID = 0;
-	protected static final int POSITION_DB_COLUMN = 1;
-	protected static final int POSITION_PARAMETER = 2;
-
-	protected static final String OPERATOR_LESS = "<";
-	protected static final String OPERATOR_LESS_OR_EQUAL = "<=";
-	protected static final String OPERATOR_GREATER = ">";
-	protected static final String OPERATOR_GREATER_OR_EQUAL = ">=";
-	
-	protected static final String CLAUSE_TRUISM = "0 = 0";
 
 	protected static final JRSqlLessOrGreaterClause singleton = new JRSqlLessOrGreaterClause();
 	
@@ -69,89 +57,11 @@ public class JRSqlLessOrGreaterClause implements JRClauseFunction
 		return singleton;
 	}
 
-	/**
-	 * Creates either a LESS or a GREATER SQL clause, depending on the clause ID.
-	 * 
-	 * <p>
-	 * The method expects two clause tokens (after the ID token):
-	 * <ul>
-	 * 	<li>The first token is the SQL column (or column combination) to be used in the clause.</li>
-	 * 	<li>The second token is the name of the report parameter that contains the value to compare to.</li>
-	 * </ul>
-	 * </p>
-	 * <p>
-	 * The method constructs one of the following clauses:
-	 * <ul>
-	 * <li><code>column < ?</code> if the clause ID is <code>LESS</code></li>
-	 * <li><code>column <= ?</code> if the clause ID is <code>LESS]</code></li>
-	 * <li><code>column >= ?</code> if the clause ID is <code>GREATER</code></li>
-	 * <li><code>column > ?</code> if the clause ID is <code>[GREATER</code></li>
-	 * </ul> 
-	 * If the value to compare to is null, the method generates a SQL clause that
-	 * will always evaluate to true (e.g. <code>0 = 0</code>).
-	 * </p>
-	 */
-	public void apply(JRClauseTokens clauseTokens, JRQueryClauseContext queryContext)
+	@Override
+	protected ClauseFunctionParameterHandler createParameterHandler(JRQueryClauseContext queryContext, 
+			String clauseId, String parameterName)
 	{
-		String clauseId = clauseTokens.getToken(POSITION_CLAUSE_ID);
-		String col = clauseTokens.getToken(POSITION_DB_COLUMN);
-		String param = clauseTokens.getToken(POSITION_PARAMETER);
-
-		if (clauseId == null)
-		{
-			throw new JRRuntimeException("Missing clause name token");
-		}
-		
-		if (col == null)
-		{
-			throw new JRRuntimeException("SQL LESS/GREATER clause missing DB column token");
-		}
-		
-		if (param == null)
-		{
-			throw new JRRuntimeException("SQL LESS/GREATER clause missing parameter token");
-		}
-		
-		Object paramValue = queryContext.getValueParameter(param).getValue();
-		StringBuffer sbuffer = queryContext.queryBuffer();
-		if(paramValue == null)
-		{
-			sbuffer.append(CLAUSE_TRUISM);
-			return;
-		}
-		
-		sbuffer.append(col);
-		sbuffer.append(' ');
-		handleLessOrGreaterOperator(sbuffer, clauseId);
-		sbuffer.append(' ');
-		sbuffer.append('?');
-		queryContext.addQueryParameter(param);
-		
-	}
-	
-	/**
-	 * Appends the appropriate inequality sign to the query string, depending on the clause ID value
-	 * 
-	 * @param sBuffer the StringBuffer that contains the generated query
-	 * @param clauseId the clause ID
-	 */
-	protected void handleLessOrGreaterOperator(StringBuffer sBuffer, String clauseId)
-	{
-		if(JRJdbcQueryExecuter.CLAUSE_ID_LESS.equals(clauseId))
-		{
-			sBuffer.append(OPERATOR_LESS);
-		}
-		else if (JRJdbcQueryExecuter.CLAUSE_ID_LESS_OR_EQUAL.equals(clauseId))
-		{
-			sBuffer.append(OPERATOR_LESS_OR_EQUAL);
-		}
-		else if (JRJdbcQueryExecuter.CLAUSE_ID_GREATER.equals(clauseId))
-		{
-			sBuffer.append(OPERATOR_GREATER);
-		}
-		else if (JRJdbcQueryExecuter.CLAUSE_ID_GREATER_OR_EQUAL.equals(clauseId))
-		{
-			sBuffer.append(OPERATOR_GREATER_OR_EQUAL);
-		}
+		Object paramValue = queryContext.getValueParameter(parameterName).getValue();
+		return new DefaultClauseFunctionParameterHandler(queryContext, parameterName, paramValue);
 	}
 }

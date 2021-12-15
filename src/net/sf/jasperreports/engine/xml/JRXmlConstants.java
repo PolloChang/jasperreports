@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,7 @@ package net.sf.jasperreports.engine.xml;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlConstants.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: JRXmlConstants.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRXmlConstants
 {
@@ -148,6 +148,10 @@ public final class JRXmlConstants
 	public static final String ELEMENT_noData = "noData";
 	public static final String ELEMENT_property = "property";
 	public static final String ELEMENT_propertyExpression = "propertyExpression";
+
+	public static final String ELEMENT_bookmark = "bookmark";
+	public static final String ATTRIBUTE_pageIndex = "pageIndex";
+	public static final String ATTRIBUTE_elementAddress = "elementAddress";
 
 	public static final String ELEMENT_page = "page";
 
@@ -369,6 +373,11 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_seriesOrder = "seriesOrder";
 
 	/**
+	 * JRXySeries associated constants
+	 */
+	public static final String ATTRIBUTE_autoSort = "autoSort";
+
+	/**
 	 * JRConditionalStyleFactory associated constants
 	 */
 	public static final String ELEMENT_conditionalStyle = "conditionalStyle";
@@ -386,6 +395,7 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_style = "style";
 	public static final String ATTRIBUTE_origin = "origin";
 	public static final String ATTRIBUTE_srcId = "srcId";
+	public static final String ATTRIBUTE_printId = "printId";
 
 	public static final String ATTRIBUTE_radius = "radius";
 
@@ -563,6 +573,7 @@ public final class JRXmlConstants
 	public static final String ELEMENT_itemHyperlink = "itemHyperlink";
 	public static final String ELEMENT_anchorNameExpression = "anchorNameExpression";
 	public static final String ELEMENT_hyperlinkReferenceExpression = "hyperlinkReferenceExpression";
+	public static final String ELEMENT_hyperlinkWhenExpression = "hyperlinkWhenExpression";
 	public static final String ELEMENT_hyperlinkAnchorExpression = "hyperlinkAnchorExpression";
 	public static final String ELEMENT_hyperlinkPageExpression = "hyperlinkPageExpression";
 
@@ -594,6 +605,8 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_onErrorType = "onErrorType";
 	
 	public static final String ATTRIBUTE_runToBottom = "runToBottom";
+	
+	public static final String ATTRIBUTE_overflowType = "overflowType";
 
 	/**
 	 * JRLineFactory associated constants
@@ -642,6 +655,7 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_textAlignment = "textAlignment";
 	public static final String ATTRIBUTE_verticalAlignment = "verticalAlignment";
 	public static final String ATTRIBUTE_runDirection = "runDirection";
+	public static final String ATTRIBUTE_horizontalPosition = "horizontalPosition";
 	public static final String ATTRIBUTE_textHeight = "textHeight";
 	public static final String ATTRIBUTE_lineSpacingFactor = "lineSpacingFactor";
 	public static final String ATTRIBUTE_leadingOffset = "leadingOffset";
@@ -698,6 +712,7 @@ public final class JRXmlConstants
 
 	public static final String ATTRIBUTE_subreportVariable = "subreportVariable";
 	public static final String ATTRIBUTE_toVariable = "toVariable";
+	public static final String ATTRIBUTE_fromVariable = "fromVariable";
 
 	/**
 	 * JRTextElementFactory associated constants
@@ -757,6 +772,17 @@ public final class JRXmlConstants
 		"genericElementParameterValue";
 
 
+	public static final String ELEMENT_multiAxisData = "multiAxisData";
+	public static final String ELEMENT_multiAxisDataset = "multiAxisDataset";
+	public static final String ELEMENT_dataAxis = "dataAxis";
+	public static final String ATTRIBUTE_axis = "axis";
+	public static final String ELEMENT_axisLevel = "axisLevel";
+	public static final String ELEMENT_axisLevelBucket = "axisLevelBucket";
+	public static final String ELEMENT_bucketProperty = "bucketProperty";
+	public static final String ELEMENT_multiAxisMeasure = "multiAxisMeasure";
+	
+	public static final String ATTRIBUTE_contentsPosition = "contentsPosition";
+	
 
 	private JRXmlConstants()
 	{

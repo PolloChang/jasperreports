@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,19 +25,32 @@ package net.sf.jasperreports.engine.export.ooxml;
 
 import java.io.Writer;
 
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.JRStringUtil;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxWorkbookHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxWorkbookHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxWorkbookHelper extends BaseHelper
 {
+	StringBuffer definedNames;
 	/**
 	 * 
 	 */
-	public XlsxWorkbookHelper(Writer writer)
+	public XlsxWorkbookHelper(JasperReportsContext jasperReportsContext, Writer writer)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
+	}
+	
+	/**
+	 * 
+	 */
+	public XlsxWorkbookHelper(JasperReportsContext jasperReportsContext, Writer writer, StringBuffer definedNames)
+	{
+		super(jasperReportsContext, writer);
+		this.definedNames = definedNames;
 	}
 
 	/**
@@ -59,7 +72,7 @@ public class XlsxWorkbookHelper extends BaseHelper
 	 */
 	public void exportSheet(int index, String name)
 	{
-		write("  <sheet name=\"" + name + "\" sheetId=\"" + index + "\" r:id=\"rId" + index + "\"/>\n");
+		write("  <sheet name=\"" + JRStringUtil.xmlEncode(name) + "\" sheetId=\"" + index + "\" r:id=\"rId" + index + "\"/>\n");
 	}
 	
 
@@ -69,6 +82,11 @@ public class XlsxWorkbookHelper extends BaseHelper
 	public void exportFooter()
 	{
 		write("</sheets>\n");
+		if(definedNames != null && definedNames.length() > 0) {
+			write("<definedNames>\n");
+			write(definedNames.toString());
+			write("</definedNames>\n");
+		}
 		write("</workbook>\n");
 	}
 }

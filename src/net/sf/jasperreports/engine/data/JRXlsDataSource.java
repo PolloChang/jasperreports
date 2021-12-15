@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,10 +28,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -44,7 +40,6 @@ import jxl.read.biff.BiffException;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
-import net.sf.jasperreports.engine.JRRewindableDataSource;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.FormatUtils;
@@ -58,17 +53,15 @@ import net.sf.jasperreports.repo.RepositoryUtil;
  * in each row (these indices start with 0). To avoid this situation, users can either specify a collection of column 
  * names or set a flag to read the column names from the first row of the CSV file.
  *
+ * @deprecated Replaced by {@link XlsDataSource}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsDataSource.java 5346 2012-05-08 12:08:01Z teodord $
+ * @version $Id: JRXlsDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewindableDataSource
+public class JRXlsDataSource extends AbstractXlsDataSource
 {
 	private Workbook workbook;
 
-	private DateFormat dateFormat = new SimpleDateFormat();
-	private NumberFormat numberFormat = new DecimalFormat();
-	private Map<String, Integer> columnNames = new LinkedHashMap<String, Integer>();
-	private boolean useFirstRowAsHeader;
+	private int sheetIndex = -1;
 	private int recordIndex = -1;
 
 	private InputStream inputStream;
@@ -145,17 +138,71 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 	 */
 	public boolean next() throws JRException
 	{
-		recordIndex++;
-
 		if (workbook != null)
 		{
-			if (recordIndex == 0 && useFirstRowAsHeader) 
+			//initialize sheetIndex before first record
+			if (sheetIndex < 0)
+			{
+				if (sheetSelection == null)
+				{
+					sheetIndex = 0;
+				}
+				else
+				{
+					try
+					{
+						sheetIndex = Integer.parseInt(sheetSelection);
+						if (sheetIndex < 0 || sheetIndex > workbook.getNumberOfSheets() - 1)
+						{
+							throw new JRRuntimeException("Sheet index " + sheetIndex + " is out of range: [0.." + (workbook.getNumberOfSheets() - 1) + "]");
+						}
+					}
+					catch (NumberFormatException e)
+					{
+					}
+					
+					if (sheetIndex < 0)
+					{
+						for (int i = 0; i < workbook.getSheets().length; i++) 
+						{	
+							if (sheetSelection.equals(workbook.getSheet(i).getName())) 
+							{
+								this.sheetIndex = i;
+								break;
+							}
+						}
+
+						if (sheetIndex < 0)
+						{
+							throw new JRRuntimeException("Sheet '" + sheetSelection + "' not found in workbook.");
+						}
+					}
+				}
+			}
+
+			recordIndex++;
+
+			if (sheetSelection == null) 
+			{
+				if (recordIndex > workbook.getSheet(sheetIndex).getRows() - 1)
+				{
+					if (sheetIndex + 1 < workbook.getNumberOfSheets() 
+						&& workbook.getSheet(sheetIndex + 1).getRows() > 0)
+					{
+						sheetIndex++;
+						recordIndex = -1;
+						return next();
+					}
+				}
+			}
+			
+			if ((sheetSelection != null || sheetIndex == 0) && useFirstRowAsHeader && recordIndex == 0) 
 			{
 				readHeader();
 				recordIndex++;
 			}
 
-			if (recordIndex < workbook.getSheet(0).getRows())
+			if (recordIndex <= workbook.getSheet(sheetIndex).getRows()-1)
 			{
 				return true;
 			}
@@ -167,7 +214,6 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 				}
 			}
 		}
-
 		return false;
 	}
 
@@ -178,6 +224,7 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 	public void moveFirst()
 	{
 		this.recordIndex = -1;
+		this.sheetIndex = -1;
 	}
 
 
@@ -196,7 +243,7 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 		{
 			throw new JRException("Unknown column name : " + fieldName);
 		}
-		Sheet sheet = workbook.getSheet(0);
+		Sheet sheet = workbook.getSheet(sheetIndex);
 		Cell cell = sheet.getCell(columnIndex.intValue(), recordIndex);
 		String fieldValue = cell.getContents();
 		Class<?> valueClass = jrField.getValueClass();
@@ -211,9 +258,11 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 		{
 			return null;
 		}		
-		try {
-			if (valueClass.equals(Boolean.class)) {
-				return fieldValue.equalsIgnoreCase("true") ? Boolean.TRUE : Boolean.FALSE;
+		try 
+		{
+			if (valueClass.equals(Boolean.class)) 
+			{
+				return convertStringValue(fieldValue, valueClass);
 			}
 			else if (Number.class.isAssignableFrom(valueClass))
 			{
@@ -226,7 +275,8 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 					return convertStringValue(fieldValue, valueClass);
 				}
 			}
-			else if (Date.class.isAssignableFrom(valueClass)){
+			else if (Date.class.isAssignableFrom(valueClass))
+			{
 				if (dateFormat != null)
 				{
 					return FormatUtils.getFormattedDate(dateFormat, fieldValue, valueClass);
@@ -240,7 +290,9 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 			{
 				throw new JRException("Field '" + jrField.getName() + "' is of class '" + valueClass.getName() + "' and can not be converted");
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) 
+		{
 			throw new JRException("Unable to get value for field '" + jrField.getName() + "' of class '" + valueClass.getName() + "'", e);
 		}
 	}
@@ -251,7 +303,7 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 	 */
 	private void readHeader()
 	{
-		Sheet sheet = workbook.getSheet(0);
+		Sheet sheet = workbook.getSheet(sheetSelection != null ? sheetIndex : 0);
 		if (columnNames.size() == 0)
 		{
 			for(int columnIndex = 0; columnIndex < sheet.getColumns(); columnIndex++)
@@ -262,6 +314,10 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 				{
 					columnNames.put(columnName, Integer.valueOf(columnIndex));
 				}
+				else
+				{
+					columnNames.put("COLUMN_" + columnIndex, Integer.valueOf(columnIndex));
+				}				
 			}
 		}
 		else
@@ -277,107 +333,6 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 			}
 			columnNames = newColumnNames;
 		}
-	}
-	
-	
-	/**
-	 * Gets the date format that will be used to parse date fields.
-	 */
-	public DateFormat getDateFormat()
-	{
-		return dateFormat;
-	}
-
-
-	/**
-	 * Sets the desired date format to be used for parsing date fields.
-	 */
-	public void setDateFormat(DateFormat dateFormat)
-	{
-		checkReadStarted();
-		
-		this.dateFormat = dateFormat;
-	}
-
-
-	/**
-	 * Gets the number format that will be used to parse numeric fields.
-	 */
-	public NumberFormat getNumberFormat() 
-	{
-		return numberFormat;
-	}
-
-
-	/**
-	 * Sets the desired number format to be used for parsing numeric fields.
-	 */
-	public void setNumberFormat(NumberFormat numberFormat) 
-	{
-		checkReadStarted();
-		
-		this.numberFormat = numberFormat;
-	}
-
-	
-	/**
-	 * Specifies an array of strings representing column names matching field names in the report template.
-	 */
-	public void setColumnNames(String[] columnNames)
-	{
-		checkReadStarted();
-		
-		for (int i = 0; i < columnNames.length; i++)
-		{
-			this.columnNames.put(columnNames[i], Integer.valueOf(i));
-		}
-	}
-
-
-	/**
-	 * Specifies an array of strings representing column names matching field names in the report template 
-	 * and an array of integers representing the column indexes in the sheet.
-	 * Both array parameters must be not-null and have the same number of values.
-	 */
-	public void setColumnNames(String[] columnNames, int[] columnIndexes)
-	{
-		checkReadStarted();
-		
-		if (columnNames.length != columnIndexes.length)
-		{
-			throw new JRRuntimeException("The number of column names must be equal to the number of column indexes.");
-		}
-		
-		for (int i = 0; i < columnNames.length; i++)
-		{
-			this.columnNames.put(columnNames[i], Integer.valueOf(columnIndexes[i]));
-		}
-	}
-
-
-	/**
-	 * Specifies an array of integers representing the column indexes in the sheet.
-	 */
-	public void setColumnIndexes(Integer[] columnIndexes)
-	{
-		checkReadStarted();
-		
-		for (int i = 0; i < columnIndexes.length; i++)
-		{
-			this.columnNames.put("COLUMN_" + i, columnIndexes[i]);
-		}
-	}
-
-
-	/**
-	 * Specifies whether the first row of the XLS file should be considered a table
-	 * header, containing column names matching field names in the report template.
-	 */
-	public void setUseFirstRowAsHeader(boolean useFirstRowAsHeader)
-	{
-		checkReadStarted();
-		
-		this.useFirstRowAsHeader = useFirstRowAsHeader;
 	}
 
 
@@ -400,17 +355,12 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 	}
 
 
-	private void checkReadStarted()
+	protected void checkReadStarted()
 	{
-		if (recordIndex > 0)
+		if (sheetIndex >= 0)
 		{
 			throw new JRRuntimeException("Cannot modify data source properties after data reading has started.");
 		}
-	}
-
-	
-	public Map<String, Integer> getColumnNames() {
-		return columnNames;
 	}
 }
 

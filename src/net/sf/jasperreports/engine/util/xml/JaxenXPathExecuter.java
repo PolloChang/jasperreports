@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,7 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRException;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.jaxen.JaxenException;
 import org.jaxen.XPath;
 import org.jaxen.dom.DOMXPath;
@@ -41,7 +41,7 @@ import org.w3c.dom.NodeList;
  * XPath executer implementation that uses <a href="http://jaxen.org/" target="_blank">Jaxen</a>.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JaxenXPathExecuter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JaxenXPathExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JaxenXPathExecuter implements JRXPathExecuter
 {

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,18 +31,20 @@ import net.sf.jasperreports.engine.JRConstants;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabOrigin.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCrosstabOrigin.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCrosstabOrigin implements Serializable
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+	public static final byte TYPE_TITLE_CELL = 9;
 	public static final byte TYPE_HEADER_CELL = 1;
 	public static final byte TYPE_WHEN_NO_DATA_CELL = 2;
 	public static final byte TYPE_ROW_GROUP_HEADER = 3;
 	public static final byte TYPE_ROW_GROUP_TOTAL_HEADER = 4;
 	public static final byte TYPE_COLUMN_GROUP_HEADER = 5;
 	public static final byte TYPE_COLUMN_GROUP_TOTAL_HEADER = 6;
+	public static final byte TYPE_COLUMN_GROUP_CROSSTAB_HEADER = 8;
 	public static final byte TYPE_DATA_CELL = 7;
 
 	private final JRDesignCrosstab crosstab;

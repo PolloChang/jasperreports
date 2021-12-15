@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,13 +38,16 @@ import net.sf.jasperreports.engine.util.JRDataUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRConstants.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: WebUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class WebUtil
 {
-	public static final String PROPERTY_REQUEST_PARAMETER_REPORT_URI = JRPropertiesUtil.PROPERTY_PREFIX + "web.request.parameter.report.uri";
-	public static final String PROPERTY_REQUEST_PARAMETER_RUN_REPORT = JRPropertiesUtil.PROPERTY_PREFIX + "web.request.parameter.run.report";
-	public static final String PROPERTY_REQUEST_PARAMETER_ASYNC_REPORT = JRPropertiesUtil.PROPERTY_PREFIX + "web.request.parameter.async.report";
+	public static final String REQUEST_PARAMETER_REPORT_URI = "jr_report_uri";
+	public static final String REQUEST_PARAMETER_ASYNC_REPORT = "jr_async";
+	public static final String REQUEST_PARAMETER_PAGE = "jr_page";
+	public static final String REQUEST_PARAMETER_PAGE_TIMESTAMP = "jr_page_timestamp";
+	public static final String REQUEST_PARAMETER_PAGE_UPDATE = "jr_page_update";
+	public static final String REQUEST_PARAMETER_RUN_REPORT = "jr_run";
 
 	public static final String PROPERTY_REQUEST_PARAMETER_RESOURCE_URI = JRPropertiesUtil.PROPERTY_PREFIX + "web.request.parameter.resource.uri";
 	public static final String PROPERTY_REQUEST_PARAMETER_RESOURCE_LOCALE = JRPropertiesUtil.PROPERTY_PREFIX + "web.request.parameter.resource.locale";
@@ -54,16 +57,17 @@ public final class WebUtil
 	public static final String PROPERTY_REPORT_EXECUTION_PATH = JRPropertiesUtil.PROPERTY_PREFIX + "web.report.execution.path";
 	public static final String PROPERTY_REPORT_INTERACTION_PATH = JRPropertiesUtil.PROPERTY_PREFIX + "web.report.interaction.path";
 	public static final String PROPERTY_REPORT_RESOURCES_PATH = JRPropertiesUtil.PROPERTY_PREFIX + "web.report.resources.path";
+	public static final String PROPERTY_EMBED_COMPONENT_METADATA = JRPropertiesUtil.PROPERTY_PREFIX + "web.embed.component.metadata.in.html.output";
 
-	public static final String RESOURCE_JR_GLOBAL_JS = "net/sf/jasperreports/web/servlets/resources/jasperreports-global.js";
 	public static final String RESOURCE_JR_GLOBAL_CSS = "net/sf/jasperreports/web/servlets/resources/jasperreports-global.css";
-	
 
 	private JasperReportsContext jasperReportsContext;
+	private JRPropertiesUtil propertiesUtil;
 	
 	private WebUtil(JasperReportsContext jasperReportsContext) 
 	{
 		this.jasperReportsContext = jasperReportsContext;
+		this.propertiesUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
 	}
 	
 	public static WebUtil getInstance(JasperReportsContext jasperReportsContext) 
@@ -76,7 +80,7 @@ public final class WebUtil
 	 */
 	public String getReportExecutionPath() 
 	{
-		String path = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REPORT_EXECUTION_PATH);
+		String path = propertiesUtil.getProperty(PROPERTY_REPORT_EXECUTION_PATH);
 		if (path == null)
 		{
 			throw new JRRuntimeException("Configuration property '" + PROPERTY_REPORT_EXECUTION_PATH + "' is not set.");
@@ -89,7 +93,7 @@ public final class WebUtil
 	 */
 	public String getReportInteractionPath() 
 	{
-		String path = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(WebUtil.PROPERTY_REPORT_INTERACTION_PATH);
+		String path = propertiesUtil.getProperty(WebUtil.PROPERTY_REPORT_INTERACTION_PATH);
 		if (path == null)
 		{
 			throw new JRRuntimeException("Configuration property '" + WebUtil.PROPERTY_REPORT_INTERACTION_PATH + "' is not set.");
@@ -102,7 +106,7 @@ public final class WebUtil
 	 */
 	public String getResourcesPath() 
 	{
-		String path = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(WebUtil.PROPERTY_REPORT_RESOURCES_PATH);
+		String path = propertiesUtil.getProperty(WebUtil.PROPERTY_REPORT_RESOURCES_PATH);
 		if (path == null)
 		{
 			throw new JRRuntimeException("Configuration property '" + WebUtil.PROPERTY_REPORT_RESOURCES_PATH + "' is not set.");
@@ -112,26 +116,26 @@ public final class WebUtil
 
 	public String getResourceUri(HttpServletRequest request) 
 	{
-		String resourceUriParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_URI);
+		String resourceUriParamName = propertiesUtil.getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_URI);
 		return request.getParameter(resourceUriParamName);
 	}
 
 	public Locale getResourceLocale(HttpServletRequest request) 
 	{
-		String resourceLocaleParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_LOCALE);
+		String resourceLocaleParamName = propertiesUtil.getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_LOCALE);
 		String localeCode = request.getParameter(resourceLocaleParamName);
 		return localeCode == null ? null : JRDataUtils.getLocale(localeCode);
 	}
 
 	public String getResourceBundleForResource(HttpServletRequest request) 
 	{
-		String resourceBundleParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_BUNDLE);
+		String resourceBundleParamName = propertiesUtil.getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_BUNDLE);
 		return request.getParameter(resourceBundleParamName);
 	}
 
 	public boolean isDynamicResource(HttpServletRequest request) 
 	{
-		String dynamicResourceParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REQUEST_PARAMETER_DYNAMIC_RESOURCE);
+		String dynamicResourceParamName = propertiesUtil.getProperty(PROPERTY_REQUEST_PARAMETER_DYNAMIC_RESOURCE);
 		return Boolean.parseBoolean(request.getParameter(dynamicResourceParamName));
 	}
 
@@ -139,7 +143,7 @@ public final class WebUtil
 	{
 		String resourcesBasePath = getResourcesPath();
 		
-		String resourceUriParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_URI);
+		String resourceUriParamName = propertiesUtil.getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_URI);
 
 		return resourcesBasePath + "?" + resourceUriParamName + "=";
 	}
@@ -161,7 +165,7 @@ public final class WebUtil
 
 	public String getResourcePath(String resourcesBasePath, String resourcePath, boolean isDynamic) 
 	{
-		String resourceDynamicParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REQUEST_PARAMETER_DYNAMIC_RESOURCE);
+		String resourceDynamicParamName = propertiesUtil.getProperty(PROPERTY_REQUEST_PARAMETER_DYNAMIC_RESOURCE);
 		
 		return 
 			resourcesBasePath + resourcePath
@@ -171,13 +175,18 @@ public final class WebUtil
 
 	public String getResourcePath(String resourcesBasePath, String resourcePath, String resourceBundleName, Locale locale) 
 	{
-		String resourceBundleParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_BUNDLE);
-		String resourceLocaleParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_LOCALE);
+		String resourceBundleParamName = propertiesUtil.getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_BUNDLE);
+		String resourceLocaleParamName = propertiesUtil.getProperty(PROPERTY_REQUEST_PARAMETER_RESOURCE_LOCALE);
 		
 		return 
 			getResourcePath(resourcesBasePath, resourcePath, false)
 			+ "&" + resourceBundleParamName + "=" + resourceBundleName
 			+ "&" + resourceLocaleParamName + "=" + JRDataUtils.getLocaleCode(locale);
+	}
+
+	public boolean isComponentMetadataEmbedded()
+	{
+		return Boolean.parseBoolean(propertiesUtil.getProperty(PROPERTY_EMBED_COMPONENT_METADATA));
 	}
 
 	

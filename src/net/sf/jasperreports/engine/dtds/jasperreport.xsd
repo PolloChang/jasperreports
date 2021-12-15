@@ -1706,6 +1706,7 @@
   </annotation>  
   <complexType>
    <sequence>
+    <element ref="jr:property" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:printWhenExpression" minOccurs="0" maxOccurs="1"/>
     <choice minOccurs="0" maxOccurs="unbounded">
      <element ref="jr:break"/>
@@ -2187,6 +2188,7 @@
     <element ref="jr:imageExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:anchorNameExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkPageExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkTooltipExpression" minOccurs="0" maxOccurs="1"/>
@@ -2885,6 +2887,14 @@ This can be useful when, for instance, a border has to be drawn around the image
   </complexType>
  </element>
 
+ <element name="hyperlinkWhenExpression">
+  <annotation>
+   <documentation>Used in hyperlink elements to specify whether the hyperlink is to be displayed or not.</documentation>
+  </annotation>
+  <complexType mixed="true">
+  </complexType>
+ </element>
+
  <element name="hyperlinkAnchorExpression">
   <annotation>
    <documentation>Used in hyperlink elements to point to document anchors.</documentation>
@@ -3246,6 +3256,7 @@ This can be useful when, for instance, a border has to be drawn around the image
     <element ref="jr:patternExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:anchorNameExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkPageExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkTooltipExpression" minOccurs="0" maxOccurs="1"/>
@@ -3421,6 +3432,25 @@ This can be useful when, for instance, a border has to be drawn around the image
       <enumeration value="false">
 		<annotation>
 		 <documentation></documentation>
+		</annotation>
+	  </enumeration>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name="overflowType" use="optional">
+    <annotation>
+     <documentation>Determines what happens when the subreport contents overflows the element height.  If not specified, the subreport will stretch to accomodate the contents.</documentation>
+    </annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Stretch">
+		<annotation>
+		 <documentation>The subreport stretches to to accomodate the overflown contents.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="NoStretch">
+		<annotation>
+		 <documentation>The contents do not stretch beyond the subreport element height.  The band on which the subreport is placed overflows to a new page if allowed, and the subreport contents continues there.</documentation>
 		</annotation>
 	  </enumeration>
      </restriction>
@@ -3629,6 +3659,7 @@ This can be useful when, for instance, a border has to be drawn around the image
     <element ref="jr:chartLegend" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:anchorNameExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkPageExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkTooltipExpression" minOccurs="0" maxOccurs="1"/>
@@ -3965,6 +3996,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
   <complexType>
    <sequence>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkPageExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkTooltipExpression" minOccurs="0" maxOccurs="1"/>
@@ -4016,6 +4048,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
   <complexType>
    <sequence>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkPageExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkTooltipExpression" minOccurs="0" maxOccurs="1"/>
@@ -4180,6 +4213,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
      <element ref="jr:connectionExpression"/>
      <element ref="jr:dataSourceExpression"/>
     </choice>
+   <element name="returnValue" type="jr:datasetReturnValue" minOccurs="0" maxOccurs="unbounded"/>
    </sequence>
    <attribute name="subDataset" type="string" use="required">
 	<annotation>
@@ -4193,6 +4227,83 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
    </attribute>  
   </complexType>
  </element>
+ 
+ <complexType name="datasetReturnValue">
+  <attribute name="fromVariable" type="string" use="optional">
+   <annotation>
+    <documentation>Name of the source variable whose value will be returned.</documentation>
+   </annotation>
+  </attribute>
+  <attribute name="toVariable" type="string" use="optional">
+   <annotation>
+    <documentation>Name of the variable to which the value is returned. This should be a variable with<code>calculation="System"</code></documentation>
+   </annotation>
+  </attribute>
+  <attribute name="calculation" use="optional" default="Nothing">
+   <annotation>
+    <documentation>Calculation to perform on the destination variable when returning the value.</documentation>
+   </annotation>
+   <simpleType>
+    <restriction base="string">
+     <enumeration value="Nothing">
+		<annotation>
+		<documentation>No calculations are performed.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="Count">
+		<annotation>
+		<documentation>Variable stores the number of the not null returned values.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="DistinctCount">
+		<annotation>
+		<documentation>Variable stores the number of distinct not null returned values.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="Sum">
+		<annotation>
+		<documentation>Variable stores the sum of the not null returned values. Numeric variables only.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="Average">
+		<annotation>
+		<documentation>Variable stores the average of the not null returned values. Numeric variables only.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="Lowest">
+		<annotation>
+		<documentation>Variable stores the lowest returned value.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="Highest">
+		<annotation>
+		<documentation>Variable stores the highest returned value.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="StandardDeviation">
+		<annotation>
+		<documentation>Variable stores the standard deviation of the not null values. Numeric variables only.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="Variance">
+		<annotation>
+		<documentation>Variable stores the variance of the not null values. Numeric variables only.</documentation>
+		</annotation>
+	 </enumeration>
+     <enumeration value="First">
+		<annotation>
+		<documentation>Variable stores the first value encountered and ignores subsequent values.</documentation>
+		</annotation>
+	 </enumeration>
+    </restriction>
+   </simpleType>
+  </attribute>
+  <attribute name="incrementerFactoryClass" type="string" use="optional">
+   <annotation>
+    <documentation>The name of a class that implements the<code>net.sf.jasperreports.engine.fill.JRIncrementerFactory</code> interface to use when creating the incrementer instance to handle the returned value.</documentation>
+   </annotation>
+  </attribute>
+ </complexType>
 
  <element name="datasetParameter">
   <annotation>
@@ -4427,6 +4538,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
   <complexType>
    <sequence>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkPageExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkTooltipExpression" minOccurs="0" maxOccurs="1"/>
@@ -4922,6 +5034,17 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
     <element ref="jr:labelExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:itemHyperlink" minOccurs="0" maxOccurs="1"/>
    </sequence>
+   <attribute name="autoSort" use="optional">
+	<annotation>
+ 	 <documentation>Auto sort values on x-axis.</documentation>
+	</annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="true"/>
+      <enumeration value="false"/>
+     </restriction>
+    </simpleType>
+   </attribute>
   </complexType>
  </element>
 
@@ -5885,6 +6008,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
     <element ref="jr:crosstabParameter" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:parametersMapExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:crosstabDataset" minOccurs="0" maxOccurs="1"/>
+    <element name="titleCell" type="jr:CrosstabColumnCell" minOccurs="0" maxOccurs="1"></element>
     <element ref="jr:crosstabHeaderCell" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:rowGroup" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:columnGroup" minOccurs="0" maxOccurs="unbounded"/>
@@ -5984,6 +6108,33 @@ property.
 </p>
    	 </documentation>
   	</annotation>
+   </attribute>
+   <attribute name="horizontalPosition" use="optional">
+  	<annotation>
+   	 <documentation>The position of the crosstab within its element box.
+    <p/>
+	 By default LTR crosstabs are positions at the left of the element box, and RTL crosstabs at the right of the box.
+     </documentation>
+  	</annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Left">
+		<annotation>
+		 <documentation>The crosstab is positioned at the left of the element box.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="Right">
+		<annotation>
+		 <documentation>The crosstab is positioned at the right of the element box.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="Center">
+		<annotation>
+		 <documentation>The crosstab is centered withing the element box.</documentation>
+		</annotation>
+	  </enumeration>
+     </restriction>
+    </simpleType>
    </attribute>
   </complexType>
  </element>
@@ -6202,6 +6353,7 @@ property.
   <complexType>
    <sequence>
     <element ref="jr:bucket"/>
+    <element ref="jr:crosstabHeader" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:crosstabColumnHeader" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:crosstabTotalColumnHeader" minOccurs="0" maxOccurs="1"/>
    </sequence>
@@ -6319,6 +6471,20 @@ property.
   </complexType>
  </element>
 
+ <element name="crosstabHeader">
+  <annotation>
+   <documentation>Per column group cell that will be rendered at the left of the corresponding row of column headers, potentially overlapping the crosstab header cell.
+     <p/>
+     The width of the cell is the total width of row group headers, and the height is the height of the corresponding column header.
+   </documentation>
+  </annotation>
+  <complexType>
+   <sequence>
+    <element ref="jr:cellContents"/>
+   </sequence>
+  </complexType>
+ </element>
+
  <element name="bucket">
   <annotation>
    <documentation>Crosstab group bucketing information.</documentation>
@@ -6348,6 +6514,11 @@ property.
       <enumeration value="Descending">
 		<annotation>
 		 <documentation>The buckets will be sorted in descending order by using the specified comparator or by the natural order if no comparator specified.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="None">
+		<annotation>
+		 <documentation>The buckets will preserve the order in which the data is fed to the crosstab.</documentation>
 		</annotation>
 	  </enumeration>
      </restriction>
@@ -6431,64 +6602,10 @@ property.
    	 <documentation>The measure values class.</documentation>
   	</annotation>
    </attribute>
-   <attribute name="calculation" use="optional" default="Nothing">
+   <attribute name="calculation" type="jr:aggregationCalculationType" use="optional" default="Nothing">
   	<annotation>
    	 <documentation>The calculation type to be performed on the measure values.</documentation>
   	</annotation>
-    <simpleType>
-     <restriction base="string">
-      <enumeration value="Nothing">
-		<annotation>
-		 <documentation>No calculations are performed.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="Count">
-		<annotation>
-		 <documentation>The measure stores the number of the not null values.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="DistinctCount">
-		<annotation>
-		 <documentation>The measure stores the number of distinct not null values.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="Sum">
-		<annotation>
-		 <documentation>The measure stores the sum of the not null values.  Numeric measures only.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="Average">
-		<annotation>
-		 <documentation>The measure stores the average of the not null values.  Numeric measures only.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="Lowest">
-		<annotation>
-		 <documentation>The measure stores the lowest value.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="Highest">
-		<annotation>
-		 <documentation>The measure stores the highest value.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="StandardDeviation">
-		<annotation>
-		 <documentation>The measure stores the standard deviation of the not null values.  Numeric measures only.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="Variance">
-		<annotation>
-		 <documentation>The measure stores the variance of the not null values.  Numeric measures only.</documentation>
-		</annotation>
-	  </enumeration>
-      <enumeration value="First">
-		<annotation>
-		 <documentation>The measure stores the first value encountered and ignores subsequent values.</documentation>
-		</annotation>
-	  </enumeration>
-     </restriction>
-    </simpleType>
    </attribute>
    <attribute name="incrementerFactoryClass" type="string" use="optional">
   	<annotation>
@@ -6528,6 +6645,69 @@ property.
    </attribute>
   </complexType>
  </element>
+
+ <simpleType name="aggregationCalculationType">
+  <restriction base="string">
+   <enumeration value="Nothing">
+    <annotation>
+     <documentation>No calculations are performed.</documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="Count">
+    <annotation>
+     <documentation>The measure stores the number of the not null
+      values.</documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="DistinctCount">
+    <annotation>
+     <documentation>The measure stores the number of distinct not null
+      values.</documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="Sum">
+    <annotation>
+     <documentation>The measure stores the sum of the not null values.
+      Numeric measures only.</documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="Average">
+    <annotation>
+     <documentation>The measure stores the average of the not null
+      values. Numeric measures only.</documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="Lowest">
+    <annotation>
+     <documentation>The measure stores the lowest value.</documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="Highest">
+    <annotation>
+     <documentation>The measure stores the highest value.
+     </documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="StandardDeviation">
+    <annotation>
+     <documentation>The measure stores the standard deviation of the not
+      null values. Numeric measures only.</documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="Variance">
+    <annotation>
+     <documentation>The measure stores the variance of the not null
+      values. Numeric measures only.</documentation>
+    </annotation>
+   </enumeration>
+   <enumeration value="First">
+    <annotation>
+     <documentation>The measure stores the first value encountered and
+      ignores subsequent values.</documentation>
+    </annotation>
+   </enumeration>
+  </restriction>
+ </simpleType>
 
  <element name="measureExpression">
   <annotation>
@@ -6614,6 +6794,7 @@ property.
   </annotation>
   <complexType>
    <sequence>
+    <element ref="jr:property" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:box" minOccurs="0" maxOccurs="1"/>
     <choice minOccurs="0" maxOccurs="unbounded">
      <element ref="jr:line"/>
@@ -6926,5 +7107,144 @@ property.
    </attribute>
   </complexType>
  </element>
+
+ <element name="multiAxisData">
+  <complexType>
+   <sequence>
+    <element ref="jr:multiAxisDataset" minOccurs="1" maxOccurs="1"/>
+    <element ref="jr:dataAxis" minOccurs="1" maxOccurs="unbounded"/>
+    <element ref="jr:multiAxisMeasure" minOccurs="1" maxOccurs="unbounded"/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name="multiAxisDataset">
+  <complexType>
+   <sequence>
+    <element ref="jr:dataset" minOccurs="0" maxOccurs="1"/>
+   </sequence>
+  </complexType>
+ </element>
+ 
+ <element name="dataAxis">
+  <complexType>
+   <sequence>
+    <element ref="jr:axisLevel" minOccurs="0" maxOccurs="unbounded"/>
+   </sequence>
+   <attribute name="axis" use="required">
+   	<simpleType>
+   	 <restriction base="string">
+   	  <enumeration value="Rows"></enumeration>
+   	  <enumeration value="Columns"></enumeration>
+   	 </restriction>
+   	</simpleType>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name="axisLevel">
+  <complexType>
+   <sequence>
+    <element name="labelExpression">
+     <complexType mixed="true"/>
+    </element>
+    <element ref="jr:axisLevelBucket"/>
+   </sequence>
+   <attribute name="name" type="string" use="required">
+   </attribute>
+  </complexType>
+ </element>
+ 
+ <element name="axisLevelBucket">
+  <complexType>
+   <sequence>
+    <element ref="jr:bucketExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:comparatorExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:bucketProperty" minOccurs="0" maxOccurs="unbounded"/>
+   </sequence>
+   <attribute name="class" type="string" use="optional" default="java.lang.String">
+  	<annotation>
+   	 <documentation>Class of the bucket values.</documentation>
+  	</annotation>  
+   </attribute>   
+   <attribute name="order" use="optional" default="Ascending">
+  	<annotation>
+   	 <documentation>The bucket order type.</documentation>
+  	</annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Ascending">
+		<annotation>
+		 <documentation>The buckets will be sorted in ascending order by using the specified comparator or by the natural order if no comparator specified.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="Descending">
+		<annotation>
+		 <documentation>The buckets will be sorted in descending order by using the specified comparator or by the natural order if no comparator specified.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="None">
+		<annotation>
+		 <documentation>No sorting of bucket values will be performed, the buckets will show in the order the values come from the dataset.</documentation>
+		</annotation>
+	  </enumeration>
+     </restriction>
+    </simpleType>
+   </attribute>
+  </complexType>
+ </element>
+ 
+ <element name="bucketProperty">
+  <complexType mixed="true">
+   <attribute name="name" type="string" use="required">
+	<annotation>
+	 <documentation>Name of the bucket property.</documentation>
+	</annotation>
+   </attribute>
+  </complexType>
+ </element>
+
+ <element name="multiAxisMeasure">
+  <complexType>
+   <sequence>
+    <element name="labelExpression">
+     <complexType mixed="true"/>
+    </element>
+    <element name="valueExpression" minOccurs="0" maxOccurs="1">
+     <complexType mixed="true"/>
+    </element>
+   </sequence>
+   <attribute name="name" type="string" use="required">
+   </attribute>
+   <attribute name="class" type="string" use="optional">
+   </attribute>
+   <attribute name="calculation" type="jr:aggregationCalculationType" use="optional" default="Nothing">
+   </attribute>
+   <attribute name="incrementerFactoryClass" type="string" use="optional">
+   </attribute>
+  </complexType>
+ </element>
+ 
+ <complexType name="CrosstabColumnCell">
+  <sequence>
+   <element ref="jr:cellContents"/>
+  </sequence>
+  <attribute name="height" type="NMTOKEN" use="required">
+  </attribute>
+  <attribute name="contentsPosition" use="optional" default="Left">
+   <simpleType>
+    <restriction base="string">
+     <enumeration value="Left">
+	 </enumeration>
+     <enumeration value="Center">
+	 </enumeration>
+     <enumeration value="Right">
+	 </enumeration>
+     <enumeration value="Stretch">
+	 </enumeration>
+    </restriction>
+   </simpleType>
+  </attribute>
+ </complexType>
 
 </schema>

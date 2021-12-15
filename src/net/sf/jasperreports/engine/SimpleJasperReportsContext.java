@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,11 +27,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleJasperReportsContext.java 5268 2012-04-13 11:44:13Z lucianc $
+ * @version $Id: SimpleJasperReportsContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleJasperReportsContext implements JasperReportsContext
 {
@@ -40,7 +41,7 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 	 */
 	private JasperReportsContext parent;
 	
-	private Map<String, Object> values = new HashMap<String, Object>();
+	private Map<String, Object> values = new ConcurrentHashMap<String, Object>(16, .75f, 1);// assume low update concurrency
 	private Map<String, String> properties;
 	private Map<Class<?>, List<?>> extensionsMap;
 
@@ -281,5 +282,15 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 				}
 			}
 		}
+	}
+
+	public Map<String, String> getPropertiesMap()
+	{
+		return properties;
+	}
+
+	public void setPropertiesMap(Map<String, String> propertiesMap)
+	{
+		this.properties = propertiesMap;
 	}
 }

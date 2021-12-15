@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRBaseCandlestickPlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseCandlestickPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCandlestickPlot extends JRBaseChartPlot implements JRCandlestickPlot
 {
@@ -51,7 +51,7 @@ public class JRBaseCandlestickPlot extends JRBaseChartPlot implements JRCandlest
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	public static final String PROPERTY_SHOW_VOLUME = "showVolume";
+	public static final String PROPERTY_SHOW_VOLUME = "isShowVolume";
 
 	protected JRExpression timeAxisLabelExpression;
 	protected JRFont timeAxisLabelFont;
@@ -105,9 +105,9 @@ public class JRBaseCandlestickPlot extends JRBaseChartPlot implements JRCandlest
 		showVolume = candlestickPlot.getShowVolume();
 
 		timeAxisLabelExpression = factory.getExpression( candlestickPlot.getTimeAxisLabelExpression() );
-		timeAxisLabelFont = factory.getFont(candlestickPlot.getChart(), candlestickPlot.getTimeAxisLabelFont());
+		timeAxisLabelFont = factory.getFont(chart, candlestickPlot.getTimeAxisLabelFont());
 		timeAxisLabelColor = candlestickPlot.getOwnTimeAxisLabelColor();
-		timeAxisTickLabelFont = factory.getFont(candlestickPlot.getChart(), candlestickPlot.getTimeAxisTickLabelFont());
+		timeAxisTickLabelFont = factory.getFont(chart, candlestickPlot.getTimeAxisTickLabelFont());
 		timeAxisTickLabelColor = candlestickPlot.getOwnTimeAxisTickLabelColor();
 		timeAxisTickLabelMask = candlestickPlot.getTimeAxisTickLabelMask();
 		timeAxisVerticalTickLabels = candlestickPlot.getTimeAxisVerticalTickLabels();
@@ -118,9 +118,9 @@ public class JRBaseCandlestickPlot extends JRBaseChartPlot implements JRCandlest
 		domainAxisMaxValueExpression = factory.getExpression( candlestickPlot.getDomainAxisMaxValueExpression() );
 		rangeAxisMinValueExpression = factory.getExpression( candlestickPlot.getRangeAxisMinValueExpression() );
 		rangeAxisMaxValueExpression = factory.getExpression( candlestickPlot.getRangeAxisMaxValueExpression() );
-		valueAxisLabelFont = factory.getFont(candlestickPlot.getChart(), candlestickPlot.getValueAxisLabelFont());
+		valueAxisLabelFont = factory.getFont(chart, candlestickPlot.getValueAxisLabelFont());
 		valueAxisLabelColor = candlestickPlot.getOwnValueAxisLabelColor();
-		valueAxisTickLabelFont = factory.getFont(candlestickPlot.getChart(), candlestickPlot.getValueAxisTickLabelFont());
+		valueAxisTickLabelFont = factory.getFont(chart, candlestickPlot.getValueAxisTickLabelFont());
 		valueAxisTickLabelColor = candlestickPlot.getOwnValueAxisTickLabelColor();
 		valueAxisTickLabelMask = candlestickPlot.getValueAxisTickLabelMask();
 		valueAxisVerticalTickLabels = candlestickPlot.getValueAxisVerticalTickLabels();

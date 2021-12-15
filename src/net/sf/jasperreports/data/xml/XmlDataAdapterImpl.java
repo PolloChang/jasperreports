@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,7 @@ import net.sf.jasperreports.data.AbstractDataAdapter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XmlDataAdapterImpl.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XmlDataAdapterImpl.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XmlDataAdapterImpl extends AbstractDataAdapter implements XmlDataAdapter
 {
@@ -42,6 +42,7 @@ public class XmlDataAdapterImpl extends AbstractDataAdapter implements XmlDataAd
 	private String datePattern = null;
 	private String numberPattern = null;
 	private TimeZone timeZone = null;
+	private boolean namespaceAware = false;
 
 	public String getFileName() {
 		return fileName;
@@ -97,5 +98,13 @@ public class XmlDataAdapterImpl extends AbstractDataAdapter implements XmlDataAd
 	
 	public void setUseConnection(boolean useConnection) {
 		this.useConnection = useConnection;
+	}
+
+	public boolean isNamespaceAware() {
+		return namespaceAware;
+	}
+
+	public void setNamespaceAware(boolean namespaceAware) {
+		this.namespaceAware = namespaceAware;
 	}
 }

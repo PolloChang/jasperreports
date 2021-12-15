@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Random;
-import java.util.UUID;
 
 import net.sf.jasperreports.engine.Deduplicable;
 import net.sf.jasperreports.engine.JRCommonElement;
@@ -49,7 +48,7 @@ import net.sf.jasperreports.engine.util.ObjectUtils;
  * print elements.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateElement.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTemplateElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRTemplateElement implements JRCommonElement, Serializable, JRPropertiesHolder, Deduplicable
 {
@@ -65,7 +64,6 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	/**
 	 *
 	 */
-	private UUID uuid;
 	private String key;
 	private ModeEnum modeValue;
 	private Color forecolor;
@@ -121,25 +119,11 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	{
 		parentStyle = element.getStyle();
 		
-		uuid = element.getUUID();
-		
 		key = element.getKey();
 		
 		modeValue = element.getOwnModeValue();
 		forecolor = element.getOwnForecolor();
 		backcolor = element.getOwnBackcolor();
-	}
-	
-	/**
-	 *
-	 */
-	public UUID getUUID()
-	{
-		if (uuid == null)
-		{
-			uuid = UUID.randomUUID();
-		}
-		return uuid;
 	}
 
 	/**
@@ -300,12 +284,13 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	}
 
 	
-	public synchronized boolean hasProperties()
+	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
-	public synchronized JRPropertiesMap getPropertiesMap()
+	// we don't need any locking as properties are only set at creation time
+	public JRPropertiesMap getPropertiesMap()
 	{
 		if (propertiesMap == null)
 		{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.print;
 
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.print.Book;
@@ -35,12 +36,13 @@ import java.awt.print.PrinterJob;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
-import net.sf.jasperreports.engine.export.JRGraphics2DExporterParameter;
 import net.sf.jasperreports.engine.util.JRGraphEnvInitializer;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleGraphics2DExporterOutput;
+import net.sf.jasperreports.export.SimpleGraphics2DReportConfiguration;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,7 +50,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrinterAWT.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPrinterAWT.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrinterAWT implements Printable
 {
@@ -234,9 +236,13 @@ public class JRPrinterAWT implements Printable
 		try
 		{
 			JRGraphics2DExporter exporter = new JRGraphics2DExporter(jasperReportsContext);
-			exporter.setParameter(JRExporterParameter.JASPER_PRINT, this.jasperPrint);
-			exporter.setParameter(JRGraphics2DExporterParameter.GRAPHICS_2D, graphics);
-			exporter.setParameter(JRExporterParameter.PAGE_INDEX, Integer.valueOf(pageIndex));
+			exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+			SimpleGraphics2DExporterOutput output = new SimpleGraphics2DExporterOutput();
+			output.setGraphics2D((Graphics2D)graphics);
+			exporter.setExporterOutput(output);
+			SimpleGraphics2DReportConfiguration configuration = new SimpleGraphics2DReportConfiguration();
+			configuration.setPageIndex(pageIndex);
+			exporter.setConfiguration(configuration);
 			exporter.exportReport();
 		}
 		catch (JRException e)
@@ -265,12 +271,16 @@ public class JRPrinterAWT implements Printable
 			);
 
 		JRGraphics2DExporter exporter = new JRGraphics2DExporter(jasperReportsContext);
-		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-		exporter.setParameter(JRGraphics2DExporterParameter.GRAPHICS_2D, pageImage.getGraphics());
-		exporter.setParameter(JRExporterParameter.PAGE_INDEX, Integer.valueOf(pageIndex));
-		exporter.setParameter(JRGraphics2DExporterParameter.ZOOM_RATIO, new Float(zoom));
+		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+		SimpleGraphics2DExporterOutput output = new SimpleGraphics2DExporterOutput();
+		output.setGraphics2D((Graphics2D)pageImage.getGraphics());
+		exporter.setExporterOutput(output);
+		SimpleGraphics2DReportConfiguration configuration = new SimpleGraphics2DReportConfiguration();
+		configuration.setPageIndex(pageIndex);
+		configuration.setZoomRatio(zoom);
+		exporter.setConfiguration(configuration);
 		exporter.exportReport();
-
+		
 		return pageImage;
 	}
 

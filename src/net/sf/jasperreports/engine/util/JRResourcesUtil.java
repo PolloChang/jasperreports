@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,19 +28,30 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
+import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.repo.RepositoryUtil;
+import net.sf.jasperreports.repo.ResourceBundleResource;
 
 
 /**
  * Provides methods for resource resolution via class loaders or URL stream handlers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRResourcesUtil.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRResourcesUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRResourcesUtil
 {
+	/**
+	 * 
+	 */
+	private static final String PROPERTIES_FILE_EXTENSION = ".properties";
+
 	/** 
 	 * @deprecated To be removed.
 	 */
@@ -60,11 +71,11 @@ public final class JRResourcesUtil
 	private static ThreadLocalStack localURLHandlerFactoryStack = new ThreadLocalStack();
 
 	/** 
-	 * @deprecated To be removed.
+	 *
 	 */
 	private static ClassLoader globalClassLoader;
 	/** 
-	 * @deprecated To be removed.
+	 *
 	 */
 	private static ThreadLocalStack localClassLoaderStack = new ThreadLocalStack();
 
@@ -396,7 +407,6 @@ public final class JRResourcesUtil
 	 * @return a class loader.
 	 * @see #setGlobalClassLoader(ClassLoader)
 	 * @see #setThreadClassLoader(ClassLoader)
-	 * @deprecated To be removed.
 	 */
 	public static ClassLoader getClassLoader(ClassLoader clsLoader)
 	{
@@ -418,7 +428,6 @@ public final class JRResourcesUtil
 	 * 
 	 * @return the global class loader.
 	 * @see #setGlobalClassLoader(ClassLoader)
-	 * @deprecated To be removed.
 	 */
 	public static ClassLoader getGlobalClassLoader()
 	{
@@ -431,7 +440,6 @@ public final class JRResourcesUtil
 	 * 
 	 * @return the thread local class loader.
 	 * @see #setThreadClassLoader(ClassLoader)
-	 * @deprecated To be removed.
 	 */
 	public static ClassLoader getThreadClassLoader()
 	{
@@ -445,7 +453,6 @@ public final class JRResourcesUtil
 	 * @param classLoader a class loader
 	 * @see #getClassLoader(ClassLoader)
 	 * @see #resetThreadURLHandlerFactory()
-	 * @deprecated To be removed.
 	 */
 	public static void setThreadClassLoader(ClassLoader classLoader)
 	{
@@ -455,7 +462,6 @@ public final class JRResourcesUtil
 	
 	/**
 	 * Resets the the thread local class loader to its previous value.
-	 * @deprecated To be removed.
 	 */
 	public static void resetClassLoader()
 	{
@@ -468,7 +474,6 @@ public final class JRResourcesUtil
 	 * 
 	 * @param classLoader the class loader
 	 * @see #getClassLoader(ClassLoader)
-	 * @deprecated To be removed.
 	 */
 	public static void setGlobalClassLoader(ClassLoader classLoader)
 	{
@@ -547,7 +552,7 @@ public final class JRResourcesUtil
 	 */
 	public static URL findClassLoaderResource(String location, ClassLoader clsLoader)
 	{
-		ClassLoader classLoader = clsLoader;//getClassLoader(clsLoader);
+		ClassLoader classLoader = getClassLoader(clsLoader);
 		
 		URL url = null;
 		
@@ -593,6 +598,66 @@ public final class JRResourcesUtil
 	 * @param locale the locale
 	 * @return the resource bundle for the given base name and locale
 	 */
+	public static ResourceBundle loadResourceBundle(JasperReportsContext jasperReportsContext, String baseName, Locale locale)
+	{
+		ResourceBundle resourceBundle = null;
+		MissingResourceException ex = null;
+		try
+		{
+			resourceBundle = loadResourceBundle(baseName, locale, null);
+		}
+		catch (MissingResourceException e)
+		{
+			ex = e;
+		}
+		
+		if (resourceBundle == null)
+		{
+			CustomControl control = new CustomControl();
+			List<Locale> locales = control.getCandidateLocales(baseName, locale);
+			for (Locale lc : locales)
+			{
+				String suffix = lc.toString();
+				suffix = (suffix.trim().length() > 0 ? "_" : "") + suffix;
+				ResourceBundleResource resourceBundleResource = null; 
+				try
+				{
+					resourceBundleResource = 
+							RepositoryUtil.getInstance(jasperReportsContext).getResourceFromLocation(
+								baseName + suffix + PROPERTIES_FILE_EXTENSION, 
+								ResourceBundleResource.class
+								);
+				}
+				catch (JRException e)
+				{
+				}
+				if (resourceBundleResource != null)
+				{
+					resourceBundle = resourceBundleResource.getResourceBundle();
+					break;
+				}
+			}
+		}
+		
+		if (resourceBundle == null)
+		{
+			throw ex;
+		}
+		
+		return resourceBundle;
+	}
+
+	/**
+	 * Loads a resource bundle for a given base name and locale.
+	 * 
+	 * <p>
+	 * This methods calls {@link #loadResourceBundle(String, Locale, ClassLoader)} with a null classloader.
+	 * </p>
+	 * 
+	 * @param baseName the base name
+	 * @param locale the locale
+	 * @return the resource bundle for the given base name and locale
+	 */
 	public static ResourceBundle loadResourceBundle(String baseName, Locale locale)
 	{
 		return loadResourceBundle(baseName, locale, null);
@@ -621,7 +686,7 @@ public final class JRResourcesUtil
 	{
 		ResourceBundle resourceBundle = null;
 		
-		ClassLoader classLoader = clsLoader;//getClassLoader(clsLoader);
+		ClassLoader classLoader = getClassLoader(clsLoader);
 		if (classLoader != null)
 		{
 			try
@@ -666,6 +731,17 @@ public final class JRResourcesUtil
 	
 
 	private JRResourcesUtil()
+	{
+	}
+}
+
+
+/**
+ * 
+ */
+class CustomControl extends ResourceBundle.Control
+{
+	public CustomControl()
 	{
 	}
 }

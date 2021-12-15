@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,29 +29,41 @@ import net.sf.jasperreports.engine.JRHyperlink;
 
 
 /**
+ * Represents the series for any Category dataset.
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCategorySeries.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCategorySeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCategorySeries extends JRCloneable
 {
 	
 	/**
-	 * 
+	 * @return the expression of the series name. The value of this expression can be any 
+	 * <code>java.lang.Comparable</code> object. 
+	 * <br/>
+	 * Note that this expression may return different values with each iteration, which in turn 
+	 * will result in the dataset having multiple category series, even though a single 
+	 * <code>&lt;categorySeries&gt;</code> tag was used inside <code>&lt;categoryDataset&gt;</code>. However, this 
+	 * expression usually returns a <code>java.lang.String</code> constant, and there are several 
+	 * <code>&lt;categorySeries&gt;</code> tags that introduce multiple category series in the dataset. 
 	 */
 	public JRExpression getSeriesExpression();
 
 	/**
-	 * 
+	 * @return the expression of the name of the category for each value inside the series 
+	 * specified by the series expression. Categories are <code>java.lang.Comparable</code> objects 
+	 * (not necessarily <code>java.lang.String</code> objects).
 	 */
 	public JRExpression getCategoryExpression();
 
 	/**
-	 * 
+	 * @return the value expression, a <code>java.lang.Number</code> value for each category in the specified series.
 	 */
 	public JRExpression getValueExpression();
 
 	/**
-	 * 
+	 * @return the label expression. If present, this expression allows 
+	 * customization of the item labels in the chart.
 	 */
 	public JRExpression getLabelExpression();
 

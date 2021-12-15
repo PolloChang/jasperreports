@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.fill;
 
 import java.awt.Color;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -34,6 +35,8 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintElementContainer;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.PrintElementVisitor;
+import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
 
 /**
  * Implementation of {@link net.sf.jasperreports.engine.JRPrintFrame JRPrintFrame} that uses
@@ -41,14 +44,19 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * attributes. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTemplatePrintFrame.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTemplatePrintFrame.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintFrame extends JRTemplatePrintElement implements JRPrintFrame, JRPrintElementContainer
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	private List<JRPrintElement> elements;
-
+	
+	public JRTemplatePrintFrame()
+	{
+		
+	}
+	
 	/**
 	 * Creates a print frame element.
 	 * 
@@ -67,10 +75,24 @@ public class JRTemplatePrintFrame extends JRTemplatePrintElement implements JRPr
 	 * 
 	 * @param templateFrame the template frame that the element will use
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRTemplatePrintFrame(JRTemplateFrame, PrintElementOriginator)}
 	 */
 	public JRTemplatePrintFrame(JRTemplateFrame templateFrame, int sourceElementId)
 	{
 		super(templateFrame, sourceElementId);
+		
+		elements = new ArrayList<JRPrintElement>();
+	}
+
+	/**
+	 * Creates a print frame element.
+	 * 
+	 * @param templateFrame the template frame that the element will use
+	 * @param originator
+	 */
+	public JRTemplatePrintFrame(JRTemplateFrame templateFrame, PrintElementOriginator originator)
+	{
+		super(templateFrame, originator);
 		
 		elements = new ArrayList<JRPrintElement>();
 	}
@@ -109,5 +131,32 @@ public class JRTemplatePrintFrame extends JRTemplatePrintElement implements JRPr
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);
+	}
+
+	@Override
+	public void writeVirtualized(VirtualizationOutput out) throws IOException
+	{
+		super.writeVirtualized(out);
+		
+		out.writeIntCompressed(elements.size());
+		for (JRPrintElement element : elements)
+		{
+			// TODO lucianc we only need this when VirtualElementsData has evaluations 
+			out.writeJRObject(element, true, false);
+		}
+	}
+
+	@Override
+	public void readVirtualized(VirtualizationInput in) throws IOException
+	{
+		super.readVirtualized(in);
+		
+		int size = in.readIntCompressed();
+		elements = new ArrayList<JRPrintElement>(size);
+		for (int i = 0; i < size; i++)
+		{
+			JRPrintElement element = (JRPrintElement) in.readJRObject();
+			elements.add(element);
+		}
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -46,7 +46,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardBaseColumn.java 5191 2012-03-30 11:36:57Z teodord $
+ * @version $Id: StandardBaseColumn.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class StandardBaseColumn implements BaseColumn, Serializable, JRChangeEventsSupport
 {
@@ -194,6 +194,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		clone.printWhenExpression = JRCloneUtils.nullSafeClone(printWhenExpression);
 		//FIXMECLONE should we deal with propertyExpressions? check all
 		clone.eventSupport = null;
+		clone.uuid = null;
 		return clone;
 	}
 

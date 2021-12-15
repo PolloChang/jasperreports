@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,8 +39,28 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
 
 
 /**
+ * Evaluates JasperReports expressions.
+ * <p>
+ * The expressions calculator is the entity inside JasperReports that evaluates
+ * expressions and increments variables or datasets at report-filling time. When a report
+ * template is compiled, the report compiler produces and stores in the compiled report
+ * template ({@link net.sf.jasperreports.engine.JasperReport} object) information that it 
+ * will use at report-filling time to build an instance of the 
+ * {@link net.sf.jasperreports.engine.fill.JRCalculator} class.
+ * </p><p>
+ * The Java-based report compilers generate a Java source file and compile it on the fly.
+ * This generated class is a subclass of the {@link net.sf.jasperreports.engine.fill.JRCalculator}, 
+ * and the bytecode produced by compiling it is stored inside the 
+ * {@link net.sf.jasperreports.engine.JasperReport} object. At report-filling time, this
+ * bytecode is loaded and the resulting class is instantiated to obtain the calculator object
+ * needed for expression evaluation.
+ * </p><p>
+ * Only the report compiler creates the calculator instance because only the report compiler
+ * can make sense of the information it stored in the compiled report template at report compilation
+ * time.
+ * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCalculator.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCalculator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCalculator implements JRFillExpressionEvaluator
 {

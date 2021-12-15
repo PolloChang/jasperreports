@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
 
+import net.sf.jasperreports.crosstabs.CrosstabColumnCell;
+import net.sf.jasperreports.crosstabs.CrosstabDeepVisitor;
 import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.crosstabs.JRCrosstabBucket;
@@ -66,21 +68,23 @@ import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.design.JRDesignElement;
 import net.sf.jasperreports.engine.design.JRDesignVariable;
 import net.sf.jasperreports.engine.type.CalculationEnum;
+import net.sf.jasperreports.engine.type.HorizontalPosition;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
 import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.FormatFactory;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.engine.util.Pair;
 
-import org.apache.commons.collections.SequencedHashMap;
+import org.apache.commons.collections.map.LinkedMap;
 
 /**
  * Design-time {@link net.sf.jasperreports.crosstabs.JRCrosstab crosstab} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstab.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignCrosstab.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 {
@@ -90,13 +94,15 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 	
 	public static final String PROPERTY_DATASET = "dataset";
 	
+	public static final String PROPERTY_TITLE_CELL = "titleCell";
+	
 	public static final String PROPERTY_HEADER_CELL = "headerCell";
 	
 	public static final String PROPERTY_PARAMETERS_MAP_EXPRESSION = "parametersMapExpression";
 	
-	public static final String PROPERTY_REPEAT_COLUMN_HEADERS = "repeatColumnHeaders";
+	public static final String PROPERTY_REPEAT_COLUMN_HEADERS = "isRepeatColumnHeaders";
 	
-	public static final String PROPERTY_REPEAT_ROW_HEADERS = "repeatRowHeaders";
+	public static final String PROPERTY_REPEAT_ROW_HEADERS = "isRepeatRowHeaders";
 	
 	public static final String PROPERTY_WHEN_NO_DATA_CELL = "whenNoDataCell";
 	
@@ -114,7 +120,8 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 
 	protected List<JRCrosstabParameter> parametersList;
 	protected Map<String, JRCrosstabParameter> parametersMap;
-	protected SequencedHashMap variablesList;
+	// used to be a org.apache.commons.collections.SequencedHashMap, we're now using LinkedMap
+	protected Map<String, JRVariable> variablesList;
 	protected JRExpression parametersMapExpression;
 	protected JRDesignCrosstabDataset dataset;
 	protected List<JRCrosstabRowGroup> rowGroups;
@@ -127,10 +134,12 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 	protected boolean repeatColumnHeaders = true;
 	protected boolean repeatRowHeaders = true;
 	protected RunDirectionEnum runDirectionValue;
+	protected HorizontalPosition horizontalPosition;
 	protected List<JRCrosstabCell> cellsList;
 	protected Map<Pair<String,String>,JRCrosstabCell> cellsMap;
 	protected JRDesignCrosstabCell[][] crossCells;
 	protected JRDesignCellContents whenNoDataCell;
+	protected DesignCrosstabColumnCell titleCell;
 	protected JRDesignCellContents headerCell;
 	protected Boolean ignoreWidth;
 	protected JRLineBox lineBox;
@@ -187,7 +196,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		
 		addBuiltinParameters();
 		
-		variablesList = new SequencedHashMap();
+		variablesList = new LinkedMap();
 		addBuiltinVariables();
 		
 		dataset = new JRDesignCrosstabDataset();
@@ -291,6 +300,11 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitCrosstab(this);
+		
+		if (ElementsVisitorUtils.visitDeepElements(visitor))
+		{
+			new CrosstabDeepVisitor(visitor).deepVisitCrosstab(this);
+		}
 	}
 
 	
@@ -1151,13 +1165,15 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		createCellMatrix();
 		
 		int rowHeadersWidth = calculateRowHeadersSizes();
-		int colHeadersHeight = calculateColumnHeadersSizes();
+		int colHeadersHeight = calculateColumnHeadersSizes(rowHeadersWidth);
 		
 		if (headerCell != null)
 		{
 			headerCell.setWidth(rowHeadersWidth);
 			headerCell.setHeight(colHeadersHeight);
 		}
+		
+		setTitleSize(rowHeadersWidth);
 	}
 
 	protected void setWhenNoDataCellSize()
@@ -1387,7 +1403,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		return widthSum;
 	}
 
-	protected int calculateColumnHeadersSizes()
+	protected int calculateColumnHeadersSizes(int rowHeadersWidth)
 	{
 		int heightSum = 0;
 		for (int i = columnGroups.size() - 1, widthSum = 0; i >= 0; --i)
@@ -1401,6 +1417,13 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 				widthSum += cell.getContents().getWidth();
 			}
 
+			JRDesignCellContents crosstabHeader = (JRDesignCellContents) group.getCrosstabHeader();
+			if (crosstabHeader != null)
+			{
+				crosstabHeader.setWidth(rowHeadersWidth);
+				crosstabHeader.setHeight(group.getHeight());
+			}
+			
 			JRDesignCellContents header = (JRDesignCellContents) group.getHeader();
 			header.setHeight(group.getHeight());
 			header.setWidth(widthSum);
@@ -1417,6 +1440,27 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 			}
 		}
 		return heightSum;
+	}
+
+	protected void setTitleSize(int rowHeadersWidth)
+	{
+		if (titleCell != null && titleCell.getDesignCellContents() != null)
+		{
+			JRDesignCellContents titleContents = titleCell.getDesignCellContents();
+			titleContents.setHeight(titleCell.getHeight());
+			
+			int titleWidth = rowHeadersWidth;
+			if (!columnGroups.isEmpty())
+			{
+				JRCrosstabColumnGroup firstGroup = columnGroups.get(0);
+				titleWidth += firstGroup.getHeader().getWidth();
+				if (firstGroup.hasTotal())
+				{
+					titleWidth += firstGroup.getTotalHeader().getWidth();
+				}
+			}
+			titleContents.setWidth(titleWidth);
+		}
 	}
 
 	public JRCellContents getWhenNoDataCell()
@@ -1449,6 +1493,22 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 	public ModeEnum getModeValue()
 	{
 		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+	}
+
+	public CrosstabColumnCell getTitleCell()
+	{
+		return titleCell;
+	}
+
+	public void setTitleCell(DesignCrosstabColumnCell titleCell)
+	{
+		Object old = this.titleCell;
+		this.titleCell = titleCell;
+		if (this.titleCell != null)
+		{
+			setCellOrigin(this.titleCell.getCellContents(), new JRCrosstabOrigin(this, JRCrosstabOrigin.TYPE_TITLE_CELL));
+		}
+		getEventSupport().firePropertyChange(PROPERTY_TITLE_CELL, old, this.titleCell);
 	}
 
 	public JRCellContents getHeaderCell()
@@ -1538,6 +1598,20 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		getEventSupport().firePropertyChange(JRBaseCrosstab.PROPERTY_RUN_DIRECTION, old, this.runDirectionValue);
 	}
 
+	@Override
+	public HorizontalPosition getHorizontalPosition()
+	{
+		return horizontalPosition;
+	}
+
+	@Override
+	public void setHorizontalPosition(HorizontalPosition horizontalPosition)
+	{
+		HorizontalPosition old = this.horizontalPosition;
+		this.horizontalPosition = horizontalPosition;
+		getEventSupport().firePropertyChange(JRBaseCrosstab.PROPERTY_HORIZONTAL_POSITION, old, this.horizontalPosition);
+	}
+
 	protected void setCellOrigin(JRCellContents cell, JRCrosstabOrigin origin)
 	{
 		if (cell instanceof JRDesignCellContents)
@@ -1625,6 +1699,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 				clone.columnGroups.add(groupClone);
 				clone.columnGroupsMap.put(groupClone.getName(), Integer.valueOf(i));
 				
+				adjustCrosstabReference(clone,(JRDesignCellContents) groupClone.getCrosstabHeader());
 				adjustCrosstabReference(clone,(JRDesignCellContents) groupClone.getTotalHeader());
 				adjustCrosstabReference(clone,(JRDesignCellContents) groupClone.getHeader());
 
@@ -1657,7 +1732,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		
 		if (variablesList != null)
 		{
-			clone.variablesList = new SequencedHashMap(variablesList.size());
+			clone.variablesList = new LinkedMap(variablesList.size());
 			for(Iterator<?> it = variablesList.values().iterator(); it.hasNext();)
 			{
 				JRVariable variable = (JRVariable) it.next();
@@ -1686,6 +1761,13 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		
 		clone.whenNoDataCell = JRCloneUtils.nullSafeClone(whenNoDataCell);
 		adjustCrosstabReference(clone, clone.whenNoDataCell);
+		
+		clone.titleCell = JRCloneUtils.nullSafeClone(titleCell);
+		if (clone.titleCell != null)
+		{
+			adjustCrosstabReference(clone, clone.titleCell.getDesignCellContents());
+		}
+		
 		clone.headerCell = JRCloneUtils.nullSafeClone(headerCell);
 		adjustCrosstabReference(clone, clone.headerCell);
 
@@ -1793,6 +1875,14 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		if (lineBox == null)
 		{
 			lineBox = new JRBaseLineBox(this);
+		}
+		
+		// this will work as long as SequencedHashMap is part of commons collections
+		// we could also look at PSEUDO_SERIAL_VERSION_UID
+		if (variablesList instanceof org.apache.commons.collections.SequencedHashMap)
+		{
+			// converting to the new type
+			variablesList = new LinkedMap(variablesList);
 		}
 	}
 

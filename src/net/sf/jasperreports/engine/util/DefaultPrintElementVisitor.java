@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,7 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * The class is meant to be extended by visitors that only want to implement specific methods.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultPrintElementVisitor.java 4732 2011-10-21 09:14:15Z lucianc $
+ * @version $Id: DefaultPrintElementVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class DefaultPrintElementVisitor<T> implements
 		PrintElementVisitor<T>

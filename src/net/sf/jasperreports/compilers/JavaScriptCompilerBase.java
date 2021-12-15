@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,7 @@ import org.mozilla.javascript.EvaluatorException;
  * Base compiler class for reports that use JavaScript as expression language.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptCompilerBase.java 5451 2012-06-14 15:35:10Z lucianc $
+ * @version $Id: JavaScriptCompilerBase.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JavaScriptCompilerBase extends JRAbstractCompiler
 {
@@ -60,7 +60,7 @@ public abstract class JavaScriptCompilerBase extends JRAbstractCompiler
 	}
 
 	/**
-	 * @deprecated Replaced by {@link #JavaScriptCompiler(JasperReportsContext)}.
+	 * @deprecated Replaced by {@link #JavaScriptCompilerBase(JasperReportsContext)}.
 	 */
 	protected JavaScriptCompilerBase()
 	{
@@ -101,7 +101,7 @@ public abstract class JavaScriptCompilerBase extends JRAbstractCompiler
 		if (compileData instanceof JavaScriptCompiledData)
 		{
 			JavaScriptCompiledData jsCompiledData = (JavaScriptCompiledData) compileData;
-			return new JavaScriptCompiledEvaluator(unitName, jsCompiledData);
+			return new JavaScriptCompiledEvaluator(jasperReportsContext, unitName, jsCompiledData);
 		}
 		
 		throw new JRException("Invalid compile data type " + compileData.getClass().getName());
@@ -151,6 +151,12 @@ public abstract class JavaScriptCompilerBase extends JRAbstractCompiler
 		
 		public String getScript()
 		{
+			if (script.length() == 0)
+			{
+				// empty expression, should evaluate to null
+				return "null";
+			}
+			
 			return script.toString();
 		}
 		

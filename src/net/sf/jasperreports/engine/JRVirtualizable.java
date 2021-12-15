@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2005 - 2011 Works, Inc. All rights reserved.
+ * Copyright (C) 2005 - 2014 Works, Inc. All rights reserved.
  * http://www.works.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.fill.JRVirtualizationContext;
 
 /**
  * @author John Bindel
- * @version $Id: JRVirtualizable.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRVirtualizable.java 7199 2014-08-27 13:58:10Z teodord $
  * 
  * @param <T> the type of the virtual data object, see {@link #getVirtualData()}
  */

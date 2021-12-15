@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -47,7 +47,7 @@ import net.sf.jasperreports.engine.type.StretchTypeEnum;
  * and compiled elements is that at design time they are more customizable. This class contains setters for properties
  * that can be only modified at design time.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignElement.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRDesignElement extends JRBaseElement
 {
@@ -276,6 +276,15 @@ public abstract class JRDesignElement extends JRBaseElement
 			props = propertyExpressions.toArray(new JRPropertyExpression[propertyExpressions.size()]);
 		}
 		return props;
+	}
+
+
+	@Override
+	public Object clone()
+	{
+		JRDesignElement clone = (JRDesignElement) super.clone();
+		clone.uuid = null;
+		return clone;
 	}
 	
 }

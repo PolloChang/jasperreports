@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,7 @@ import net.sf.jasperreports.engine.util.JRQueryParser;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignQuery.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignQuery.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 {
@@ -140,12 +140,31 @@ public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 	 * 
 	 * @param tokens the clause tokens
 	 * @see JRDesignQueryChunk#setTokens(String[])
+	 * @deprecated Replaced by {@link #addClauseChunk(String[], char)}.
 	 */
 	public void addClauseChunk(String[] tokens)
 	{
 		JRDesignQueryChunk chunk = new JRDesignQueryChunk();
 		chunk.setType(JRQueryChunk.TYPE_CLAUSE_TOKENS);
 		chunk.setTokens(tokens);
+
+		this.chunks.add(chunk);
+	}
+
+	/**
+	 * Adds a {@link JRQueryChunk#TYPE_CLAUSE_TOKENS clause chunk} to the query.
+	 * 
+	 * @param tokens the clause tokens
+	 * @param tokenSeparator the token separator character
+	 * @see JRDesignQueryChunk#setTokens(String[])
+	 * @see JRQueryChunk#PROPERTY_CHUNK_TOKEN_SEPARATOR
+	 */
+	public void addClauseChunk(String[] tokens, char tokenSeparator)
+	{
+		JRDesignQueryChunk chunk = new JRDesignQueryChunk();
+		chunk.setType(JRQueryChunk.TYPE_CLAUSE_TOKENS);
+		chunk.setTokens(tokens);
+		chunk.setTokenSeparator(tokenSeparator);
 
 		this.chunks.add(chunk);
 	}
@@ -171,9 +190,9 @@ public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 					addTextChunk(text);
 				}
 
-				public void handleClauseChunk(String[] tokens)
+				public void handleClauseChunk(String[] tokens, char tokenSeparator)
 				{
-					addClauseChunk(tokens);
+					addClauseChunk(tokens, tokenSeparator);
 				}
 			};
 		}

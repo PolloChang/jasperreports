@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,6 +29,8 @@ import java.io.ObjectInputStream;
 import java.util.Iterator;
 import java.util.List;
 
+import net.sf.jasperreports.crosstabs.CrosstabColumnCell;
+import net.sf.jasperreports.crosstabs.CrosstabDeepVisitor;
 import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.crosstabs.JRCrosstabCell;
@@ -49,21 +51,26 @@ import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.base.JRBaseElement;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
+import net.sf.jasperreports.engine.type.HorizontalPosition;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
+import net.sf.jasperreports.engine.util.JRCloneUtils;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * Base read-only {@link net.sf.jasperreports.crosstabs.JRCrosstab crosstab} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstab.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseCrosstab.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	public static final String PROPERTY_RUN_DIRECTION = "runDirection";
+	
+	public static final String PROPERTY_HORIZONTAL_POSITION = "horizontalPosition";
 	
 	public static final String PROPERTY_IGNORE_WIDTH = "ignoreWidth";
 
@@ -79,8 +86,10 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 	protected boolean repeatColumnHeaders = true;
 	protected boolean repeatRowHeaders = true;
 	protected RunDirectionEnum runDirectionValue;
+	protected HorizontalPosition horizontalPosition;
 	protected JRCrosstabCell[][] cells;
 	protected JRCellContents whenNoDataCell;
+	protected CrosstabColumnCell titleCell;
 	protected JRCellContents headerCell;
 	protected Boolean ignoreWidth;
 	protected JRLineBox lineBox;
@@ -95,12 +104,14 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		this.repeatColumnHeaders = crosstab.isRepeatColumnHeaders();
 		this.repeatRowHeaders = crosstab.isRepeatRowHeaders();
 		this.runDirectionValue = crosstab.getRunDirectionValue();
+		this.horizontalPosition = crosstab.getHorizontalPosition();
 		this.ignoreWidth = crosstab.getIgnoreWidth();
 		
 		this.dataset = factory.getCrosstabDataset(crosstab.getDataset());
 		
 		copyParameters(crosstab, factory);		
 		copyVariables(crosstab, factory);		
+		titleCell = factory.getCrosstabColumnCell(crosstab.getTitleCell());
 		headerCell = factory.getCell(crosstab.getHeaderCell());
 		copyRowGroups(crosstab, factory);		
 		copyColumnGroups(crosstab, factory);
@@ -235,6 +246,11 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitCrosstab(this);
+		
+		if (ElementsVisitorUtils.visitDeepElements(visitor))
+		{
+			new CrosstabDeepVisitor(visitor).deepVisitCrosstab(this);
+		}
 	}
 
 	public int getColumnBreakOffset()
@@ -276,7 +292,12 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 	{
 		JRElement element = null;
 		
-		if (crosstab.getHeaderCell() != null)
+		if (crosstab.getTitleCell() != null && crosstab.getTitleCell().getCellContents() != null)
+		{
+			element = crosstab.getTitleCell().getCellContents().getElementByKey(key);
+		}
+		
+		if (element == null && crosstab.getHeaderCell() != null)
 		{
 			element = crosstab.getHeaderCell().getElementByKey(key);
 		}
@@ -335,13 +356,24 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		{
 			for (int i = 0; element == null && i < groups.length; i++)
 			{
-				JRCellContents header = groups[i].getHeader();
+				JRCrosstabGroup group = groups[i];
+				JRCellContents header = group.getHeader();
 				element = header.getElementByKey(key);
 				
 				if (element == null)
 				{
-					JRCellContents totalHeader = groups[i].getTotalHeader();
+					JRCellContents totalHeader = group.getTotalHeader();
 					element = totalHeader.getElementByKey(key);
+				}
+				
+				// ugly
+				if (element == null && group instanceof JRCrosstabColumnGroup)
+				{
+					JRCellContents crosstabHeader = ((JRCrosstabColumnGroup) group).getCrosstabHeader();
+					if (crosstabHeader != null)
+					{
+						element = crosstabHeader.getElementByKey(key);
+					}
 				}
 			}
 		}
@@ -353,6 +385,12 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 	public JRElement getElementByKey(String elementKey)
 	{
 		return getElementByKey(this, elementKey);
+	}
+
+	@Override
+	public CrosstabColumnCell getTitleCell()
+	{
+		return titleCell;
 	}
 
 	public JRCellContents getHeaderCell()
@@ -384,12 +422,56 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		getEventSupport().firePropertyChange(PROPERTY_RUN_DIRECTION, old, this.runDirectionValue);
 	}
 
+	@Override
+	public HorizontalPosition getHorizontalPosition()
+	{
+		return horizontalPosition;
+	}
+
+	@Override
+	public void setHorizontalPosition(HorizontalPosition horizontalPosition)
+	{
+		HorizontalPosition old = this.horizontalPosition;
+		this.horizontalPosition = horizontalPosition;
+		getEventSupport().firePropertyChange(PROPERTY_RUN_DIRECTION, old, this.horizontalPosition);
+	}
+
 	/**
 	 * 
 	 */
 	public Object clone() 
 	{
-		throw new UnsupportedOperationException();//FIXMECLONE: implement this
+		CrosstabBaseCloneFactory factory = new CrosstabBaseCloneFactory();
+		
+		JRBaseCrosstab clone = (JRBaseCrosstab) super.clone();
+		clone.parameters = JRCloneUtils.cloneArray(parameters);
+		
+		if (variables != null)
+		{
+			clone.variables = new JRVariable[variables.length];
+			for (int i = 0; i < variables.length; i++)
+			{
+				clone.variables[i] = factory.clone(variables[i]);
+			}
+		}
+
+		clone.parametersMapExpression = JRCloneUtils.nullSafeClone(parametersMapExpression);
+		clone.dataset = JRCloneUtils.nullSafeClone(dataset);
+		clone.rowGroups = factory.cloneCrosstabObjects(rowGroups);
+		clone.columnGroups = factory.cloneCrosstabObjects(columnGroups);
+		clone.measures = factory.cloneCrosstabObjects(measures);
+		
+		clone.cells = new JRCrosstabCell[cells.length][];
+		for (int i = 0; i < cells.length; i++)
+		{
+			clone.cells[i] = JRCloneUtils.cloneArray(cells[i]);
+		}
+		
+		clone.whenNoDataCell = JRCloneUtils.nullSafeClone(whenNoDataCell);
+		clone.titleCell = JRCloneUtils.nullSafeClone(titleCell);
+		clone.headerCell = JRCloneUtils.nullSafeClone(headerCell);
+		clone.lineBox = lineBox.clone(clone);
+		return clone;
 	}
 
 	public Boolean getIgnoreWidth()

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.engine.export.ooxml;
 
 import java.io.Writer;
 
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.export.LengthUtil;
@@ -32,7 +33,7 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxTableHelper.java 4646 2011-10-06 09:34:19Z teodord $
+ * @version $Id: DocxTableHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxTableHelper extends BaseHelper
 {
@@ -48,16 +49,17 @@ public class DocxTableHelper extends BaseHelper
 	 * 
 	 */
 	protected DocxTableHelper(
+		JasperReportsContext jasperReportsContext,
 		Writer writer,
 		CutsInfo xCuts,
 		boolean pageBreak
 		) 
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 
 		this.xCuts = xCuts;
-		this.cellHelper = new DocxCellHelper(writer);
-		this.paragraphHelper = new DocxParagraphHelper(writer, pageBreak);
+		this.cellHelper = new DocxCellHelper(jasperReportsContext, writer);
+		this.paragraphHelper = new DocxParagraphHelper(jasperReportsContext, writer, pageBreak);
 	}
 
 
@@ -99,6 +101,11 @@ public class DocxTableHelper extends BaseHelper
 	public void exportFooter(boolean lastPage, int pageWidth, int pageHeight) 
 	{
 		write("  </w:tbl>\n");
+		exportSection(lastPage, pageWidth, pageHeight);
+	}
+	
+	public void exportSection(boolean lastPage, int pageWidth, int pageHeight) 
+	{
 		if (lastPage)
 		{
 			write("    <w:p>\n");
@@ -128,6 +135,11 @@ public class DocxTableHelper extends BaseHelper
 	
 	public void exportEmptyCell(JRExporterGridCell gridCell, int emptyCellColSpan)
 	{
+		exportEmptyCell(gridCell, emptyCellColSpan, false, 0l, null);
+	}
+	
+	public void exportEmptyCell(JRExporterGridCell gridCell, int emptyCellColSpan, boolean startPage, long bookmarkIndex, String pageAnchor)
+	{
 		write("    <w:tc>\n");
 		write("     <w:tcPr>\n");
 		if (emptyCellColSpan > 1)
@@ -142,12 +154,17 @@ public class DocxTableHelper extends BaseHelper
 		
 		write("     </w:tcPr>\n");
 		
-		paragraphHelper.exportEmptyParagraph();
+		paragraphHelper.exportEmptyParagraph(startPage, bookmarkIndex, pageAnchor);
 
 		write("    </w:tc>\n");
 	}
 
 	public void exportOccupiedCells(JRExporterGridCell gridCell)
+	{
+		exportOccupiedCells(gridCell, false, 0l, null);
+	}
+	
+	public void exportOccupiedCells(JRExporterGridCell gridCell, boolean startPage, long bookmarkIndex, String pageAnchor)
 	{
 		write("    <w:tc>\n");
 		write("     <w:tcPr>\n");
@@ -161,7 +178,7 @@ public class DocxTableHelper extends BaseHelper
 		
 		write("     </w:tcPr>\n");
 		
-		paragraphHelper.exportEmptyParagraph();
+		paragraphHelper.exportEmptyParagraph(startPage, bookmarkIndex, pageAnchor);
 
 		cellHelper.exportFooter();
 	}

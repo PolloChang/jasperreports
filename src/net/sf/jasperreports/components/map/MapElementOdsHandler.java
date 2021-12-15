@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,13 +25,14 @@ package net.sf.jasperreports.components.map;
 
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
+import net.sf.jasperreports.engine.export.JRGridLayout;
 import net.sf.jasperreports.engine.export.oasis.GenericElementOdsHandler;
 import net.sf.jasperreports.engine.export.oasis.JROdsExporter;
 import net.sf.jasperreports.engine.export.oasis.JROdsExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementOdsHandler.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: MapElementOdsHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MapElementOdsHandler implements GenericElementOdsHandler
 {
@@ -45,20 +46,33 @@ public class MapElementOdsHandler implements GenericElementOdsHandler
 	public void exportElement(
 		JROdsExporterContext exporterContext,
 		JRGenericPrintElement element,
-		JRExporterGridCell gridCell
+		JRExporterGridCell gridCell,
+		int colIndex,
+		int rowIndex,
+		int emptyCols,
+		int yCutsRow, 
+		JRGridLayout layout
 		)
 	{
 		try
 		{
-			JROdsExporter exporter = (JROdsExporter)exporterContext.getExporter();
-			exporter.exportImage(exporterContext.getTableBuilder(), MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element), gridCell);
+			JROdsExporter exporter = (JROdsExporter)exporterContext.getExporterRef();
+			exporter.exportImage(
+				MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element), 
+				gridCell, 
+				colIndex, 
+				rowIndex, 
+				0, 
+				0, 
+				null
+				);
 		}
 		catch (Exception e)
 		{
 			throw new RuntimeException(e);
 		}
 	}
-
+	
 	public boolean toExport(JRGenericPrintElement element) {
 		return true;
 	}

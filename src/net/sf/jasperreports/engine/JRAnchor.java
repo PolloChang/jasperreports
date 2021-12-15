@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,9 +27,16 @@ package net.sf.jasperreports.engine;
 /**
  * An interface providing anchor functionality. It must be implemented by elements that can contain anchors for
  * hyperlinks.
- *
+ * <p/>
+ * If present in a text field or image element declaration, the <code>&lt;anchorNameExpression&gt;</code>
+ * tag (see {@link #getAnchorNameExpression()}) transforms that particular text field or image into a 
+ * local anchor of the resulting document, to which hyperlinks can point. The anchor will bear the 
+ * name returned after evaluation of the anchor name expression, which should always return
+ * <code>java.lang.String</code> values.
+ * 
+ * @see net.sf.jasperreports.engine.JRHyperlink
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAnchor.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRAnchor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRAnchor
 {

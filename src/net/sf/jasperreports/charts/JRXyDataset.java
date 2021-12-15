@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,14 +27,19 @@ import net.sf.jasperreports.engine.JRChartDataset;
 
 
 /**
+ * This dataset is a wrapper for data series made of (x, y) value pairs and is used for 
+ * rendering XY Bar, XY Line, XY Area, and Scatter Plot charts.
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXyDataset.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRXyDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRXyDataset extends JRChartDataset
 {
 	
 	/**
-	 * 
+	 * @return an array of {@link JRXySeries} objects representing the 
+	 * series for the XY charts.
+	 * @see JRXySeries
 	 */
 	public JRXySeries[] getSeries();
 

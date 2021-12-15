@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -53,7 +53,7 @@ import net.sf.jasperreports.engine.type.RunDirectionEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CrosstabConverter.java 4844 2011-12-07 13:03:27Z lucianc $
+ * @version $Id: CrosstabConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class CrosstabConverter extends FrameConverter
 {
@@ -110,6 +110,17 @@ public final class CrosstabConverter extends FrameConverter
 	{
 		List<JRPrintElement> crosstabElements = new ArrayList<JRPrintElement>();
 		
+		int yOffset = 0;
+		if (crosstab.getTitleCell() != null
+				&& crosstab.getTitleCell().getHeight() > 0
+				&& crosstab.getTitleCell().getCellContents() != null)
+		{
+			crosstabElements.add(getCrosstabCellFrame(reportConverter, crosstab.getTitleCell().getCellContents(), 
+					0, yOffset, false, false, false));
+			
+			yOffset += crosstab.getTitleCell().getHeight();
+		}
+		
 		JRCrosstabRowGroup[] rowGroups = crosstab.getRowGroups();
 		int rowHeadersXOffset = 0;
 		for (int i = 0; i < rowGroups.length; i++)
@@ -118,7 +129,7 @@ public final class CrosstabConverter extends FrameConverter
 		}
 		
 		JRCrosstabColumnGroup[] columnGroups = crosstab.getColumnGroups();
-		int colHeadersYOffset = 0;
+		int colHeadersYOffset = yOffset;
 		for (int i = 0; i < columnGroups.length; i++)
 		{
 			colHeadersYOffset += columnGroups[i].getHeight();
@@ -134,7 +145,7 @@ public final class CrosstabConverter extends FrameConverter
 						reportConverter,
 						headerCell, 
 						0, 
-						0, 
+						yOffset, 
 						false, 
 						false, 
 						false
@@ -147,7 +158,8 @@ public final class CrosstabConverter extends FrameConverter
 		addCrosstabColumnHeaders(
 			reportConverter,
 			crosstab, 
-			rowHeadersXOffset, 
+			rowHeadersXOffset,
+			yOffset,
 			crosstabElements
 			);
 		addCrosstabRows(
@@ -193,6 +205,7 @@ public final class CrosstabConverter extends FrameConverter
 		)
 	{
 		JRBasePrintFrame frame = new JRBasePrintFrame(cell.getDefaultStyleProvider());
+		//frame.setUUID(cell.getUUID());
 		frame.setX(x);
 		frame.setY(y);
 		frame.setWidth(cell.getWidth());
@@ -262,13 +275,13 @@ public final class CrosstabConverter extends FrameConverter
 	private void addCrosstabColumnHeaders(
 		ReportConverter reportConverter,
 		JRCrosstab crosstab, 
-		int rowHeadersXOffset, 
+		int rowHeadersXOffset, int yOffset,
 		List<JRPrintElement> crosstabElements
 		)
 	{
 		JRCrosstabColumnGroup[] groups = crosstab.getColumnGroups();
 		
-		for (int i = 0, x = 0, y = 0; i < groups.length; i++)
+		for (int i = 0, x = 0, y = yOffset; i < groups.length; i++)
 		{
 			JRCrosstabColumnGroup group = groups[i];
 			
@@ -293,6 +306,8 @@ public final class CrosstabConverter extends FrameConverter
 				}
 			}
 			
+			// TODO lucianc column crosstab header cells
+
 			JRCellContents header = group.getHeader();
 			if (header.getWidth() != 0 && header.getHeight() != 0) {
 				boolean firstOnRow = x == 0 && crosstab.getHeaderCell() == null;

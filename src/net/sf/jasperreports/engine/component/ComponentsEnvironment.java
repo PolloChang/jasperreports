@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.extensions.ExtensionsEnvironment;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -47,7 +47,7 @@ import org.apache.commons.logging.LogFactory;
  * {@link ExtensionsEnvironment}).
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentsEnvironment.java 5433 2012-06-11 08:49:11Z teodord $
+ * @version $Id: ComponentsEnvironment.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class ComponentsEnvironment
 {
@@ -58,7 +58,6 @@ public final class ComponentsEnvironment
 			ReferenceMap.WEAK, ReferenceMap.HARD);
 	
 	private JasperReportsContext jasperReportsContext;
-	private static ComponentsEnvironment defaultInstance;
 
 
 	/**
@@ -75,11 +74,7 @@ public final class ComponentsEnvironment
 	 */
 	private static ComponentsEnvironment getDefaultInstance()
 	{
-		if (defaultInstance == null)
-		{
-			defaultInstance = new ComponentsEnvironment(DefaultJasperReportsContext.getInstance());
-		}
-		return defaultInstance;
+		return new ComponentsEnvironment(DefaultJasperReportsContext.getInstance());
 	}
 	
 	

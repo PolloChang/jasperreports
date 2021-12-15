@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,44 +31,47 @@
  */
 package net.sf.jasperreports.engine.export.oasis;
 
-import java.io.IOException;
-import java.io.Writer;
 import java.util.List;
 
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.export.LengthUtil;
+import net.sf.jasperreports.export.ExporterInput;
+import net.sf.jasperreports.export.ExporterInputItem;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StyleBuilder.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: StyleBuilder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StyleBuilder
 {
 	/**
 	 * 
 	 */
-	private List<JasperPrint> jasperPrintList;
-	private Writer writer;
+	private ExporterInput exporterInput;
+	private WriterHelper writer;
 	
 	/**
 	 * 
 	 */
-	public StyleBuilder(List<JasperPrint> jasperPrintList, Writer writer)
+	public StyleBuilder(ExporterInput exporterInput, WriterHelper writer)
 	{
-		this.jasperPrintList = jasperPrintList;
+		this.exporterInput = exporterInput;
 		this.writer = writer;
 	}
 
 	/**
 	 * 
 	 */
-	public void build() throws IOException
+	public void build()
 	{
-		for(int reportIndex = 0; reportIndex < jasperPrintList.size(); reportIndex++)
+		List<ExporterInputItem> items = exporterInput.getItems();
+		
+		for(int reportIndex = 0; reportIndex < items.size(); reportIndex++)
 		{
-			JasperPrint jasperPrint = jasperPrintList.get(reportIndex);
+			ExporterInputItem item = items.get(reportIndex);
+			JasperPrint jasperPrint = item.getJasperPrint();
 
 			if (reportIndex == 0)
 			{
@@ -80,7 +83,7 @@ public class StyleBuilder
 
 		buildBetweenAutomaticAndMasterStyles();
 
-		for(int reportIndex = 0; reportIndex < jasperPrintList.size(); reportIndex++)
+		for(int reportIndex = 0; reportIndex < items.size(); reportIndex++)
 		{
 			buildMasterPage(reportIndex);
 		}
@@ -93,7 +96,7 @@ public class StyleBuilder
 	/**
 	 * 
 	 */
-	private void buildBeforeAutomaticStyles(JasperPrint jasperPrint) throws IOException
+	private void buildBeforeAutomaticStyles(JasperPrint jasperPrint)
 	{
 		writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 
@@ -139,7 +142,7 @@ public class StyleBuilder
 	/**
 	 * 
 	 */
-	private void buildBetweenAutomaticAndMasterStyles() throws IOException
+	private void buildBetweenAutomaticAndMasterStyles()
 	{
 		writer.write(" </office:automatic-styles>\n");
 		writer.write(" <office:master-styles>\n");	
@@ -148,7 +151,7 @@ public class StyleBuilder
 	/**
 	 * 
 	 */
-	private void buildAfterMasterStyles() throws IOException
+	private void buildAfterMasterStyles()
 	{
 		writer.write(" </office:master-styles>\n");	
 		writer.write("</office:document-styles>\n");
@@ -157,7 +160,7 @@ public class StyleBuilder
 	/**
 	 * 
 	 */
-	private void buildPageLayout(int reportIndex, JasperPrint jasperPrint) throws IOException 
+	private void buildPageLayout(int reportIndex, JasperPrint jasperPrint) 
 	{
 			writer.write("<style:page-layout");
 			writer.write(" style:name=\"page_" + reportIndex + "\">\n");
@@ -187,7 +190,7 @@ public class StyleBuilder
 	/**
 	 * 
 	 */
-	private void buildMasterPage(int reportIndex) throws IOException 
+	private void buildMasterPage(int reportIndex) 
 	{
 		writer.write("<style:master-page style:name=\"master_");
 		writer.write(String.valueOf(reportIndex));

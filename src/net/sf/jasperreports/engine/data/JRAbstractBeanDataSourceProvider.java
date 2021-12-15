@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,7 @@ import net.sf.jasperreports.engine.design.JRDesignField;
  * implementation for bean properties introspection.
  * 
  * @author Peter Severin (peter_s@sourceforge.net, contact@jasperassistant.com)
- * @version $Id: JRAbstractBeanDataSourceProvider.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRAbstractBeanDataSourceProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractBeanDataSourceProvider implements JRDataSourceProvider 
 {
@@ -95,7 +95,7 @@ public abstract class JRAbstractBeanDataSourceProvider implements JRDataSourcePr
 				if (!(descriptor instanceof IndexedPropertyDescriptor) && descriptor.getReadMethod() != null) 
 				{
 					JRDesignField field = new JRDesignField();
-					field.setValueClassName(normalizeClass(descriptor.getPropertyType()).getName());
+					field.setValueClassName(normalizeClass(descriptor.getPropertyType()).getCanonicalName());
 					field.setName(descriptor.getName());
 					
 					fields.add(field);

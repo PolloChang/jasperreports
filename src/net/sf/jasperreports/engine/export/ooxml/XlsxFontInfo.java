@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.util.JRColorUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxFontInfo.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxFontInfo.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxFontInfo
 {
@@ -39,7 +39,7 @@ public class XlsxFontInfo
 	 *
 	 */
 	protected String fontName;
-	protected int fontSize;
+	protected float fontSize;
 	protected boolean isBold;
 	protected boolean isItalic;
 	protected boolean isUnderline;
@@ -49,7 +49,7 @@ public class XlsxFontInfo
 	/**
 	 *
 	 */
-	public XlsxFontInfo(JRExporterGridCell gridCell, String fontName)
+	public XlsxFontInfo(JRExporterGridCell gridCell, String fontName, boolean isFontSizeFixEnabled)
 	{
 		JRPrintElement element = gridCell.getElement();
 
@@ -62,7 +62,7 @@ public class XlsxFontInfo
 		if (font != null)
 		{
 			this.fontName = fontName;
-			this.fontSize = font.getFontSize();
+			this.fontSize = font.getFontsize() + (isFontSizeFixEnabled ? -1 : 0);
 			this.isBold = font.isBold();
 			this.isItalic = font.isItalic();
 			this.isUnderline = font.isUnderline();

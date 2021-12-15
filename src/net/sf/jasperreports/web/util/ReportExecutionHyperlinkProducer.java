@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,14 +29,14 @@ import javax.servlet.http.HttpServletRequest;
 
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
+import net.sf.jasperreports.web.WebReportContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ReportExecutionHyperlinkProducer.java 5378 2012-05-14 00:39:27Z teodord $
+ * @version $Id: ReportExecutionHyperlinkProducer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ReportExecutionHyperlinkProducer implements JRHyperlinkProducer
 {
@@ -80,12 +80,18 @@ public class ReportExecutionHyperlinkProducer implements JRHyperlinkProducer
 	 */
 	public String getHyperlink(JRPrintHyperlink hyperlink) 
 	{
-		String appContext = request.getContextPath();
+		String applicationDomain = null;
 		String servletPath = getPath();
-		String reportUriParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(WebUtil.PROPERTY_REQUEST_PARAMETER_REPORT_URI);
-		String reportUri = request.getParameter(reportUriParamName);
-//		String reportAction = null;//request.getParameter(FillServlet.REPORT_ACTION);
-//		String reportActionData = null;//request.getParameter(FillServlet.REPORT_ACTION_DATA);
+		String reportUri = request.getParameter(WebUtil.REQUEST_PARAMETER_REPORT_URI);
+
+		WebReportContext webReportContext = WebReportContext.getInstance(request, false);
+		if (webReportContext != null) {
+			applicationDomain = (String) webReportContext.getParameterValue(WebReportContext.REQUEST_PARAMETER_APPLICATION_DOMAIN);
+		}
+
+		if (applicationDomain == null) {
+			applicationDomain = request.getContextPath();
+		}
 		
 		StringBuffer allParams = new StringBuffer();
 		
@@ -120,9 +126,9 @@ public class ReportExecutionHyperlinkProducer implements JRHyperlinkProducer
 			}
 		}
 		
-		return 
-			appContext + (servletPath != null ? servletPath : "")
-				+ "?" + reportUriParamName + "=" + reportUri 
+		return
+				applicationDomain + (servletPath != null ? servletPath : "")
+				+ "?" + WebUtil.REQUEST_PARAMETER_REPORT_URI + "=" + reportUri
 //				+ (reportAction == null ? "" : "&" + FillServlet.REPORT_ACTION + "=" + reportAction) 
 //				+ (reportActionData == null ? "" : "&" + FillServlet.REPORT_ACTION_DATA + "=" + reportActionData)
 				+ allParams.toString();

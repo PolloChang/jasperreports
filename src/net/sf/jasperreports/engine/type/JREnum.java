@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,9 +29,9 @@ import java.io.Serializable;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JREnum.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JREnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JREnum extends Serializable
+public interface JREnum extends NamedEnum, Serializable
 {
 
 	/**
@@ -43,10 +43,5 @@ public interface JREnum extends Serializable
 	 *
 	 */
 	public byte getValue();
-	
-	/**
-	 *
-	 */
-	public String getName();
 	
 }

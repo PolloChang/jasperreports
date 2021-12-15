@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -107,6 +107,8 @@ import net.sf.jasperreports.engine.JRTemplate;
 import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.analytics.dataset.MultiAxisData;
 import net.sf.jasperreports.engine.component.Component;
 import net.sf.jasperreports.engine.component.ComponentCompiler;
 import net.sf.jasperreports.engine.component.ComponentKey;
@@ -135,7 +137,7 @@ import org.apache.commons.logging.LogFactory;
  * report compilation.  
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRVerifier.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRVerifier.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRVerifier
 {
@@ -279,7 +281,7 @@ public class JRVerifier
 		}
 		else
 		{
-			this.expressionCollector = JRExpressionCollector.collector(jasperDesign);
+			this.expressionCollector = JRExpressionCollector.collector(jasperReportsContext, jasperDesign);
 		}
 		
 		allowElementNegativeWidth = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(jasperDesign, PROPERTY_ALLOW_ELEMENT_NEGATIVE_WIDTH, false);
@@ -1629,6 +1631,24 @@ public class JRVerifier
 		}
 	}
 
+	protected void verifyReturnValue(ReturnValue returnValue)
+	{
+		if (returnValue.getFromVariable() == null || returnValue.getFromVariable().trim().length() == 0)
+		{
+			addBrokenRule("Return value source variable name missing.", returnValue);
+		}
+
+		if (returnValue.getToVariable() == null || returnValue.getToVariable().trim().length() == 0)
+		{
+			addBrokenRule("Return value destination variable name missing.", returnValue);
+		}
+
+		if (!jasperDesign.getVariablesMap().containsKey(returnValue.getToVariable()))
+		{
+			addBrokenRule("Return value destination variable not found.", returnValue);
+		}
+	}
+
 
 	private void verifyCrosstab(JRDesignCrosstab crosstab)
 	{
@@ -1645,6 +1665,11 @@ public class JRVerifier
 			verifyElementDataset(dataset);
 		}
 
+		if (crosstab.getTitleCell() != null)
+		{
+			verifyCellContents(crosstab.getTitleCell().getCellContents(), "crosstab title cell");
+		}
+		
 		verifyCellContents(crosstab.getHeaderCell(), "crosstab cell");
 
 		JRCrosstabRowGroup[] rowGroups = crosstab.getRowGroups();
@@ -1735,6 +1760,8 @@ public class JRVerifier
 	private void verifyCrosstabColumnGroup(JRCrosstabColumnGroup group)
 	{
 		verifyCrosstabGroup(group);
+		
+		verifyCellContents(group.getCrosstabHeader(), group.getName() + " crosstab header");
 	}
 
 
@@ -2140,6 +2167,15 @@ public class JRVerifier
 		{
 			addBrokenRule("Dataset " + datasetName + " cannot have both connection expresion and data source expression.", datasetRun);
 		}
+
+		List<ReturnValue> returnValues = datasetRun.getReturnValues();
+		if (returnValues != null && !returnValues.isEmpty())
+		{
+			for (ReturnValue returnValue : returnValues)
+			{
+				verifyReturnValue(returnValue);
+			}
+		}
 	}
 
 
@@ -2475,7 +2511,7 @@ public class JRVerifier
 		if (componentKey != null && component != null)
 		{
 			ComponentCompiler compiler = 
-				ComponentsEnvironment.getInstance(jasperReportsContext).getManager(componentKey).getComponentCompiler();
+				ComponentsEnvironment.getInstance(jasperReportsContext).getManager(componentKey).getComponentCompiler(jasperReportsContext);
 			pushCurrentComponentElement(element);
 			try
 			{
@@ -2602,6 +2638,11 @@ public class JRVerifier
 				addBrokenRule(mandatoryMessage, parent);
 			}
 		}
+	}
+	
+	public void verify(MultiAxisData data)
+	{
+		// TODO lucianc 
 	}
 	
 }

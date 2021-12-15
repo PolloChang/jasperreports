@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,22 +23,31 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.io.IOException;
 import java.util.Set;
 
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
 
 /**
  * Print text implementation that supports recorded values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRRecordedValuesPrintText.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRRecordedValuesPrintText.java 7199 2014-08-27 13:58:10Z teodord $
  */
+//FIXME these objects reach JasperPrints, find another way to store recorded values
 public class JRRecordedValuesPrintText extends JRTemplatePrintText implements JRRecordedValuesPrintElement
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	private JRRecordedValues recordedValues;
 
+	public JRRecordedValuesPrintText()
+	{
+		super();
+	}
+	
 	/**
 	 * 
 	 * @param text
@@ -53,10 +62,21 @@ public class JRRecordedValuesPrintText extends JRTemplatePrintText implements JR
 	 * 
 	 * @param text
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRRecordedValuesPrintText(JRTemplateText, PrintElementOriginator)}
 	 */
 	public JRRecordedValuesPrintText(JRTemplateText text, int sourceElementId)
 	{
 		super(text, sourceElementId);
+	}
+
+	/**
+	 * 
+	 * @param text
+	 * @param originator
+	 */
+	public JRRecordedValuesPrintText(JRTemplateText text, PrintElementOriginator originator)
+	{
+		super(text, originator);
 	}
 
 	public JRRecordedValues getRecordedValues()
@@ -72,5 +92,21 @@ public class JRRecordedValuesPrintText extends JRTemplatePrintText implements JR
 	public void initRecordedValues(Set<JREvaluationTime> evaluationTimes)
 	{
 		recordedValues = new JRRecordedValues(evaluationTimes);
+	}
+
+	@Override
+	public void writeVirtualized(VirtualizationOutput out) throws IOException
+	{
+		super.writeVirtualized(out);
+		
+		out.writeJRObject(recordedValues);
+	}
+
+	@Override
+	public void readVirtualized(VirtualizationInput in) throws IOException
+	{
+		super.readVirtualized(in);
+		
+		recordedValues = (JRRecordedValues) in.readJRObject();
 	}
 }

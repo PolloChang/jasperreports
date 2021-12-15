@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,35 +34,34 @@ import java.util.StringTokenizer;
 
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.engine.fonts.FontInfo;
+import net.sf.jasperreports.engine.fonts.FontUtil;
+import net.sf.jasperreports.engine.type.ColorEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
-import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: DocxRunHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DocxRunHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxRunHelper extends BaseHelper
 {
 	/**
 	 *
 	 */
-	private Map<String,String> fontMap;
 	private String exporterKey;
-
-
+	
 	/**
 	 *
 	 */
-	public DocxRunHelper(Writer writer, Map<String,String> fontMap, String exporterKey)
+	public DocxRunHelper(JasperReportsContext jasperReportsContext, Writer writer, String exporterKey)
 	{
-		super(writer);
-		this.fontMap = fontMap;
+		super(jasperReportsContext, writer);
 		this.exporterKey = exporterKey;
 	}
 
@@ -70,13 +69,19 @@ public class DocxRunHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale, boolean hiddenText)
+	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale, boolean hiddenText, String invalidCharReplacement, Color backcolor)
 	{
 		if (text != null)
 		{
 			write("      <w:r>\n");
-			
-			exportProps(getAttributes(style), attributes, locale, hiddenText);
+			boolean highlightText = backcolor == null || !backcolor.equals(attributes.get(TextAttribute.BACKGROUND));
+			exportProps(
+					getAttributes(style), 
+					attributes, 
+					locale, 
+					hiddenText, 
+					highlightText 
+				);
 			
 			StringTokenizer tkzer = new StringTokenizer(text, "\n", true);
 			while(tkzer.hasMoreTokens())
@@ -89,7 +94,7 @@ public class DocxRunHelper extends BaseHelper
 				else
 				{
 					write("<w:t xml:space=\"preserve\">");
-					write(JRStringUtil.xmlEncode(token));//FIXMEODT try something nicer for replace
+					write(JRStringUtil.xmlEncode(token, invalidCharReplacement));//FIXMEODT try something nicer for replace
 					write("</w:t>\n");
 				}
 			}
@@ -102,26 +107,16 @@ public class DocxRunHelper extends BaseHelper
 	 */
 	public void exportProps(JRStyle style, Locale locale)
 	{
-		JRPrintText text = new JRBasePrintText(null);
-		text.setStyle(style);
-		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); 
-		JRFontUtil.getAttributesWithoutAwtFont(styledTextAttributes, text);
-		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
-		if (style.getModeValue() == null || style.getModeValue() == ModeEnum.OPAQUE)
-		{
-			styledTextAttributes.put(TextAttribute.BACKGROUND, style.getBackcolor());
-		}
-
-		exportProps(getAttributes(style.getStyle()), getAttributes(style), locale, false);
+		exportProps(getAttributes(style.getStyle()), getAttributes(style), locale, false, false);
 	}
 
 	/**
 	 *
 	 */
-	public void exportProps(Map<Attribute,Object> parentAttrs,  Map<Attribute,Object> attrs, Locale locale, boolean hiddenText)
+	public void exportProps(Map<Attribute,Object> parentAttrs,  Map<Attribute,Object> attrs, Locale locale, boolean hiddenText, boolean highlightText)
 	{
 		write("       <w:rPr>\n");
-
+		
 		Object value = attrs.get(TextAttribute.FAMILY);
 		Object oldValue = parentAttrs.get(TextAttribute.FAMILY);
 		
@@ -129,22 +124,15 @@ public class DocxRunHelper extends BaseHelper
 		{
 			String fontFamilyAttr = (String)value;
 			String fontFamily = fontFamilyAttr;
-			if (fontMap != null && fontMap.containsKey(fontFamilyAttr))
+			FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontFamilyAttr, locale);
+			if (fontInfo != null)
 			{
-				fontFamily = fontMap.get(fontFamilyAttr);
-			}
-			else
-			{
-				FontInfo fontInfo = JRFontUtil.getFontInfo(fontFamilyAttr, locale);
-				if (fontInfo != null)
+				//fontName found in font extensions
+				FontFamily family = fontInfo.getFontFamily();
+				String exportFont = family.getExportFont(exporterKey);
+				if (exportFont != null)
 				{
-					//fontName found in font extensions
-					FontFamily family = fontInfo.getFontFamily();
-					String exportFont = family.getExportFont(exporterKey);
-					if (exportFont != null)
-					{
-						fontFamily = exportFont;
-					}
+					fontFamily = exportFont;
 				}
 			}
 			write("        <w:rFonts w:ascii=\"" + fontFamily + "\" w:hAnsi=\"" + fontFamily + "\" w:eastAsia=\"" + fontFamily + "\" w:cs=\"" + fontFamily + "\" />\n");
@@ -157,67 +145,69 @@ public class DocxRunHelper extends BaseHelper
 		{
 			write("        <w:color w:val=\"" + JRColorUtil.getColorHexa((Color)value) + "\" />\n");
 		}
-
-		value = attrs.get(TextAttribute.BACKGROUND);
-		oldValue = parentAttrs.get(TextAttribute.BACKGROUND);
 		
-//		if (value != null && !value.equals(oldValue))
-//		{
-//			//FIXME: the highlight does not accept the color hexadecimal expression, but only few color names
-////			writer.write("        <w:highlight w:val=\"" + JRColorUtil.getColorHexa((Color)value) + "\" />\n");
-//		}
+		if(highlightText)
+		{
+			value = attrs.get(TextAttribute.BACKGROUND);
 
+			if (value != null && ColorEnum.getByColor((Color)value) != null)
+			{
+				//the highlight does not accept the color hexadecimal expression, but only few color names
+				write("        <w:highlight w:val=\"" + ColorEnum.getByColor((Color)value).getName() + "\" />\n");
+			}
+		}
+		
 		value = attrs.get(TextAttribute.SIZE);
 		oldValue = parentAttrs.get(TextAttribute.SIZE);
-
+		
 		if (value != null && !value.equals(oldValue))
 		{
 			float fontSize = ((Float)value).floatValue();
 			fontSize = fontSize == 0 ? 0.5f : fontSize;// only the special EMPTY_CELL_STYLE would have font size zero
-			write("        <w:sz w:val=\"" + (2 * (fontSize)) + "\" />\n");
+			write("        <w:sz w:val=\"" + (int)(2 * fontSize) + "\" />\n");
 		}
 		
 		value = attrs.get(TextAttribute.WEIGHT);
 		oldValue = parentAttrs.get(TextAttribute.WEIGHT);
-
+		
 		if (value != null && !value.equals(oldValue))
 		{
 			write("        <w:b w:val=\"" + value.equals(TextAttribute.WEIGHT_BOLD) + "\"/>\n");
 		}
-
+		
 		value = attrs.get(TextAttribute.POSTURE);
 		oldValue = parentAttrs.get(TextAttribute.POSTURE);
-
+		
 		if (value != null && !value.equals(oldValue))
 		{
 			write("        <w:i w:val=\"" + value.equals(TextAttribute.POSTURE_OBLIQUE) + "\"/>\n");
 		}
-
-
+		
+		
 		value = attrs.get(TextAttribute.UNDERLINE);
 		oldValue = parentAttrs.get(TextAttribute.UNDERLINE);
-
+		
 		if (
-			(value == null && oldValue != null)
-			|| (value != null && !value.equals(oldValue))
-			)
+				(value == null && oldValue != null)
+				|| (value != null && !value.equals(oldValue))
+				)
 		{
 			write("        <w:u w:val=\"" + (value == null ? "none" : "single") + "\"/>\n");
 		}
 		
 		value = attrs.get(TextAttribute.STRIKETHROUGH);
 		oldValue = parentAttrs.get(TextAttribute.STRIKETHROUGH);
-
+		
 		if (
-			(value == null && oldValue != null)
-			|| (value != null && !value.equals(oldValue))
-			)
+				(value == null && oldValue != null)
+				|| (value != null && !value.equals(oldValue))
+				)
 		{
 			write("        <w:strike w:val=\"" + (value != null) + "\"/>\n");
 		}
-
+		
 		value = attrs.get(TextAttribute.SUPERSCRIPT);
-
+		
 		if (TextAttribute.SUPERSCRIPT_SUPER.equals(value))
 		{
 			write("        <w:vertAlign w:val=\"superscript\" />\n");
@@ -231,11 +221,11 @@ public class DocxRunHelper extends BaseHelper
 		{
 			write("        <w:vanish/>\n");
 		}
-
+		
 		write("       </w:rPr>\n");
 	}
-
-
+	
+	
 	/**
 	 *
 	 */
@@ -246,7 +236,7 @@ public class DocxRunHelper extends BaseHelper
 		
 		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); 
 		//JRFontUtil.getAttributes(styledTextAttributes, text, (Locale)null);//FIXMEDOCX getLocale());
-		JRFontUtil.getAttributesWithoutAwtFont(styledTextAttributes, text);
+		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(styledTextAttributes, text);
 		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
 		if (text.getModeValue() == ModeEnum.OPAQUE)
 		{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -50,6 +50,7 @@ import net.sf.jasperreports.engine.JRSection;
 import net.sf.jasperreports.engine.JRSortField;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.OrientationEnum;
@@ -60,8 +61,12 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
 
 
 /**
+ * Base class that implements the {@link net.sf.jasperreports.engine.JRReport} interface.
+ * 
+ * @see net.sf.jasperreports.engine.JRReport
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseReport.java 5347 2012-05-08 12:50:30Z teodord $
+ * @version $Id: JRBaseReport.java 7199 2014-08-27 13:58:10Z teodord $
+ * 
  */
 public class JRBaseReport implements JRReport, Serializable, JRChangeEventsSupport
 {
@@ -139,7 +144,7 @@ public class JRBaseReport implements JRReport, Serializable, JRChangeEventsSuppo
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link JasperDesign#JasperDesign()}.
 	 */
 	public JRBaseReport()
 	{
@@ -331,7 +336,7 @@ public class JRBaseReport implements JRReport, Serializable, JRChangeEventsSuppo
 	 */
 	public void setWhenNoDataType(WhenNoDataTypeEnum whenNoDataTypeValue)
 	{
-		Object old = whenNoDataTypeValue;
+		Object old = this.whenNoDataTypeValue;
 		this.whenNoDataTypeValue = whenNoDataTypeValue;
 		getEventSupport().firePropertyChange(PROPERTY_WHEN_NO_DATA_TYPE, old, whenNoDataTypeValue);
 	}
@@ -701,10 +706,14 @@ public class JRBaseReport implements JRReport, Serializable, JRChangeEventsSuppo
 		addBand(pageHeader, bands);
 		addBand(columnHeader, bands);
 
-		for (JRGroup group : mainDataset.getGroups())
+		JRGroup[] groups = mainDataset.getGroups();
+		if (groups != null)
 		{
-			addBands(group.getGroupHeaderSection(), bands);
-			addBands(group.getGroupHeaderSection(), bands);
+			for (JRGroup group : groups)
+			{
+				addBands(group.getGroupHeaderSection(), bands);
+				addBands(group.getGroupFooterSection(), bands);
+			}
 		}
 
 		addBands(detailSection, bands);
@@ -736,9 +745,13 @@ public class JRBaseReport implements JRReport, Serializable, JRChangeEventsSuppo
 	{
 		if (section != null)
 		{
-			for (JRBand band : section.getBands())
+			JRBand[] sectionBands = section.getBands();
+			if (sectionBands != null)
 			{
-				addBand(band, bands);
+				for (JRBand band : sectionBands)
+				{
+					addBand(band, bands);
+				}
 			}
 		}
 	}

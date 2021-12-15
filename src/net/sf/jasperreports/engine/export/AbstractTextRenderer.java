@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,18 +41,20 @@ import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 import net.sf.jasperreports.engine.util.ParagraphUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractTextRenderer.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: AbstractTextRenderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractTextRenderer
 {
 	public static final FontRenderContext LINE_BREAK_FONT_RENDER_CONTEXT = new FontRenderContext(null, true, true);
 
 	protected final JasperReportsContext jasperReportsContext;
+	protected final JRStyledTextAttributeSelector noBackcolorSelector;
 	protected JRPrintText text;
 	protected JRStyledText styledText;
 	protected String allText;
@@ -96,6 +98,7 @@ public abstract class AbstractTextRenderer
 		)
 	{
 		this.jasperReportsContext = jasperReportsContext;
+		this.noBackcolorSelector = JRStyledTextAttributeSelector.getNoBackcolorSelector(jasperReportsContext);
 		this.isMinimizePrinterJobSize = isMinimizePrinterJobSize;
 		this.ignoreMissingFont = ignoreMissingFont;
 	}
@@ -172,7 +175,7 @@ public abstract class AbstractTextRenderer
 	 */
 	public void initialize(JRPrintText text, int offsetX, int offsetY)
 	{
-		styledText = text.getStyledText(JRStyledTextAttributeSelector.NO_BACKCOLOR);
+		styledText = JRStyledTextUtil.getInstance(jasperReportsContext).getStyledText(text, noBackcolorSelector);
 		
 		if (styledText == null)
 		{
@@ -278,7 +281,7 @@ public abstract class AbstractTextRenderer
 	public void render()
 	{
 		AttributedCharacterIterator allParagraphs =  
-			styledText.getAwtAttributedString(ignoreMissingFont).getIterator();
+			styledText.getAwtAttributedString(jasperReportsContext, ignoreMissingFont).getIterator();
 
 		int tokenPosition = 0;
 		int lastParagraphStart = 0;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,7 @@ import net.sf.jasperreports.engine.JRExpressionCollector;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeExpressionCollector.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarcodeExpressionCollector.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeExpressionCollector extends UniformBarcodeVisitor
 {
@@ -51,4 +51,12 @@ public class BarcodeExpressionCollector extends UniformBarcodeVisitor
 		collectBarcode(barcode);
 	}
 
+	@Override
+	public void visitEANCode128(EAN128Component ean128) 
+	{
+		super.visitEANCode128(ean128);
+
+		collector.addExpression(ean128.getTemplateExpression());
+	}
+	
 }

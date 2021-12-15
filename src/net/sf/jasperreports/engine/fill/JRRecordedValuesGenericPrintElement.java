@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,15 +23,18 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.io.IOException;
 import java.util.Set;
 
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
 
 /**
  * Generic print element implementation that supports recorded values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRRecordedValuesGenericPrintElement.java 5407 2012-05-22 13:27:32Z lucianc $
+ * @version $Id: JRRecordedValuesGenericPrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRRecordedValuesGenericPrintElement extends
 		JRTemplateGenericPrintElement implements JRRecordedValuesPrintElement
@@ -41,6 +44,10 @@ public class JRRecordedValuesGenericPrintElement extends
 	
 	private JRRecordedValues recordedValues;
 
+	public JRRecordedValuesGenericPrintElement()
+	{
+	}
+	
 	/**
 	 * Creates a generic print element.
 	 * 
@@ -57,6 +64,7 @@ public class JRRecordedValuesGenericPrintElement extends
 	 * 
 	 * @param template the element template to be used by the element
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRRecordedValuesGenericPrintElement(JRTemplateGenericElement, PrintElementOriginator)}
 	 */
 	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, int sourceElementId)
 	{
@@ -67,13 +75,38 @@ public class JRRecordedValuesGenericPrintElement extends
 	 * Creates a generic print element.
 	 * 
 	 * @param template the element template to be used by the element
+	 * @param originator
+	 */
+	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, PrintElementOriginator originator)
+	{
+		super(template, originator);
+	}
+
+	/**
+	 * Creates a generic print element.
+	 * 
+	 * @param template the element template to be used by the element
 	 * @param sourceElementId the Id of the source element
 	 * @param parameterCount the number of parameters that the element will have
+	 * @deprecated replaced by {@link #JRRecordedValuesGenericPrintElement(JRTemplateGenericElement, PrintElementOriginator, int)}
 	 */
 	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, int sourceElementId,
 			int parameterCount)
 	{
 		super(template, sourceElementId, parameterCount);
+	}
+
+	/**
+	 * Creates a generic print element.
+	 * 
+	 * @param template the element template to be used by the element
+	 * @param originator
+	 * @param parameterCount the number of parameters that the element will have
+	 */
+	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, PrintElementOriginator originator,
+			int parameterCount)
+	{
+		super(template, originator, parameterCount);
 	}
 
 	public JRRecordedValues getRecordedValues()
@@ -89,6 +122,22 @@ public class JRRecordedValuesGenericPrintElement extends
 	public void initRecordedValues(Set<JREvaluationTime> evaluationTimes)
 	{
 		recordedValues = new JRRecordedValues(evaluationTimes);
+	}
+
+	@Override
+	public void writeVirtualized(VirtualizationOutput out) throws IOException
+	{
+		super.writeVirtualized(out);
+		
+		out.writeJRObject(recordedValues);
+	}
+
+	@Override
+	public void readVirtualized(VirtualizationInput in) throws IOException
+	{
+		super.readVirtualized(in);
+		
+		recordedValues = (JRRecordedValues) in.readJRObject();
 	}
 
 }

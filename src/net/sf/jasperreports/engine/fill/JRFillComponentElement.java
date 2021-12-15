@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
@@ -34,27 +35,31 @@ import net.sf.jasperreports.engine.JRExpressionCollector;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRStyle;
+import net.sf.jasperreports.engine.JRVisitable;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.component.Component;
 import net.sf.jasperreports.engine.component.ComponentKey;
 import net.sf.jasperreports.engine.component.ComponentManager;
 import net.sf.jasperreports.engine.component.ComponentsEnvironment;
+import net.sf.jasperreports.engine.component.ConditionalStyleAwareFillComponent;
 import net.sf.jasperreports.engine.component.FillComponent;
 import net.sf.jasperreports.engine.component.FillContext;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
+import net.sf.jasperreports.engine.component.StretchableFillComponent;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 
 /**
  * A {@link JRComponentElement} which is used during report fill.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillComponentElement.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: JRFillComponentElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillComponentElement extends JRFillElement implements JRComponentElement, FillContext
 {
 
 	private FillComponent fillComponent;
 	private boolean filling;
+	private List<JRFillDatasetRun> componentDatasetRuns;
 	
 	public JRFillComponentElement(JRBaseFiller filler, JRComponentElement element,
 			JRFillObjectFactory factory)
@@ -63,8 +68,11 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		
 		ComponentKey componentKey = element.getComponentKey();
 		ComponentManager manager = ComponentsEnvironment.getInstance(filler.getJasperReportsContext()).getManager(componentKey);
-		fillComponent = manager.getComponentFillFactory().toFillComponent(element.getComponent(), factory);
+		
+		factory.trackDatasetRuns();
+		fillComponent = manager.getComponentFillFactory(filler.getJasperReportsContext()).toFillComponent(element.getComponent(), factory);
 		fillComponent.initialize(this);
+		this.componentDatasetRuns = factory.getTrackedDatasetRuns();
 	}
 
 	public JRFillComponentElement(JRFillComponentElement element,
@@ -74,8 +82,22 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		
 		ComponentKey componentKey = element.getComponentKey();
 		ComponentManager manager = ComponentsEnvironment.getInstance(filler.getJasperReportsContext()).getManager(componentKey);
-		fillComponent = manager.getComponentFillFactory().cloneFillComponent(element.fillComponent, factory);
+		fillComponent = manager.getComponentFillFactory(filler.getJasperReportsContext()).cloneFillComponent(element.fillComponent, factory);
 		fillComponent.initialize(this);
+	}
+
+	@Override
+	protected void setBand(JRFillBand band)
+	{
+		super.setBand(band);
+		
+		if (componentDatasetRuns != null && !componentDatasetRuns.isEmpty())
+		{
+			for (JRFillDatasetRun datasetRun : componentDatasetRuns)
+			{
+				datasetRun.setBand(band);
+			}
+		}
 	}
 
 	protected void evaluate(byte evaluation) throws JRException
@@ -143,6 +165,30 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		return willOverflow;
 	}
 
+	protected void setStretchHeight(int stretchHeight)
+	{
+		super.setStretchHeight(stretchHeight);
+		
+		StretchableFillComponent stretchableFillComponent = 
+			fillComponent instanceof StretchableFillComponent ? (StretchableFillComponent)fillComponent : null;
+		if (stretchableFillComponent != null)
+		{
+			stretchableFillComponent.setStretchHeight(stretchHeight);
+		}
+	}
+
+	public void setConditionalStylesContainer(JRFillElementContainer conditionalStylesContainer)
+	{
+		super.setConditionalStylesContainer(conditionalStylesContainer);
+		
+		ConditionalStyleAwareFillComponent conditionalStyleAwareFillComponent = 
+			fillComponent instanceof ConditionalStyleAwareFillComponent ? (ConditionalStyleAwareFillComponent)fillComponent : null;
+		if (conditionalStyleAwareFillComponent != null)
+		{
+			conditionalStyleAwareFillComponent.setConditionalStylesContainer(conditionalStylesContainer);
+		}
+	}
+
 	protected JRPrintElement fill() throws JRException
 	{
 		return fillComponent.fill();
@@ -180,11 +226,22 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitComponentElement(this);
+
+		// visiting the fill component, not the parent component
+		if (fillComponent instanceof JRVisitable)
+		{
+			((JRVisitable) fillComponent).visit(visitor);
+		}
 	}
 
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillComponentElement(this, factory);
+	}
+
+	public JRComponentElement getParent()
+	{
+		return (JRComponentElement) parent;
 	}
 
 	public Component getComponent()
@@ -215,7 +272,13 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 
 	public int getElementSourceId()
 	{
-		return elementId;
+		return printElementOriginator.getSourceElementId();
+	}
+	
+	@Override
+	public PrintElementOriginator getPrintElementOriginator()
+	{
+		return printElementOriginator;
 	}
 
 	public JROrigin getElementOrigin()
@@ -258,6 +321,12 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 	public JRBaseFiller getFiller()
 	{
 		return filler;
+	}
+
+	@Override
+	public FillContainerContext getFillContainerContext()
+	{
+		return fillContainerContext;
 	}
 
 }

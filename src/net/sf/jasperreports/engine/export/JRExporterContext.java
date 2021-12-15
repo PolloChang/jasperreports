@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,26 +25,32 @@ package net.sf.jasperreports.engine.export;
 
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRExporter;
-import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.export.Exporter;
+
 
 /**
  * A context that represents information about an export process.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRExporterContext.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: JRExporterContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRExporterContext
 {
+
+	/**
+	 * @deprecated Replaced by {@link #getExporterRef()}.
+	 */
+	net.sf.jasperreports.engine.JRExporter  getExporter();
 
 	/**
 	 * Returns the current exporter.
 	 * 
 	 * @return current exporter
 	 */
-	JRExporter getExporter();
+	Exporter getExporterRef();
 
 	/**
 	 *
@@ -59,9 +65,7 @@ public interface JRExporterContext
 	JasperPrint getExportedReport();
 
 	/**
-	 * Returns the properties prefix for the current exporter.
-	 * 
-	 * @return the properties prefix for the current exporter
+	 * @deprecated Replaced by {@link JRAbstractExporter#getExporterPropertiesPrefix()}.
 	 */
 	String getExportPropertiesPrefix();
 	
@@ -69,11 +73,12 @@ public interface JRExporterContext
 	 * Returns the map of export parameters.
 	 * 
 	 * <p>
-	 * The map uses {@link JRExporterParameter} instances as keys.
+	 * The map uses {@link net.sf.jasperreports.engine.JRExporterParameter} instances as keys.
 	 * 
 	 * @return the map of export parameters
+	 * @deprecated To be removed.
 	 */
-	Map<JRExporterParameter,Object> getExportParameters();
+	Map<net.sf.jasperreports.engine.JRExporterParameter,Object> getExportParameters();
 
 	/**
 	 * Returns the current X-axis offset at which elements should be exported.
@@ -88,4 +93,14 @@ public interface JRExporterContext
 	 * @return the current Y-axis offset
 	 */
 	int getOffsetY();
+
+	/**
+	 *
+	 */
+	public Object getValue(String key);
+
+	/**
+	 *
+	 */
+	public void setValue(String key, Object value);
 }

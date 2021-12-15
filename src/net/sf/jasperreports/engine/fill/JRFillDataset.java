@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -79,6 +79,7 @@ import net.sf.jasperreports.engine.type.IncrementTypeEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
 import net.sf.jasperreports.engine.util.DigestUtils;
+import net.sf.jasperreports.engine.util.JRDataUtils;
 import net.sf.jasperreports.engine.util.JRQueryExecuterUtils;
 import net.sf.jasperreports.engine.util.JRResourcesUtil;
 import net.sf.jasperreports.engine.util.MD5Digest;
@@ -88,7 +89,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillDataset.java 5340 2012-05-04 10:41:48Z lucianc $
+ * @version $Id: JRFillDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillDataset implements JRDataset, DatasetFillContext
 {
@@ -104,6 +105,8 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	 *
 	 */
 	private JasperReportsContext jasperReportsContext;
+	
+	private JRPropertiesUtil propertiesUtil;
 	
 	/**
 	 * The template dataset.
@@ -263,6 +266,8 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		factory.put(dataset, this);
 		
 		this.filler = filler;
+		this.propertiesUtil = filler == null ? JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()) 
+				: filler.getPropertiesUtil();
 		this.parent = dataset;
 		this.isMain = dataset.isMainDataset();
 		
@@ -567,7 +572,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		}
 		else
 		{
-			loadedBundle = JRResourcesUtil.loadResourceBundle(resourceBundleBaseName, locale);//FIXMECONTEXT check how to pass class loader here
+			loadedBundle = JRResourcesUtil.loadResourceBundle(getJasperReportsContext(), resourceBundleBaseName, locale);
 		}
 		return loadedBundle;
 	}
@@ -583,6 +588,8 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	{
 		parameterValues.put(JRParameter.REPORT_PARAMETERS_MAP, parameterValues);
 		
+		parameterValues.put(JRParameter.JASPER_REPORTS_CONTEXT, getJasperReportsContext());
+		
 		if (filler != null)
 		{
 			// the only case when this filler is null is when called from JRParameterDefaultValuesEvaluator
@@ -595,7 +602,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		locale = (Locale) parameterValues.get(JRParameter.REPORT_LOCALE);
 		if (locale == null)
 		{
-			locale = Locale.getDefault();
+			locale = defaultLocale();
 			parameterValues.put(JRParameter.REPORT_LOCALE, locale);
 		}
 		
@@ -612,7 +619,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		timeZone = (TimeZone) parameterValues.get(JRParameter.REPORT_TIME_ZONE);
 		if (timeZone == null)
 		{
-			timeZone = TimeZone.getDefault();
+			timeZone = defaultTimeZone();
 			parameterValues.put(JRParameter.REPORT_TIME_ZONE, timeZone);
 		}
 		
@@ -626,6 +633,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		// initializing cache because we need the cached parameter values
 		cacheInit();
 		
+		//FIXME do not call on default parameter value evaluation and when a data snapshot is used?
 		setFillParameterValues(parameterValues);
 		
 		// after we have the parameter values, init cache recording
@@ -636,6 +644,22 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		{
 			filter.init(this);
 		}
+	}
+
+	protected Locale defaultLocale()
+	{
+		String localeCode = propertiesUtil.getProperty(this, JRFiller.PROPERTY_DEFAULT_LOCALE);
+		Locale locale = (localeCode == null || localeCode.isEmpty()) ? Locale.getDefault()
+				: JRDataUtils.getLocale(localeCode);
+		return locale;
+	}
+
+	protected TimeZone defaultTimeZone()
+	{
+		String timezoneId = propertiesUtil.getProperty(this, JRFiller.PROPERTY_DEFAULT_TIMEZONE);
+		TimeZone timezone = (timezoneId == null || timezoneId.isEmpty()) ? TimeZone.getDefault()
+				: JRDataUtils.getTimeZone(timezoneId);
+		return timezone;
 	}
 	
 	
@@ -883,8 +907,21 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 				{
 					if (sortRecord.isFiltered())
 					{
+						Object[] recordValues = sortRecord.getValues();
+						Object[] fieldValues;
+						// the sort record can also contain sort variable values
+						if (fields.length == recordValues.length)
+						{
+							fieldValues = recordValues;
+						}
+						else
+						{
+							fieldValues = new Object[fields.length];
+							System.arraycopy(recordValues, 0, fieldValues, 0, fields.length);
+						}
+						
 						// add the record to the data snapshot
-						dataRecorder.addRecord(sortRecord.getValues());
+						dataRecorder.addRecord(fieldValues);
 						
 						// current unsorted index
 						++recordIndex;
@@ -987,6 +1024,10 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	public void setJasperReportsContext(JasperReportsContext jasperReportsContext)
 	{
 		this.jasperReportsContext = jasperReportsContext;
+		if (jasperReportsContext != null)
+		{
+			this.propertiesUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
+		}
 	}
 	
 	protected JasperReportsContext getJasperReportsContext()
@@ -1417,6 +1458,10 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 //		}
 	}
 
+	public JRFillVariable getVariable(String variableName)
+	{
+		return variablesMap.get(variableName);
+	}
 	
 	/**
 	 * Returns the value of a variable.

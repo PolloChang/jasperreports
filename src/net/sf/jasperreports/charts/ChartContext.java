@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,16 +29,22 @@ import java.util.TimeZone;
 import net.sf.jasperreports.engine.JRChart;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 import org.jfree.data.general.Dataset;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net) 
- * @version $Id: ChartContext.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ChartContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface ChartContext
 {
 
+	/**
+	 * 
+	 */
+	public JasperReportsContext getJasperReportsContext();
+	
 	/**
 	 * 
 	 */
