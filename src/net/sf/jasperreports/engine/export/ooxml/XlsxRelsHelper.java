@@ -28,11 +28,12 @@ import java.io.Writer;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxRelsHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxRelsHelper.java 4959 2012-02-01 12:35:07Z teodord $
  */
 public class XlsxRelsHelper extends BaseHelper
 {
-
+	private boolean containsMacro;
+	
 	/**
 	 * 
 	 */
@@ -44,11 +45,23 @@ public class XlsxRelsHelper extends BaseHelper
 	/**
 	 * 
 	 */
+	public void setContainsMacro(boolean containsMacro)
+	{
+		this.containsMacro = containsMacro;
+	}
+
+	/**
+	 * 
+	 */
 	public void exportHeader()
 	{
 		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 		write("<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n");
 		write(" <Relationship Id=\"rIdSt\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>\n");
+		if (containsMacro)
+		{
+			write(" <Relationship Id=\"rIdMc\" Type=\"http://schemas.microsoft.com/office/2006/relationships/vbaProject\" Target=\"vbaProject.bin\"/>\n");
+		}
 //		write(" <Relationship Id=\"rIdCa\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/calcChain\" Target=\"calcChain.xml\"/>\n");
 //		write(" <Relationship Id=\"rIdSh\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"sharedStrings.xml\"/>\n");
 	}

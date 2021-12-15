@@ -29,17 +29,18 @@
 
 package net.sf.jasperreports.engine.export.ooxml;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.ExporterFilter;
 import net.sf.jasperreports.engine.export.GenericElementHandler;
 import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRDocxExporterNature.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDocxExporterNature.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 {
@@ -49,11 +50,19 @@ public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 	/**
 	 *
 	 */
-	public JRDocxExporterNature(ExporterFilter filter, boolean deepGrid)
+	public JRDocxExporterNature(JasperReportsContext jasperReportsContext, ExporterFilter filter, boolean deepGrid)
 	{
-		super(filter);
+		super(jasperReportsContext, filter);
 		
 		this.deepGrid = deepGrid;
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #JRDocxExporterNature(JasperReportsContext, ExporterFilter, boolean)}.
+	 */
+	public JRDocxExporterNature(ExporterFilter filter, boolean deepGrid)
+	{
+		this(DefaultJasperReportsContext.getInstance(), filter, deepGrid);
 	}
 
 	/**
@@ -65,7 +74,7 @@ public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 		if (element instanceof JRGenericPrintElement)
 		{
 			JRGenericPrintElement genericElement = (JRGenericPrintElement) element;
-			GenericElementHandler handler = GenericElementHandlerEnviroment.getHandler(
+			GenericElementHandler handler = GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
 					genericElement.getGenericType(), JRDocxExporter.DOCX_EXPORTER_KEY);
 			if (handler == null || !handler.toExport(genericElement))
 			{
@@ -88,7 +97,7 @@ public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 		{
 			// we make this test to avoid reaching the global default value of the property directly
 			// and thus skipping the report level one, if present
-			return !JRProperties.getBooleanProperty(frame, JRDocxExporterParameter.PROPERTY_FRAMES_AS_NESTED_TABLES, !deepGrid);
+			return !getPropertiesUtil().getBooleanProperty(frame, JRDocxExporterParameter.PROPERTY_FRAMES_AS_NESTED_TABLES, !deepGrid);
 		}
 		return deepGrid;
 	}

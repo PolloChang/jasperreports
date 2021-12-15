@@ -26,14 +26,12 @@ package net.sf.jasperreports.engine.fill;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRParameter;
@@ -41,15 +39,15 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRScriptletException;
 import net.sf.jasperreports.engine.JRSortField;
 import net.sf.jasperreports.engine.JRVariable;
-import net.sf.jasperreports.engine.data.ListOfArrayDataSource;
 import net.sf.jasperreports.engine.design.JRDesignDatasetRun;
+import net.sf.jasperreports.engine.fill.SortedDataSource.SortRecord;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DatasetSortUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DatasetSortUtil.java 5221 2012-04-04 14:08:30Z lucianc $
  */
 public class DatasetSortUtil
 {
@@ -68,6 +66,7 @@ public class DatasetSortUtil
 			allSortFields.addAll(Arrays.asList(staticSortFields));
 		}
 
+		@SuppressWarnings("unchecked")
 		List<JRSortField> dynamicSortFields = (List<JRSortField>)dataset.getParameterValue(JRParameter.SORT_FIELDS, true);
 		if (dynamicSortFields != null)
 		{
@@ -84,6 +83,7 @@ public class DatasetSortUtil
 	public static boolean needSorting(JRFillDataset dataset)
 	{
 		JRSortField[] staticSortFields = dataset.getSortFields();
+		@SuppressWarnings("unchecked")
 		List<JRSortField> dynamicSortFields = (List<JRSortField>)dataset.getParameterValue(JRParameter.SORT_FIELDS, true);
 		
 		return 
@@ -97,7 +97,7 @@ public class DatasetSortUtil
 	/**
 	 *
 	 */
-	public static JRDataSource getSortedDataSource(
+	public static SortedDataSource getSortedDataSource(
 		JRBaseFiller filler, 
 		JRFillDataset dataset, 
 		Locale locale 
@@ -107,18 +107,28 @@ public class DatasetSortUtil
 		
 		SortFillDatasetRun sortDatasetRun = new SortFillDatasetRun(filler, dataset, sortInfo);
 		
-		List<Object[]> records = sortDatasetRun.sort();
+		List<SortedDataSource.SortRecord> records = sortDatasetRun.sort();
+		
+		// using indirect sorting in order to also preserve the original record order for data caching
+		int recordCount = records.size();
+		// we need wrapper objects for Arrays.sort with comparator
+		Integer[] indexes = new Integer[recordCount];
+		for (int i = 0; i < recordCount; i++) {
+			indexes[i] = i;
+		}
 		
 		/*   */
-		Collections.sort(
-			records, 
+		Arrays.sort(
+			indexes, 
 			new DataSourceComparator(
 				sortInfo.sortFieldInfo, 
-				locale
+				locale,
+				records
 				)
 			);
 		
-		return new ListOfArrayDataSource(records, sortInfo.fieldNames.toArray(new String[sortInfo.fieldNames.size()]));
+		return new SortedDataSource(records, indexes, 
+				sortInfo.fieldNames.toArray(new String[sortInfo.fieldNames.size()]));
 	}
 
 
@@ -212,22 +222,27 @@ public class DatasetSortUtil
 /**
  *
  */
-class DataSourceComparator implements Comparator
+class DataSourceComparator implements Comparator<Integer>
 {
 	Collator collator;
 	SortFieldInfo[] sortFieldInfo;
+	private final List<SortedDataSource.SortRecord> records;
 
-	public DataSourceComparator(SortFieldInfo[] sortFieldInfo, Locale locale)
+	public DataSourceComparator(SortFieldInfo[] sortFieldInfo, Locale locale, 
+			List<SortedDataSource.SortRecord> records)
 	{
 		this.collator = Collator.getInstance(locale);
 		this.sortFieldInfo = sortFieldInfo;
+		this.records = records;
 	}
 
-	public int compare(Object arg1, Object arg2)
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public int compare(Integer idx1, Integer idx2)
 	{
-		Object[] record1 = (Object[])arg1;
-		Object[] record2 = (Object[])arg2;
-
+		// assuming random access records list
+		Object[] record1 = records.get(idx1).getValues();
+		Object[] record2 = records.get(idx2).getValues();
+		
 		int ret = 0;
 
 		for(int i = 0; i < sortFieldInfo.length; i++)
@@ -297,14 +312,15 @@ class SortFieldInfo
  * Used to iterate on a subdataset and create a sorted data source.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DatasetSortUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DatasetSortUtil.java 5221 2012-04-04 14:08:30Z lucianc $
  */
 class SortFillDatasetRun extends JRFillDatasetRun
 {
 
 	private JRSortField[] allSortFields;
 	private SortInfo sortInfo;
-	private List<Object[]> records;
+	private int recordIndex;
+	private List<SortedDataSource.SortRecord> records;
 
 	
 	public SortFillDatasetRun(JRBaseFiller filler, JRFillDataset dataset, SortInfo sortInfo) throws JRException
@@ -321,9 +337,10 @@ class SortFillDatasetRun extends JRFillDatasetRun
 	}
 
 	
-	public List<Object[]> sort() throws JRException
+	public List<SortedDataSource.SortRecord> sort() throws JRException
 	{
-		records = new ArrayList<Object[]>();
+		recordIndex = 0;
+		records = new ArrayList<SortedDataSource.SortRecord>();
 
 		try
 		{
@@ -333,7 +350,8 @@ class SortFillDatasetRun extends JRFillDatasetRun
 		}
 		finally
 		{
-			dataset.closeDatasource();
+			dataset.closeQueryExecuter();
+			dataset.reset();
 		}
 		
 		return records;
@@ -345,8 +363,9 @@ class SortFillDatasetRun extends JRFillDatasetRun
 	{
 		super.detail();
 		
+		int fieldCount = sortInfo.fieldNames.size();
 		JRField[] fields = dataset.getFields();
-		Object[] record = new Object[sortInfo.fieldNames.size()];
+		Object[] record = new Object[fieldCount];
 		if(fields != null)
 		{
 			for(int i = 0; i < fields.length; i++)
@@ -362,7 +381,23 @@ class SortFillDatasetRun extends JRFillDatasetRun
 				record[sortInfo.sortFieldInfo[i].index] = dataset.getVariableValue(sortField.getName());
 			}
 		}
-		records.add(record);
+		
+		// also store the original record index
+		SortRecord sortRecord = new SortedDataSource.SortRecord(record, recordIndex);
+		
+		++recordIndex;
+		
+		records.add(sortRecord);
 	}
-}
 
+
+	@Override
+	protected boolean advanceDataset() throws JRException
+	{
+		// do not filter records before sorting in order to support "Top 5 sorted" cases.
+		// FIXME optimize by filtering when the filters are on fields (and other cases).
+		return dataset.next(true);
+	}
+	
+	
+}

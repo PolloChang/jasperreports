@@ -31,7 +31,6 @@ import java.util.List;
 import net.sf.jasperreports.charts.JRPieDataset;
 import net.sf.jasperreports.charts.JRPieSeries;
 import net.sf.jasperreports.engine.JRChartDataset;
-import net.sf.jasperreports.engine.JRCloneable;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionCollector;
@@ -44,7 +43,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignPieDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignPieDataset.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDataset
 {

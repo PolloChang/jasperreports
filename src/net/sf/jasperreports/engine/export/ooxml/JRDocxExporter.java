@@ -41,11 +41,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -58,11 +58,14 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.ElementGridCell;
@@ -76,13 +79,13 @@ import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
 import net.sf.jasperreports.engine.export.LengthUtil;
 import net.sf.jasperreports.engine.export.OccupiedGridCell;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZipEntry;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRTextAttribute;
-import net.sf.jasperreports.engine.util.JRTypeSniffer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -92,7 +95,7 @@ import org.apache.commons.logging.LogFactory;
  * Exports a JasperReports document to DOCX format. It has character output type and exports the document to a
  * grid-based layout.
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRDocxExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDocxExporter.java 5217 2012-04-03 15:16:10Z teodord $
  */
 public class JRDocxExporter extends JRAbstractExporter
 {
@@ -102,15 +105,15 @@ public class JRDocxExporter extends JRAbstractExporter
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String DOCX_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "docx";
+	public static final String DOCX_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "docx";
 	
-	protected static final String DOCX_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.docx.";
+	protected static final String DOCX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.docx.";
 
 	/**
 	 * This property is used to mark text elements as being hidden either for printing or on-screen display.
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_HIDDEN_TEXT = JRProperties.PROPERTY_PREFIX + "export.docx.hidden.text";
+	public static final String PROPERTY_HIDDEN_TEXT = JRPropertiesUtil.PROPERTY_PREFIX + "export.docx.hidden.text";
 
 	/**
 	 *
@@ -140,12 +143,7 @@ public class JRDocxExporter extends JRAbstractExporter
 	protected int tableIndex;
 	protected boolean startPage;
 
-	/**
-	 * @deprecated
-	 */
-	protected Map<String,String> fontMap;
-
-	protected LinkedList<Color> backcolorStack;
+	protected LinkedList<Color> backcolorStack = new LinkedList<Color>();
 	protected Color backcolor;
 
 	private DocxRunHelper runHelper;
@@ -155,6 +153,8 @@ public class JRDocxExporter extends JRAbstractExporter
 	protected boolean deepGrid;
 
 	protected boolean flexibleRowHeight;
+	
+	protected JRDocxExporterContext mainExporterContext = new ExporterContext(null);
 	
 
 	protected class ExporterContext extends BaseExporterContext implements JRDocxExporterContext
@@ -178,10 +178,21 @@ public class JRDocxExporter extends JRAbstractExporter
 	}
 	
 	
+	/**
+	 * @see #JRDocxExporter(JasperReportsContext)
+	 */
 	public JRDocxExporter()
 	{
-		backcolorStack = new LinkedList<Color>();
-		backcolor = null;
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+
+	/**
+	 *
+	 */
+	public JRDocxExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
 	}
 
 
@@ -219,7 +230,7 @@ public class JRDocxExporter extends JRAbstractExporter
 			imagesToProcess = new ArrayList<JRPrintElementIndex>();
 //			hyperlinksMap = new HashMap();
 
-			fontMap = (Map<String,String>) parameters.get(JRExporterParameter.FONT_MAP);
+			setFontMap();
 
 			setHyperlinkProducerFactory();
 
@@ -287,13 +298,13 @@ public class JRDocxExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	public static JRPrintImage getImage(List<JasperPrint> jasperPrintList, String imageName) throws JRException
+	public JRPrintImage getImage(List<JasperPrint> jasperPrintList, String imageName) throws JRException
 	{
 		return getImage(jasperPrintList, getPrintElementIndex(imageName));
 	}
 
 
-	public static JRPrintImage getImage(List<JasperPrint> jasperPrintList, JRPrintElementIndex imageIndex) throws JRException
+	public JRPrintImage getImage(List<JasperPrint> jasperPrintList, JRPrintElementIndex imageIndex) throws JRException
 	{
 		JasperPrint report = jasperPrintList.get(imageIndex.getReportIndex());
 		JRPrintPage page = report.getPages().get(imageIndex.getPageIndex());
@@ -310,10 +321,10 @@ public class JRDocxExporter extends JRAbstractExporter
 		if(element instanceof JRGenericPrintElement)
 		{
 			JRGenericPrintElement genericPrintElement = (JRGenericPrintElement)element;
-			return ((GenericElementDocxHandler)GenericElementHandlerEnviroment.getHandler(
+			return ((GenericElementDocxHandler)GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
 					genericPrintElement.getGenericType(), 
 					DOCX_EXPORTER_KEY
-					)).getImage(genericPrintElement);
+					)).getImage(mainExporterContext, genericPrintElement);
 		}
 		
 		return (JRPrintImage) element;
@@ -391,8 +402,8 @@ public class JRDocxExporter extends JRAbstractExporter
 				JRPrintElementIndex imageIndex = it.next();
 
 				JRPrintImage image = getImage(jasperPrintList, imageIndex);
-				JRRenderable renderer = image.getRenderer();
-				if (renderer.getType() == JRRenderable.TYPE_SVG)
+				Renderable renderer = image.getRenderable();
+				if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 				{
 					renderer =
 						new JRWrappingSvgRenderer(
@@ -402,10 +413,10 @@ public class JRDocxExporter extends JRAbstractExporter
 							);
 				}
 
-				String mimeType = JRTypeSniffer.getImageMimeType(renderer.getImageType());
+				String mimeType = renderer.getImageTypeValue().getMimeType();
 				if (mimeType == null)
 				{
-					mimeType = JRRenderable.MIME_TYPE_JPEG;
+					mimeType = ImageTypeEnum.JPEG.getMimeType();
 				}
 				String extension = mimeType.substring(mimeType.lastIndexOf('/') + 1);
 				
@@ -414,7 +425,7 @@ public class JRDocxExporter extends JRAbstractExporter
 				docxZip.addEntry(//FIXMEDOCX optimize with a different implementation of entry
 					new FileBufferedZipEntry(
 						"word/media/" + imageName + "." + extension,
-						renderer.getImageData()
+						renderer.getImageData(jasperReportsContext)
 						)
 					);
 				
@@ -495,7 +506,7 @@ public class JRDocxExporter extends JRAbstractExporter
 		for(int row = 0; row < grid.length; row++)
 		{
 			int emptyCellColSpan = 0;
-			int emptyCellWidth = 0;
+			//int emptyCellWidth = 0;
 
 			boolean allowRowResize = false;
 			int maxBottomPadding = 0; //for some strange reason, the bottom margin affects the row height; subtracting it here
@@ -537,7 +548,7 @@ public class JRDocxExporter extends JRAbstractExporter
 					{
 						//tableHelper.exportEmptyCell(gridCell, emptyCellColSpan);
 						emptyCellColSpan = 0;
-						emptyCellWidth = 0;
+						//emptyCellWidth = 0;
 					}
 
 					OccupiedGridCell occupiedGridCell = (OccupiedGridCell)gridCell;
@@ -551,7 +562,7 @@ public class JRDocxExporter extends JRAbstractExporter
 					{
 						//writeEmptyCell(tableHelper, gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
-						emptyCellWidth = 0;
+						//emptyCellWidth = 0;
 					}
 
 					element = gridCell.getWrapper().getElement();
@@ -590,7 +601,7 @@ public class JRDocxExporter extends JRAbstractExporter
 				else
 				{
 					emptyCellColSpan++;
-					emptyCellWidth += gridCell.getWidth();
+					//emptyCellWidth += gridCell.getWidth();
 					tableHelper.exportEmptyCell(gridCell, 1);
 				}
 			}
@@ -735,7 +746,7 @@ public class JRDocxExporter extends JRAbstractExporter
 				text.getStyle(), 
 				styledText, 
 				getTextLocale(text),
-				JRProperties.getBooleanProperty(text, PROPERTY_HIDDEN_TEXT, false),
+				getPropertiesUtil().getBooleanProperty(text, PROPERTY_HIDDEN_TEXT, false),
 				startedHyperlink
 				);
 		}
@@ -816,7 +827,7 @@ public class JRDocxExporter extends JRAbstractExporter
 
 		docHelper.write("<w:p>");//FIXMEDOCX why is this here and not further down?
 
-		JRRenderable renderer = image.getRenderer();
+		Renderable renderer = image.getRenderable();
 
 		if (
 			renderer != null &&
@@ -824,11 +835,11 @@ public class JRDocxExporter extends JRAbstractExporter
 			availableImageHeight > 0
 			)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 			{
 				// Non-lazy image renderers are all asked for their image data at some point.
 				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = JRImageRenderer.getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
+				renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
 			}
 		}
 		else
@@ -845,9 +856,9 @@ public class JRDocxExporter extends JRAbstractExporter
 			double normalHeight = availableImageHeight;
 
 			// Image load might fail.
-			JRRenderable tmpRenderer =
-				JRImageRenderer.getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension();
+			Renderable tmpRenderer =
+				RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
+			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
 			// If renderer was replaced, ignore image dimension.
 			if (tmpRenderer == renderer && dimension != null)
 			{
@@ -1033,13 +1044,13 @@ public class JRDocxExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	public String getImagePath(JRRenderable renderer, boolean isLazy, JRExporterGridCell gridCell)
+	public String getImagePath(Renderable renderer, boolean isLazy, JRExporterGridCell gridCell)
 	{
 		String imagePath = null;
 
 		if (renderer != null)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
 			{
 				imagePath = rendererToImagePathMap.get(renderer.getId());
 			}
@@ -1225,7 +1236,7 @@ public class JRDocxExporter extends JRAbstractExporter
 	protected void exportGenericElement(DocxTableHelper tableHelper, JRGenericPrintElement element, JRExporterGridCell gridCell)
 	{
 		GenericElementDocxHandler handler = (GenericElementDocxHandler) 
-		GenericElementHandlerEnviroment.getHandler(
+		GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
 				element.getGenericType(), DOCX_EXPORTER_KEY);
 
 		if (handler != null)
@@ -1383,7 +1394,7 @@ public class JRDocxExporter extends JRAbstractExporter
 	protected String getHyperlinkURL(JRPrintHyperlink link)
 	{
 		String href = null;
-		JRHyperlinkProducer customHandler = getCustomHandler(link);
+		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);
 		if (customHandler == null)
 		{
 			switch(link.getHyperlinkTypeValue())
@@ -1494,7 +1505,7 @@ public class JRDocxExporter extends JRAbstractExporter
 	 */
 	protected ExporterNature getExporterNature(ExporterFilter filter) 
 	{
-		return new JRDocxExporterNature(filter, deepGrid);
+		return new JRDocxExporterNature(jasperReportsContext, filter, deepGrid);
 	}
 
 	/**

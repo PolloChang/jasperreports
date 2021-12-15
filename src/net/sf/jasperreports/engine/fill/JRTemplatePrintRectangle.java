@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintRectangle.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplatePrintRectangle.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTemplatePrintRectangle extends JRTemplatePrintGraphicElement implements JRPrintRectangle
 {
@@ -48,10 +48,22 @@ public class JRTemplatePrintRectangle extends JRTemplatePrintGraphicElement impl
 	 * Creates a print rectangle element.
 	 * 
 	 * @param rectangle the template rectangle that the element will use
+	 * @deprecated provide a source Id via {@link #JRTemplatePrintRectangle(JRTemplateRectangle, int)}
 	 */
 	public JRTemplatePrintRectangle(JRTemplateRectangle rectangle)
 	{
 		super(rectangle);
+	}
+
+	/**
+	 * Creates a print rectangle element.
+	 * 
+	 * @param rectangle the template rectangle that the element will use
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRTemplatePrintRectangle(JRTemplateRectangle rectangle, int sourceElementId)
+	{
+		super(rectangle, sourceElementId);
 	}
 
 

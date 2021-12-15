@@ -1,8 +1,8 @@
 /**
- * Defines 'sort' module in JasperReports namespace
+ * Defines 'sort' module in jasperreports namespace
  */
 (function(global) {
-	if (typeof global.JasperReports.modules.sort !== 'undefined') {
+	if (typeof global.jasperreports.sort !== 'undefined') {
 		return;
 	}
 	
@@ -12,8 +12,15 @@
 				}
 		};
 	
-	js.createFilterDiv = function (uniqueId, arrFilterDiv) {
-		var gm = global.JasperReports.modules.global,
+	/**
+	 * Creates a unique filter div
+	 * 
+	 * @param uniqueId
+	 * @param arrFilterDiv an array with div's html
+	 * @param filtersJsonString a JSON string of a java.util.List<net.sf.jasperreports.components.sort.FieldFilter>
+	 */
+	js.createFilterDiv = function (uniqueId, arrFilterDiv, filtersJsonString) {
+		var gm = global.jasperreports.global,
 			filterContainerId = js.filters.filterContainerId,
 			filterContainerDiv = "<div id='" + filterContainerId + "'></div>",
 			fcuid = '#' + filterContainerId,
@@ -35,41 +42,148 @@
 			});
 			
 			filterDiv
-				.draggable()
-				.bind('keypress', function(event) {
-					var target = jQuery(event.target),
-						thisFilterDiv = jQuery(this);
-					
-					// 'Enter' key press for filter value triggers 'contextual' submit
-					if (target.is('.filterValue') && event.keyCode == 13) {
-						event.preventDefault();
-						jQuery('.submitFilter', thisFilterDiv).trigger('click');
+				.draggable();
+			
+			// 'Enter' key press for filter value triggers 'contextual' submit
+			jQuery('.filterValue', filterDiv).bind('keypress', function(event) {
+				if (event.keyCode == 13) {
+					event.preventDefault();
+					if ('createTouch' in document) {	// trigger does not seem to work on safari mobile; doing workaround
+						var el = jQuery('.submitFilter', filterDiv).get(0);
+						var evt = document.createEvent("MouseEvents");
+						evt.initMouseEvent("touchend", true, true);
+						el.dispatchEvent(evt);
+					} else {
+						jQuery('.submitFilter', filterDiv).trigger('click');
 					}
-				});
+				}
+			});
 			
 			jQuery('.submitFilter', filterDiv).live(('createTouch' in document) ? 'touchend' : 'click', function(event){
-				var params = {},
-					parentForm = jQuery(this).parent(),
+				var parentForm = jQuery(this).parent(),
+					actionBaseData = jive.actionBaseData,
+					actionBaseUrl = jive.actionBaseUrl,
 					currentHref = parentForm.attr("action"),
 					parentFilterDiv = jQuery(this).closest('.filterdiv'),
-					contextStartPoint = jQuery('.' + parentFilterDiv.attr('data-forsortlink') + ':first');
+					contextStartPoint = jQuery('.' + parentFilterDiv.attr('data-forsortlink') + ':first'),
+					toolbarId = contextStartPoint.closest('.mainReportDiv').find('.toolbarDiv').attr('id'),
+					actionData = {actionName: 'filterica'};
 				
+		        actionData.filterData = {};
+		        
 				// extract form params
 				jQuery('.postable', parentForm).each(function(){
-					params[this.name] = this.value;
+					// prevent disabled inputs to get posted
+					if(!jQuery(this).is(':disabled')) {
+						actionData.filterData[this.name] = this.value;
+					}
 				});
 				
-				var ctx = gm.getExecutionContext(contextStartPoint, currentHref, params);
-				
-				if (ctx) {
-					parentFilterDiv.hide();
-					ctx.run();
-				}		
+				// clear filters
+				jQuery('#' + js.filters.filterContainerId).empty();
+
+				jasperreports.reportviewertoolbar.runReport({
+	    				actionBaseData: jQuery.parseJSON(actionBaseData),
+	    				actionBaseUrl: actionBaseUrl,
+	    				toolbarId: toolbarId,
+	    				self: contextStartPoint
+	    			},
+	    			actionData
+	    		);
 			});
+			
+			// show the second filter value for options containing 'between'
+			jQuery('.filterOperatorTypeValueSelector', filterDiv).live('change', function (event) {
+				var self = jQuery(this),
+					optionValue = self.val();
+				if (optionValue && optionValue.toLowerCase().indexOf('between') != -1) {
+					jQuery('.filterValueEnd', filterDiv)
+						.removeClass('hidden')
+						.removeAttr('disabled');
+				} else {
+					jQuery('.filterValueEnd', filterDiv)
+						.addClass('hidden')
+						.attr('disabled', true);
+				}
+			});
+			
+			jQuery('.clearFilter', filterDiv).live(('createTouch' in document) ? 'touchend' : 'click', function(event){
+				var parentForm = jQuery(this).parent(),
+					actionBaseData = jive.actionBaseData,
+					actionBaseUrl = jive.actionBaseUrl,
+					currentHref = parentForm.attr("action"),
+					parentFilterDiv = jQuery(this).closest('.filterdiv'),
+					contextStartPoint = jQuery('.' + parentFilterDiv.attr('data-forsortlink') + ':first'),
+					toolbarId = contextStartPoint.closest('.mainReportDiv').find('.toolbarDiv').attr('id'),
+					actionData = {actionName: 'filterica'};
+				
+		        actionData.filterData = {};
+		        
+				// extract form params
+				jQuery('.postable', parentForm).each(function(){
+					// prevent disabled inputs to get posted
+					if(!jQuery(this).is(':disabled')) {
+						actionData.filterData[this.name] = this.value;
+					}
+				});
+				
+				actionData.filterData.clearFilter = true;
+				
+				// clear filters
+				jQuery('#' + js.filters.filterContainerId).empty();
+	
+				jasperreports.reportviewertoolbar.runReport({
+	    				actionBaseData: jQuery.parseJSON(actionBaseData),
+	    				actionBaseUrl: actionBaseUrl,
+	    				toolbarId: toolbarId,
+	    				self: contextStartPoint
+	    			},
+	    			actionData
+	    		);
+			});
+		} else {
+			// update existing filter with values from filtersJsonString
+			var arrFilters = jQuery.parseJSON(filtersJsonString);
+			var found = false;
+			if (arrFilters) {
+				var filterDiv = jQuery(uid),
+					currentFilterField = jQuery('.filterField', filterDiv).val();
+				
+				for (var i=0, ln = arrFilters.length; i < ln; i++) {
+					var filter = arrFilters[i];
+					if (filter.field === currentFilterField) {
+						jQuery('.filterValueStart', filterDiv).val(filter.filterValueStart);
+						jQuery('.filterValueEnd', filterDiv).val(filter.filterValueEnd);
+						jQuery('.filterOperatorTypeValueSelector', filterDiv).val(filter.filterTypeOperator);
+						
+						if (filter.filterTypeOperator && filter.filterTypeOperator.toLowerCase().indexOf('between') != -1) {
+							jQuery('.filterValueEnd', filterDiv).removeClass('hidden').removeAttr('disabled');
+						} else {
+							jQuery('.filterValueEnd', filterDiv).addClass('hidden').attr('disabled', true);
+						}
+						
+						// show clear button
+						jQuery('.clearFilter', filterDiv).show();
+						
+						found = true;
+						break;
+					}
+				}
+				
+				// reset filter controls
+				if (!found) {
+					jQuery('.filterValueStart', filterDiv).val("");
+					jQuery('.filterValueEnd', filterDiv).val("");
+					jQuery('.filterOperatorTypeValueSelector :selected', filterDiv).attr('selected', false);
+					
+					// hide clear button
+					jQuery('.clearFilter', filterDiv).hide();
+				}
+			}
 		}
 		
 	};
-
+	
     js.isLongTouch = function(event) {
         if (!js.touchStartOn) return false;
         var isSameElement = event.target == js.touchStartOn.element;
@@ -78,11 +192,10 @@
     };
 
 	js.init = function() { 
-		var gm = global.JasperReports.modules.global,
-			sortEvent = gm.events.SORT_INIT;
+		var sortEvent = jasperreports.events.registerEvent('jasperreports.sort.init');
 		
 		// init should be done only once
-		if (sortEvent.status === 'default') {
+		if (!sortEvent.hasFinished()) {
 			// disable browser contextual menu when right-clicking
 			jQuery(document).bind("contextmenu",function(e){  
 		        return false;  
@@ -104,7 +217,7 @@
 				 */
 	            sortlinks.bind("touchstart",function(event){
 	                event.preventDefault();
-	
+
 	                !event.isStartData && (js.touchStartOn = {
 	                    element: event.target,
 	                    timeStamp: event.timeStamp
@@ -121,13 +234,21 @@
 	                    event.stopPropagation();
 	                    return false;
 	                }
-	
-	                var currentHref = jQuery(this).attr("href"),
-	                    ctx = gm.getExecutionContext(this, currentHref, null);
-	
-	                if (ctx) {
-	                    ctx.run();
-	                }
+	                
+	                var self = jQuery(this),
+		    			actionBaseData = jive.actionBaseData,
+						actionBaseUrl = jive.actionBaseUrl,
+						toolbarId = self.closest('.mainReportDiv').find('.toolbarDiv').attr('id'),
+						actionData = jQuery.parseJSON(self.attr('data-actionData'));
+	                
+					jasperreports.reportviewertoolbar.runReport({
+		    				actionBaseData: jQuery.parseJSON(actionBaseData),
+		    				actionBaseUrl: actionBaseUrl,
+		    				toolbarId: toolbarId,
+		    				self: self
+		    			},
+		    			actionData		    			
+		    		);
 	            });
 				/*
 	             * Show filter div on long touch
@@ -137,7 +258,7 @@
 	                if (js.isLongTouch(event) || event.which == 3) {
 	                    var filterDiv = jQuery('#' + jQuery(this).attr('data-filterid'));
 	
-	                    // hide all other open filters FIXMEJIVE: this will close all visible filters from all reports on the same page
+	                    // hide all other open filters; this will close all visible filters from all reports on the same page
 	                    jQuery('.filterdiv').filter(':visible').each(function (index, element) {
 	                        jQuery(element).hide();
 	                    });
@@ -155,15 +276,23 @@
 	            });
 			} else {
 				// add event for clickable sortlinks (up/down arrows)
-//				jQuery('.sortlink').live('click', function(event){
-				jQuery('a').live('click', function(event) {
+				jQuery('.sortlink').live('click', function(event){
 	                event.preventDefault();
-	                var currentHref = jQuery(this).attr("href"),
-	                    ctx = gm.getExecutionContext(this, currentHref, null);
-	
-	                if (ctx) {
-	                    ctx.run();
-	                }
+	                
+	                var self = jQuery(this),
+		    			actionBaseData = jive.actionBaseData,
+						actionBaseUrl = jive.actionBaseUrl,
+						toolbarId = self.closest('.mainReportDiv').find('.toolbarDiv').attr('id'),
+						actionData = jQuery.parseJSON(self.attr('data-actionData'));
+	                
+					jasperreports.reportviewertoolbar.runReport({
+		    				actionBaseData: jQuery.parseJSON(actionBaseData),
+		    				actionBaseUrl: actionBaseUrl,
+		    				toolbarId: toolbarId,
+		    				self: self
+		    			},
+		    			actionData		    			
+		    		);
 	            });
 	            /**
 	             * Show filter div when right-clicking the table header
@@ -172,7 +301,7 @@
 	                if (event.which == 3) {
 	                    var filterDiv = jQuery('#' + jQuery(this).attr('data-filterid'));
 	
-	                    // hide all other open filters FIXMEJIVE: this will close all visible filters from all reports on the same page
+	                    // hide all other open filters; this will close all visible filters from all reports on the same page
 	                    jQuery('.filterdiv').filter(':visible').each(function (index, element) {
 	                        jQuery(element).hide();
 	                    });
@@ -188,11 +317,11 @@
 		                }
 	                }
 	            });
+
 			}
-			sortEvent.status = 'finished';
-			gm.processEvent(sortEvent.name);
+			sortEvent.trigger();
 		}
 	};
 	
-	global.JasperReports.modules.sort = js;
+	global.jasperreports.sort = js;
 } (this));

@@ -39,7 +39,7 @@ import net.sf.jasperreports.engine.JRException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractSampleApp.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: AbstractSampleApp.java 5055 2012-03-12 11:05:44Z teodord $
  */
 public abstract class AbstractSampleApp
 {

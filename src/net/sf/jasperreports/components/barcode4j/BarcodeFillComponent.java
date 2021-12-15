@@ -29,8 +29,8 @@ import java.util.Map;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.JRStyle;
+import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.component.BaseFillComponent;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
 import net.sf.jasperreports.engine.fill.JRTemplateImage;
@@ -43,7 +43,7 @@ import org.krysalis.barcode4j.impl.AbstractBarcodeBean;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeFillComponent.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarcodeFillComponent.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class BarcodeFillComponent extends BaseFillComponent
 {
@@ -101,7 +101,7 @@ public class BarcodeFillComponent extends BaseFillComponent
 	{
 		JRTemplateImage templateImage = getTemplateImage();
 		
-		JRTemplatePrintImage image = new JRTemplatePrintImage(templateImage);
+		JRTemplatePrintImage image = new JRTemplatePrintImage(templateImage, elementId);
 		JRComponentElement element = fillContext.getComponentElement();
 		image.setX(element.getX());
 		image.setY(fillContext.getElementPrintY());
@@ -133,7 +133,8 @@ public class BarcodeFillComponent extends BaseFillComponent
 					fillContext.getDefaultStyleProvider());
 			templateImage.setStyle(elementStyle);
 			templateImage.setScaleImage(ScaleImageEnum.RETAIN_SHAPE);
-			
+
+			templateImage = deduplicate(templateImage);
 			printTemplates.put(elementStyle, templateImage);
 		}
 		return templateImage;
@@ -143,12 +144,13 @@ public class BarcodeFillComponent extends BaseFillComponent
 	{
 		if (message != null)
 		{
-			BarcodeImageProducer imageProducer = BarcodeUtils.getImageProducer(
+			BarcodeImageProducer imageProducer = BarcodeUtils.getInstance(fillContext.getFiller().getJasperReportsContext()).getProducer(
 					fillContext.getComponentElement());
-			JRRenderable barcodeImage = imageProducer.createImage(
+			Renderable barcodeImage = imageProducer.createImage(
+					fillContext.getFiller().getJasperReportsContext(),
 					fillContext.getComponentElement(), 
 					barcode, message, barcodeComponent.getOrientation());
-			image.setRenderer(barcodeImage);
+			image.setRenderable(barcodeImage);
 		}
 	}
 

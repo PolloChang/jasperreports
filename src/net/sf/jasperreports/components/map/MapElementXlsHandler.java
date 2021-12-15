@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.export.JRXlsExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementXlsHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MapElementXlsHandler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class MapElementXlsHandler implements GenericElementXlsHandler
 {
@@ -57,7 +57,7 @@ public class MapElementXlsHandler implements GenericElementXlsHandler
 		try
 		{
 			JRXlsExporter exporter = (JRXlsExporter)exporterContext.getExporter();
-			exporter.exportImage(MapElementImageProvider.getImage(element), gridCell, colIndex, rowIndex, emptyCols, yCutsRow, layout);
+			exporter.exportImage(MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element), gridCell, colIndex, rowIndex, emptyCols, yCutsRow, layout);
 		}
 		catch (Exception e)
 		{

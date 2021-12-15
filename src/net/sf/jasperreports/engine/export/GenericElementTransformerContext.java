@@ -24,16 +24,19 @@
 package net.sf.jasperreports.engine.export;
 
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * A context in which an element tranformation takes place.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: GenericElementTransformerContext.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: GenericElementTransformerContext.java 5390 2012-05-18 06:58:47Z lucianc $
  * @see GenericElementTransformer
  */
 public interface GenericElementTransformerContext
 {
+
+	JasperReportsContext getJasperReportsContext();
 	
 	/**
 	 * Returns the report which is currently processed.

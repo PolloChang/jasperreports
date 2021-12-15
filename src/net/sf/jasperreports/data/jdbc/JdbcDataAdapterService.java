@@ -25,12 +25,16 @@ package net.sf.jasperreports.data.jdbc;
 
 import java.sql.Connection;
 import java.sql.Driver;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 
 import net.sf.jasperreports.data.AbstractClasspathAwareDataAdapterService;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.CompositeClassloader;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 
@@ -39,7 +43,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JdbcDataAdapterService.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JdbcDataAdapterService.java 5426 2012-06-04 16:15:57Z chicuslavic $
  */
 public class JdbcDataAdapterService extends AbstractClasspathAwareDataAdapterService 
 {
@@ -97,8 +101,20 @@ public class JdbcDataAdapterService extends AbstractClasspathAwareDataAdapterSer
 //		return classLoader;
 //	}
 
-	public JdbcDataAdapterService(JdbcDataAdapter jdbcDataAdapter) {
-		super(jdbcDataAdapter);
+	/**
+	 * 
+	 */
+	public JdbcDataAdapterService(JasperReportsContext jasperReportsContext, JdbcDataAdapter jdbcDataAdapter) 
+	{
+		super(jasperReportsContext, jdbcDataAdapter);
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #JdbcDataAdapterService(JasperReportsContext, JdbcDataAdapter)}.
+	 */
+	public JdbcDataAdapterService(JdbcDataAdapter jdbcDataAdapter) 
+	{
+		this(DefaultJasperReportsContext.getInstance(), jdbcDataAdapter);
 	}
 
 	public JdbcDataAdapter getJdbcDataAdapter() {
@@ -108,6 +124,15 @@ public class JdbcDataAdapterService extends AbstractClasspathAwareDataAdapterSer
 	@Override
 	public void contributeParameters(Map<String, Object> parameters) throws JRException 
 	{
+		try {
+			connection = getConnection();
+		} catch (SQLException e) {
+			throw new JRException(e);
+		}
+		parameters.put(JRParameter.REPORT_CONNECTION, connection);
+	}
+	
+	public Connection getConnection() throws SQLException{
 		JdbcDataAdapter jdbcDataAdapter = getJdbcDataAdapter();
 		if (jdbcDataAdapter != null) 
 		{
@@ -143,19 +168,27 @@ public class JdbcDataAdapterService extends AbstractClasspathAwareDataAdapterSer
 				connectProps.setProperty("password", password);
 				
 				connection = driver.connect(jdbcDataAdapter.getUrl(), connectProps);
+				if(connection == null)
+					throw new SQLException("No suitable driver found for "+ jdbcDataAdapter.getUrl());
 			}
-			catch (Exception ex)
-			{
-				throw new JRException(ex);
+			catch (ClassNotFoundException ex){
+				throw new JRRuntimeException(ex);
+			} catch (InstantiationException e) {
+				throw new JRRuntimeException(e);
+			} catch (IllegalAccessException e) {
+				throw new JRRuntimeException(e);
+			} catch (JRException e) {
+				throw new JRRuntimeException(e);
 			}
 			finally
 			{
 				Thread.currentThread().setContextClassLoader(oldThreadClassLoader);
 			}
-
-			parameters.put(JRParameter.REPORT_CONNECTION, connection);
+			return connection;
 		}
+		return null;
 	}
+	 
 
 	public String getPassword() throws JRException {
 		throw new JRException(

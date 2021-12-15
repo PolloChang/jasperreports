@@ -37,23 +37,25 @@ import java.awt.font.TextAttribute;
 import java.awt.geom.Dimension2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRCommonGraphicElement;
 import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -63,9 +65,13 @@ import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.base.JRBaseFont;
 import net.sf.jasperreports.engine.export.data.BooleanTextValue;
 import net.sf.jasperreports.engine.export.data.DateTextValue;
@@ -75,14 +81,17 @@ import net.sf.jasperreports.engine.export.data.TextValue;
 import net.sf.jasperreports.engine.export.data.TextValueHandler;
 import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.engine.fonts.FontInfo;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.JRImageLoader;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.repo.RepositoryUtil;
 
 import org.apache.commons.collections.ReferenceMap;
 import org.apache.commons.logging.Log;
@@ -99,7 +108,9 @@ import org.apache.poi.hssf.usermodel.HSSFRichTextString;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.hssf.usermodel.HeaderFooter;
 import org.apache.poi.hssf.util.HSSFColor;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -111,7 +122,7 @@ import org.apache.poi.ss.util.CellReference;
  * a grid-based layout.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXlsExporter.java 5430 2012-06-07 13:02:21Z shertage $
  */
 public class JRXlsExporter extends JRXlsAbstractExporter
 {
@@ -122,7 +133,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String XLS_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "xls";
+	public static final String XLS_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "xls";
 	
 	private static Map<Color,HSSFColor> hssfColorsCache = new ReferenceMap();
 
@@ -157,7 +168,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 	protected HSSFPatriarch patriarch;
 	
 	protected String password;
-
+	
 	protected class ExporterContext extends BaseExporterContext implements JRXlsExporterContext
 	{
 		public String getExportPropertiesPrefix()
@@ -169,11 +180,29 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 	protected JRXlsExporterContext exporterContext = new ExporterContext();
 
 	
+	/**
+	 * @see #JRXlsExporter(JasperReportsContext)
+	 */
+	public JRXlsExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+
+	/**
+	 *
+	 */
+	public JRXlsExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+
+
 	protected void setParameters()
 	{
 		super.setParameters();
 
-		nature = new JRXlsExporterNature(filter, isIgnoreGraphics, isIgnorePageMargins);
+		nature = new JRXlsExporterNature(jasperReportsContext, filter, isIgnoreGraphics, isIgnorePageMargins);
 		
 		password = 
 			getStringParameter(
@@ -194,12 +223,64 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 
 	protected void openWorkbook(OutputStream os)
 	{
-		workbook = new HSSFWorkbook();
+		if (workbookTemplate == null)
+		{
+			workbook = new HSSFWorkbook();
+		}
+		else
+		{
+			InputStream templateIs = null;
+			try 
+			{
+				templateIs = RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(workbookTemplate);
+				if (templateIs == null)
+				{
+					throw new JRRuntimeException("Workbook template not found at : " + workbookTemplate);
+				}
+				else
+				{
+					workbook = new HSSFWorkbook(new POIFSFileSystem(templateIs));
+					if (keepTemplateSheets)
+					{
+						sheetIndex += workbook.getNumberOfSheets();
+					}
+					else
+					{
+						for(int i = 0; i < workbook.getNumberOfSheets(); i++)
+						{
+							workbook.removeSheetAt(i);
+						}
+					}
+				}
+			} 
+			catch (JRException e) 
+			{
+				throw new JRRuntimeException(e);
+			} 
+			catch (IOException e) 
+			{
+				throw new JRRuntimeException(e);
+			}
+			finally
+			{
+				if (templateIs != null)
+				{
+					try
+					{
+						templateIs.close();
+					}
+					catch (IOException e)
+					{
+					}
+				}
+			}
+		}
 		emptyCellStyle = workbook.createCellStyle();
 		emptyCellStyle.setFillForegroundColor((new HSSFColor.WHITE()).getIndex());
 		emptyCellStyle.setFillPattern(backgroundMode);
 		dataFormat = workbook.createDataFormat();
 		createHelper = workbook.getCreationHelper();
+		firstPageNotSet = true;
 //		palette =  workbook.getCustomPalette();
 	}
 
@@ -208,12 +289,13 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 	{
 		sheet = workbook.createSheet(name);
 		patriarch = sheet.createDrawingPatriarch();
-		sheet.getPrintSetup().setLandscape(jasperPrint.getOrientationValue() == OrientationEnum.LANDSCAPE);
+		HSSFPrintSetup printSetup = sheet.getPrintSetup();
+		printSetup.setLandscape(jasperPrint.getOrientationValue() == OrientationEnum.LANDSCAPE);
 		short paperSize = getSuitablePaperSize(jasperPrint);
 
 		if(paperSize != -1)
 		{
-			sheet.getPrintSetup().setPaperSize(paperSize);
+			printSetup.setPaperSize(paperSize);
 		}
 		if(password != null)
 		{
@@ -240,17 +322,17 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 			sheet.setMargin((short)3, LengthUtil.inchNoRound(isIgnorePageMargins ? 0 : jasperPrint.getBottomMargin()));
 		}
 
-		String fitWidth = JRProperties.getProperty(jasperPrint, PROPERTY_FIT_WIDTH);
-		if(fitWidth != null && fitWidth.length() > 0)
+		String fitWidth = getPropertiesUtil().getProperty(jasperPrint, PROPERTY_FIT_WIDTH);
+		if(!isValidScale(sheetPageScale) && fitWidth != null && fitWidth.length() > 0)
 		{
-			sheet.getPrintSetup().setFitWidth(Short.valueOf(fitWidth));
+			printSetup.setFitWidth(Short.valueOf(fitWidth));
 			sheet.setAutobreaks(true);
 		}
 		
-		String fitHeight = JRProperties.getProperty(jasperPrint, PROPERTY_FIT_HEIGHT);
-		if(fitHeight != null && fitHeight.length() > 0)
+		String fitHeight = getPropertiesUtil().getProperty(jasperPrint, PROPERTY_FIT_HEIGHT);
+		if(!isValidScale(sheetPageScale) && fitHeight != null && fitHeight.length() > 0)
 		{
-			sheet.getPrintSetup().setFitHeight(Short.valueOf(fitHeight));
+			printSetup.setFitHeight(Short.valueOf(fitHeight));
 			sheet.setAutobreaks(true);
 		}
 		
@@ -286,8 +368,25 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 		
 		if(sheetDirection != null)
 		{
-			sheet.getPrintSetup().setLeftToRight(sheetDirection == RunDirectionEnum.LTR);
+			printSetup.setLeftToRight(sheetDirection == RunDirectionEnum.LTR);
 			sheet.setRightToLeft(sheetDirection == RunDirectionEnum.RTL);
+		}
+		
+		if(sheetFirstPageNumber != null && sheetFirstPageNumber > 0)
+		{
+			printSetup.setPageStart((short)sheetFirstPageNumber.intValue());
+			printSetup.setUsePage(true);
+			firstPageNotSet = false;
+		}
+		else if(documentFirstPageNumber != null && documentFirstPageNumber > 0 && firstPageNotSet)
+		{
+			printSetup.setPageStart((short)documentFirstPageNumber.intValue());
+			printSetup.setUsePage(true);
+			firstPageNotSet = false;
+		}
+		if(!firstPageNotSet && (sheet.getFooter().getCenter() == null || sheet.getFooter().getCenter().length() == 0))
+		{
+			sheet.getFooter().setCenter("Page " + HeaderFooter.page());
 		}
 		
 		maxRowFreezeIndex = 0;
@@ -323,15 +422,19 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 					{
 						if(isOnePagePerSheet)
 						{
-							link.setAddress("'" + workbook.getSheetName(((Integer)pageIndex).intValue() - 1)+ "'!A1");
+							link.setAddress("'" + workbook.getSheetName(((Integer)pageIndex).intValue() - 1)+ "'!$A$1");
 						}
 						else
 						{
-							link.setAddress("'" + workbook.getSheetName(0)+ "'!A1");
+							link.setAddress("'" + workbook.getSheetName(0)+ "'!$A$1");
 						}
 					}
 				}
 				
+			}
+			for(int i=0; i < workbook.getNumberOfSheets(); i++)
+			{
+				workbook.getSheetAt(i).setForceFormulaRecalculation(true);
 			}
 			
 			workbook.write(os);
@@ -342,20 +445,38 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 		}
 	}
 
-	protected void setColumnWidth(int col, int width)
+	protected void setColumnWidth(int col, int width, boolean autoFit)
 	{
-		sheet.setColumnWidth(col, Math.min(43 * width, 256*255));
+		if (!autoFit)
+		{
+			sheet.setColumnWidth(col, Math.min(43 * width, 256*255));
+		}
 	}
 
-	protected void setRowHeight(int rowIndex, int lastRowHeight)
+	protected void updateColumn(int col, boolean autoFit)
+	{
+		if (autoFit)
+		{
+			sheet.autoSizeColumn(col, false);
+		}
+	}
+
+	protected void setRowHeight(int rowIndex, int lastRowHeight, Cut yCut, XlsRowLevelInfo levelInfo)
 	{
 		row = sheet.getRow(rowIndex);
+		
 		if (row == null)
 		{
 			row = sheet.createRow(rowIndex);
 		}
 
-		row.setHeightInPoints(lastRowHeight);
+		Map<String, Object> cutProperties = yCut.getPropertiesMap();
+		boolean isAutoFit = cutProperties.containsKey(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW) 
+				&& (Boolean)cutProperties.get(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW);
+		if (!isAutoFit)
+		{
+			row.setHeightInPoints(lastRowHeight);
+		}
 	}
 
 	protected void setCell(JRExporterGridCell gridCell, int colIndex, int rowIndex)
@@ -549,7 +670,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 				rotation,
 				getLoadedFont(textElement, forecolor, null, getTextLocale(textElement)),
 				gridCell, 
-				isWrapText(textElement),
+				isWrapText(textElement) || Boolean.TRUE.equals(((JRXlsExporterNature)nature).getColumnAutoFit(textElement)),
 				isCellLocked(textElement),
 				isCellHidden(textElement)
 				);
@@ -653,13 +774,15 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 							)
 						);
 					HSSFCellStyle cellStyle = initCreateCell(gridCell, colIndex, rowIndex, baseStyle);
-					if (textValue.getValue() == null)
+					Date date = textValue.getValue();
+					if (date == null)
 					{
 						cell.setCellType(HSSFCell.CELL_TYPE_BLANK);
 					}
 					else
 					{
-						cell.setCellValue(textValue.getValue());
+						date = translateDateValue(textElement, date);
+						cell.setCellValue(date);
 					}
 					endCreateCell(cellStyle);
 				}
@@ -694,15 +817,18 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 			endCreateCell(cellStyle);
 		}
 		
-		String anchorName = textElement.getAnchorName();
-		if(anchorName != null)
+		if(!ignoreAnchors)
 		{
-			HSSFName aName = workbook.createName();
-//			aName.setNameName(JRStringUtil.getJavaIdentifier(anchorName));
-			aName.setSheetIndex(workbook.getSheetIndex(sheet));
-			CellReference cRef = new CellReference(rowIndex, colIndex);
-			aName.setRefersToFormula(cRef.formatAsString());
-			anchorNames.put(anchorName, aName);
+			String anchorName = textElement.getAnchorName();
+			if(anchorName != null)
+			{
+				HSSFName aName = workbook.createName();
+				aName.setNameName(JRStringUtil.getJavaIdentifier(anchorName));
+				aName.setSheetIndex(workbook.getSheetIndex(sheet));
+				CellReference cRef = new CellReference(rowIndex, colIndex, true, true);
+				aName.setRefersToFormula(cRef.formatAsString());
+				anchorNames.put(anchorName, aName);
+			}
 		}
 
 		setHyperlinkCell(textElement);
@@ -1188,7 +1314,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 			int availableImageHeight = element.getHeight() - topPadding - bottomPadding;
 			availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
 
-			JRRenderable renderer = element.getRenderer();
+			Renderable renderer = element.getRenderable();
 
 			if (
 				renderer != null &&
@@ -1196,14 +1322,14 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 				availableImageHeight > 0
 				)
 			{
-				if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+				if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 				{
 					// Image renderers are all asked for their image data and dimension at some point.
 					// Better to test and replace the renderer now, in case of lazy load error.
-					renderer = JRImageRenderer.getOnErrorRendererForImageData(renderer, element.getOnErrorTypeValue());
+					renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, element.getOnErrorTypeValue());
 					if (renderer != null)
 					{
-						renderer = JRImageRenderer.getOnErrorRendererForDimension(renderer, element.getOnErrorTypeValue());
+						renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, element.getOnErrorTypeValue());
 					}
 				}
 				else
@@ -1226,7 +1352,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 				int normalWidth = availableImageWidth;
 				int normalHeight = availableImageHeight;
 
-				Dimension2D dimension = renderer.getDimension();
+				Dimension2D dimension = renderer.getDimension(jasperReportsContext);
 				if (dimension != null)
 				{
 					normalWidth = (int) dimension.getWidth();
@@ -1285,7 +1411,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 				{
 					case CLIP:
 					{
-						int dpi = JRProperties.getIntegerProperty(JRRenderable.PROPERTY_IMAGE_DPI, 72);
+						int dpi = getPropertiesUtil().getIntegerProperty(Renderable.PROPERTY_IMAGE_DPI, 72);
 						double scale = dpi/72d;
 						
 						BufferedImage bi = 
@@ -1307,6 +1433,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 							);
 
 						renderer.render(
+							jasperReportsContext,
 							grx,
 							new Rectangle(
 								(int) (xalignFactor * (availableImageWidth - normalWidth)),
@@ -1321,7 +1448,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 						bottomOffset = bottomPadding;
 						rightOffset = rightPadding;
 
-						imageData = JRImageLoader.loadImageDataFromAWTImage(bi, JRRenderable.IMAGE_TYPE_PNG);
+						imageData = JRImageLoader.getInstance(jasperReportsContext).loadBytesFromAwtImage(bi, ImageTypeEnum.PNG);
 
 						break;
 					}
@@ -1332,7 +1459,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 						bottomOffset = bottomPadding;
 						rightOffset = rightPadding;
 
-						imageData = renderer.getImageData();
+						imageData = renderer.getImageData(jasperReportsContext);
 
 						break;
 					}
@@ -1359,7 +1486,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 							bottomOffset = bottomPadding + (int) ((1f - yalignFactor) * (availableImageHeight - normalHeight));
 							rightOffset = rightPadding + (int) ((1f - xalignFactor) * (availableImageWidth - normalWidth));
 
-							imageData = renderer.getImageData();
+							imageData = renderer.getImageData(jasperReportsContext);
 						}
 
 						break;
@@ -1526,7 +1653,7 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 	protected void exportGenericElement(JRGenericPrintElement element, JRExporterGridCell gridCell, int colIndex, int rowIndex, int emptyCols, int yCutsRow, JRGridLayout layout) throws JRException
 	{
 		GenericElementXlsHandler handler = (GenericElementXlsHandler) 
-		GenericElementHandlerEnviroment.getHandler(
+			GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
 				element.getGenericType(), XLS_EXPORTER_KEY);
 
 		if (handler != null)
@@ -1649,24 +1776,26 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 				}
 				case LOCAL_ANCHOR :
 				{
-					href = hyperlink.getHyperlinkAnchor();
-					if (href != null)
+					if(!ignoreAnchors)
 					{
-						link = createHelper.createHyperlink(Hyperlink.LINK_DOCUMENT);
-						if(anchorLinks.containsKey(href))
+						href = hyperlink.getHyperlinkAnchor();
+						if (href != null)
 						{
-							(anchorLinks.get(href)).add(link);
+							link = createHelper.createHyperlink(Hyperlink.LINK_DOCUMENT);
+							if(anchorLinks.containsKey(href))
+							{
+								(anchorLinks.get(href)).add(link);
+							}
+							else
+							{
+								List<Hyperlink> hrefList = new ArrayList<Hyperlink>();
+								hrefList.add(link);
+								anchorLinks.put(href, hrefList);
+							}
+							
 						}
-						else
-						{
-							List<Hyperlink> hrefList = new ArrayList<Hyperlink>();
-							hrefList.add(link);
-							anchorLinks.put(href, hrefList);
-						}
-						
 					}
 					break;
-					
 				}
 				case LOCAL_PAGE :
 				{
@@ -1771,6 +1900,49 @@ public class JRXlsExporter extends JRXlsAbstractExporter
 		isFreezeColumnEdge = isColumnEdge;
 	}
 	
+	protected void setSheetName(String sheetName)
+	{
+		workbook.setSheetName(workbook.getSheetIndex(sheet) , sheetName);
+	}
+
+	
+	@Override
+	protected void setAutoFilter(String autoFilterRange)
+	{
+		sheet.setAutoFilter(CellRangeAddress.valueOf(autoFilterRange));
+	}
+
+
+	@Override
+	protected void setRowLevels(XlsRowLevelInfo levelInfo, String level) 
+	{
+		Map<String, Integer> levelMap = levelInfo.getLevelMap();
+		if(levelMap != null && levelMap.size() > 0)
+		{
+			for(String l : levelMap.keySet())
+			{
+				if (level == null || l.compareTo(level) >= 0)
+				{
+					Integer startIndex = levelMap.get(l);
+					if(levelInfo.getEndIndex() > startIndex)
+					{
+						sheet.groupRow(startIndex, levelInfo.getEndIndex());
+					}
+				}
+			}
+			sheet.setRowSumsBelow(false);
+		}
+	}
+	
+	protected void setScale(Integer scale)
+	{
+		if (isValidScale(scale))
+		{
+			HSSFPrintSetup printSetup = sheet.getPrintSetup();
+			printSetup.setScale((short)scale.intValue());
+		}
+	}
+
 }
 
 

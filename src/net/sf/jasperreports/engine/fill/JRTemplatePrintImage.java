@@ -23,13 +23,17 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
 import net.sf.jasperreports.engine.JRPrintImage;
-import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.PrintElementVisitor;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
@@ -44,7 +48,7 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintImage.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplatePrintImage.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implements JRPrintImage
 {
@@ -58,7 +62,7 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	/**
 	 *
 	 */
-	private JRRenderable renderer;
+	private Renderable renderable;
 	private String anchorName;
 	private String hyperlinkReference;
 	private String hyperlinkAnchor;
@@ -77,6 +81,7 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	 * Creates a print image element.
 	 * 
 	 * @param image the template image that the element will use
+	 * @deprecated provide a source Id via {@link #JRTemplatePrintImage(JRTemplateImage, int)}
 	 */
 	public JRTemplatePrintImage(JRTemplateImage image)
 	{
@@ -84,19 +89,46 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	}
 
 	/**
+	 * Creates a print image element.
+	 * 
+	 * @param image the template image that the element will use
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRTemplatePrintImage(JRTemplateImage image, int sourceElementId)
+	{
+		super(image, sourceElementId);
+	}
+	
+	/**
 	 *
 	 */
-	public JRRenderable getRenderer()
+	public Renderable getRenderable()
 	{
-		return this.renderer;
+		return renderable;
 	}
 		
 	/**
 	 *
 	 */
-	public void setRenderer(JRRenderable renderer)
+	public void setRenderable(Renderable renderable)
 	{
-		this.renderer = renderer;
+		this.renderable = renderable;
+	}
+		
+	/**
+	 * @deprecated Replaced by {@link #getRenderable()}.
+	 */
+	public net.sf.jasperreports.engine.JRRenderable getRenderer()
+	{
+		return getRenderable();
+	}
+		
+	/**
+	 * @deprecated Replaced by {@link #setRenderable(Renderable)}.
+	 */
+	public void setRenderer(net.sf.jasperreports.engine.JRRenderable renderer)
+	{
+		setRenderable(RenderableUtil.getWrappingRenderable(renderer));
 	}
 		
 	/**
@@ -375,6 +407,35 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	{
 		this.hyperlinkTooltip = hyperlinkTooltip;
 	}
+
+	
+	/*
+	 * These fields are only for serialization backward compatibility.
+	 */
+	/**
+	 * @deprecated
+	 */
+	private net.sf.jasperreports.engine.JRRenderable renderer;
+
+	
+	@SuppressWarnings("deprecation")
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+
+		if (renderer != null && renderable == null)
+		{
+			if (renderer instanceof Renderable)
+			{
+				renderable = (Renderable)renderer;
+			}
+			else
+			{
+				renderable = RenderableUtil.getWrappingRenderable(renderer);
+			}
+		}
+	}
+
 
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{

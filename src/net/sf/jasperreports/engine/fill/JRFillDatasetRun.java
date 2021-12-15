@@ -25,13 +25,18 @@ package net.sf.jasperreports.engine.fill;
 
 import java.sql.Connection;
 import java.util.Map;
+import java.util.UUID;
 
+import net.sf.jasperreports.data.cache.DataCacheHandler;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDatasetParameter;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRQuery;
 import net.sf.jasperreports.engine.JRScriptletException;
 import net.sf.jasperreports.engine.type.IncrementTypeEnum;
@@ -44,7 +49,7 @@ import org.apache.commons.logging.LogFactory;
  * Class used to instantiate sub datasets.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillDatasetRun.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillDatasetRun.java 5414 2012-05-25 09:51:28Z lucianc $
  */
 public class JRFillDatasetRun implements JRDatasetRun
 {
@@ -53,6 +58,7 @@ public class JRFillDatasetRun implements JRDatasetRun
 	
 	protected final JRBaseFiller filler;
 
+	protected final JRDatasetRun parentDatasetRun;
 	protected final JRFillDataset dataset;
 
 	protected JRExpression parametersMapExpression;
@@ -85,6 +91,7 @@ public class JRFillDatasetRun implements JRDatasetRun
 		this.filler = filler;
 		this.dataset = dataset;
 
+		this.parentDatasetRun = datasetRun;
 		parametersMapExpression = datasetRun.getParametersMapExpression();
 		parameters = datasetRun.getParameters();
 		connectionExpression = datasetRun.getConnectionExpression();
@@ -114,10 +121,23 @@ public class JRFillDatasetRun implements JRDatasetRun
 
 		try
 		{
+			// set fill position for caching
+			FillDatasetPosition datasetPosition = new FillDatasetPosition(filler.mainDataset.fillPosition);
+			datasetPosition.addAttribute("datasetRunUUID", getUUID());
+			filler.mainDataset.setCacheRecordIndex(datasetPosition, evaluation);		
+			dataset.setFillPosition(datasetPosition);
+			
+			String cacheIncludedProp = JRPropertiesUtil.getOwnProperty(this, DataCacheHandler.PROPERTY_INCLUDED); 
+			boolean cacheIncluded = JRPropertiesUtil.asBoolean(cacheIncludedProp, true);// default to true
+			dataset.setCacheSkipped(!cacheIncluded);
+			
 			if (dataSourceExpression != null)
 			{
-				JRDataSource dataSource = (JRDataSource) filler.evaluateExpression(dataSourceExpression, evaluation);
-				dataset.setDatasourceParameterValue(parameterValues, dataSource);
+				if (!(filler.fillContext.hasDataSnapshot() && cacheIncluded)) 
+				{
+					JRDataSource dataSource = (JRDataSource) filler.evaluateExpression(dataSourceExpression, evaluation);
+					dataset.setDatasourceParameterValue(parameterValues, dataSource);
+				}
 			}
 			else if (connectionExpression != null)
 			{
@@ -138,6 +158,7 @@ public class JRFillDatasetRun implements JRDatasetRun
 		finally
 		{
 			dataset.closeDatasource();
+			dataset.disposeParameterContributors();
 			dataset.restoreElementDatasets();
 		}
 	}
@@ -165,11 +186,11 @@ public class JRFillDatasetRun implements JRDatasetRun
 
 		init();
 
-		if (dataset.next())
+		if (advanceDataset())
 		{
 			detail();
 
-			while (dataset.next())
+			while (advanceDataset())
 			{
 				checkInterrupted();
 
@@ -181,20 +202,15 @@ public class JRFillDatasetRun implements JRDatasetRun
 
 	}
 
+	protected boolean advanceDataset() throws JRException
+	{
+		return dataset.next();
+	}
+
 	
 	protected void checkInterrupted()
 	{
-		if (Thread.interrupted() || filler.isInterrupted())
-		{
-			if (log.isDebugEnabled())
-			{
-				log.debug("Fill " + filler.fillerId + ": interrupting");
-			}
-
-			filler.setInterrupted(true);
-
-			throw new JRFillInterruptedException();
-		}
+		filler.checkInterrupted();
 	}
 
 	
@@ -250,6 +266,11 @@ public class JRFillDatasetRun implements JRDatasetRun
 	{
 		return dataset;
 	}
+
+	public UUID getUUID()
+	{
+		return parentDatasetRun.getUUID();
+	}
 	
 	/**
 	 *
@@ -257,5 +278,20 @@ public class JRFillDatasetRun implements JRDatasetRun
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();
+	}
+	
+	public boolean hasProperties()
+	{
+		return parentDatasetRun.hasProperties();
+	}
+
+	public JRPropertiesMap getPropertiesMap()
+	{
+		return parentDatasetRun.getPropertiesMap();
+	}
+	
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
 	}
 }

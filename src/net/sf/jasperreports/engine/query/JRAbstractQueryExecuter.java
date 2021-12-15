@@ -31,14 +31,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRQuery;
 import net.sf.jasperreports.engine.JRQueryChunk;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRValueParameter;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.fill.JRFillParameter;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRQueryChunkHandler;
 import net.sf.jasperreports.engine.util.JRQueryParser;
 
@@ -46,7 +48,7 @@ import net.sf.jasperreports.engine.util.JRQueryParser;
  * Base abstract query executer.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRAbstractQueryExecuter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRAbstractQueryExecuter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 {
@@ -128,6 +130,8 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	 */
 	protected final Map<String,JRClauseFunction> clauseFunctions = new HashMap<String,JRClauseFunction>();
 	
+	private final JasperReportsContext jasperReportsContext;
+	private final JRPropertiesUtil propertiesUtil;
 	protected final JRDataset dataset;
 	private final Map<String,? extends JRValueParameter> parametersMap;
 	
@@ -140,14 +144,46 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	
 	private Set<String> parameterClauseStack;
 	
-	
-	protected JRAbstractQueryExecuter(JRDataset dataset, Map<String, ? extends JRValueParameter> parametersMap)
+	/**
+	 * 
+	 */
+	protected JRAbstractQueryExecuter(
+		JasperReportsContext jasperReportsContext, 
+		JRDataset dataset, 
+		Map<String, ? extends JRValueParameter> parametersMap
+		)
 	{
+		this.jasperReportsContext = jasperReportsContext;
+		this.propertiesUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
 		this.dataset = dataset;
 		this.parametersMap = parametersMap;
 		
 		queryString = "";
 		queryParameters = new ArrayList<QueryParameter>();
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #JRAbstractQueryExecuter(JasperReportsContext, JRDataset, Map)}.
+	 */
+	protected JRAbstractQueryExecuter(JRDataset dataset, Map<String, ? extends JRValueParameter> parametersMap)
+	{
+		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
+	}
+
+	/**
+	 * 
+	 */
+	protected JasperReportsContext getJasperReportsContext()
+	{
+		return jasperReportsContext;
+	}
+
+	/**
+	 * 
+	 */
+	protected JRPropertiesUtil getPropertiesUtil()
+	{
+		return propertiesUtil;
 	}
 
 	/**
@@ -464,7 +500,9 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		if (ignoreMissing)
 		{
 			JRValueParameter parameter = getValueParameter(JRParameter.REPORT_PARAMETERS_MAP, false);
-			return ((Map<String,Object>)parameter.getValue()).get(parameterName);
+			@SuppressWarnings("unchecked")
+			Map<String,Object> parametersMap = (Map<String,Object>)parameter.getValue(); 			
+			return parametersMap.get(parameterName);
 		}
 		
 		JRValueParameter parameter = getValueParameter(parameterName, ignoreMissing);
@@ -489,7 +527,9 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	protected boolean parameterHasValue(String parameter)
 	{
 		JRValueParameter reportParametersMap = getValueParameter(JRParameter.REPORT_PARAMETERS_MAP, false);
-		return ((Map<String,Object>)reportParametersMap.getValue()).containsKey(parameter);
+		@SuppressWarnings("unchecked")
+		Map<String,Object> parametersMap = (Map<String,Object>)reportParametersMap.getValue();  
+		return parametersMap.containsKey(parameter);
 	}
 	
 	
@@ -505,7 +545,7 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		else
 		{
 			return 
-				JRProperties.getProperty(
+				getPropertiesUtil().getProperty(
 					dataset.getPropertiesMap(),
 					property
 					);
@@ -532,7 +572,7 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 			Boolean booleanValue = (Boolean)getParameterValue(parameter, true);
 			if (booleanValue == null)
 			{
-				return JRProperties.getBooleanProperty(property);
+				return getPropertiesUtil().getBooleanProperty(property);
 			}
 			else
 			{
@@ -542,7 +582,7 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		else
 		{
 			return 
-				JRProperties.getBooleanProperty(
+				getPropertiesUtil().getBooleanProperty(
 					dataset.getPropertiesMap(),
 					property,
 					defaultValue

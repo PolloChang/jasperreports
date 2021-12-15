@@ -47,7 +47,7 @@ import org.apache.commons.logging.LogFactory;
  * Base fill list component implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseFillList.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BaseFillList.java 4648 2011-10-10 12:50:53Z lucianc $
  */
 public abstract class BaseFillList extends BaseFillComponent
 {
@@ -104,7 +104,7 @@ public abstract class BaseFillList extends BaseFillComponent
 
 	protected void createPrintFrame()
 	{
-		printFrame = new JRTemplatePrintFrame(getFrameTemplate());
+		printFrame = new JRTemplatePrintFrame(getFrameTemplate(), elementId);
 		printFrame.setX(fillContext.getComponentElement().getX());
 		printFrame.setWidth(fillContext.getComponentElement().getWidth());
 	}
@@ -119,6 +119,7 @@ public abstract class BaseFillList extends BaseFillComponent
 						fillContext.getElementOrigin(),
 						fillContext.getDefaultStyleProvider());
 			frameTemplate.setElement(fillContext.getComponentElement());
+			frameTemplate = deduplicate(frameTemplate);
 			
 			printFrameTemplates.put(style, frameTemplate);
 		}

@@ -45,7 +45,7 @@ import net.sf.jasperreports.engine.util.UniformElementVisitor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DrawVisitor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DrawVisitor.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class DrawVisitor extends UniformElementVisitor
 {
@@ -54,7 +54,7 @@ public class DrawVisitor extends UniformElementVisitor
 	protected PrintDrawVisitor drawVisitor;
 	
 	/**
-	 *
+	 * @deprecated Replaced by {@link #DrawVisitor(ReportConverter, Graphics2D)}.
 	 */
 	public DrawVisitor(JRReport report, Graphics2D grx)
 	{
@@ -69,7 +69,7 @@ public class DrawVisitor extends UniformElementVisitor
 	public DrawVisitor(ReportConverter reportConverter, Graphics2D grx)
 	{
 		this.convertVisitor = new ConvertVisitor(reportConverter);
-		this.drawVisitor = new PrintDrawVisitor();
+		this.drawVisitor = new PrintDrawVisitor(reportConverter.getJasperReportsContext());
 		setTextRenderer(reportConverter.getReport());
 		setGraphics2D(grx);
 		this.drawVisitor.setClip(true);

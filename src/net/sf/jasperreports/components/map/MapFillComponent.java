@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 /**
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: MapFillComponent.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MapFillComponent.java 4648 2011-10-10 12:50:53Z lucianc $
  */
 public class MapFillComponent extends BaseFillComponent
 {
@@ -92,8 +92,9 @@ public class MapFillComponent extends BaseFillComponent
 				fillContext.getElementOrigin(), 
 				fillContext.getDefaultStyleProvider(),
 				MapPrintElement.MAP_ELEMENT_TYPE);
+		template = deduplicate(template);
 		
-		JRTemplateGenericPrintElement printElement = new JRTemplateGenericPrintElement(template);
+		JRTemplateGenericPrintElement printElement = new JRTemplateGenericPrintElement(template, elementId);
 		printElement.setX(element.getX());
 		printElement.setY(fillContext.getElementPrintY());
 		printElement.setWidth(element.getWidth());

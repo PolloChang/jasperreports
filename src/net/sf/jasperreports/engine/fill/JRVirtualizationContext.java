@@ -23,14 +23,33 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.io.IOException;
+import java.io.ObjectInputStream.GetField;
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintImage;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JRVirtualizable;
+import net.sf.jasperreports.engine.JRVirtualizationHelper;
+import net.sf.jasperreports.engine.JRVirtualizer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.PrintElementVisitor;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.base.JRVirtualPrintPage;
+import net.sf.jasperreports.engine.base.VirtualElementsData;
+import net.sf.jasperreports.engine.util.DeepPrintElementVisitor;
+import net.sf.jasperreports.engine.util.UniformPrintElementVisitor;
 
 import org.apache.commons.collections.ReferenceMap;
 import org.apache.commons.logging.Log;
@@ -40,30 +59,121 @@ import org.apache.commons.logging.LogFactory;
  * Context used to store data shared by virtualized objects resulted from a report fill process.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRVirtualizationContext.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRVirtualizationContext.java 5180 2012-03-29 13:23:12Z teodord $
  */
-public class JRVirtualizationContext implements Serializable
+public class JRVirtualizationContext implements Serializable, VirtualizationListener<VirtualElementsData>
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	private static final Log log = LogFactory.getLog(JRVirtualizationContext.class);
 	
 	private static final ReferenceMap contexts = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.WEAK);
+
+	private transient JRVirtualizer virtualizer;
+	private transient JasperReportsContext jasperReportsContext;
 	
-	private Map<String,JRRenderable> cachedRenderers;
+	private Map<String,Renderable> cachedRenderers;
 	private Map<String,JRTemplateElement> cachedTemplates;
 	
-	private boolean readOnly;
+	private volatile boolean readOnly;
+	private volatile boolean disposed;
+	
+	private int pageElementSize;
+	
+	private transient List<VirtualizationListener<VirtualElementsData>> listeners;
+	
+	private transient volatile PrintElementVisitor<Void> cacheTemplateVisitor;
+	
+	private transient ReentrantLock lock;
 	
 	/**
 	 * Constructs a context.
 	 */
-	public JRVirtualizationContext()
+	public JRVirtualizationContext(JasperReportsContext jasperReportsContext)
 	{
-		cachedRenderers = new HashMap<String,JRRenderable>();
-		cachedTemplates = new HashMap<String,JRTemplateElement>();
+		this.jasperReportsContext = jasperReportsContext;
+		
+		cachedRenderers = new ConcurrentHashMap<String,Renderable>(16, 0.75f, 1);
+		cachedTemplates = new ConcurrentHashMap<String,JRTemplateElement>(16, 0.75f, 1);
+		
+		pageElementSize = JRPropertiesUtil.getInstance(jasperReportsContext).getIntegerProperty(JRVirtualPrintPage.PROPERTY_VIRTUAL_PAGE_ELEMENT_SIZE, 0);
+		
+		initLock();
 	}
 
+	protected JRVirtualizationContext(JRVirtualizationContext parentContext)
+	{
+		this.virtualizer = parentContext.virtualizer;
+		this.jasperReportsContext = parentContext.jasperReportsContext;
+
+		// using the same caches as the parent
+		this.cachedRenderers = parentContext.cachedRenderers;
+		this.cachedTemplates = parentContext.cachedTemplates;
+
+		this.pageElementSize = parentContext.pageElementSize;
+		
+		// always locking the master context
+		this.lock = parentContext.lock;
+	}
+	
+	private void initLock()
+	{
+		lock = new ReentrantLock(true);
+	}
+	
+	/**
+	 * Adds a virtualization listener.
+	 * 
+	 * @param listener
+	 */
+	public void addListener(VirtualizationListener<VirtualElementsData> listener)
+	{
+		if (listeners == null)
+		{
+			listeners = new CopyOnWriteArrayList<VirtualizationListener<VirtualElementsData>>();
+		}
+		
+		listeners.add(listener);
+	}
+	
+	/**
+	 * Remove a virtualization listener.
+	 * 
+	 * @param listener
+	 */
+	public void removeListener(VirtualizationListener<VirtualElementsData> listener)
+	{
+		if (listeners != null)
+		{
+			listeners.remove(listener);
+		}
+	}
+
+	public void beforeExternalization(JRVirtualizable<VirtualElementsData> object)
+	{
+		if (listeners != null)
+		{
+			for (VirtualizationListener<VirtualElementsData> listener : listeners)
+			{
+				listener.beforeExternalization(object);	
+			}
+		}
+	}
+	
+	public void afterExternalization(JRVirtualizable<VirtualElementsData> object)
+	{
+	}
+	
+	public void afterInternalization(JRVirtualizable<VirtualElementsData> object)
+	{
+		if (listeners != null)
+		{
+			for (VirtualizationListener<VirtualElementsData> listener : listeners)
+			{
+				listener.afterInternalization(object);
+			}
+		}
+	}
 	
 	/**
 	 * Caches an image renderer.
@@ -72,7 +182,7 @@ public class JRVirtualizationContext implements Serializable
 	 */
 	public void cacheRenderer(JRPrintImage image)
 	{
-		JRRenderable renderer = image.getRenderer();
+		Renderable renderer = image.getRenderable();
 		if (renderer != null)
 		{
 			cachedRenderers.put(renderer.getId(), renderer);
@@ -86,7 +196,7 @@ public class JRVirtualizationContext implements Serializable
 	 * @param id the ID
 	 * @return the cached image renderer for the ID
 	 */
-	public JRRenderable getCachedRenderer(String id)
+	public Renderable getCachedRenderer(String id)
 	{
 		return cachedRenderers.get(id);
 	}
@@ -142,6 +252,20 @@ public class JRVirtualizationContext implements Serializable
 		return cachedTemplates.get(templateId);
 	}
 
+	/**
+	 * Caches the template of an element.
+	 * 
+	 * @param element the element whose template to cache 
+	 */
+	public void cacheTemplate(JRPrintElement element)
+	{
+		if (cacheTemplateVisitor == null)
+		{
+			cacheTemplateVisitor = new CacheTemplateVisitor();
+		}
+		
+		element.accept(cacheTemplateVisitor, null);
+	}
 
 	/**
 	 * Determines whether this context has been marked as read-only.
@@ -202,5 +326,227 @@ public class JRVirtualizationContext implements Serializable
 		{
 			return (JRVirtualizationContext) contexts.get(print);
 		}
+	}
+	
+	/**
+	 * Returns the virtual page size used by the report.
+	 * 
+	 * @return the virtual page size used by the report
+	 * @see JRVirtualPrintPage#PROPERTY_VIRTUAL_PAGE_ELEMENT_SIZE
+	 */
+	public int getPageElementSize()
+	{
+		return pageElementSize;
+	}
+
+	/**
+	 * Set the virtual page size used by the report.
+	 * 
+	 * @param pageElementSize the virtual page size
+	 * @see JRVirtualPrintPage#PROPERTY_VIRTUAL_PAGE_ELEMENT_SIZE
+	 */
+	public void setPageElementSize(int pageElementSize)
+	{
+		this.pageElementSize = pageElementSize;
+	}
+
+	/**
+	 * Returns the virtualizer used by this context.
+	 */
+	public JRVirtualizer getVirtualizer()
+	{
+		return virtualizer;
+	}
+
+	protected void setVirtualizer(JRVirtualizer virtualizer)
+	{
+		this.virtualizer = virtualizer;
+	}
+
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		setThreadJasperReportsContext();
+
+		GetField fields = in.readFields();
+		cachedRenderers = (Map<String, Renderable>) fields.get("cachedRenderers", null);
+		cachedTemplates = (Map<String, JRTemplateElement>) fields.get("cachedTemplates", null);
+		readOnly = fields.get("readOnly", false);
+		// use configured default if serialized by old version
+		pageElementSize = fields.get("pageElementSize", JRPropertiesUtil.getInstance(jasperReportsContext).getIntegerProperty(
+				JRVirtualPrintPage.PROPERTY_VIRTUAL_PAGE_ELEMENT_SIZE, 0));
+		
+		setThreadVirtualizer();
+		
+		initLock();
+	}
+
+	private void setThreadVirtualizer()
+	{
+		JRVirtualizer threadVirtualizer = JRVirtualizationHelper.getThreadVirtualizer();
+		if (threadVirtualizer != null)
+		{
+			virtualizer = threadVirtualizer;
+		}
+	}
+
+	private void setThreadJasperReportsContext()
+	{
+		JasperReportsContext threadJasperReportsContext = JRVirtualizationHelper.getThreadJasperReportsContext();
+		if (threadJasperReportsContext != null)
+		{
+			jasperReportsContext = threadJasperReportsContext;
+		}
+	}
+	
+	/**
+	 * Traverses all the elements on the page, including the ones placed inside
+	 * {@link JRPrintFrame frames}.
+	 * 
+	 * @param visitor element visitor
+	 */
+	protected void traverseDeepElements(PrintElementVisitor<Void> visitor, 
+			Collection<? extends JRPrintElement> elements)
+	{
+		DeepPrintElementVisitor<Void> deepVisitor = new DeepPrintElementVisitor<Void>(visitor);
+		for (JRPrintElement element : elements)
+		{
+			element.accept(deepVisitor, null);
+		}
+	}
+
+	/**
+	 * Print element visitor that caches print element templates.
+	 * 
+	 * @see JRVirtualizationContext#cacheTemplate(JRPrintElement)
+	 */
+	class CacheTemplateVisitor extends UniformPrintElementVisitor<Void>
+	{
+		public CacheTemplateVisitor()
+		{
+			super(true);
+		}
+		
+		@Override
+		protected void visitElement(JRPrintElement element, Void arg)
+		{
+			if (element instanceof JRTemplatePrintElement)
+			{
+				JRTemplatePrintElement templateElement = (JRTemplatePrintElement) element;
+				JRTemplateElement template = templateElement.getTemplate();
+				if (template != null)
+				{
+					cacheTemplate(template);
+				}
+			}
+		}	
+	}
+	
+	public Object replaceSerializedObject(Object obj)
+	{
+		Object replace = obj;
+		if (obj instanceof JRTemplateElement)
+		{
+			JRTemplateElement template = (JRTemplateElement) obj;
+			String templateId = template.getId();
+			if (hasCachedTemplate(templateId))
+			{
+				replace = new JRVirtualPrintPage.JRIdHolderTemplateElement(templateId);
+			}
+			else
+			{
+				if (log.isDebugEnabled())
+				{
+					log.debug("Template " + template + " having id " + template.getId() + " not found in virtualization context cache");
+				}
+			}
+		}
+		else if (obj instanceof Renderable)
+		{
+			Renderable renderer = (Renderable) obj;
+			if (hasCachedRenderer(renderer.getId()))
+			{
+				replace = new JRVirtualPrintPage.JRIdHolderRenderer(renderer);
+			}
+		}
+		return replace;
+	}
+	
+	public Object resolveSerializedObject(Object obj)
+	{
+		Object resolve = obj;
+		if (obj instanceof JRVirtualPrintPage.JRIdHolderTemplateElement)
+		{
+			JRVirtualPrintPage.JRIdHolderTemplateElement template = (JRVirtualPrintPage.JRIdHolderTemplateElement) obj;
+			JRTemplateElement cachedTemplate = getCachedTemplate(template.getId());
+			if (cachedTemplate == null)
+			{
+				throw new JRRuntimeException("Template " + template.getId() + " not found in virtualization context.");
+			}
+			resolve = cachedTemplate;
+		}
+		else if (obj instanceof JRVirtualPrintPage.JRIdHolderRenderer)
+		{
+			JRVirtualPrintPage.JRIdHolderRenderer renderer = (JRVirtualPrintPage.JRIdHolderRenderer) obj;
+			Renderable cachedRenderer = getCachedRenderer(renderer.getId());
+			if (cachedRenderer == null)
+			{
+				throw new JRRuntimeException("Renderer " + renderer.getId() + " not found in virtualization context.");
+			}
+			resolve = cachedRenderer;
+		}
+		return resolve;
+	}
+
+	/**
+	 * Acquires a lock on this context.
+	 */
+	public void lock()
+	{
+		try
+		{
+			lock.lockInterruptibly();
+		}
+		catch (InterruptedException e)
+		{
+			throw new JRRuntimeException("Interrupted while locking virtualization context", e);
+		}
+	}
+
+	/**
+	 * Attempts to acquire a lock on this context.
+	 * 
+	 * @return true iff the lock was acquired on the context
+	 */
+	public boolean tryLock()
+	{
+		return lock.tryLock();
+	}
+
+	/**
+	 * Releases the lock previously acquired on this context.
+	 */
+	public void unlock()
+	{
+		lock.unlock();
+	}
+	
+	/**
+	 * Marks this context as disposed in order to instruct the virtualizer
+	 * that pages owned by this context are no longer used.
+	 */
+	public void dispose()
+	{
+		disposed = true;
+	}
+	
+	/**
+	 * Determines if this context is marked as disposed.
+	 * 
+	 * @return whether this context has been marked as disposed
+	 */
+	public boolean isDisposed()
+	{
+		return disposed;
 	}
 }

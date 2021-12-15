@@ -27,7 +27,7 @@ package net.sf.jasperreports.engine.xml;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlConstants.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXmlConstants.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public final class JRXmlConstants
 {
@@ -64,6 +64,30 @@ public final class JRXmlConstants
 	 */
 	public static final String JASPERREPORT_XSD_DTD_COMPAT_RESOURCE = 
 		"net/sf/jasperreports/engine/dtds/jasperreport-dtd-compat.xsd";
+	
+	/**
+	 * The namespace used by the XML export schema.
+	 */
+	public static final String JASPERPRINT_NAMESPACE = 
+		"http://jasperreports.sourceforge.net/jasperreports/print";
+	
+	/**
+	 * The system location of the XML export schema.
+	 */
+	public static final String JASPERPRINT_XSD_SYSTEM_ID = 
+		"http://jasperreports.sourceforge.net/xsd/jasperprint.xsd";
+	
+	/**
+	 * The internal location/resource name of the XML export schema.
+	 */
+	public static final String JASPERPRINT_XSD_RESOURCE = 
+		"net/sf/jasperreports/engine/dtds/jasperprint.xsd";
+	
+	/**
+	 * The internal location/resource name of the DTD compatibility XML export schema.
+	 */
+	public static final String JASPERPRINT_XSD_DTD_COMPAT_RESOURCE = 
+		"net/sf/jasperreports/engine/dtds/jasperprint-dtd-compat.xsd";
 
 	/**
 	 * Template XML public ID.
@@ -361,6 +385,7 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_backcolor = "backcolor";
 	public static final String ATTRIBUTE_style = "style";
 	public static final String ATTRIBUTE_origin = "origin";
+	public static final String ATTRIBUTE_srcId = "srcId";
 
 	public static final String ATTRIBUTE_radius = "radius";
 
@@ -451,6 +476,7 @@ public final class JRXmlConstants
 	 */
 	public static final String ELEMENT_reportElement = "reportElement";
 
+	public static final String ATTRIBUTE_uuid = "uuid";
 	public static final String ATTRIBUTE_key = "key";
 	public static final String ATTRIBUTE_positionType = "positionType";
 	public static final String ATTRIBUTE_stretchType = "stretchType";
@@ -617,13 +643,7 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_verticalAlignment = "verticalAlignment";
 	public static final String ATTRIBUTE_runDirection = "runDirection";
 	public static final String ATTRIBUTE_textHeight = "textHeight";
-	/**
-	 * @deprecated No longer used.
-	 */
 	public static final String ATTRIBUTE_lineSpacingFactor = "lineSpacingFactor";
-	/**
-	 * @deprecated No longer used.
-	 */
 	public static final String ATTRIBUTE_leadingOffset = "leadingOffset";
 	public static final String ATTRIBUTE_valueClass = "valueClass";
 

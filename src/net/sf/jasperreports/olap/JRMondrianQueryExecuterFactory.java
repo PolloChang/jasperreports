@@ -28,15 +28,16 @@ import java.util.Map;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRValueParameter;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.query.AbstractQueryExecuterFactory;
 import net.sf.jasperreports.engine.query.JRQueryExecuter;
-import net.sf.jasperreports.engine.query.JRQueryExecuterFactory;
 
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMondrianQueryExecuterFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRMondrianQueryExecuterFactory.java 5305 2012-04-26 15:17:33Z teodord $
  */
-public class JRMondrianQueryExecuterFactory implements JRQueryExecuterFactory
+public class JRMondrianQueryExecuterFactory extends AbstractQueryExecuterFactory
 {
 	/**
 	 * Built-in parameter holding the value of the Mondrian connection to be used for creating the query.
@@ -52,9 +53,13 @@ public class JRMondrianQueryExecuterFactory implements JRQueryExecuterFactory
 		return MONDRIAN_BUILTIN_PARAMETERS;
 	}
 
-	public JRQueryExecuter createQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parameters) throws JRException
+	public JRQueryExecuter createQueryExecuter(
+		JasperReportsContext jasperReportsContext, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parameters
+		) throws JRException
 	{
-		return new JRMondrianQueryExecuter(dataset, parameters);
+		return new JRMondrianQueryExecuter(jasperReportsContext, dataset, parameters);
 	}
 
 	public boolean supportsQueryParameterType(String className)

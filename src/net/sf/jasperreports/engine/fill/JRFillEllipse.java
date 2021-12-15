@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.JRVisitor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillEllipse.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillEllipse.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillEllipse extends JRFillGraphicElement implements JREllipse
 {
@@ -95,7 +95,7 @@ public class JRFillEllipse extends JRFillGraphicElement implements JREllipse
 	 */
 	protected JRPrintElement fill()
 	{
-		JRTemplatePrintEllipse printEllipse = new JRTemplatePrintEllipse(this.getJRTemplateEllipse());
+		JRTemplatePrintEllipse printEllipse = new JRTemplatePrintEllipse(this.getJRTemplateEllipse(), elementId);
 		printEllipse.setX(this.getX());
 		printEllipse.setY(this.getRelativeY());
 		printEllipse.setWidth(getWidth());

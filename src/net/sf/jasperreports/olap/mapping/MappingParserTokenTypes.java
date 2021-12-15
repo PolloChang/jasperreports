@@ -26,6 +26,10 @@
 package net.sf.jasperreports.olap.mapping;
 
 
+/**
+ * @author Lucian Chirita (lucianc@users.sourceforge.net)
+ * @version $Id: MappingParserTokenTypes.java 5180 2012-03-29 13:23:12Z teodord $
+ */
 public interface MappingParserTokenTypes {
 	int EOF = 1;
 	int NULL_TREE_LOOKAHEAD = 3;

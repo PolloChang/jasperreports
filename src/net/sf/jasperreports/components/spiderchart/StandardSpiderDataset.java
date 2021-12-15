@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.design.JRDesignElementDataset;
 /**
  * 
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: StandardSpiderDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: StandardSpiderDataset.java 4777 2011-10-31 09:10:10Z chicuslavic $
  */
 public class StandardSpiderDataset extends JRDesignElementDataset implements SpiderDataset
 {
@@ -95,6 +95,21 @@ public class StandardSpiderDataset extends JRDesignElementDataset implements Spi
 		categorySeriesList.add(categorySeries);
 		getEventSupport().fireCollectionElementAddedEvent(PROPERTY_CATEGORY_SERIES, 
 				categorySeries, categorySeriesList.size() - 1);
+	}
+	
+	/**
+	 *
+	 */
+	public void addCategorySeries(int index, JRCategorySeries categorySeries)
+	{
+		if(index >=0 && index < categorySeriesList.size())
+			categorySeriesList.add(index, categorySeries);
+		else{
+			categorySeriesList.add(categorySeries);
+			index = categorySeriesList.size() - 1;
+		}
+		getEventSupport().fireCollectionElementAddedEvent(PROPERTY_CATEGORY_SERIES, 
+				categorySeries, index);
 	}
 
 	/**

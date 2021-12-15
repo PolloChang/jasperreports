@@ -28,7 +28,7 @@ import org.exolab.castor.mapping.GeneralizedFieldHandler;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ClassNameFieldHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ClassNameFieldHandler.java 4853 2011-12-13 11:15:20Z chicuslavic $
  */
 public class ClassNameFieldHandler extends GeneralizedFieldHandler
 {
@@ -49,7 +49,7 @@ public class ClassNameFieldHandler extends GeneralizedFieldHandler
 		{
 			return null;
 		}
-		return ((Class)value).getName();
+		return ((Class<?>)value).getName();
 	}
 
 	/**
@@ -63,7 +63,7 @@ public class ClassNameFieldHandler extends GeneralizedFieldHandler
 	/**
 	 *
 	 */
-	public Class getFieldType()
+	public Class<?> getFieldType()
 	{
 		return Class.class;
 	}

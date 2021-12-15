@@ -42,7 +42,7 @@ import net.sourceforge.barbecue.Barcode;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarbecueFillComponent.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarbecueFillComponent.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class BarbecueFillComponent extends BaseFillComponent
 {
@@ -96,7 +96,7 @@ public class BarbecueFillComponent extends BaseFillComponent
 	{
 		JRTemplateImage templateImage = getTemplateImage();
 		
-		JRTemplatePrintImage image = new JRTemplatePrintImage(templateImage);
+		JRTemplatePrintImage image = new JRTemplatePrintImage(templateImage, elementId);
 		JRComponentElement element = fillContext.getComponentElement();
 		image.setX(element.getX());
 		image.setY(fillContext.getElementPrintY());
@@ -139,7 +139,7 @@ public class BarbecueFillComponent extends BaseFillComponent
 		BarbecueRenderer renderer = new BarbecueRenderer(barcode);
 		renderer.setRotation(BarbecueStyleResolver.getRotationValue(fillContext.getComponentElement()));
 		
-		image.setRenderer(renderer);
+		image.setRenderable(renderer);
 	}
 
 	protected JRTemplateImage getTemplateImage()
@@ -154,6 +154,7 @@ public class BarbecueFillComponent extends BaseFillComponent
 			templateImage.setStyle(elementStyle);
 			templateImage.setScaleImage(ScaleImageEnum.RETAIN_SHAPE);
 			
+			templateImage = deduplicate(templateImage);
 			printTemplates.put(elementStyle, templateImage);
 		}
 		return templateImage;

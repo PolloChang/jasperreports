@@ -44,7 +44,7 @@ import net.sf.jasperreports.engine.util.JRStringUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxRunHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxRunHelper.java 5032 2012-03-05 13:10:56Z shertage $
  */
 public class XlsxRunHelper extends BaseHelper
 {
@@ -145,13 +145,15 @@ public class XlsxRunHelper extends BaseHelper
 			write("        <color rgb=\"" + JRColorUtil.getColorHexa((Color)value) + "\" />\n");
 		}
 
-		value = attrs.get(TextAttribute.BACKGROUND);
-		oldValue = parentAttrs.get(TextAttribute.BACKGROUND);
 		
+//		highlighted text is not allowed in Excel Spreadsheet ML
+		
+//		value = attrs.get(TextAttribute.BACKGROUND);
+//		oldValue = parentAttrs.get(TextAttribute.BACKGROUND);
+//		
 //		if (value != null && !value.equals(oldValue))
 //		{
-//			//FIXME: the highlight does not accept the color hexadecimal expression, but only few color names
-////			writer.write("        <w:highlight w:val=\"" + JRColorUtil.getColorHexa((Color)value) + "\" />\n");
+//			writer.write("        <w:highlight w:val=\"" + JRColorUtil.getColorHexa((Color)value) + "\" />\n");
 //		}
 
 		value = attrs.get(TextAttribute.SIZE);
@@ -159,7 +161,7 @@ public class XlsxRunHelper extends BaseHelper
 
 		if (value != null && !value.equals(oldValue))
 		{
-			write("        <sz val=\"" + (2 * ((Float)value).floatValue()) + "\" />\n");
+			write("        <sz val=\"" + value + "\" />\n");
 			
 		}
 		

@@ -29,38 +29,48 @@
 
 package net.sf.jasperreports.engine.export;
 
+import java.util.Map;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRHtmlExporterNature.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRHtmlExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
  */
-public class JRHtmlExporterNature implements ExporterNature
+public class JRHtmlExporterNature extends AbstractExporterNature
 {
 	
-	private ExporterFilter filter;
 	private final boolean deep;
 	private final boolean ignorePageMargins;
 	
 	/**
 	 * 
 	 */
-	public JRHtmlExporterNature(ExporterFilter filter, boolean deep)
+	public JRHtmlExporterNature(JasperReportsContext jasperReportsContext, ExporterFilter filter, boolean deep, boolean ignorePageMargins)
 	{
-		this(filter, deep, false);
+		super(jasperReportsContext, filter);
+		this.deep = deep;
+		this.ignorePageMargins = ignorePageMargins;
 	}
 	
 	/**
-	 * 
+	 * @deprecated Replaced by {@link #JRHtmlExporterNature(JasperReportsContext, ExporterFilter, boolean, boolean)}.
+	 */
+	public JRHtmlExporterNature(ExporterFilter filter, boolean deep)
+	{
+		this(DefaultJasperReportsContext.getInstance(), filter, deep, false);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #JRHtmlExporterNature(JasperReportsContext, ExporterFilter, boolean, boolean)}.
 	 */
 	public JRHtmlExporterNature(ExporterFilter filter, boolean deep, boolean ignorePageMargins)
 	{
-		this.filter = filter;
-		this.deep = deep;
-		this.ignorePageMargins = ignorePageMargins;
+		this(DefaultJasperReportsContext.getInstance(), filter, deep, ignorePageMargins);
 	}
 	
 	/**
@@ -72,7 +82,7 @@ public class JRHtmlExporterNature implements ExporterNature
 		{
 			JRGenericPrintElement genericElement = (JRGenericPrintElement) element;
 			GenericElementHtmlHandler handler = (GenericElementHtmlHandler) 
-			GenericElementHandlerEnviroment.getHandler(
+			GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
 					genericElement.getGenericType(), JRHtmlExporter.HTML_EXPORTER_KEY);
 			if (handler == null || !handler.toExport(genericElement))
 			{
@@ -95,7 +105,7 @@ public class JRHtmlExporterNature implements ExporterNature
 		{
 			// we make this test to avoid reaching the global default value of the property directly
 			// and thus skipping the report level one, if present
-			return !JRProperties.getBooleanProperty(frame, JRHtmlExporterParameter.PROPERTY_FRAMES_AS_NESTED_TABLES, !deep);
+			return !getPropertiesUtil().getBooleanProperty(frame, JRHtmlExporterParameter.PROPERTY_FRAMES_AS_NESTED_TABLES, !deep);
 		}
 		return deep;
 	}

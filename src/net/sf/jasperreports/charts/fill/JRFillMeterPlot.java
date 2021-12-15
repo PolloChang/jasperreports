@@ -37,7 +37,7 @@ import java.util.List;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRFillMeterPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillMeterPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillMeterPlot extends JRFillChartPlot implements JRMeterPlot
 {
@@ -127,6 +127,14 @@ public class JRFillMeterPlot extends JRFillChartPlot implements JRMeterPlot
 	public Color getTickColor()
 	{
 		return ((JRMeterPlot)parent).getTickColor();
+	}
+	
+	/**
+	 *
+	 */
+	public Integer getTickCount()
+	{
+		return ((JRMeterPlot)parent).getTickCount();
 	}
 
 	public JRFont getTickLabelFont()

@@ -23,14 +23,21 @@
  */
 package net.sf.jasperreports.components.table;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertyExpression;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.design.JRDesignElement;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
@@ -39,7 +46,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardBaseColumn.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: StandardBaseColumn.java 5191 2012-03-30 11:36:57Z teodord $
  */
 public abstract class StandardBaseColumn implements BaseColumn, Serializable, JRChangeEventsSupport
 {
@@ -55,6 +62,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 	public static final String PROPERTY_GROUP_FOOTERS = "groupFooters";
 	public static final String PROPERTY_WIDTH = "width";
 	
+	private UUID uuid;
 	private JRExpression printWhenExpression;
 	private Cell tableHeader;
 	private Cell tableFooter;
@@ -64,6 +72,9 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 	private Cell columnFooter;
 	private Integer width;
 
+	private JRPropertiesMap propertiesMap;
+	private List<JRPropertyExpression> propertyExpressions = new ArrayList<JRPropertyExpression>();
+
 	public StandardBaseColumn()
 	{
 		groupHeaders = new ArrayList<GroupCell>();
@@ -72,6 +83,8 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 
 	public StandardBaseColumn(BaseColumn column, ColumnFactory factory)
 	{
+		this.uuid = column.getUUID();
+
 		this.printWhenExpression = factory.getBaseObjectFactory().getExpression(
 				column.getPrintWhenExpression());
 		
@@ -83,8 +96,44 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		this.columnFooter = factory.createCell(column.getColumnFooter());
 
 		this.width = column.getWidth();
+
+		propertiesMap = JRPropertiesMap.getPropertiesClone(column);
+		copyPropertyExpressions(column, factory);
+	}
+
+	private void copyPropertyExpressions(BaseColumn column, ColumnFactory factory)
+	{
+		JRPropertyExpression[] props = column.getPropertyExpressions();
+		if (props != null && props.length > 0)
+		{
+			propertyExpressions = new ArrayList<JRPropertyExpression>(props.length);
+			for (int i = 0; i < props.length; i++)
+			{
+				propertyExpressions.add(factory.getBaseObjectFactory().getPropertyExpression(props[i]));
+			}
+		}
 	}
 	
+	/**
+	 *
+	 */
+	public UUID getUUID()
+	{
+		if (uuid == null)
+		{
+			uuid = UUID.randomUUID();
+		}
+		return uuid;
+	}
+
+	/**
+	 *
+	 */
+	public void setUUID(UUID uuid)
+	{
+		this.uuid = uuid;
+	}
+		
 	public Cell getColumnHeader()
 	{
 		return columnHeader;
@@ -143,6 +192,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		clone.columnHeader = JRCloneUtils.nullSafeClone(columnHeader);
 		clone.columnFooter = JRCloneUtils.nullSafeClone(columnFooter);
 		clone.printWhenExpression = JRCloneUtils.nullSafeClone(printWhenExpression);
+		//FIXMECLONE should we deal with propertyExpressions? check all
 		clone.eventSupport = null;
 		return clone;
 	}
@@ -348,6 +398,118 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 			// adding group header
 			StandardGroupCell groupCell = new StandardGroupCell(groupName, cell);
 			addGroupHeader(groupCell);
+		}
+	}
+
+	public boolean hasProperties()
+	{
+		return propertiesMap != null && propertiesMap.hasProperties();
+	}
+
+	public JRPropertiesMap getPropertiesMap()
+	{
+		if (propertiesMap == null)
+		{
+			propertiesMap = new JRPropertiesMap();
+		}
+		return propertiesMap;
+	}
+
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
+	}
+
+	public JRPropertyExpression[] getPropertyExpressions()
+	{
+		JRPropertyExpression[] props;
+		if (propertyExpressions.isEmpty())
+		{
+			props = null;
+		}
+		else
+		{
+			props = propertyExpressions.toArray(new JRPropertyExpression[propertyExpressions.size()]);
+		}
+		return props;
+	}
+
+	/**
+	 * Add a dynamic/expression-based property.
+	 * 
+	 * @param propertyExpression the property to add
+	 * @see #getPropertyExpressions()
+	 */
+	public void addPropertyExpression(JRPropertyExpression propertyExpression)
+	{
+		propertyExpressions.add(propertyExpression);
+		getEventSupport().fireCollectionElementAddedEvent(JRDesignElement.PROPERTY_PROPERTY_EXPRESSIONS, 
+				propertyExpression, propertyExpressions.size() - 1);
+	}
+
+	/**
+	 * Remove a property expression.
+	 * 
+	 * @param propertyExpression the property expression to remove
+	 * @see #addPropertyExpression(JRPropertyExpression)
+	 */
+	public void removePropertyExpression(JRPropertyExpression propertyExpression)
+	{
+		int idx = propertyExpressions.indexOf(propertyExpression);
+		if (idx >= 0)
+		{
+			propertyExpressions.remove(idx);
+			
+			getEventSupport().fireCollectionElementRemovedEvent(JRDesignElement.PROPERTY_PROPERTY_EXPRESSIONS, 
+					propertyExpression, idx);
+		}
+	}
+	
+	/**
+	 * Remove a property expression.
+	 * 
+	 * @param name the name of the property to remove
+	 * @return the removed property expression (if found)
+	 */
+	public JRPropertyExpression removePropertyExpression(String name)
+	{
+		JRPropertyExpression removed = null;
+		for (ListIterator<JRPropertyExpression> it = propertyExpressions.listIterator(); it.hasNext();)
+		{
+			JRPropertyExpression prop = it.next();
+			if (name.equals(prop.getName()))
+			{
+				removed = prop;
+				int idx = it.previousIndex();
+				
+				it.remove();
+				getEventSupport().fireCollectionElementRemovedEvent(JRDesignElement.PROPERTY_PROPERTY_EXPRESSIONS, 
+						removed, idx);
+				break;
+			}
+		}
+		return removed;
+	}
+	
+	/**
+	 * Returns the list of property expressions.
+	 * 
+	 * @return the list of property expressions ({@link JRPropertyExpression} instances)
+	 * @see #addPropertyExpression(JRPropertyExpression)
+	 */
+	public List<JRPropertyExpression> getPropertyExpressionsList()
+	{
+		return propertyExpressions;
+	}
+	
+
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+		
+		if (propertyExpressions == null)
+		{
+			propertyExpressions = new ArrayList<JRPropertyExpression>();
 		}
 	}
 }

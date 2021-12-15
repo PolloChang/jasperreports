@@ -30,10 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 
@@ -45,7 +46,7 @@ import net.sf.jasperreports.engine.util.JRStyledText;
  * for group columns)
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JRCsvMetadataExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCsvMetadataExporter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRCsvMetadataExporter extends JRAbstractCsvExporter
 {
@@ -62,6 +63,24 @@ public class JRCsvMetadataExporter extends JRAbstractCsvExporter
 	boolean isFirstRow = true;
 	
 
+	/**
+	 * @see #JRCsvMetadataExporter(JasperReportsContext)
+	 */
+	public JRCsvMetadataExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRCsvMetadataExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+
+	
 	/**
 	 * 
 	 */
@@ -85,7 +104,7 @@ public class JRCsvMetadataExporter extends JRAbstractCsvExporter
 				{
 					String currentColumnName = textElement.getPropertiesMap().getProperty(JRCsvMetadataExporterParameter.PROPERTY_COLUMN_NAME);
 					String currentColumnData = textElement.getPropertiesMap().getProperty(JRCsvMetadataExporterParameter.PROPERTY_DATA);
-					boolean repeatValue = JRProperties.getBooleanProperty(textElement, JRCsvMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
+					boolean repeatValue = getPropertiesUtil().getBooleanProperty(textElement, JRCsvMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
 					
 					if (currentColumnData != null)
 					{

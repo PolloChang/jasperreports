@@ -29,11 +29,25 @@ import net.sf.jasperreports.engine.JRPrintText;
  * Text measuring information as produced by a {@link JRTextMeasurer text measurer}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMeasuredText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRMeasuredText.java 4831 2011-11-30 16:55:17Z teodord $
  * @see JRTextMeasurer#measure(net.sf.jasperreports.engine.util.JRStyledText, int, int, boolean)
  */
 public interface JRMeasuredText
 {
+
+	/**
+	 * Returns the text leading offset.
+	 * 
+	 * @return the text leading offset
+	 */
+	float getLeadingOffset();
+
+	/**
+	 * Return the line spacing factor for the text.
+	 * 
+	 * @return the line spacing factor
+	 */
+	float getLineSpacingFactor();
 
 	/**
 	 * Returns the text's measure height.

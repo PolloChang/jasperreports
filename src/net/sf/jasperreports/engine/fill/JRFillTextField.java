@@ -47,7 +47,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillTextField.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillTextField.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillTextField extends JRFillTextElement implements JRTextField
 {
@@ -684,11 +684,11 @@ public class JRFillTextField extends JRFillTextElement implements JRTextField
 		JRRecordedValuesPrintText recordedValuesText;
 		if (isEvaluateAuto())
 		{
-			text = recordedValuesText = new JRRecordedValuesPrintText(getJRTemplateText());
+			text = recordedValuesText = new JRRecordedValuesPrintText(getJRTemplateText(), elementId);
 		}
 		else
 		{
-			text = new JRTemplatePrintText(getJRTemplateText());
+			text = new JRTemplatePrintText(getJRTemplateText(), elementId);
 			recordedValuesText = null;
 		}
 		
@@ -727,8 +727,8 @@ public class JRFillTextField extends JRFillTextElement implements JRTextField
 	 */
 	protected void copy(JRPrintText text)
 	{
-		//text.setLineSpacingFactor(getLineSpacingFactor());
-		//text.setLeadingOffset(getLeadingOffset());
+		text.setLineSpacingFactor(getLineSpacingFactor());
+		text.setLeadingOffset(getLeadingOffset());
 		text.setTextHeight(getTextHeight());
 		//FIXME rotation and run direction?
 

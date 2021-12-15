@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
+import net.sf.jasperreports.engine.Deduplicable;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPenContainer;
@@ -37,15 +38,16 @@ import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.ObjectUtils;
 
 
 /**
  * This is useful for drawing borders around text elements and images. Boxes can have borders and paddings, which can
  * have different width and colour on each side of the element.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePen.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBasePen.java 4647 2011-10-06 10:19:07Z lucianc $
  */
-public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEventsSupport
+public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEventsSupport, Deduplicable
 {
 
 
@@ -238,6 +240,37 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 			
 			lineStyle = null;
 		}
+	}
+
+
+	public int getHashCode()
+	{
+		ObjectUtils.HashCode hash = ObjectUtils.hash();
+		hash.add(lineWidth);
+		hash.add(lineStyleValue);
+		hash.add(lineColor);
+		return hash.getHashCode();
+	}
+
+
+	public boolean isIdentical(Object object)
+	{
+		if (this == object)
+		{
+			return true;
+		}
+		
+		if (!(object instanceof JRBasePen))
+		{
+			return false;
+		}
+		
+		JRBasePen pen = (JRBasePen) object;
+
+		return 
+				ObjectUtils.equals(lineWidth, pen.lineWidth)
+				&& ObjectUtils.equals(lineStyleValue, pen.lineStyleValue)
+				&& ObjectUtils.equals(lineColor, pen.lineColor);
 	}
 
 }

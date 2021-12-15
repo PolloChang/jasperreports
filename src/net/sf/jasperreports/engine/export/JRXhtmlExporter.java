@@ -54,12 +54,13 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.ImageMapRenderable;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRImageMapRenderer;
 import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
@@ -77,23 +78,27 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.engine.fonts.FontInfo;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
+import net.sf.jasperreports.engine.type.LineStyleEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.engine.util.JRFontUtil;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRTextAttribute;
@@ -107,19 +112,19 @@ import org.apache.commons.logging.LogFactory;
  * Exports a JasperReports document to XHTML format.
 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXhtmlExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXhtmlExporter.java 5471 2012-06-27 10:18:52Z narcism $
  */
 public class JRXhtmlExporter extends JRAbstractExporter
 {
 	private static final Log log = LogFactory.getLog(JRXhtmlExporter.class);
 	
-	private static final String XHTML_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.xhtml.";
+	private static final String XHTML_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xhtml.";
 
 	/**
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String XHTML_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "xhtml";
+	public static final String XHTML_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "xhtml";
 	
 	/**
 	 *
@@ -165,13 +170,13 @@ public class JRXhtmlExporter extends JRAbstractExporter
 	protected Writer writer;
 	protected JRExportProgressMonitor progressMonitor;
 	protected Map<String,String> rendererToImagePathMap;
-	protected Map<Pair,String> imageMaps;
+	protected Map<Pair<String,Rectangle>,String> imageMaps;
 	protected Map<String,byte[]> imageNameToImageDataMap;
 	protected List<JRPrintElementIndex> imagesToProcess;
 	
 	protected int reportIndex;
 	protected int pageIndex;
-	protected List<Integer> frameIndexStack;
+	protected List<FrameInfo> frameInfoStack;
 	protected int elementIndex;
 	protected int topLimit;
 	protected int leftLimit;
@@ -199,21 +204,31 @@ public class JRXhtmlExporter extends JRAbstractExporter
 	protected String htmlFooter;
 
 
-	/**
-	 * @deprecated
-	 */
-	protected Map<String,String> fontMap;
-
-	protected JRHyperlinkTargetProducerFactory targetProducerFactory = new DefaultHyperlinkTargetProducerFactory();		
+	protected JRHyperlinkTargetProducerFactory targetProducerFactory;		
 
 	protected boolean hyperlinkStarted;	
 	
 	protected JRHtmlExporterContext exporterContext = new ExporterContext();
 
+	/**
+	 * @see #JRXhtmlExporter(JasperReportsContext)
+	 */
 	public JRXhtmlExporter()
 	{
+		this(DefaultJasperReportsContext.getInstance());
 	}
 
+	
+	/**
+	 *
+	 */
+	public JRXhtmlExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+
+		targetProducerFactory = new DefaultHyperlinkTargetProducerFactory(jasperReportsContext);		
+	}
+	
 
 	/**
 	 *
@@ -284,7 +299,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 					);
 
 			rendererToImagePathMap = new HashMap<String,String>();
-			imageMaps = new HashMap<Pair,String>();
+			imageMaps = new HashMap<Pair<String,Rectangle>,String>();
 			imagesToProcess = new ArrayList<JRPrintElementIndex>();
 	
 			//backward compatibility with the IMAGE_MAP parameter
@@ -329,7 +344,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 					false
 					);
 			
-			fontMap = (Map<String,String>) parameters.get(JRExporterParameter.FONT_MAP);
+			setFontMap();
 						
 			setHyperlinkProducerFactory();
 			
@@ -474,8 +489,8 @@ public class JRXhtmlExporter extends JRAbstractExporter
 						JRPrintElementIndex imageIndex = it.next();
 	
 						JRPrintImage image = getImage(jasperPrintList, imageIndex);
-						JRRenderable renderer = image.getRenderer();
-						if (renderer.getType() == JRRenderable.TYPE_SVG)
+						Renderable renderer = image.getRenderable();
+						if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 						{
 							renderer =
 								new JRWrappingSvgRenderer(
@@ -485,7 +500,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 									);
 						}
 	
-						byte[] imageData = renderer.getImageData();
+						byte[] imageData = renderer.getImageData(jasperReportsContext);
 	
 						File imageFile = new File(imagesDir, getImageName(imageIndex));
 						FileOutputStream fos = null;
@@ -673,12 +688,12 @@ public class JRXhtmlExporter extends JRAbstractExporter
 		}
 		
 		writer.write(
-			"<div style=\"" + (isWhitePageBackground ? "background-color: #FFFFFF;" : "") 
+			"<div class=\"jrPage\" style=\"" + (isWhitePageBackground ? "background-color: #FFFFFF;" : "") 
 			+ "position:relative;width:" + toSizeUnit(rightLimit - leftLimit) 
 			+ ";height:" + toSizeUnit(bottomLimit - topLimit) + ";\">\n"
 			);
 
-		frameIndexStack = new ArrayList<Integer>();
+		frameInfoStack = new ArrayList<FrameInfo>();
 		
 		exportElements(page.getElements());
 
@@ -753,7 +768,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 
 		StringBuffer styleBuffer = new StringBuffer();
 
-		appendPositionStyle(line, styleBuffer);
+		appendPositionStyle(line, line.getLinePen(), styleBuffer);
 		appendSizeStyle(line, line.getLinePen(), styleBuffer);
 		appendBackcolorStyle(line, styleBuffer);
 		
@@ -810,7 +825,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 
 		StringBuffer styleBuffer = new StringBuffer();
 
-		appendPositionStyle(element, styleBuffer);
+		appendPositionStyle(element, element.getLinePen(), styleBuffer);
 		appendSizeStyle(element, element.getLinePen(), styleBuffer);
 		appendBackcolorStyle(element, styleBuffer);
 		
@@ -1043,11 +1058,21 @@ public class JRXhtmlExporter extends JRAbstractExporter
 
 		if (text.getRotationValue() == RotationEnum.NONE)
 		{
-			appendPositionStyle(text, divStyleBuffer);
-//			appendSizeStyle(text, text, styleBuffer);
-			styleBuffer.append("width: 100%; height: 100%;");
+			appendPositionStyle(text, text, divStyleBuffer);
 			appendSizeStyle(text, text, divStyleBuffer);
 			appendBorderStyle(text.getLineBox(), divStyleBuffer);
+
+			appendPositionStyle(
+				text.getLineBox().getLeftPadding() - getInsideBorderOffset(text.getLineBox().getLeftPen().getLineWidth(), false),
+				text.getLineBox().getTopPadding() - getInsideBorderOffset(text.getLineBox().getTopPen().getLineWidth(), false), 
+				styleBuffer
+				);
+			appendSizeStyle(
+				text.getWidth() - text.getLineBox().getLeftPadding() - text.getLineBox().getRightPadding(), 
+				text.getHeight() - text.getLineBox().getTopPadding() - text.getLineBox().getBottomPadding(), 
+				styleBuffer
+				);
+//			styleBuffer.append("width: 100%; height: 100%;");
 		}
 		else
 		{
@@ -1068,8 +1093,22 @@ public class JRXhtmlExporter extends JRAbstractExporter
 			{
 				case LEFT : 
 				{
-					translateX = - (text.getHeight() - text.getWidth()) / 2;
-					translateY = (text.getHeight() - text.getWidth()) / 2;
+					translateX = 
+						- (text.getHeight()
+							- text.getLineBox().getTopPadding()
+							- text.getLineBox().getBottomPadding()
+						- (text.getWidth() 
+							- text.getLineBox().getLeftPadding()
+							- text.getLineBox().getRightPadding()
+							)) / 2;
+					translateY = 
+						(text.getHeight() 
+							- text.getLineBox().getTopPadding()
+							- text.getLineBox().getBottomPadding()
+						- (text.getWidth() 
+							- text.getLineBox().getLeftPadding()
+							- text.getLineBox().getRightPadding()
+							)) / 2;
 					rotatedText.setWidth(text.getHeight());
 					rotatedText.setHeight(text.getWidth());
 					rotationIE = 3;
@@ -1079,8 +1118,22 @@ public class JRXhtmlExporter extends JRAbstractExporter
 				}
 				case RIGHT : 
 				{
-					translateX = - (text.getHeight() - text.getWidth()) / 2;
-					translateY = (text.getHeight() - text.getWidth()) / 2;
+					translateX = 
+						- (text.getHeight() 
+							- text.getLineBox().getTopPadding()
+							- text.getLineBox().getBottomPadding()
+						- (text.getWidth() 
+							- text.getLineBox().getLeftPadding()
+							- text.getLineBox().getRightPadding()
+							)) / 2;
+					translateY = 
+						(text.getHeight() 
+							- text.getLineBox().getTopPadding()
+							- text.getLineBox().getBottomPadding()
+						- (text.getWidth() 
+							- text.getLineBox().getLeftPadding()
+							- text.getLineBox().getRightPadding()
+							)) / 2;
 					rotatedText.setWidth(text.getHeight());
 					rotatedText.setHeight(text.getWidth());
 					rotationIE = 1;
@@ -1101,11 +1154,22 @@ public class JRXhtmlExporter extends JRAbstractExporter
 				}
 			}
 			
-			appendPositionStyle(rotatedText, divStyleBuffer);
-			appendSizeStyle(rotatedText, rotatedText, styleBuffer);
+			appendPositionStyle(text, text, divStyleBuffer);
 			appendSizeStyle(text, text, divStyleBuffer);
 			appendBorderStyle(text.getLineBox(), divStyleBuffer);
 
+			appendPositionStyle(
+				text.getLineBox().getLeftPadding() - getInsideBorderOffset(text.getLineBox().getLeftPen().getLineWidth(), false), 
+				text.getLineBox().getTopPadding() - getInsideBorderOffset(text.getLineBox().getTopPen().getLineWidth(), false), 
+				styleBuffer
+				);
+			appendSizeStyle(
+				rotatedText.getWidth() - rotatedText.getLineBox().getLeftPadding() - rotatedText.getLineBox().getRightPadding(), 
+				rotatedText.getHeight() - rotatedText.getLineBox().getTopPadding() - rotatedText.getLineBox().getBottomPadding(), 
+				styleBuffer
+				);
+//			appendSizeStyle(rotatedText, rotatedText, styleBuffer);
+			
 			styleBuffer.append("-webkit-transform: translate(" + translateX + "px," + translateY + "px) ");
 			styleBuffer.append("rotate(" + rotationAngle + "deg); ");
 			styleBuffer.append("-moz-transform: translate(" + translateX + "px," + translateY + "px) ");
@@ -1386,7 +1450,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 	protected String getHyperlinkURL(JRPrintHyperlink link)
 	{
 		String href = null;
-		JRHyperlinkProducer customHandler = getCustomHandler(link);		
+		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);		
 		if (customHandler == null)
 		{
 			switch(link.getHyperlinkTypeValue())
@@ -1469,60 +1533,120 @@ public class JRXhtmlExporter extends JRAbstractExporter
 		
 		if (box != null)
 		{
-			addedToStyle |= appendPen(
-				styleBuffer,
-				box.getTopPen(),
-				"top"
-				);
-			addedToStyle |= appendPadding(
-				styleBuffer,
-				box.getTopPadding(),
-				"top"
-				);
-			addedToStyle |= appendPen(
-				styleBuffer,
-				box.getLeftPen(),
-				"left"
-				);
-			addedToStyle |= appendPadding(
-				styleBuffer,
-				box.getLeftPadding(),
-				"left"
-				);
-			addedToStyle |= appendPen(
-				styleBuffer,
-				box.getBottomPen(),
-				"bottom"
-				);
-			addedToStyle |= appendPadding(
-				styleBuffer,
-				box.getBottomPadding(),
-				"bottom"
-				);
-			addedToStyle |= appendPen(
-				styleBuffer,
-				box.getRightPen(),
-				"right"
-				);
-			addedToStyle |= appendPadding(
-				styleBuffer,
-				box.getRightPadding(),
-				"right"
-				);
+			LineStyleEnum tps = box.getTopPen().getLineStyleValue();
+			LineStyleEnum lps = box.getLeftPen().getLineStyleValue();
+			LineStyleEnum bps = box.getBottomPen().getLineStyleValue();
+			LineStyleEnum rps = box.getRightPen().getLineStyleValue();
+			
+			float tpw = box.getTopPen().getLineWidth().floatValue();
+			float lpw = box.getLeftPen().getLineWidth().floatValue();
+			float bpw = box.getBottomPen().getLineWidth().floatValue();
+			float rpw = box.getRightPen().getLineWidth().floatValue();
+			
+			if (0f < tpw && tpw < 1f) {
+				tpw = 1f;
+			}
+			if (0f < lpw && lpw < 1f) {
+				lpw = 1f;
+			}
+			if (0f < bpw && bpw < 1f) {
+				bpw = 1f;
+			}
+			if (0f < rpw && rpw < 1f) {
+				rpw = 1f;
+			}
+			
+			Color tpc = box.getTopPen().getLineColor();
+			
+			// try to compact all borders into one css property
+			if (tps == lps &&												// same line style
+					tps == bps &&
+					tps == rps &&
+					tpw == lpw &&											// same line width
+					tpw == bpw &&
+					tpw == rpw &&
+					tpc.equals(box.getLeftPen().getLineColor()) &&			// same line color
+					tpc.equals(box.getBottomPen().getLineColor()) &&
+					tpc.equals(box.getRightPen().getLineColor())) 
+			{
+				addedToStyle |= appendPen(
+						styleBuffer,
+						box.getTopPen(),
+						null
+						);
+			} else {
+				addedToStyle |= appendPen(
+					styleBuffer,
+					box.getTopPen(),
+					"top"
+					);
+				addedToStyle |= appendPen(
+					styleBuffer,
+					box.getLeftPen(),
+					"left"
+					);
+				addedToStyle |= appendPen(
+					styleBuffer,
+					box.getBottomPen(),
+					"bottom"
+					);
+				addedToStyle |= appendPen(
+					styleBuffer,
+					box.getRightPen(),
+					"right"
+					);
+			}
+			
+			Integer tp = box.getTopPadding();
+			Integer lp = box.getLeftPadding();
+			Integer bp = box.getBottomPadding();
+			Integer rp = box.getRightPadding();
+			
+			// try to compact all paddings into one css property
+			if (tp == lp && tp == bp && tp == rp)
+			{
+				addedToStyle |= appendPadding(
+						styleBuffer,
+						tp,
+						null
+						);
+			} else 
+			{
+				addedToStyle |= appendPadding(
+						styleBuffer,
+						box.getTopPadding(),
+						"top"
+						);
+				addedToStyle |= appendPadding(
+						styleBuffer,
+						box.getLeftPadding(),
+						"left"
+						);
+				addedToStyle |= appendPadding(
+						styleBuffer,
+						box.getBottomPadding(),
+						"bottom"
+						);
+				addedToStyle |= appendPadding(
+						styleBuffer,
+						box.getRightPadding(),
+						"right"
+						);
+			}
 		}
 		
 		return addedToStyle;
 	}
 
 
-	protected int getInsideBorderOffset(float borderWidth)
+	protected int getInsideBorderOffset(float borderWidth, boolean small)
 	{
 		int intBorderWidth = (int)borderWidth;
 		if (0f < borderWidth && borderWidth < 1f)
 		{
 			intBorderWidth = 1;
 		}
-		return intBorderWidth / 2 + intBorderWidth % 2;
+		return intBorderWidth / 2 + (small ? 0 : intBorderWidth % 2);
 	}
 		
 	
@@ -1536,21 +1660,19 @@ public class JRXhtmlExporter extends JRAbstractExporter
 		{
 			widthDiff = 
 				box.getLeftPadding().intValue() + box.getRightPadding().intValue()
-				+ getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue())
-				+ getInsideBorderOffset(box.getRightPen().getLineWidth().floatValue());
+				+ getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue(), false)
+				+ getInsideBorderOffset(box.getRightPen().getLineWidth().floatValue(), true);
 			heightDiff =
 				box.getTopPadding().intValue() + box.getBottomPadding().intValue()
-				+ getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue())
-				+ getInsideBorderOffset(box.getBottomPen().getLineWidth().floatValue());
+				+ getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue(), false)
+				+ getInsideBorderOffset(box.getBottomPen().getLineWidth().floatValue(), true);
 		}
 		
-		styleBuffer.append("width:");
-		styleBuffer.append(toSizeUnit(element.getWidth() - widthDiff));
-		styleBuffer.append(";");
-
-		styleBuffer.append("height:");
-		styleBuffer.append(toSizeUnit(element.getHeight() - heightDiff));
-		styleBuffer.append(";");
+		appendSizeStyle(
+			element.getWidth() - widthDiff,
+			element.getHeight() - heightDiff,
+			styleBuffer
+			);
 	}
 
 
@@ -1560,27 +1682,83 @@ public class JRXhtmlExporter extends JRAbstractExporter
 
 		if (pen != null)
 		{
-			diff = 2 * getInsideBorderOffset(pen.getLineWidth().floatValue());
+			diff = 
+				getInsideBorderOffset(pen.getLineWidth().floatValue(), false) 
+				+ getInsideBorderOffset(pen.getLineWidth().floatValue(), true);
 		}
 		
+		appendSizeStyle(
+			element.getWidth() - diff,
+			element.getHeight() - diff,
+			styleBuffer
+			);
+	}
+
+
+	protected void appendSizeStyle(int width, int height, StringBuffer styleBuffer)
+	{
 		styleBuffer.append("width:");
-		styleBuffer.append(toSizeUnit(element.getWidth() - diff));
+		styleBuffer.append(toSizeUnit(width));
 		styleBuffer.append(";");
 
 		styleBuffer.append("height:");
-		styleBuffer.append(toSizeUnit(element.getHeight() - diff));
+		styleBuffer.append(toSizeUnit(height));
 		styleBuffer.append(";");
 	}
 
 
-	protected void appendPositionStyle(JRPrintElement element, StringBuffer styleBuffer)
+	protected void appendPositionStyle(JRPrintElement element, JRBoxContainer boxContainer, StringBuffer styleBuffer)
+	{
+		int leftOffset = 0;
+		int topOffset = 0;
+
+		JRLineBox box = boxContainer == null ? null :  boxContainer.getLineBox();
+		if (box != null)
+		{
+			leftOffset = 
+				getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue(), true);
+			topOffset = 
+				getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue(), true);
+		}
+		
+		FrameInfo frameInfo = frameInfoStack.size() == 0 ? null : frameInfoStack.get(frameInfoStack.size() - 1); 
+		
+		appendPositionStyle(
+			element.getX() - leftOffset - (frameInfo == null ? leftLimit : frameInfo.leftInsideBorderOffset),
+			element.getY() - topOffset - (frameInfo == null ? topLimit : frameInfo.topInsideBorderOffset),
+			styleBuffer
+			);
+	}
+
+
+	protected void appendPositionStyle(JRPrintElement element, JRPen pen, StringBuffer styleBuffer)
+	{
+		int offset = 0;
+
+		if (pen != null)
+		{
+			offset = 
+				getInsideBorderOffset(pen.getLineWidth().floatValue(), true);
+		}
+		
+		FrameInfo frameInfo = frameInfoStack.size() == 0 ? null : frameInfoStack.get(frameInfoStack.size() - 1); 
+		
+		appendPositionStyle(
+			element.getX() - offset - (frameInfo == null ? leftLimit : frameInfo.leftInsideBorderOffset),
+			element.getY() - offset - (frameInfo == null ? topLimit : frameInfo.topInsideBorderOffset),
+			styleBuffer
+			);
+	}
+
+
+	protected void appendPositionStyle(int x, int y, StringBuffer styleBuffer)
 	{
 		styleBuffer.append("position:absolute;");
 		styleBuffer.append("left:");
-		styleBuffer.append(toSizeUnit(element.getX() - (frameIndexStack.size() == 0 ? leftLimit : 0)));
+		styleBuffer.append(toSizeUnit(x));
 		styleBuffer.append(";");
 		styleBuffer.append("top:");
-		styleBuffer.append(toSizeUnit(element.getY() - (frameIndexStack.size() == 0 ? topLimit : 0)));
+		styleBuffer.append(toSizeUnit(y));
 		styleBuffer.append(";");
 	}
 
@@ -1648,7 +1826,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 		}
 
 		StringBuffer styleBuffer = new StringBuffer();
-		appendPositionStyle(image, styleBuffer);
+		appendPositionStyle(image, image, styleBuffer);
 		appendSizeStyle(image, image, styleBuffer);
 		appendBackcolorStyle(image, styleBuffer);
 		
@@ -1678,11 +1856,11 @@ public class JRXhtmlExporter extends JRAbstractExporter
 			writer.write("\"></a>");
 		}
 		
-		JRRenderable renderer = image.getRenderer();
-		JRRenderable originalRenderer = renderer;
+		Renderable renderer = image.getRenderable();
+		Renderable originalRenderer = renderer;
 		boolean imageMapRenderer = renderer != null 
-				&& renderer instanceof JRImageMapRenderer
-				&& ((JRImageMapRenderer) renderer).hasImageAreaHyperlinks();
+				&& renderer instanceof ImageMapRenderable
+				&& ((ImageMapRenderable) renderer).hasImageAreaHyperlinks();
 
 		boolean hasHyperlinks = false;
 
@@ -1707,7 +1885,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 			
 			if (renderer != null)
 			{
-				if (renderer.getType() == JRRenderable.TYPE_IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
+				if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
 				{
 					imagePath = rendererToImagePathMap.get(renderer.getId());
 				}
@@ -1728,7 +1906,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 						//backward compatibility with the IMAGE_MAP parameter
 						if (imageNameToImageDataMap != null)
 						{
-							if (renderer.getType() == JRRenderable.TYPE_SVG)
+							if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 							{
 								renderer =
 									new JRWrappingSvgRenderer(
@@ -1737,7 +1915,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 										ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null
 										);
 							}
-							imageNameToImageDataMap.put(imageName, renderer.getImageData());
+							imageNameToImageDataMap.put(imageName, renderer.getImageData(jasperReportsContext));
 						}
 						//END - backward compatibility with the IMAGE_MAP parameter
 					}
@@ -1749,19 +1927,19 @@ public class JRXhtmlExporter extends JRAbstractExporter
 				{
 					Rectangle renderingArea = new Rectangle(image.getWidth(), image.getHeight());
 					
-					if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+					if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 					{
-						imageMapName = imageMaps.get(new Pair(renderer.getId(), renderingArea));
+						imageMapName = imageMaps.get(new Pair<String,Rectangle>(renderer.getId(), renderingArea));
 					}
 	
 					if (imageMapName == null)
 					{
 						imageMapName = "map_" + getElementIndex().toString();
-						imageMapAreas = ((JRImageMapRenderer) originalRenderer).getImageAreaHyperlinks(renderingArea);//FIXMECHART
+						imageMapAreas = ((ImageMapRenderable) originalRenderer).getImageAreaHyperlinks(renderingArea);//FIXMECHART
 						
-						if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+						if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 						{
-							imageMaps.put(new Pair(renderer.getId(), renderingArea), imageMapName);
+							imageMaps.put(new Pair<String,Rectangle>(renderer.getId(), renderingArea), imageMapName);
 						}
 					}
 				}
@@ -1801,11 +1979,11 @@ public class JRXhtmlExporter extends JRAbstractExporter
 						leftDiff = box.getLeftPadding().intValue();
 						topDiff = box.getTopPadding().intValue();
 						widthDiff = 
-							getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue())
-							+ getInsideBorderOffset(box.getRightPen().getLineWidth().floatValue());
+							getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue(), false)
+							+ getInsideBorderOffset(box.getRightPen().getLineWidth().floatValue(), true);
 						heightDiff =
-							getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue())
-							+ getInsideBorderOffset(box.getBottomPen().getLineWidth().floatValue());
+							getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue(), false)
+							+ getInsideBorderOffset(box.getBottomPen().getLineWidth().floatValue(), true);
 					}
 					
 					writer.write(" style=\"position:absolute;left:");
@@ -1828,9 +2006,9 @@ public class JRXhtmlExporter extends JRAbstractExporter
 					if (!image.isLazy())
 					{
 						// Image load might fail. 
-						JRRenderable tmpRenderer = 
-							JRImageRenderer.getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-						Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension();
+						Renderable tmpRenderer = 
+							RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
+						Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
 						// If renderer was replaced, ignore image dimension.
 						if (tmpRenderer == renderer && dimension != null)
 						{
@@ -1850,11 +2028,11 @@ public class JRXhtmlExporter extends JRAbstractExporter
 						leftDiff = box.getLeftPadding().intValue();
 						topDiff = box.getTopPadding().intValue();
 						widthDiff = 
-							getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue())
-							+ getInsideBorderOffset(box.getRightPen().getLineWidth().floatValue());
+							getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue(), false)
+							+ getInsideBorderOffset(box.getRightPen().getLineWidth().floatValue(), true);
 						heightDiff =
-							getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue())
-							+ getInsideBorderOffset(box.getBottomPen().getLineWidth().floatValue());
+							getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue(), false)
+							+ getInsideBorderOffset(box.getBottomPen().getLineWidth().floatValue(), true);
 					}
 					
 					writer.write(" style=\"position:absolute;left:");
@@ -1886,9 +2064,9 @@ public class JRXhtmlExporter extends JRAbstractExporter
 					if (!image.isLazy())
 					{
 						// Image load might fail. 
-						JRRenderable tmpRenderer = 
-							JRImageRenderer.getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-						Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension();
+						Renderable tmpRenderer = 
+							RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
+						Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
 						// If renderer was replaced, ignore image dimension.
 						if (tmpRenderer == renderer && dimension != null)
 						{
@@ -1908,11 +2086,11 @@ public class JRXhtmlExporter extends JRAbstractExporter
 						leftDiff = box.getLeftPadding().intValue();
 						topDiff = box.getTopPadding().intValue();
 						widthDiff = 
-							getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue())
-							+ getInsideBorderOffset(box.getRightPen().getLineWidth().floatValue());
+							getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue(), false)
+							+ getInsideBorderOffset(box.getRightPen().getLineWidth().floatValue(), true);
 						heightDiff =
-							getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue())
-							+ getInsideBorderOffset(box.getBottomPen().getLineWidth().floatValue());
+							getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue(), false)
+							+ getInsideBorderOffset(box.getBottomPen().getLineWidth().floatValue(), true);
 					}
 					
 					if (availableImageHeight > 0)
@@ -1980,9 +2158,10 @@ public class JRXhtmlExporter extends JRAbstractExporter
 	protected JRPrintElementIndex getElementIndex()
 	{
 		StringBuffer sbuffer = new StringBuffer();
-		for (int i = 0; i < frameIndexStack.size(); i++)
+		for (int i = 0; i < frameInfoStack.size(); i++)
 		{
-			Integer frameIndex = frameIndexStack.get(i);
+			FrameInfo frameInfo = frameInfoStack.get(i);
+			Integer frameIndex = frameInfo.elementIndex;
 
 			sbuffer.append(frameIndex).append("_");
 		}
@@ -2142,27 +2321,14 @@ public class JRXhtmlExporter extends JRAbstractExporter
 				sb.append("-");
 				sb.append(side);
 			}
-			sb.append("-style: ");
-			sb.append(borderStyle);
-			sb.append("; ");
-
-			sb.append("border");
-			if (side != null)
-			{
-				sb.append("-");
-				sb.append(side);
-			}
-			sb.append("-width: ");
+			
+			sb.append(": ");
 			sb.append(toSizeUnit((int)borderWidth));
-			sb.append("; ");
+			
+			sb.append(" ");
+			sb.append(borderStyle);
 
-			sb.append("border");
-			if (side != null)
-			{
-				sb.append("-");
-				sb.append(side);
-			}
-			sb.append("-color: #");
+			sb.append(" #");
 			sb.append(JRColorUtil.getColorHexa(pen.getLineColor()));
 			sb.append("; ");
 
@@ -2178,15 +2344,25 @@ public class JRXhtmlExporter extends JRAbstractExporter
 	 */
 	private void appendId(JRPrintElement element) throws IOException
 	{
-		String id = JRProperties.getProperty(element, JRHtmlExporter.PROPERTY_HTML_ID);
+		String id = getPropertiesUtil().getProperty(element, JRHtmlExporter.PROPERTY_HTML_ID);
 		if (id != null)
 		{
 			writer.write(" id=\"" + id + "\"");
 		}
-		String clazz = JRProperties.getProperty(element, JRHtmlExporter.PROPERTY_HTML_CLASS);
+		String clazz = getPropertiesUtil().getProperty(element, JRHtmlExporter.PROPERTY_HTML_CLASS);
 		if (clazz != null)
 		{
 			writer.write(" class=\"" + clazz + "\"");
+		}
+		String popupId = getPropertiesUtil().getProperty(element, JRHtmlExporter.PROPERTY_HTML_POPUP_ID);
+		if (popupId != null)
+		{
+			writer.write(" data-popupId=\"" + popupId + "\"");
+		}
+		String popupColumn = getPropertiesUtil().getProperty(element, JRHtmlExporter.PROPERTY_HTML_POPUP_COLUMN);
+		if (popupColumn != null)
+		{
+			writer.write(" data-popupColumn=\"" + popupColumn + "\"");
 		}
 	}
 	
@@ -2247,25 +2423,43 @@ public class JRXhtmlExporter extends JRAbstractExporter
 		appendId(frame);
 
 		StringBuffer styleBuffer = new StringBuffer();
-		appendPositionStyle(frame, styleBuffer);
+		appendPositionStyle(frame, frame, styleBuffer);
 		appendSizeStyle(frame, frame, styleBuffer);
 		appendBackcolorStyle(frame, styleBuffer);
 		appendBorderStyle(frame.getLineBox(), styleBuffer);
 
 		if (styleBuffer.length() > 0)
 		{
-			writer.write(" style=\"overflow:hidden;");
+			writer.write(" style=\"");//overflow:hidden;");
 			writer.write(styleBuffer.toString());
 			writer.write("\"");
 		}
+		
+		if (frame.getPropertiesMap() != null && frame.getPropertiesMap().containsProperty(JRHtmlExporter.PROPERTY_HTML_UUID)) {
+			writer.write(" data-uuid=\"");
+			writer.write(frame.getPropertiesMap().getProperty(JRHtmlExporter.PROPERTY_HTML_UUID));
+			writer.write("\"");
+			writer.write(" class=\"jrtableframe\"");
+		}
+
 
 		writer.write(">\n");
 		
-		frameIndexStack.add(Integer.valueOf(elementIndex));
+		FrameInfo frameInfo = new FrameInfo();
+		frameInfo.elementIndex = elementIndex;
+		JRLineBox box = frame.getLineBox();
+		if (box != null)
+		{
+			frameInfo.leftInsideBorderOffset =
+				- box.getLeftPadding() + getInsideBorderOffset(box.getLeftPen().getLineWidth().floatValue(), false);
+			frameInfo.topInsideBorderOffset =
+				- box.getTopPadding() + getInsideBorderOffset(box.getTopPen().getLineWidth().floatValue(), false);
+		}
+		frameInfoStack.add(frameInfo);
 
 		exportElements(frame.getElements());
 
-		frameIndexStack.remove(frameIndexStack.size() - 1);
+		frameInfoStack.remove(frameInfoStack.size() - 1);
 
 		writer.write("</div>\n");
 	}
@@ -2274,7 +2468,7 @@ public class JRXhtmlExporter extends JRAbstractExporter
 	protected void exportGenericElement(JRGenericPrintElement element) throws IOException
 	{
 		GenericElementHtmlHandler handler = (GenericElementHtmlHandler) 
-				GenericElementHandlerEnviroment.getHandler(
+				GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
 						element.getGenericType(), XHTML_EXPORTER_KEY);
 		
 		if (handler == null)
@@ -2367,6 +2561,13 @@ public class JRXhtmlExporter extends JRAbstractExporter
 	protected String getExporterKey()
 	{
 		return XHTML_EXPORTER_KEY;
+	}
+	
+	private static class FrameInfo
+	{
+		protected int elementIndex;
+		protected int leftInsideBorderOffset;
+		protected int topInsideBorderOffset;
 	}
 }
 

@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.JRChartPlot;
  * and "critical", and the textual display of the value.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRThermometerPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRThermometerPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRThermometerPlot extends JRChartPlot
 {

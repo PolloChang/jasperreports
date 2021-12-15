@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
@@ -41,8 +42,9 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 /**
@@ -63,11 +65,11 @@ import net.sf.jasperreports.engine.util.JRStyledText;
  *
  * @see JRExporterParameter
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRTextExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTextExporter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTextExporter extends JRAbstractExporter
 {
-	private static final String TXT_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.txt.";
+	private static final String TXT_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.txt.";
 
 	protected int pageWidthInChars;
 	protected int pageHeightInChars;
@@ -80,6 +82,24 @@ public class JRTextExporter extends JRAbstractExporter
 	protected String lineSeparator;
 
 	protected static final String systemLineSeparator = System.getProperty("line.separator");
+
+	/**
+	 * @see #JRTextExporter(JasperReportsContext)
+	 */
+	public JRTextExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRTextExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
 
 	/**
 	 *

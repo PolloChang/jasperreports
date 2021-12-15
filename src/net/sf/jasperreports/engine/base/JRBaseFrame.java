@@ -45,7 +45,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * Base read-only implementation of {@link net.sf.jasperreports.engine.JRFrame JRFrame}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseFrame.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseFrame.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseFrame extends JRBaseElement implements JRFrame
 {

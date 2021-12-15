@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.component.Component;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableComponent.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TableComponent.java 5421 2012-05-29 10:46:56Z teodord $
  */
 public interface TableComponent extends Component, JRCloneable
 {

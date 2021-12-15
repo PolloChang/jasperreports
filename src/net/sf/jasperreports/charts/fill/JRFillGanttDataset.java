@@ -49,7 +49,7 @@ import org.jfree.data.time.SimpleTimePeriod;
 
 /**
  * @author Peter Risko (peter@risko.hu)
- * @version $Id: JRFillGanttDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillGanttDataset.java 5091 2012-03-15 15:00:37Z teodord $
  */
 public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDataset {
 
@@ -208,7 +208,7 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 					// TODO: ?? not sure how to do
 					//Pair xyKey = new Pair(crtXySeries.getXValue(), crtXySeries.getYValue());
 					//seriesLinks.put(xyKey, crtXySeries.getPrintItemHyperlink());
-					Pair taskSubtaskKey = new Pair(crtGanttSeries.getTask(), crtGanttSeries.getSubtask());
+					Pair<String,String> taskSubtaskKey = new Pair<String,String>(crtGanttSeries.getTask(), crtGanttSeries.getSubtask());
 					seriesLinks.put(taskSubtaskKey, crtGanttSeries.getPrintItemHyperlink());
 				}
 			}

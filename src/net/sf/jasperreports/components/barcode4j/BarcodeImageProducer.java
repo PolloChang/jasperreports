@@ -24,14 +24,15 @@
 package net.sf.jasperreports.components.barcode4j;
 
 import net.sf.jasperreports.engine.JRComponentElement;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
 
 import org.krysalis.barcode4j.BarcodeGenerator;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeImageProducer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarcodeImageProducer.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public interface BarcodeImageProducer
 {
@@ -42,7 +43,12 @@ public interface BarcodeImageProducer
 	String PROPERTY_PREFIX_IMAGE_PRODUCER = 
 		BarcodeComponent.PROPERTY_PREFIX + "image.producer.";
 	
-	JRRenderable createImage(JRComponentElement componentElement, 
-			BarcodeGenerator barcode, String message, int orientation);
+	Renderable createImage(
+		JasperReportsContext jasperReportsContext,
+		JRComponentElement componentElement, 
+		BarcodeGenerator barcode, 
+		String message, 
+		int orientation
+		);
 	
 }

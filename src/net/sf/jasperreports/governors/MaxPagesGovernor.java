@@ -25,14 +25,14 @@ package net.sf.jasperreports.governors;
 
 import net.sf.jasperreports.engine.JRDefaultScriptlet;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRScriptletException;
 import net.sf.jasperreports.engine.JasperReport;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: MaxPagesGovernor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MaxPagesGovernor.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class MaxPagesGovernor extends JRDefaultScriptlet
 {
@@ -40,8 +40,8 @@ public class MaxPagesGovernor extends JRDefaultScriptlet
 	/**
 	 *
 	 */
-	public static final String PROPERTY_MAX_PAGES_ENABLED = JRProperties.PROPERTY_PREFIX + "governor.max.pages.enabled";
-	public static final String PROPERTY_MAX_PAGES = JRProperties.PROPERTY_PREFIX + "governor.max.pages";
+	public static final String PROPERTY_MAX_PAGES_ENABLED = JRPropertiesUtil.PROPERTY_PREFIX + "governor.max.pages.enabled";
+	public static final String PROPERTY_MAX_PAGES = JRPropertiesUtil.PROPERTY_PREFIX + "governor.max.pages";
 
 	/**
 	 *

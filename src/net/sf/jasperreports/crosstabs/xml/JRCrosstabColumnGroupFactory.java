@@ -30,7 +30,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabColumnGroupFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCrosstabColumnGroupFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRCrosstabColumnGroupFactory extends JRCrosstabGroupFactory
 {

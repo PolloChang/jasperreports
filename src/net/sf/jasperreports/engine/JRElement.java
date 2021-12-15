@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.type.StretchTypeEnum;
  * constants and methods that apply to all report elements.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRElement.java 5404 2012-05-22 09:22:00Z lucianc $
  */
 public interface JRElement extends JRChild, JRCommonElement, JRPropertiesHolder
 {
@@ -175,4 +175,6 @@ public interface JRElement extends JRChild, JRCommonElement, JRPropertiesHolder
 	 * @return an array containing the expression-based properties of this report element
 	 */
 	public JRPropertyExpression[] getPropertyExpressions();
+	
+	public JRElement clone(JRElementGroup parentGroup, int y);
 }

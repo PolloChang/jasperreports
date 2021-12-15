@@ -43,7 +43,7 @@ import org.w3c.dom.NodeList;
  * XPath executer implementation that uses a namespace aware <a href="http://jaxen.org/" target="_blank">Jaxen</a>.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JaxenNsAwareXPathExecuter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JaxenNsAwareXPathExecuter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 {

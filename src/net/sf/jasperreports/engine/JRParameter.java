@@ -28,7 +28,7 @@ import net.sf.jasperreports.engine.util.FileResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRParameter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRParameter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRParameter extends JRPropertiesHolder, JRCloneable
 {
@@ -100,6 +100,7 @@ public interface JRParameter extends JRPropertiesHolder, JRCloneable
 	/**
 	 * A <tt>java.lang.ClassLoader</tt> instance to be used during the report filling process to load resources such 
 	 * as images, fonts and subreport templates.
+	 * @deprecated Replaced by {@link JasperReportsContext}.
 	 */
 	public static final String REPORT_CLASS_LOADER = "REPORT_CLASS_LOADER";
 
@@ -107,6 +108,7 @@ public interface JRParameter extends JRPropertiesHolder, JRCloneable
 	/**
 	 * A <tt>java.net.URLStreamHandlerFactory</tt> instance to be used during the report filling process to 
 	 * handle custom URL protocols for loading resources such as images, fonts and subreport templates.
+	 * @deprecated Replaced by {@link JasperReportsContext}.
 	 */
 	public static final String REPORT_URL_HANDLER_FACTORY = "REPORT_URL_HANDLER_FACTORY";
 
@@ -114,6 +116,7 @@ public interface JRParameter extends JRPropertiesHolder, JRCloneable
 	/**
 	 * A {@link FileResolver} instance to be used during the report filling process to 
 	 * handle locate files on disk using relative paths.
+	 * @deprecated Replaced by {@link JasperReportsContext}.
 	 */
 	public static final String REPORT_FILE_RESOLVER = "REPORT_FILE_RESOLVER";
 

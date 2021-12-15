@@ -32,16 +32,16 @@ import java.util.List;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.design.JRCompiler;
 import net.sf.jasperreports.engine.design.JasperDesign;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.ReportUpdater;
+import net.sf.jasperreports.engine.xml.JRReportSaxParserFactory;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
 
 import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
-import org.apache.tools.ant.taskdefs.MatchingTask;
 import org.apache.tools.ant.types.Path;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.resources.FileResource;
@@ -66,9 +66,9 @@ import org.apache.tools.ant.util.SourceFileScanner;
  * design file is older than the source file will be updated.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAntUpdateTask.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRAntUpdateTask.java 5217 2012-04-03 15:16:10Z teodord $
  */
-public class JRAntUpdateTask extends MatchingTask
+public class JRAntUpdateTask extends JRBaseAntTask
 {
 
 
@@ -184,41 +184,32 @@ public class JRAntUpdateTask extends MatchingTask
 
 		reportFilesMap = new HashMap<String, String>();
 
-		JRProperties.backupProperties();
-		
+		jasperReportsContext.setProperty(JRReportSaxParserFactory.COMPILER_XML_VALIDATION, String.valueOf(xmlvalidation));//FIXMECONTEXT is this needed? what about the one below?
+
+		AntClassLoader classLoader = null;
+		if (classpath != null)
+		{
+			jasperReportsContext.setProperty(JRCompiler.COMPILER_CLASSPATH, String.valueOf(classpath));
+			
+			ClassLoader parentClassLoader = getClass().getClassLoader();
+			classLoader = new AntClassLoader(parentClassLoader, getProject(), classpath, true);
+			classLoader.setThreadContextLoader();
+		}
+
 		try
 		{
-			JRProperties.setProperty(JRProperties.COMPILER_XML_VALIDATION, xmlvalidation);//FIXME is this needed?
-
-			AntClassLoader classLoader = null;
-			if (classpath != null)
-			{
-				JRProperties.setProperty(JRProperties.COMPILER_CLASSPATH, String.valueOf(classpath));
-				
-				ClassLoader parentClassLoader = getClass().getClassLoader();
-				classLoader = new AntClassLoader(parentClassLoader, getProject(), classpath, true);
-				classLoader.setThreadContextLoader();
-			}
-
-			try
-			{
-				/*   */
-				scanSrc();
-				/*   */
-				update();
-			}
-			finally
-			{
-				if (classLoader != null)
-				{
-					classLoader.resetThreadContextLoader();
-				}				
-			}			
+			/*   */
+			scanSrc();
+			/*   */
+			update();
 		}
 		finally
 		{
-			JRProperties.restoreProperties();
-		}
+			if (classLoader != null)
+			{
+				classLoader.resetThreadContextLoader();
+			}				
+		}			
 	}
 	
 	
@@ -253,9 +244,10 @@ public class JRAntUpdateTask extends MatchingTask
 	/**
 	 * Scans the source directories looking for source files to be updated. 
 	 */
-	protected void scanSrc() throws BuildException
+	protected void scanSrc() throws BuildException //FIXME put this method in base class
 	{
-		for(Iterator<Resource> it = src.iterator(); it.hasNext();)
+		for(@SuppressWarnings("unchecked")
+		Iterator<Resource> it = src.iterator(); it.hasNext();)
 		{
 			Resource resource = it.next();
 			FileResource fileResource = resource instanceof FileResource ? (FileResource)resource : null;
@@ -359,7 +351,7 @@ public class JRAntUpdateTask extends MatchingTask
 						}
 					}
 					
-					JRXmlWriter.writeReport(jasperDesign, destFileName, "UTF-8");
+					new JRXmlWriter(jasperReportsContext).write(jasperDesign, destFileName, "UTF-8");
 					
 					System.out.println("OK.");
 				}

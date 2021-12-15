@@ -16,9 +16,9 @@
 	</div>
 
 #if (${gotReportContext})
-	<script type='text/javascript'>
-		JasperReports.modules.global.appendScriptElementToDOM('_mapScript', '${resourceMapJs}', function() {
-			var jm = JasperReports.modules.map; 
+	<script class='jasperreports' type='text/javascript'>
+		jasperreports.global.appendScriptElementToDOM('_mapScript', '${resourceMapJs}', function() {
+			var jm = jasperreports.map; 
 			
 			jm.callback = function () {
 				var gg = google.maps,

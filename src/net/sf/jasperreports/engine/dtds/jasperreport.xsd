@@ -319,6 +319,11 @@
 	   <documentation>Specifies the name of the class implementing the <code>net.sf.jasperreports.engine.util.FormatFactory</code> interface to use with this report. If omitted, an instance of <code>net.sf.jasperreports.engine.util.DefaultFormatFactory</code> will be created.</documentation>
 	 </annotation>
    </attribute>
+   <attribute name="uuid" type="string" use="optional">
+	<annotation>
+	 <documentation>This attribute is auto-generated and is used to uniquely identify JRXMLs.</documentation>
+	</annotation>
+   </attribute>  
   </complexType>
  </element>
 
@@ -1041,6 +1046,11 @@
      </restriction>
     </simpleType>
    </attribute>
+   <attribute name="uuid" type="string" use="optional">
+	<annotation>
+	 <documentation>This attribute is auto-generated and is used to uniquely identify subdatasets.</documentation>
+	</annotation>
+   </attribute>  
   </complexType>
  </element>
 
@@ -1856,6 +1866,11 @@
     <element ref="jr:propertyExpression" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:printWhenExpression" minOccurs="0" maxOccurs="1"/>
    </sequence>
+   <attribute name="uuid" type="string" use="optional">
+	<annotation>
+	 <documentation>This attribute is auto-generated and is used to uniquely identify elements across multiple report templates.</documentation>
+	</annotation>
+   </attribute>  
    <attribute name="key" type="string" use="optional">
 	<annotation>
 	 <documentation>This attribute is used to identify band elements by their "key" when wanting to alter their settings at runtime. The key value must be unique for elements within report band.</documentation>
@@ -4158,6 +4173,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
   </annotation>
   <complexType>
    <sequence>
+    <element ref="jr:property" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:parametersMapExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:datasetParameter" minOccurs="0" maxOccurs="unbounded"/>
     <choice minOccurs="0" maxOccurs="1">
@@ -4170,6 +4186,11 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
  	 <documentation>The name of the <elem>subdataset</elem> to instantiate.</documentation>
 	</annotation>
    </attribute>
+   <attribute name="uuid" type="string" use="optional">
+	<annotation>
+	 <documentation>This attribute is auto-generated and is used to uniquely identify dataset runs.</documentation>
+	</annotation>
+   </attribute>  
   </complexType>
  </element>
 
@@ -5550,6 +5571,11 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
    	 <documentation>The color of the meter ticks, if any.</documentation>
   	</annotation>
    </attribute>
+   <attribute name="tickCount" type="string" use="optional">
+  	<annotation>
+   	 <documentation>The number of major ticks on the meter scale.</documentation>
+  	</annotation>
+   </attribute>
   </complexType>
  </element>
 
@@ -5855,6 +5881,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
   <complexType>
    <sequence>
     <element ref="jr:reportElement"/>
+    <element ref="jr:box" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:crosstabParameter" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:parametersMapExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:crosstabDataset" minOccurs="0" maxOccurs="1"/>

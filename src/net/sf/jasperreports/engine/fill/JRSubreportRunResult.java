@@ -29,7 +29,7 @@ package net.sf.jasperreports.engine.fill;
  * or {@link net.sf.jasperreports.engine.fill.JRSubreportRunner#resume() JRSubreportRunner.resume()}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSubreportRunResult.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRSubreportRunResult.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRSubreportRunResult
 {

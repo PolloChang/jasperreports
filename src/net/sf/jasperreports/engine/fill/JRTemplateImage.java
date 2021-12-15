@@ -49,13 +49,14 @@ import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.ObjectUtils;
 
 
 /**
  * Image information shared by multiple print image objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateImage.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplateImage.java 5180 2012-03-29 13:23:12Z teodord $
  * @see JRTemplatePrintImage
  */
 public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlignment, JRCommonImage
@@ -580,5 +581,46 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 		{
 			 linkTarget = JRHyperlinkHelper.getLinkTarget(HyperlinkTargetEnum.getByValue(hyperlinkTarget));
 		}
+	}
+
+	public int getHashCode()
+	{
+		ObjectUtils.HashCode hash = ObjectUtils.hash();
+		addGraphicHash(hash);
+		hash.add(scaleImageValue);
+		hash.add(isUsingCache);
+		hash.add(horizontalAlignmentValue);
+		hash.add(verticalAlignmentValue);
+		hash.add(isLazy);
+		hash.add(onErrorTypeValue);
+		hash.add(linkType);
+		hash.add(linkTarget);
+		hash.addIdentical(lineBox);
+		return hash.getHashCode();
+	}
+
+	public boolean isIdentical(Object object)
+	{
+		if (this == object)
+		{
+			return true;
+		}
+		
+		if (!(object instanceof JRTemplateImage))
+		{
+			return false;
+		}
+		
+		JRTemplateImage template = (JRTemplateImage) object;
+		return graphicIdentical(template)
+				&& ObjectUtils.equals(scaleImageValue, template.scaleImageValue)
+				&& ObjectUtils.equals(isUsingCache, template.isUsingCache)
+				&& ObjectUtils.equals(horizontalAlignmentValue, template.horizontalAlignmentValue)
+				&& ObjectUtils.equals(verticalAlignmentValue, template.verticalAlignmentValue)
+				&& ObjectUtils.equals(isLazy, template.isLazy)
+				&& ObjectUtils.equals(onErrorTypeValue, template.onErrorTypeValue)
+				&& ObjectUtils.equals(linkType, template.linkType)
+				&& ObjectUtils.equals(linkTarget, template.linkTarget)
+				&& ObjectUtils.identical(lineBox, template.lineBox);
 	}
 }

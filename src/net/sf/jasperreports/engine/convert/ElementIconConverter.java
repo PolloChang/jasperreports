@@ -33,9 +33,10 @@ package net.sf.jasperreports.engine.convert;
 
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.base.JRBasePrintImage;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
@@ -48,7 +49,7 @@ import org.apache.commons.logging.LogFactory;
  * Base converter that generates a static preview icon for the element.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ElementIconConverter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ElementIconConverter.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class ElementIconConverter extends ElementConverter
 {
@@ -71,15 +72,15 @@ public class ElementIconConverter extends ElementConverter
 		printImage.getLineBox().setPadding(3);
 		printImage.setScaleImage(ScaleImageEnum.CLIP);
 		
-		printImage.setRenderer(getRenderer());
+		printImage.setRenderable(getRenderer(reportConverter.getJasperReportsContext()));
 		return printImage;
 	}
 
-	protected JRRenderable getRenderer()
+	protected Renderable getRenderer(JasperReportsContext jasperReportsContext)
 	{
 		try
 		{
-			return JRImageRenderer.getInstance(
+			return RenderableUtil.getInstance(jasperReportsContext).getRenderable(
 					iconLocation, 
 					OnErrorTypeEnum.ERROR);
 		}

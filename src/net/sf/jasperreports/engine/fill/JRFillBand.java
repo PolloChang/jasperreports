@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRGroup;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,7 +43,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillBand.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillBand.java 5414 2012-05-25 09:51:28Z lucianc $
  */
 public class JRFillBand extends JRFillElementContainer implements JRBand, JROriginProvider
 {
@@ -103,7 +102,7 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 		{
 			splitType = 
 				SplitTypeEnum.getByName(
-					JRProperties.getProperty(filler.getJasperReport(), JRBand.PROPERTY_SPLIT_TYPE)
+					filler.getPropertiesUtil().getProperty(filler.getJasperReport(), JRBand.PROPERTY_SPLIT_TYPE)
 					);
 		}
 		
@@ -143,6 +142,11 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	 */
 	protected void setOrigin(JROrigin origin)
 	{
+		if (log.isDebugEnabled())
+		{
+			log.debug("Origin " + origin + " for band " + getId());
+		}
+		
 		this.origin = origin;
 		this.filler.getJasperPrint().addOrigin(origin);
 	}
@@ -356,23 +360,8 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 		boolean isOverflowAllowed
 		) throws JRException
 	{
+		filler.checkInterrupted();
 		filler.fillContext.ensureMasterPageAvailable();
-
-		if (
-			Thread.interrupted()
-			|| filler.isInterrupted()
-			)
-		{
-			if (log.isDebugEnabled())
-			{
-				log.debug("Fill " + filler.fillerId + ": interrupted");
-			}
-
-			// child fillers will stop if this parent filler was marked as interrupted
-			filler.setInterrupted(true);
-
-			throw new JRFillInterruptedException();
-		}
 
 		filler.setBandOverFlowAllowed(isOverflowAllowed);
 

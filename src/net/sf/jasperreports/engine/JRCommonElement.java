@@ -33,9 +33,9 @@ import net.sf.jasperreports.engine.type.ModeEnum;
  * constants and methods that apply to all report elements.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCommonElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCommonElement.java 5050 2012-03-12 10:11:26Z teodord $
  */
-public interface JRCommonElement extends JRStyleContainer
+public interface JRCommonElement extends JRStyleContainer, JRIdentifiable
 {
 
 	public int getWidth();

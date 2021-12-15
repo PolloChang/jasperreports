@@ -25,14 +25,16 @@ package net.sf.jasperreports.engine.scriptlets;
 
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ScriptletFactoryContext.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ScriptletFactoryContext.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class ScriptletFactoryContext
 {
@@ -40,6 +42,7 @@ public class ScriptletFactoryContext
 	/**
 	 *
 	 */
+	private JasperReportsContext jasperReportsContext;
 	private JasperReport jasperReport;
 	private JRDataset dataset;
 	private Map<String,Object> parameterValues;
@@ -47,11 +50,32 @@ public class ScriptletFactoryContext
 	/**
 	 *
 	 */
-	public ScriptletFactoryContext(Map<String,Object> parameterValues, JRDataset dataset)
+	public ScriptletFactoryContext(
+		JasperReportsContext jasperReportsContext,
+		JRDataset dataset,
+		Map<String,Object> parameterValues 
+		)
 	{
+		this.jasperReportsContext = jasperReportsContext;
 		this.jasperReport = (JasperReport)parameterValues.get(JRParameter.JASPER_REPORT);
 		this.dataset = dataset;
 		this.parameterValues = parameterValues;
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #ScriptletFactoryContext(JasperReportsContext, JRDataset, Map)}.
+	 */
+	public ScriptletFactoryContext(Map<String,Object> parameterValues, JRDataset dataset)
+	{
+		this(DefaultJasperReportsContext.getInstance(), dataset, parameterValues);
+	}
+
+	/**
+	 * 
+	 */
+	public JasperReportsContext getJasperReportsContext()
+	{
+		return jasperReportsContext;
 	}
 
 	/**

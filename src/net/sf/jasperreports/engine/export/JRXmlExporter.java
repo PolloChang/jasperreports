@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRException;
@@ -72,10 +73,12 @@ import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
@@ -83,12 +86,16 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRValueStringUtils;
 import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
+import net.sf.jasperreports.engine.util.XmlNamespace;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
+import net.sf.jasperreports.engine.xml.XmlValueHandlerUtils;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.w3c.tools.codec.Base64Encoder;
 
 
@@ -96,32 +103,37 @@ import org.w3c.tools.codec.Base64Encoder;
  * Exports a JasperReports document to an XML file that contains the same data as a {@link net.sf.jasperreports.engine.JasperPrint}
  * object, but in XML format, instead of a serialized class. Such XML files can be parsed back into <tt>JasperPrint</tt>
  * object using the {@link net.sf.jasperreports.engine.xml.JRPrintXmlLoader} utility class. Their structure is validated
- * against an internal DTD file called jasperprint.dtd
+ * against an internal XSD file called jasperprint.xsd.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXmlExporter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRXmlExporter extends JRAbstractExporter
 {
 
+	private static final Log log = LogFactory.getLog(JRXmlExporter.class);
+	
 	/**
 	 *
 	 */
-	private static final String XML_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.xml.";
+	private static final String XML_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.";
 
 	/**
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String XML_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "xml";
+	public static final String XML_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "xml";
 
-	private static final String PROPERTY_START_PAGE_INDEX = JRProperties.PROPERTY_PREFIX + "export.xml.start.page.index";
-	private static final String PROPERTY_END_PAGE_INDEX = JRProperties.PROPERTY_PREFIX + "export.xml.end.page.index";
-	private static final String PROPERTY_PAGE_COUNT = JRProperties.PROPERTY_PREFIX + "export.xml.page.count";
+	private static final String PROPERTY_START_PAGE_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.start.page.index";
+	private static final String PROPERTY_END_PAGE_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.end.page.index";
+	private static final String PROPERTY_PAGE_COUNT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.page.count";
 	protected static final String DEFAULT_XML_ENCODING = "UTF-8";
 	protected static final String DEFAULT_OBJECT_TYPE = "java.lang.String";
 	protected static final String XML_FILES_SUFFIX = "_files";
 	protected static final String IMAGE_PREFIX = "img_";
+	
+	public static final XmlNamespace JASPERPRINT_NAMESPACE = 
+			new XmlNamespace(JRXmlConstants.JASPERPRINT_NAMESPACE, null, JRXmlConstants.JASPERPRINT_XSD_SYSTEM_ID);
 
 	/**
 	 *
@@ -130,7 +142,7 @@ public class JRXmlExporter extends JRAbstractExporter
 	protected String encoding;
 	
 	protected JRExportProgressMonitor progressMonitor;
-	protected Map<JRRenderable,String> rendererToImagePathMap;
+	protected Map<Renderable,String> rendererToImagePathMap;
 	protected Map<String,byte[]> imageNameToImageDataMap;
 //	protected Map fontsMap = new HashMap();
 	protected Map<String,JRStyle> stylesMap = new HashMap<String,JRStyle>();
@@ -138,7 +150,6 @@ public class JRXmlExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	protected String dtdLocation;
 	protected boolean isEmbeddingImages = true;
 	protected File destFile;
 	protected File imagesDir;
@@ -159,6 +170,24 @@ public class JRXmlExporter extends JRAbstractExporter
 	
 	protected JRXmlExporterContext exporterContext = new ExporterContext();
 
+
+	/**
+	 * @see #JRXmlExporter(JasperReportsContext)
+	 */
+	public JRXmlExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRXmlExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
 
 	/**
 	 *
@@ -186,10 +215,11 @@ public class JRXmlExporter extends JRAbstractExporter
 			/*   */
 			setPageRange();
 	
-			dtdLocation = (String)parameters.get(JRXmlExporterParameter.DTD_LOCATION);
-			if (dtdLocation == null)
+			@SuppressWarnings("deprecation")
+			String dtdLocation = (String)parameters.get(JRXmlExporterParameter.DTD_LOCATION);
+			if (dtdLocation != null)
 			{
-				dtdLocation = JRXmlConstants.JASPERPRINT_SYSTEM_ID;
+				log.warn("The JRXmlExporterParameter.DTD_LOCATION export parameter has no effect and should no longer be used.");
 			}
 			
 			encoding = (String)parameters.get(JRExporterParameter.CHARACTER_ENCODING);
@@ -287,7 +317,7 @@ public class JRXmlExporter extends JRAbstractExporter
 	{
 		//if (!isEmbeddingImages)
 		{
-			rendererToImagePathMap = new HashMap<JRRenderable,String>();
+			rendererToImagePathMap = new HashMap<Renderable,String>();
 			imageNameToImageDataMap = new HashMap<String,byte[]>();
 		}
 				
@@ -379,15 +409,18 @@ public class JRXmlExporter extends JRAbstractExporter
 		return buffer.getBuffer();
 	}
 
+	protected XmlNamespace getNamespace()
+	{
+		return JASPERPRINT_NAMESPACE;
+	}
 
 	protected void exportReportToStream(Writer writer) throws JRException, IOException
 	{
 		xmlWriter = new JRXmlWriteHelper(writer);
 		
 		xmlWriter.writeProlog(encoding);
-		xmlWriter.writePublicDoctype(JRXmlConstants.ELEMENT_jasperPrint, JRXmlConstants.JASPERPRINT_PUBLIC_ID, dtdLocation);
 
-		xmlWriter.startElement(JRXmlConstants.ELEMENT_jasperPrint);
+		xmlWriter.startElement(JRXmlConstants.ELEMENT_jasperPrint, getNamespace());
 		xmlWriter.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, jasperPrint.getName());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_pageWidth, jasperPrint.getPageWidth());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_pageHeight, jasperPrint.getPageHeight());
@@ -666,6 +699,12 @@ public class JRXmlExporter extends JRAbstractExporter
 			xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_origin, jasperPrint.getOriginsMap().get(origin));
 		}
 		
+		int elementId = element.getSourceElementId();
+		if (elementId != JRPrintElement.UNSET_SOURCE_ELEMENT_ID)
+		{
+			xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_srcId, elementId);
+		}
+		
 		exportProperties(element);
 		
 		xmlWriter.closeElement();
@@ -781,7 +820,7 @@ public class JRXmlExporter extends JRAbstractExporter
 		exportGraphicElement(image);
 		
 
-		JRRenderable renderer = image.getRenderer();
+		Renderable renderer = image.getRenderable();
 		if (renderer != null)
 		{
 			xmlWriter.startElement(JRXmlConstants.ELEMENT_imageSource);
@@ -789,7 +828,7 @@ public class JRXmlExporter extends JRAbstractExporter
 	
 			String imageSource = "";
 			
-			if (renderer.getType() == JRRenderable.TYPE_SVG)
+			if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 			{
 				renderer = 
 					new JRWrappingSvgRenderer(
@@ -807,7 +846,7 @@ public class JRXmlExporter extends JRAbstractExporter
 			{
 				try
 				{
-					ByteArrayInputStream bais = new ByteArrayInputStream(renderer.getImageData());
+					ByteArrayInputStream bais = new ByteArrayInputStream(renderer.getImageData(jasperReportsContext));
 					ByteArrayOutputStream baos = new ByteArrayOutputStream();
 					
 					Base64Encoder encoder = new Base64Encoder(bais, baos);
@@ -822,14 +861,14 @@ public class JRXmlExporter extends JRAbstractExporter
 			}
 			else
 			{
-				if (renderer.getType() == JRRenderable.TYPE_IMAGE && rendererToImagePathMap.containsKey(renderer))
+				if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer))
 				{
 					imageSource = rendererToImagePathMap.get(renderer);
 				}
 				else
 				{
 					imageSource = IMAGE_PREFIX + getNextImageId();
-					imageNameToImageDataMap.put(imageSource, renderer.getImageData());
+					imageNameToImageDataMap.put(imageSource, renderer.getImageData(jasperReportsContext));
 					
 					imageSource = new File(imagesDir, imageSource).getPath();
 					rendererToImagePathMap.put(renderer, imageSource);
@@ -862,8 +901,8 @@ public class JRXmlExporter extends JRAbstractExporter
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_rotation, text.getOwnRotationValue());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_runDirection, text.getRunDirectionValue(), RunDirectionEnum.LTR);
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_markup, text.getOwnMarkup());
-		//xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_lineSpacingFactor, text.getLineSpacingFactor());
-		//xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_leadingOffset, text.getLeadingOffset());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_lineSpacingFactor, text.getLineSpacingFactor(), 0f);
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_leadingOffset, text.getLeadingOffset(), 0f);
 
 		if (hyperlinkProducerFactory == null)
 		{
@@ -1103,7 +1142,7 @@ public class JRXmlExporter extends JRAbstractExporter
 	protected void exportGenericElement(JRGenericPrintElement element) throws IOException
 	{
 		GenericElementXmlHandler handler = (GenericElementXmlHandler) 
-		GenericElementHandlerEnviroment.getHandler(
+		GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
 				element.getGenericType(), getExporterKey());
 
 		if (handler != null)
@@ -1133,11 +1172,22 @@ public class JRXmlExporter extends JRAbstractExporter
 				if (value != null)
 				{
 					String valueClass = value.getClass().getName();
-					String data = JRValueStringUtils.serialize(valueClass, value);
-					xmlWriter.startElement(JRXmlConstants.ELEMENT_genericElementParameterValue);
-					xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_class, valueClass);
-					xmlWriter.writeCDATA(data);
-					xmlWriter.closeElement();//genericElementParameterValue
+					// check if there's a builtin serializer for the value
+					boolean builtinSerialization = JRValueStringUtils.hasSerializer(valueClass);
+					if (!builtinSerialization)
+					{
+						// try XML handlers, if none works then default back to the builtin serialization
+						builtinSerialization = !XmlValueHandlerUtils.instance().writeToXml(value, this);
+					}
+					
+					if (builtinSerialization)
+					{
+						String data = JRValueStringUtils.serialize(valueClass, value);
+						xmlWriter.startElement(JRXmlConstants.ELEMENT_genericElementParameterValue);
+						xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_class, valueClass);
+						xmlWriter.writeCDATA(data);
+						xmlWriter.closeElement();//genericElementParameterValue
+					}
 				}
 				xmlWriter.closeElement();//genericElementParameter
 			}
@@ -1162,5 +1212,17 @@ public class JRXmlExporter extends JRAbstractExporter
 	protected String getExporterKey()
 	{
 		return XML_EXPORTER_KEY;
+	}
+	
+	/**
+	 * Returns the XML write helper used by this exporter.
+	 * 
+	 * The helper can be used to output XML elements and attributes.
+	 * 
+	 * @return the XML write helper used by this exporter
+	 */
+	public JRXmlWriteHelper getXmlWriteHelper()
+	{
+		return xmlWriter;
 	}
 }

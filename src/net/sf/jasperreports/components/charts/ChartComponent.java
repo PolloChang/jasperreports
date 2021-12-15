@@ -25,14 +25,14 @@ package net.sf.jasperreports.components.charts;
 
 import java.io.Serializable;
 
-import net.sf.jasperreports.engine.component.Component;
+import net.sf.jasperreports.engine.component.ContextAwareComponent;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ChartComponent.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ChartComponent.java 5180 2012-03-29 13:23:12Z teodord $
  */
-public interface ChartComponent extends Component, Serializable
+public interface ChartComponent extends ContextAwareComponent, Serializable
 {
 	public ChartSettings getChartSettings();
 

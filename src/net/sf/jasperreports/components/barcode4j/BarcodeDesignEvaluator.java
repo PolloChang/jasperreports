@@ -23,35 +23,51 @@
  */
 package net.sf.jasperreports.components.barcode4j;
 
-import org.krysalis.barcode4j.ChecksumMode;
-
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRExpression;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
+
+import org.krysalis.barcode4j.ChecksumMode;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeDesignEvaluator.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarcodeDesignEvaluator.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 {
 
+	public BarcodeDesignEvaluator(
+		JasperReportsContext jasperReportsContext,
+		JRComponentElement componentElement,
+		JRDefaultStyleProvider defaultStyleProvider
+		)
+	{
+		super(jasperReportsContext, componentElement, defaultStyleProvider);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #BarcodeDesignEvaluator(JasperReportsContext, JRComponentElement, JRDefaultStyleProvider)}.
+	 */
 	public BarcodeDesignEvaluator(JRComponentElement componentElement,
 			JRDefaultStyleProvider defaultStyleProvider)
 	{
-		super(componentElement, defaultStyleProvider);
+		this(DefaultJasperReportsContext.getInstance(), componentElement, defaultStyleProvider);
 	}
 	
-	public JRRenderable evaluateImage()
+	public Renderable evaluateImage()
 	{
 		evaluateBarcode();
 		
-		BarcodeImageProducer imageProducer = BarcodeUtils.getImageProducer(
+		BarcodeImageProducer imageProducer = 
+			BarcodeUtils.getInstance(jasperReportsContext).getProducer(
 				componentElement);
-		JRRenderable barcodeImage = imageProducer.createImage(
+		Renderable barcodeImage = imageProducer.createImage(
+				jasperReportsContext,
 				componentElement, 
 				barcode, message, barcodeComponent.getOrientation());
 		return barcodeImage;

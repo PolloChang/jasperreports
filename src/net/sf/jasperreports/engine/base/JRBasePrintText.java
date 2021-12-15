@@ -57,7 +57,7 @@ import net.sf.jasperreports.engine.util.JRStyledTextParser;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePrintText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBasePrintText.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 {
@@ -77,13 +77,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	protected String textTruncateSuffix;
 	protected transient String truncatedText;
 	protected Object value;
-	/**
-	 * @deprecated No longer used.
-	 */
 	protected float lineSpacingFactor;
-	/**
-	 * @deprecated No longer used.
-	 */
 	protected float leadingOffset;
 	protected HorizontalAlignEnum horizontalAlignmentValue;
 	protected VerticalAlignEnum verticalAlignmentValue;
@@ -287,7 +281,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	public float getLineSpacingFactor()
 	{
@@ -295,7 +289,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 		
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	public void setLineSpacingFactor(float lineSpacingFactor)
 	{
@@ -303,7 +297,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	public float getLeadingOffset()
 	{
@@ -311,7 +305,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 		
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	public void setLeadingOffset(float leadingOffset)
 	{

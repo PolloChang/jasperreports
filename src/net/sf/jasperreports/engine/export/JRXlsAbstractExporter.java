@@ -34,11 +34,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TimeZone;
 
 import net.sf.jasperreports.charts.type.EdgeEnum;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
@@ -54,113 +59,117 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
+import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.util.JRDataUtils;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsAbstractExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXlsAbstractExporter.java 5435 2012-06-11 15:37:36Z teodord $
  */
 public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 {
 
-	protected static final String XLS_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.xls.";
+	protected static final String XLS_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.";
 
 	/**
 	 * Property that stores the formula which has to be applied to a given cell in an excel sheet.
 	 */
-	public static final String PROPERTY_CELL_FORMULA = JRProperties.PROPERTY_PREFIX + "export.xls.formula";
+	public static final String PROPERTY_CELL_FORMULA = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.formula";
 
 	/**
 	 * Property that stores the pattern which has to be applied to a given cell in an excel sheet.
 	 */
-	public static final String PROPERTY_CELL_PATTERN = JRProperties.PROPERTY_PREFIX + "export.xls.pattern";
+	public static final String PROPERTY_CELL_PATTERN = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.pattern";
 
 	/**
 	 * This property indicates whether text wrapping is allowed in a given cell.
 	 * <p>
 	 * The property itself defaults to <code>true</code>.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_WRAP_TEXT = JRProperties.PROPERTY_PREFIX + "export.xls.wrap.text";
+	public static final String PROPERTY_WRAP_TEXT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.wrap.text";
 
 
 	/**
 	 * This property indicates the number of pages wide to fit the sheet in.
 	 * <p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_FIT_WIDTH = JRProperties.PROPERTY_PREFIX + "export.xls.fit.width";
+	public static final String PROPERTY_FIT_WIDTH = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.fit.width";
 
 	/**
 	 * This property indicates the number of pages height to fit the sheet in.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_FIT_HEIGHT = JRProperties.PROPERTY_PREFIX + "export.xls.fit.height";
+	public static final String PROPERTY_FIT_HEIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.fit.height";
 
 	/**
 	 * This property indicates whether the cell is locked.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_CELL_LOCKED = JRProperties.PROPERTY_PREFIX + "export.xls.cell.locked";
+	public static final String PROPERTY_CELL_LOCKED = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.cell.locked";
 
 	/**
 	 * This property indicates whether the cell content is hidden.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_CELL_HIDDEN = JRProperties.PROPERTY_PREFIX + "export.xls.cell.hidden";
+	public static final String PROPERTY_CELL_HIDDEN = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.cell.hidden";
 
 	/**
 	 * This property stores the text content of the sheet header's left side.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_SHEET_HEADER_LEFT = JRProperties.PROPERTY_PREFIX + "export.xls.sheet.header.left";
+	public static final String PROPERTY_SHEET_HEADER_LEFT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.sheet.header.left";
 
 	/**
 	 * This property stores the text content of the sheet header's center.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_SHEET_HEADER_CENTER = JRProperties.PROPERTY_PREFIX + "export.xls.sheet.header.center";
+	public static final String PROPERTY_SHEET_HEADER_CENTER = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.sheet.header.center";
 
 	/**
 	 * This property stores the text content of the sheet header's right side.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_SHEET_HEADER_RIGHT = JRProperties.PROPERTY_PREFIX + "export.xls.sheet.header.right";
+	public static final String PROPERTY_SHEET_HEADER_RIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.sheet.header.right";
 
 	/**
 	 * This property stores the text content of the sheet footer's left side.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_SHEET_FOOTER_LEFT = JRProperties.PROPERTY_PREFIX + "export.xls.sheet.footer.left";
+	public static final String PROPERTY_SHEET_FOOTER_LEFT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.sheet.footer.left";
 
 	/**
 	 * This property stores the text content of the sheet footer's center.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_SHEET_FOOTER_CENTER = JRProperties.PROPERTY_PREFIX + "export.xls.sheet.footer.center";
+	public static final String PROPERTY_SHEET_FOOTER_CENTER = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.sheet.footer.center";
 
 	/**
 	 * This property stores the text content of the sheet footer's right side.
 	 * </p>
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_SHEET_FOOTER_RIGHT = JRProperties.PROPERTY_PREFIX + "export.xls.sheet.footer.right";
+	public static final String PROPERTY_SHEET_FOOTER_RIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.sheet.footer.right";
 
 	/**
 	 * This property indicates if the sheet is left-to-right or right-to-left oriented. Possible values are:
@@ -169,24 +178,24 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 	 * <li>RTL - meaning right-to-left</li>
 	 * </ul>
 	 * The default value is LTR.
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 * @see RunDirectionEnum
 	 */
-	public static final String PROPERTY_SHEET_DIRECTION = JRProperties.PROPERTY_PREFIX + "export.xls.sheet.direction";
+	public static final String PROPERTY_SHEET_DIRECTION = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.sheet.direction";
 	
 	/**
 	 * Specifies the index of the first unlocked row in document's sheets. All rows above this will be 'frozen'. 
 	 * Allowed values are represented by positive integers in the 1..65536 range. Negative values are not considered. 
 	 * The property should be used when all sheets in the document have the same freeze row index.
 	 */
-	public static final String PROPERTY_FREEZE_ROW = JRProperties.PROPERTY_PREFIX + "export.xls.freeze.row";
+	public static final String PROPERTY_FREEZE_ROW = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.freeze.row";
 	
 	/**
 	 * Indicates the name of the first unlocked column in document's sheets. All columns to the left of this one will be 'frozen'. 
 	 * Allowed values are letters or letter combinations representing valid column names in Excel, such as A, B, AB, AC, etc.
 	 * The property should be used when all document sheets have the same freeze column name.
 	 */
-	public static final String PROPERTY_FREEZE_COLUMN = JRProperties.PROPERTY_PREFIX + "export.xls.freeze.column";
+	public static final String PROPERTY_FREEZE_COLUMN = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.freeze.column";
 	
 	/**
 	 * This property indicates the horizontal edge of the freeze pane, relative to the current cell. If set, it overrides the 
@@ -197,7 +206,7 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 	 * <li><code>Bottom</code> - The current row is the last 'frozen' row in the sheet. All rows below are unlocked.</li>
 	 * </ul>
 	 */
-	public static final String PROPERTY_FREEZE_ROW_EDGE = JRProperties.PROPERTY_PREFIX + "export.xls.freeze.row.edge";
+	public static final String PROPERTY_FREEZE_ROW_EDGE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.freeze.row.edge";
 	
 	/**
 	 * This property indicates the vertical edge of the freeze pane, relative to the current cell. If set, it overrides the 
@@ -208,13 +217,227 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 	 * <li><code>Right</code> - The current column is the last 'frozen' column in the sheet. All columns to the right are unlocked.</li>
 	 * </ul>
 	 */
-	public static final String PROPERTY_FREEZE_COLUMN_EDGE = JRProperties.PROPERTY_PREFIX + "export.xls.freeze.column.edge";
+	public static final String PROPERTY_FREEZE_COLUMN_EDGE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.freeze.column.edge";
 	
+	/**
+	 * Flag property that indicates whether Excel should autofit the current row height.
+	 * Allowed values are:
+	 * <ul>
+	 * <li><code>true</code></li>
+	 * <li><code>false</code> - this is the default value.</li>
+	 * </ul>
+	 * 
+	 * @see JRPropertiesUtil
+	 * @since 4.5.1
+	 */
+	public static final String PROPERTY_AUTO_FIT_ROW = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.auto.fit.row";
 	
+	/**
+	 * Flag property that indicates whether Excel should autofit the current column width.
+	 * Allowed values are:
+	 * <ul>
+	 * <li><code>true</code></li>
+	 * <li><code>false</code> - this is the default value.</li>
+	 * </ul>
+	 * 
+	 * @see JRPropertiesUtil
+	 * @since 4.5.1
+	 */
+	public static final String PROPERTY_AUTO_FIT_COLUMN = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.auto.fit.column";
 	
-	public static final int MAX_ROW_INDEX = 65535;
-	public static final int MAX_COLUMN_INDEX = 255;
+	/**
+	 * This element-level property is used to indicate the boundaries of the autofilter data range in the current sheet. 
+	 * Allowed values are:
+	 * <ul>
+	 * <li><code>Start</code> - The current cell will be marked as autofilter heading cell, and column data below/to the right of 
+	 * this cell can be considered as part of the autofilter data range. The starting point of the autofilter data range will be 
+	 * the next cell below the current cell (ie if the current cell reference is B4, the autofilter range will start with the "B5" 
+	 * cell reference: "B5:M20").
+	 * <br/>
+	 * If multiple autofilter <code>Start</code> values are found in the same sheet, only the last one will be considered. If the 
+	 * <code>Start</code> value is present but no <code>End</code> value is found in the sheet, then only the current column will 
+	 * be considered for the data range.
+	 * <br/>
+	 * If the autofilter <code>Start</code> value is set on the same row as the autofilter <code>End</code> value, the data range 
+	 * will include all data below this heading row, placed between the start column and the end column.</li>
+	 * <li><code>End</code> - The current cell will be marked as autofilter ending cell, and column data in this cell and 
+	 * above/to the left can be considered as part of the autofilter data range. The ending cell in the data range is the 
+	 * current cell reference (ie if the current cell reference is M20, the autofilter range will end in "M20": "B5:M20"). 
+	 * The heading cell for the current column will be placed in the same column on the row containing the autofilter <code>Start</code> value. 
+	 * <br/>
+	 * <b>Caution:</b> If no autofilter <code>Start</code> value is found in the sheet, the autofilter <code>End</code> value will be considered 
+	 * as <code>Start</code> value instead. 
+	 * <br/>
+	 * If multiple autofilter <code>End</code> value are found in the same sheet, only the last one will be considered. 
+	 * <br/>
+	 * If the autofilter <code>Start</code> value is set on the same row as the autofilter <code>End</code> value, the data range 
+	 * will include all data below this heading row, placed between the start column and the end column.</li>
+	 * </ul>
+	 * 
+	 * @see JRPropertiesUtil
+	 */
+	public static final String PROPERTY_AUTO_FILTER = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.auto.filter";
 	
+	/**
+	 * Element-level property used to adjust the column width to values suitable for Excel output, taking into account 
+	 * that column widths are measured in Excel in Normal style default character width units. The pixel-to-character width 
+	 * translation depends on the default normal style character width, so it cannot be always accurately fitted. In this case, 
+	 * one can adjust the current column width by setting this property with an integer value measured in pixels. The JR engine 
+	 * will perform the pixel-to-character width mapping using this value instead of the element's <code>width</code> attribute.
+	 * <br/>
+	 * If defined, this property will override the {@link #PROPERTY_COLUMN_WIDTH_RATIO PROPERTY_COLUMN_WIDTH_RATIO} value for the current column
+	 * 
+	 * @see #PROPERTY_COLUMN_WIDTH_RATIO
+	 * @see JRPropertiesUtil
+	 */
+	public static final String PROPERTY_COLUMN_WIDTH = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.column.width";
+
+	/**
+	 * Property used to adjust all column widths in a document or sheet with the same width ratio, in order to get column width 
+	 * values suitable for Excel output. Usually column widths are measured by Excel in Normal style default character width 
+	 * units, while the JR engine uses pixels as default size units. When exporting the report to the Excel output format, the 
+	 * pixel-to-character width translation depends on the normal style default character width provided by the Excel instance, 
+	 * so it cannot be always accurately fitted. In this case, one can alter the generated column widths by setting this property 
+	 * with a float value representing the adjustment ratio. The property can be set:
+	 * <ul>
+	 * <li>globally - then all the columns in all documents exported to the Excel output format will be adjusted with the same width ratio</li>
+	 * <li>at report level - then all the columns in the document will be adjusted with the same width ratio</li>
+	 * <li>at element level - then all the columns in the current sheet will be adjusted with the same width ratio</li>
+	 * </ul> 
+	 * Global settings are overriden by report level settings and report level settings are overriden by element level settings. If 
+	 * present, a {@link #PROPERTY_COLUMN_WIDTH PROPERTY_COLUMN_WIDTH} property will override the 
+	 * {@link #PROPERTY_COLUMN_WIDTH_RATIO PROPERTY_COLUMN_WIDTH_RATIO} value for that column only.
+	 * 
+	 * @see #PROPERTY_COLUMN_WIDTH
+	 * @see JRPropertiesUtil
+	 */
+	public static final String PROPERTY_COLUMN_WIDTH_RATIO = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.column.width.ratio";
+	
+	/**
+	 * Property prefix used to indicate the current outline row level, and when necessary, the ending row of the current outline row 
+	 * group with the given level. The suffix 
+	 * of these properties is associated with the outline level, while the property value indicates if the current row group should 
+	 * continue or should end. The most recommended practice is to use the outline level itself as property suffix, although this is not 
+	 * mandatory. The suffix may take any other string value, but one has to keep in mind that suffixes are used as sorted row level 
+	 * descriptors. For instance, because "aaa" &lt; "bbb", the outline level associated with the "aaa" suffix will be smaller than 
+	 * the level associated with the "bbb" suffix. The most intuitive representation of the row levels uses the row level as property suffix.
+	 * <br/>
+	 * In such a case, The <code>net.sf.jasperreports.export.xls.outline.level.2</code> property means that its value is correlated with 
+	 * the outline level 2, so the current row belongs to a level 2 row group. Based on Office Open XML specs, allowed values for outline 
+	 * levels are positive integers from 1 to 7.
+	 * <br/>
+	 * The value of this property could be any expression (including <code>null</code>). When such a property occurrence is met, the suffix 
+	 * indicates the outline level for that row. If multiple properties with the same prefix are defined for the same row, the deepest 
+	 * outline level is considered for that row. To end an outline row group one has to set the related outline level property with the 
+	 * <code>End</code> value. This is a special property value instructing the JR engine that the current row group of that level ends 
+	 * on the current row. 
+	 * 
+	 * @see JRPropertiesUtil
+	 */
+	public static final String PROPERTY_ROW_OUTLINE_LEVEL_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.row.outline.level.";
+	
+	/**
+	 * Property that determines whether date values are to be translated to the timezone
+	 * that was used to fill the report.
+	 * 
+	 * <p>
+	 * By default, date values are exported to Excel using the default timezone of the system.
+	 * Setting this property to <code>true</code> instructs the exporter to use he report fill
+	 * timezone to export date values.
+	 * 
+	 * <p>
+	 * The property only has effect when {@link JRXlsAbstractExporterParameter#IS_DETECT_CELL_TYPE} is set.
+	 * 
+	 * <p>
+	 * The property can be set globally, at report level and at element level.
+	 * The default value is <code>false</code>.
+	 * 
+	 * @since 4.5.0
+	 */
+	public static final String PROPERTY_USE_TIMEZONE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.use.timezone";
+	
+	/**
+	 * Property used to store the location of an existing workbook template. The content of an existing workbook document 
+	 * or template can be embedded into exported document if the template location is known. In this case the content of 
+	 * the template will be exported first and the content of the exported report will be appended to this one. Macros and 
+	 * other settings in the existing template will be also preserved in the generated document. Templates can be loaded from 
+	 * Excel template files (*.xlt) as well as from valid Excel documents (*.xls).
+	 * <p>
+	 * This property is used in Excel exporters based either on Apache POI APIs ({@link JRXlsExporter}) or on JExcelApi library 
+	 * ({@link JExcelApiExporter}). There's no similar property for the {@link JRXlsxExporter}.
+	 * 
+	 * @see JRPropertiesUtil
+	 * @since 4.5.1
+	 */
+	public static final String PROPERTY_WORKBOOK_TEMPLATE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.workbook.template";
+	
+	/**
+	 * Flag property that specifies whether to keep the sheets of the existing template into generated document. Sometimes 
+	 * is important to embed in a generated document only macros and/or other global settings from an existing template, but 
+	 * without keeping the own sheets of the template document. If set to false, this property prevent the template sheets 
+	 * to be exported.
+	 * <p>
+	 * This property is used in conjunction with {@link JRXlsAbstractExporter#PROPERTY_WORKBOOK_TEMPLATE}.
+	 * <p>
+	 * Allowed values are:
+	 * <ul>
+	 * <li><code>true</code></li>
+	 * <li><code>false</code> - this is the default value.</li>
+	 * </ul>
+	 * 
+	 * @see JRPropertiesUtil
+	 * @since 4.5.1
+	 */
+	public static final String PROPERTY_WORKBOOK_TEMPLATE_KEEP_SHEETS = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.workbook.template.keep.sheets";
+
+	
+	/**
+	 * Flag property that indicates whether local anchors should be ignored when elements are exported to Excel. The default value is <code>false</code>.
+	 * <p>
+	 * Property scope:
+	 * <ul>
+	 * <li><code>Global</code></li>
+	 * <li><code>Report</code></li>
+	 * </ul>
+	 */
+	public static final String PROPERTY_IGNORE_ANCHORS = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.ignore.anchors";
+	
+	/**
+	 * Property used to adjust the page content to a given percent of the normal size in the print preview pane. Allowed values are 
+	 * positive integers from 10 to 400, representing percents of the normal size.
+	 * <br/>
+	 * Property scope:
+	 * <ul>
+	 * <li><code>Global</code></li>
+	 * <li><code>Report</code></li>
+	 * <li><code>Element</code> - this setting can be used to set the page scale per sheet</li>
+	 * </ul>
+	 * Global settings are overriden by report level settings; report level settings are overriden by element (sheet) level settings.
+	 * <br/>
+	 * The property overrides the {@link #PROPERTY_FIT_WIDTH PROPERTY_FIT_WIDTH} and {@link #PROPERTY_FIT_HEIGHT PROPERTY_FIT_HEIGHT} values.
+	 * 
+	 * @see JRXlsAbstractExporter#PROPERTY_FIT_WIDTH
+	 * @see JRXlsAbstractExporter#PROPERTY_FIT_HEIGHT
+	 * @see JRPropertiesUtil
+	 */
+	public static final String PROPERTY_PAGE_SCALE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.page.scale";
+	
+	/**
+	 * Property that specifies the first page number in the page setup dialog.
+	 * <br/>
+	 * Property scope:
+	 * <ul>
+	 * <li><code>Global</code></li>
+	 * <li><code>Report</code></li>
+	 * <li><code>Element</code> - this setting can be used to set the first page number per sheet.</li>
+	 * </ul>
+	 * Global settings are overriden by report level settings; report level settings are overriden by element (sheet) level settings.
+	 * 
+	 * @see JRPropertiesUtil
+	 */
+	public static final String PROPERTY_FIRST_PAGE_NUMBER = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.first.page.number";
+	
+
 	protected static class TextAlignHolder
 	{
 		public final HorizontalAlignEnum horizontalAlignment;
@@ -275,11 +498,6 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 	protected int pageIndex;
 
 	/**
-	 * @deprecated
-	 */
-	protected Map<String,String> fontMap;
-
-	/**
 	 *
 	 */
 	protected JRFont defaultFont;
@@ -303,13 +521,30 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 	protected boolean isIgnorePageMargins;
 
 	protected int gridRowFreezeIndex;
-	protected int gridColumnFreezeIndex;		
-
+	protected int gridColumnFreezeIndex;
+	
 	protected int maxRowFreezeIndex;
 	protected int maxColumnFreezeIndex;
 	
 	protected boolean isFreezeRowEdge;
 	protected boolean isFreezeColumnEdge;
+	
+	protected String autoFilterStart;		
+	protected String autoFilterEnd;		
+
+	protected Float columnWidthRatio;
+	protected Integer documentPageScale;
+	protected Integer sheetPageScale;		
+	protected Integer documentFirstPageNumber;		
+	protected Integer sheetFirstPageNumber;		
+	protected boolean firstPageNotSet;
+	
+	protected Boolean keepTemplateSheets;
+	protected String workbookTemplate;
+	
+	protected boolean ignoreAnchors;
+	
+
 	/**
 	 *
 	 */
@@ -318,6 +553,24 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 		return defaultFont;
 	}
 
+
+	/**
+	 * @see #JRXlsAbstractExporter(JasperReportsContext)
+	 */
+	public JRXlsAbstractExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRXlsAbstractExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
 
 	/**
 	 *
@@ -490,27 +743,27 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 				);
 
 		wrapText = 
-			JRProperties.getBooleanProperty(
+			getPropertiesUtil().getBooleanProperty(
 				jasperPrint,
 				PROPERTY_WRAP_TEXT,
 				true
 				);
 
 		cellLocked = 
-			JRProperties.getBooleanProperty(
+			getPropertiesUtil().getBooleanProperty(
 				jasperPrint,
 				PROPERTY_CELL_LOCKED,
 				true
 				);
 
 		cellHidden = 
-			JRProperties.getBooleanProperty(
+			getPropertiesUtil().getBooleanProperty(
 				jasperPrint,
 				PROPERTY_CELL_HIDDEN,
 				false
 				);
 
-		fontMap = (Map<String,String>) parameters.get(JRExporterParameter.FONT_MAP);
+		setFontMap();
 
 		setHyperlinkProducerFactory();
 
@@ -529,43 +782,43 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 				); 
 			
 		sheetHeaderLeft = 
-			JRProperties.getProperty(
+			getPropertiesUtil().getProperty(
 				jasperPrint,
 				PROPERTY_SHEET_HEADER_LEFT
 				);
 		
 		sheetHeaderCenter = 
-			JRProperties.getProperty(
+			getPropertiesUtil().getProperty(
 				jasperPrint,
 				PROPERTY_SHEET_HEADER_CENTER
 				);
 		
 		sheetHeaderRight = 
-			JRProperties.getProperty(
+			getPropertiesUtil().getProperty(
 				jasperPrint,
 				PROPERTY_SHEET_HEADER_RIGHT
 				);
 		
 		sheetFooterLeft = 
-			JRProperties.getProperty(
+			getPropertiesUtil().getProperty(
 				jasperPrint,
 				PROPERTY_SHEET_FOOTER_LEFT
 				);
 		
 		sheetFooterCenter = 
-			JRProperties.getProperty(
+			getPropertiesUtil().getProperty(
 				jasperPrint,
 				PROPERTY_SHEET_FOOTER_CENTER
 				);
 		
 		sheetFooterRight = 
-			JRProperties.getProperty(
+			getPropertiesUtil().getProperty(
 				jasperPrint,
 				PROPERTY_SHEET_FOOTER_RIGHT
 				);
 		
 		String sheetDirectionProp = 
-			JRProperties.getProperty(
+			getPropertiesUtil().getProperty(
 				jasperPrint,
 				PROPERTY_SHEET_DIRECTION
 				);
@@ -573,20 +826,20 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 		
 		formatPatternsMap = (Map<String,String>)getParameter(JRXlsExporterParameter.FORMAT_PATTERNS_MAP);
 		
+		workbookTemplate = workbookTemplate == null ? getPropertiesUtil().getProperty(jasperPrint, PROPERTY_WORKBOOK_TEMPLATE) : workbookTemplate;
+		keepTemplateSheets = keepTemplateSheets == null ? getPropertiesUtil().getBooleanProperty(jasperPrint, PROPERTY_WORKBOOK_TEMPLATE_KEEP_SHEETS, false) : keepTemplateSheets;
 	}
 
 	protected void setExporterHints()
 	{
 		setSheetNames();
 		
-		gridRowFreezeIndex = Math.min(
-				Math.max(0, JRProperties.getIntegerProperty(jasperPrint, PROPERTY_FREEZE_ROW, 0) - 1), 
-				MAX_ROW_INDEX
-				);
-		gridColumnFreezeIndex = Math.min(
-				Math.max(0, getColumnIndex(JRProperties.getProperty(jasperPrint, PROPERTY_FREEZE_COLUMN))), 
-				MAX_COLUMN_INDEX
-				);		
+		gridRowFreezeIndex = Math.max(0, getPropertiesUtil().getIntegerProperty(jasperPrint, PROPERTY_FREEZE_ROW, 0) - 1);
+		gridColumnFreezeIndex = Math.max(0, getColumnIndex(getPropertiesUtil().getProperty(jasperPrint, PROPERTY_FREEZE_COLUMN)));	
+		columnWidthRatio = getPropertiesUtil().getFloatProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH_RATIO, 0f);
+		documentPageScale = getPropertiesUtil().getIntegerProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_PAGE_SCALE, 0);
+		documentFirstPageNumber = getPropertiesUtil().getIntegerProperty(jasperPrint, JRXlsAbstractExporter.PROPERTY_FIRST_PAGE_NUMBER, 0);
+		ignoreAnchors = getPropertiesUtil().getBooleanProperty(jasperPrint,	PROPERTY_IGNORE_ANCHORS, false);
 	}
 
 	protected abstract void setBackground();
@@ -633,29 +886,31 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 						}
 
 						JRPrintPage page = pages.get(pageIndex);
+						
 
-						createSheet(getSheetName(null));
+						CutsInfo xCuts = 
+								JRGridLayout.calculateXCuts(
+									getNature(), pages, pageIndex, pageIndex,
+									jasperPrint.getPageWidth(), globalOffsetX
+									);
+
+						sheetFirstPageNumber = (Integer)xCuts.getPropertiesMap().get(PROPERTY_FIRST_PAGE_NUMBER);
+						setScale(xCuts, false);
+						createSheet(getSheetName(xCuts, null));
 
 						// we need to count all sheets generated for all exported documents
 						sheetIndex++;
 						sheetNamesIndex++;
+						resetAutoFilters();
 
 						setFreezePane(gridRowFreezeIndex, gridColumnFreezeIndex);
+
 						/*   */
 						exportPage(page, /*xCuts*/null, /*startRow*/0);
 					}
 				}
 				else
 				{
-					// Create the sheet before looping.
-					createSheet(getSheetName(jasperPrint.getName()));
-
-					// we need to count all sheets generated for all exported documents
-					sheetIndex++;
-					sheetNamesIndex++;
-
-					setFreezePane(gridRowFreezeIndex, gridColumnFreezeIndex);
-					
 					/*
 					 * Make a pass and calculate the X cuts for all pages on this sheet.
 					 * The Y cuts can be calculated as each page is exported.
@@ -665,6 +920,20 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 							getNature(), pages, startPageIndex, endPageIndex,
 							jasperPrint.getPageWidth(), globalOffsetX
 							);
+					
+					sheetFirstPageNumber = (Integer)xCuts.getPropertiesMap().get(PROPERTY_FIRST_PAGE_NUMBER);
+					setScale(xCuts, false);
+					
+					// Create the sheet before looping.
+					createSheet(getSheetName(xCuts, jasperPrint.getName()));
+
+					// we need to count all sheets generated for all exported documents
+					sheetIndex++;
+					sheetNamesIndex++;
+					resetAutoFilters();
+
+					setFreezePane(gridRowFreezeIndex, gridColumnFreezeIndex);
+					
 					//clear the filter's internal cache that might have built up
 					if (filter instanceof ResetableExporterFilter)
 					{
@@ -682,10 +951,7 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 						startRow = exportPage(page, xCuts, startRow);
 					}
 					
-					if (isRemoveEmptySpaceBetweenColumns)
-					{
-						removeEmptyColumns(xCuts);
-					}
+					updateColumns(xCuts);
 				}
 			}
 		}
@@ -725,7 +991,11 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 			setColumnWidths(xCuts);
 		}
 
+		setScale(xCuts, true);
+		
 		CutsInfo yCuts = layout.getYCuts();
+		
+		XlsRowLevelInfo levelInfo = new XlsRowLevelInfo(); 
 
 		int skippedRows = 0;
 		int rowIndex = startRow;
@@ -739,18 +1009,25 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 				|| yCuts.isBreak(y) 
 				)
 			{
-				if (isRemoveEmptySpaceBetweenColumns)
-				{
-					removeEmptyColumns(xCuts);
-				}
-				createSheet(getSheetName(null));
+				updateColumns(xCuts);
+				
+				setRowLevels(levelInfo, null);
+				
+				sheetFirstPageNumber = null;
+				
+				createSheet(getSheetName(xCuts, null));
+				
+				setScale(xCuts, true);
 				setColumnWidths(xCuts);
 				startRow = 0;
 				rowIndex = 0;
 				skippedRows = y;
 				sheetIndex++;
 				sheetNamesIndex++;
+				resetAutoFilters();
+				
 				setFreezePane(gridRowFreezeIndex, gridColumnFreezeIndex);
+
 			}
 			
 			if (
@@ -762,13 +1039,18 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 				JRExporterGridCell[] gridRow = grid[y];
 
 				int emptyCellColSpan = 0;
-				int emptyCellWidth = 0;
+				//int emptyCellWidth = 0;
+
+				Map<String,Object> cutProperties = yCuts.getCut(y).getPropertiesMap();
+				mergeAndSetRowLevels(levelInfo, (SortedMap<String, Boolean>)cutProperties.get(PROPERTY_ROW_OUTLINE_LEVEL_PREFIX), rowIndex);
 
 				setRowHeight(
 					rowIndex,
 					isCollapseRowSpan
-						?  layout.getMaxRowHeight(y)
-						: JRGridLayout.getRowHeight(gridRow)
+						?  layout.getMaxRowHeight(y)//FIXME consider putting these in cuts
+						: JRGridLayout.getRowHeight(gridRow),
+					yCuts.getCut(y),
+					levelInfo
 					);
 
 				int emptyCols = 0;
@@ -786,7 +1068,7 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 						{
 							//tableHelper.exportEmptyCell(gridCell, emptyCellColSpan);
 							emptyCellColSpan = 0;
-							emptyCellWidth = 0;
+							//emptyCellWidth = 0;
 						}
 
 						addOccupiedCell((OccupiedGridCell)gridCell, colIndex, rowIndex);
@@ -801,12 +1083,12 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 //								//sheet.addMergedRegion(new Region(y, (short)(x - emptyCellColSpan - 1), y, (short)(x - 1)));
 //							}
 							emptyCellColSpan = 0;
-							emptyCellWidth = 0;
+							//emptyCellWidth = 0;
 						}
 
 						JRPrintElement element = gridCell.getWrapper().getElement();
 						
-						String rowFreeze = JRProperties.getProperty(element, PROPERTY_FREEZE_ROW_EDGE);
+						String rowFreeze = getPropertiesUtil().getProperty(element, PROPERTY_FREEZE_ROW_EDGE);
 						
 						int rowFreezeIndex = rowFreeze == null 
 								? 0 
@@ -815,7 +1097,7 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 										: rowIndex
 										);
 							
-						String columnFreeze = JRProperties.getProperty(element, PROPERTY_FREEZE_COLUMN_EDGE);
+						String columnFreeze = getPropertiesUtil().getProperty(element, PROPERTY_FREEZE_COLUMN_EDGE);
 							
 						int columnFreezeIndex = columnFreeze == null 
 							? 0
@@ -829,6 +1111,36 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 							setFreezePane(rowFreezeIndex, columnFreezeIndex, rowFreezeIndex > 0, columnFreezeIndex > 0);
 						}
 
+						/* this is no more necessary since the sheet name is stored in CutsInfo */
+//						String sheetName = element.getPropertiesMap().getProperty(JRXlsAbstractExporterParameter.PROPERTY_SHEET_NAME);
+//						if(sheetName != null)
+//						{
+//							setSheetName(sheetName);
+//						}
+
+
+//						boolean start = getPropertiesUtil().getBooleanProperty(element, PROPERTY_AUTO_FILTER_START, false);
+//						if(start && rowIndex < MAX_ROW_INDEX)
+//						{
+//							autoFilterStart = getColumnName(colIndex) + (rowIndex + 1);
+//						}
+//						
+//						boolean end = getPropertiesUtil().getBooleanProperty(element, PROPERTY_AUTO_FILTER_END, false);
+//						if(end && rowIndex < MAX_ROW_INDEX)
+//						{
+//							autoFilterEnd = getColumnName(colIndex) + (rowIndex + 1);
+//						}
+//						
+						String autofilter = getPropertiesUtil().getProperty(element, PROPERTY_AUTO_FILTER);
+						if("Start".equals(autofilter))
+						{
+							autoFilterStart = getColumnName(colIndex) + (rowIndex + 1);
+						}
+						else if("End".equals(autofilter))
+						{
+							autoFilterEnd = getColumnName(colIndex) + (rowIndex + 1);
+						}
+						
 						if (element instanceof JRPrintLine)
 						{
 							exportLine((JRPrintLine)element, gridCell, colIndex, rowIndex);
@@ -863,7 +1175,7 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 					else
 					{
 						emptyCellColSpan++;
-						emptyCellWidth += gridCell.getWidth();
+						//emptyCellWidth += gridCell.getWidth();
 						addBlankCell(gridCell, colIndex, rowIndex);
 					}
 				}
@@ -893,40 +1205,153 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 			}
 		}
 
-		if (createXCuts && isRemoveEmptySpaceBetweenColumns)
+		if(autoFilterStart != null)
 		{
-			removeEmptyColumns(xCuts);
+			setAutoFilter(autoFilterStart + ":" + (autoFilterEnd != null ? autoFilterEnd : autoFilterStart));
 		}
+		else if(autoFilterEnd != null)
+		{
+			setAutoFilter(autoFilterEnd + ":" + autoFilterEnd);
+		}
+		
+		if (createXCuts)
+		{
+			updateColumns(xCuts);
+		}
+		
+		setRowLevels(levelInfo, null);
 		
 		if (progressMonitor != null)
 		{
 			progressMonitor.afterPageExport();
 		}
-
+		
 		// Return the number of rows added
 		return rowIndex;
 	}
 
 
+	protected void mergeAndSetRowLevels(XlsRowLevelInfo levelInfo, SortedMap<String, Boolean> rowLevelMap, int rowIndex)
+	{
+		SortedMap<String, Integer> crtLevelMap = levelInfo.getLevelMap();
+
+		if (rowLevelMap != null)
+		{
+			for(String level : rowLevelMap.keySet())
+			{
+				Boolean isEndMarker = rowLevelMap.get(level);
+				
+				//check if this level group is already open
+				if (crtLevelMap.containsKey(level))
+				{
+					//the level group is already open
+					
+					if (isEndMarker)
+					{
+						//the level group needs to be closed, together with all its child level groups
+						setRowLevels(levelInfo, level);
+
+						//clean up current level group and nested level groups as they were closed 
+						for(Iterator<String> it = crtLevelMap.keySet().iterator(); it.hasNext();)
+						{
+							if (level.compareTo(it.next()) <= 0)
+							{
+								it.remove();
+							}
+						}
+					}
+				}
+				else
+				{
+					//the level group is not yet open
+
+					//we check to see if this level is higher than existing levels
+					if (crtLevelMap.size() > 0 && level.compareTo(crtLevelMap.firstKey()) < 0)
+					{
+						//the level is higher than existing levels, so it has to close them all
+						setRowLevels(levelInfo, level);
+						
+						//clean up nested level groups as they were closed; the current one is not yet among them 
+						for(Iterator<String> it = crtLevelMap.keySet().iterator(); it.hasNext();)
+						{
+							if (level.compareTo(it.next()) < 0)
+							{
+								it.remove();
+							}
+						}
+					}
+					
+					//create the current level group
+//					XlsRowLevelRange range = new XlsRowLevelRange();
+//					range.setStartIndex(rowIndex);
+					//range.setEndIndex(rowIndex);
+					//range.setName(groupName);
+					crtLevelMap.put(level, rowIndex);
+				}
+			}
+		}
+
+		levelInfo.setEndIndex(rowIndex);
+	}
+	
+	
 	protected void setColumnWidths(CutsInfo xCuts)
 	{
+		Map<String, Object> xCutsProperties = xCuts.getPropertiesMap();
+		Float ratio = (Float)xCutsProperties.get(PROPERTY_COLUMN_WIDTH_RATIO);
+		float sheetRatio = 
+			(ratio != null && ratio > 0f) 
+			? ratio 
+			: (columnWidthRatio > 0f ? columnWidthRatio : 1f);
+		
 		for(int col = 0; col < xCuts.size() - 1; col++)
 		{
 			if (!isRemoveEmptySpaceBetweenColumns || (xCuts.isCutNotEmpty(col) || xCuts.isCutSpanned(col)))
 			{
-				int width = xCuts.getCut(col + 1) - xCuts.getCut(col);
-				setColumnWidth(col, width);
+				Integer width = (Integer)xCutsProperties.get(PROPERTY_COLUMN_WIDTH);
+				width = 
+					width == null 
+					? (int)((xCuts.getCutOffset(col + 1) - xCuts.getCutOffset(col)) * sheetRatio) 
+					: width;  
+				
+				Map<String, Object> cutProperties = xCuts.getCut(col).getPropertiesMap();
+				boolean isAutoFit = cutProperties.containsKey(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN) 
+						&& (Boolean)cutProperties.get(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN);
+				
+				setColumnWidth(col, width, isAutoFit);
 			}
 		}
 	}
+	
+	protected void setScale(CutsInfo xCuts, boolean isToApply)
+	{
+		Map<String, Object> xCutsProperties = xCuts.getPropertiesMap();
+		Integer scale = (Integer)xCutsProperties.get(PROPERTY_PAGE_SCALE);
 
-	protected void removeEmptyColumns(CutsInfo xCuts)
+		sheetPageScale = (isValidScale(scale))
+						? scale 
+						: documentPageScale;
+		if(isToApply)
+		{
+			setScale(sheetPageScale);
+		}
+	}
+
+	protected void updateColumns(CutsInfo xCuts)
 	{
 		for(int col = xCuts.size() - 1; col >= 0; col--)
 		{
-			if (!(xCuts.isCutNotEmpty(col) || xCuts.isCutSpanned(col)))
+			Cut xCut = xCuts.getCut(col);
+			if (isRemoveEmptySpaceBetweenColumns && (!(xCut.isCutNotEmpty() || xCut.isCutSpanned())))
 			{
 				removeColumn(col);
+			}
+			Map<String, Object> cutProperties = xCuts.getCut(col).getPropertiesMap();
+			boolean isAutoFit = cutProperties.containsKey(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN) 
+					&& (Boolean)cutProperties.get(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN);
+			if (isAutoFit)
+			{
+				updateColumn(col, isAutoFit);
 			}
 		}
 	}
@@ -936,7 +1361,10 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 	 */
 	protected JRStyledText getStyledText(JRPrintText textElement)
 	{
-		return textElement.getFullStyledText(JRStyledTextAttributeSelector.NONE);
+		JRStyledTextAttributeSelector selector = textElement.getModeValue() == ModeEnum.OPAQUE 
+				? JRStyledTextAttributeSelector.ALL 
+				: JRStyledTextAttributeSelector.NO_BACKCOLOR;
+		return textElement.getFullStyledText(selector);
 	}
 
 	/**
@@ -1096,6 +1524,20 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
+	private String getSheetName(CutsInfo xCuts, String sheetName)
+	{
+		String name = xCuts == null ? null : (String)xCuts.getPropertiesMap().get(JRXlsAbstractExporterParameter.PROPERTY_SHEET_NAME);
+		if(name != null)
+		{
+			if (sheetNames != null && sheetNamesIndex < sheetNames.length)
+			{
+				sheetNames[sheetNamesIndex] = name;
+			}
+			return getSheetName(name);
+		}
+		return getSheetName(sheetName);
+	}
+	
 	private String getSheetName(String sheetName)
 	{
 		if (sheetNames != null && sheetNamesIndex < sheetNames.length)
@@ -1112,15 +1554,16 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 		// sheet name specified; assuming it is first occurrence
 		int crtIndex = Integer.valueOf(1);
 		String txtIndex = "";
-
-		if(sheetNamesMap.containsKey(sheetName))
+		String validSheetName = sheetName.length() < 32 ? sheetName : sheetName.substring(0, 31);
+		
+		if(sheetNamesMap.containsKey(validSheetName))
 		{
 			// sheet names must be unique; altering sheet name using number of occurrences
-			crtIndex = sheetNamesMap.get(sheetName).intValue() + 1;
+			crtIndex = sheetNamesMap.get(validSheetName).intValue() + 1;
 			txtIndex = String.valueOf(crtIndex);
 		}
 
-		sheetNamesMap.put(sheetName, crtIndex);
+		sheetNamesMap.put(validSheetName, crtIndex);
 
 		String name = sheetName;
 		if(txtIndex.length() > 0)
@@ -1181,7 +1624,7 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 		{
 			// we make this test to avoid reaching the global default value of the property directly
 			// and thus skipping the report level one, if present
-			return JRProperties.getBooleanProperty(element, PROPERTY_WRAP_TEXT, wrapText);
+			return getPropertiesUtil().getBooleanProperty(element, PROPERTY_WRAP_TEXT, wrapText);
 		}
 		return wrapText;
 	}
@@ -1199,7 +1642,7 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 			{
 				// we make this test to avoid reaching the global default value of the property directly
 				// and thus skipping the report level one, if present
-				return JRProperties.getBooleanProperty(element, PROPERTY_CELL_LOCKED, cellLocked);
+				return getPropertiesUtil().getBooleanProperty(element, PROPERTY_CELL_LOCKED, cellLocked);
 			}
 			return cellLocked;
 	}
@@ -1266,7 +1709,7 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 			{
 				// we make this test to avoid reaching the global default value of the property directly
 				// and thus skipping the report level one, if present
-				return JRProperties.getBooleanProperty(element, PROPERTY_CELL_HIDDEN, cellHidden);
+				return getPropertiesUtil().getBooleanProperty(element, PROPERTY_CELL_HIDDEN, cellHidden);
 			}
 			return cellHidden;
 	}
@@ -1309,10 +1752,83 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 		return index;
 	}
 	
+	/**
+	 * 
+	 * @return the calculated column name
+	 */
+	protected String getColumnName(int columnIndex)
+	{
+		int i = columnIndex/26 + 64;
+		int j = columnIndex%26 + 65;
+		return (i > 64 ? String.valueOf((char)i) : "") + (char)j;
+	}
+	
 	protected void setFreezePane(int rowIndex, int colIndex)
 	{
-		setFreezePane(rowIndex, colIndex, false, false);
+		if(gridRowFreezeIndex > 0 || gridColumnFreezeIndex > 0)
+		{
+			setFreezePane(rowIndex, colIndex, false, false);
+		}
 	}
+	
+	protected void resetAutoFilters()
+	{
+		autoFilterStart = null;
+		autoFilterEnd = null;
+	}
+	
+	protected Date translateDateValue(JRPrintText text, Date value)
+	{
+		String prop = getPropertiesUtil().getProperty(PROPERTY_USE_TIMEZONE, 
+				text, jasperPrint);
+		if (JRPropertiesUtil.asBoolean(prop))
+		{
+			// translate the date to the timezone used at fill time
+			TimeZone tz = getTextTimeZone(text);
+			value = JRDataUtils.translateToTimezone(value, tz);
+		}
+		return value;
+	}
+	
+	protected boolean isValidScale(Integer scale)
+	{
+		return scale != null && scale > 9 && scale < 401;
+	}
+	
+	// property setters
+	
+	public boolean isWorkbookTemplateKeepSheets() {
+		return keepTemplateSheets;
+	}
+
+
+	public void setWorkbookTemplateKeepSheets(boolean keepTemplateSheets) {
+		this.keepTemplateSheets = keepTemplateSheets;
+	}
+
+
+	public String getWorkbookTemplate() {
+		return workbookTemplate;
+	}
+
+
+	public void setWorkbookTemplate(String workbookTemplate) {
+		this.workbookTemplate = workbookTemplate;
+	}
+
+	
+	public boolean isIgnoreAnchors() {
+		return ignoreAnchors;
+	}
+
+
+	public void setIgnoreAnchors(boolean ignoreAnchors) {
+		this.ignoreAnchors = ignoreAnchors;
+	}
+	
+	
+
+	//abstract methods
 	
 	protected abstract ExporterNature getNature();
 
@@ -1322,11 +1838,13 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 
 	protected abstract void closeWorkbook(OutputStream os) throws JRException;
 
-	protected abstract void setColumnWidth(int col, int width);
-
+	protected abstract void setColumnWidth(int col, int width, boolean autoFit);
+	
 	protected abstract void removeColumn(int col);
 
-	protected abstract void setRowHeight(int rowIndex, int lastRowHeight) throws JRException;
+	protected abstract void updateColumn(int col, boolean autoFit);
+
+	protected abstract void setRowHeight(int rowIndex, int lastRowHeight, Cut yCut, XlsRowLevelInfo levelInfo) throws JRException;
 
 	protected abstract void setCell(JRExporterGridCell gridCell, int colIndex, int rowIndex);
 
@@ -1347,4 +1865,13 @@ public abstract class JRXlsAbstractExporter extends JRAbstractExporter
 	protected abstract void exportGenericElement(JRGenericPrintElement element, JRExporterGridCell cell, int colIndex, int rowIndex, int emptyCols, int yCutsRow, JRGridLayout layout) throws JRException;
 
 	protected abstract void setFreezePane(int rowIndex, int colIndex, boolean isRowEdge, boolean isColumnEdge);
+	
+	protected abstract void setSheetName(String sheetName);
+	
+	protected abstract void setAutoFilter(String autoFilterRange);
+	
+	protected abstract void setRowLevels(XlsRowLevelInfo levelInfo, String level);
+	
+	protected abstract void setScale(Integer scale);
+	
 }

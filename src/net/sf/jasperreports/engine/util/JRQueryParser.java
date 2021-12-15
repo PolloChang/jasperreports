@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * Report query parser.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRQueryParser.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRQueryParser.java 5088 2012-03-15 11:55:32Z teodord $
  */
 public class JRQueryParser
 {
@@ -229,6 +229,7 @@ public class JRQueryParser
 	}
 
 
+	@SuppressWarnings("deprecation")
 	protected String getTokenSeparators()
 	{
 		return JRProperties.getProperty(JRQueryChunk.PROPERTY_CHUNK_TOKEN_SEPARATOR);

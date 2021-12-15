@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine;
 
 import java.awt.Color;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.PositionTypeEnum;
@@ -33,7 +34,7 @@ import net.sf.jasperreports.engine.type.StretchTypeEnum;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ElementDecorator.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ElementDecorator.java 5404 2012-05-22 09:22:00Z lucianc $
  */
 public abstract class ElementDecorator implements JRElement
 {
@@ -66,6 +67,11 @@ public abstract class ElementDecorator implements JRElement
 	public JRElementGroup getElementGroup()
 	{
 		return element.getElementGroup();
+	}
+
+	public UUID getUUID()
+	{
+		return element.getUUID();
 	}
 
 	public String getKey()
@@ -181,6 +187,12 @@ public abstract class ElementDecorator implements JRElement
 	}
 
 	public Object clone(JRElementGroup parentGroup)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public JRElement clone(JRElementGroup parentGroup, int y)
 	{
 		throw new UnsupportedOperationException();
 	}

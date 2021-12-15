@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintEllipse.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplatePrintEllipse.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTemplatePrintEllipse extends JRTemplatePrintGraphicElement implements JRPrintEllipse
 {
@@ -48,10 +48,22 @@ public class JRTemplatePrintEllipse extends JRTemplatePrintGraphicElement implem
 	 * Creates a print ellipse element.
 	 * 
 	 * @param ellipse the template ellipse that the element will use
+	 * @deprecated provide a source Id via {@link #JRTemplatePrintEllipse(JRTemplateEllipse, int)}
 	 */
 	public JRTemplatePrintEllipse(JRTemplateEllipse ellipse)
 	{
 		super(ellipse);
+	}
+
+	/**
+	 * Creates a print ellipse element.
+	 * 
+	 * @param ellipse the template ellipse that the element will use
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRTemplatePrintEllipse(JRTemplateEllipse ellipse, int sourceElementId)
+	{
+		super(ellipse, sourceElementId);
 	}
 
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)

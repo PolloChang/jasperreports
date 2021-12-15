@@ -27,14 +27,17 @@ import java.util.List;
 
 import net.sf.jasperreports.engine.JRCloneable;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRIdentifiable;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertyExpression;
 
 /**
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseColumn.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BaseColumn.java 5113 2012-03-21 18:09:16Z teodord $
  */
-public interface BaseColumn extends JRCloneable
+public interface BaseColumn extends JRCloneable, JRPropertiesHolder, JRIdentifiable
 {
 
 	JRExpression getPrintWhenExpression();
@@ -58,5 +61,7 @@ public interface BaseColumn extends JRCloneable
 	Integer getWidth();
 
 	<R> R visitColumn(ColumnVisitor<R> visitor);
+
+	JRPropertyExpression[] getPropertyExpressions();
 
 }

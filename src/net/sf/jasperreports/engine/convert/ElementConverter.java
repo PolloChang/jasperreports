@@ -34,14 +34,14 @@ package net.sf.jasperreports.engine.convert;
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRGraphicElement;
 import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.base.JRBasePrintGraphicElement;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ElementConverter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ElementConverter.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public abstract class ElementConverter
 {
@@ -59,7 +59,7 @@ public abstract class ElementConverter
 	{
 		reportConverter.copyBaseAttributes(element, printElement);
 		
-		JRProperties.transferProperties(element, printElement, JasperPrint.PROPERTIES_PRINT_TRANSFER_PREFIX);
+		JRPropertiesUtil.getInstance(reportConverter.getJasperReportsContext()).transferProperties(element, printElement, JasperPrint.PROPERTIES_PRINT_TRANSFER_PREFIX);
 	}
 
 	

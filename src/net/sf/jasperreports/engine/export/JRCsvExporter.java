@@ -30,9 +30,11 @@ package net.sf.jasperreports.engine.export;
 
 import java.io.IOException;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 
@@ -40,11 +42,28 @@ import net.sf.jasperreports.engine.util.JRStyledText;
  * Exports a JasperReports document to CSV format. It has character output type and exports the document to a
  * grid-based layout.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCsvExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCsvExporter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRCsvExporter extends JRAbstractCsvExporter
 {
+	/**
+	 * @see #JRCsvExporter(JasperReportsContext)
+	 */
+	public JRCsvExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
 
+	
+	/**
+	 *
+	 */
+	public JRCsvExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+
+	
 	/**
 	 *
 	 */

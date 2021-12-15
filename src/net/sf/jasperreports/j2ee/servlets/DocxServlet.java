@@ -32,6 +32,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
@@ -42,7 +43,7 @@ import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: DocxServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DocxServlet.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class DocxServlet extends BaseHttpServlet
 {
@@ -68,7 +69,7 @@ public class DocxServlet extends BaseHttpServlet
 		if (isBuffered.booleanValue())
 		{
 			FileBufferedOutputStream fbos = new FileBufferedOutputStream();
-			JRDocxExporter exporter = new JRDocxExporter();
+			JRDocxExporter exporter = new JRDocxExporter(DefaultJasperReportsContext.getInstance());
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT_LIST, jasperPrintList);
 			exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, fbos);
 			
@@ -120,7 +121,7 @@ public class DocxServlet extends BaseHttpServlet
 			response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 			response.setHeader("Content-Disposition", "inline; filename=\"file.docx\"");
 			
-			JRDocxExporter exporter = new JRDocxExporter();
+			JRDocxExporter exporter = new JRDocxExporter(DefaultJasperReportsContext.getInstance());
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT_LIST, jasperPrintList);
 			
 			OutputStream ouputStream = response.getOutputStream();

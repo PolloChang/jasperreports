@@ -49,7 +49,7 @@ import net.sf.jasperreports.engine.query.JRJpaQueryExecuter;
  * </ul>
  * 
  * @author Marcel Overdijk (marceloverdijk@hotmail.com)
- * @version $Id: JRJpaDataSource.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRJpaDataSource.java 5180 2012-03-29 13:23:12Z teodord $
  * @see net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory#PROPERTY_JPA_QUERY_PAGE_SIZE
  */
 public class JRJpaDataSource extends JRAbstractBeanDataSource {

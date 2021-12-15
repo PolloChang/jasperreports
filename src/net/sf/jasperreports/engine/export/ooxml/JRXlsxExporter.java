@@ -39,9 +39,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintElementIndex;
@@ -52,23 +52,26 @@ import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
-import net.sf.jasperreports.engine.export.CutsInfo;
+import net.sf.jasperreports.engine.export.Cut;
 import net.sf.jasperreports.engine.export.ElementGridCell;
 import net.sf.jasperreports.engine.export.ExporterNature;
 import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
-import net.sf.jasperreports.engine.export.JRExportProgressMonitor;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.export.JRGridLayout;
 import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
 import net.sf.jasperreports.engine.export.JRXlsAbstractExporter;
 import net.sf.jasperreports.engine.export.LengthUtil;
 import net.sf.jasperreports.engine.export.OccupiedGridCell;
+import net.sf.jasperreports.engine.export.XlsRowLevelInfo;
 import net.sf.jasperreports.engine.export.data.BooleanTextValue;
 import net.sf.jasperreports.engine.export.data.DateTextValue;
 import net.sf.jasperreports.engine.export.data.NumberTextValue;
@@ -77,12 +80,13 @@ import net.sf.jasperreports.engine.export.data.TextValue;
 import net.sf.jasperreports.engine.export.data.TextValueHandler;
 import net.sf.jasperreports.engine.export.zip.ExportZipEntry;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZipEntry;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
 import net.sf.jasperreports.engine.util.JRDataUtils;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStyledText;
-import net.sf.jasperreports.engine.util.JRTypeSniffer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -92,7 +96,7 @@ import org.apache.commons.logging.LogFactory;
  * Exports a JasperReports document to XLSX format. It has character output type and exports the document to a
  * grid-based layout.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsxExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXlsxExporter.java 5435 2012-06-11 15:37:36Z teodord $
  */
 public class JRXlsxExporter extends JRXlsAbstractExporter
 {
@@ -102,10 +106,20 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String XLSX_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "xlsx";
+	public static final String XLSX_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "xlsx";
 
-	protected static final String XLSX_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.xlsx.";
+	protected static final String XLSX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xlsx.";
 
+	/**
+	 * Property used to store the location of an existing workbook template containing a macro object. 
+	 * The macro object will be copied into the generated document if the template location is valid. 
+	 * Macros can be loaded from Excel macro-enabled template files (*.xltm) as well as from valid 
+	 * Excel macro-enabled documents (*.xlsm).
+	 * 
+	 * @see JRPropertiesUtil
+	 * @since 4.5.1
+	 */
+	public static final String PROPERTY_MACRO_TEMPLATE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xlsx.macro.template";
 	/**
 	 *
 	 */
@@ -131,7 +145,6 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	protected XlsxStyleHelper styleHelper;
 	protected XlsxCellHelper cellHelper;//FIXMEXLSX maybe cell helper should be part of sheet helper, just like in table helper
 
-	protected JRExportProgressMonitor progressMonitor;
 	protected Map<String, String> rendererToImagePathMap;
 //	protected Map imageMaps;
 	protected List<JRPrintElementIndex> imagesToProcess;
@@ -141,13 +154,26 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	protected boolean startPage;
 
 
-	protected LinkedList<Color> backcolorStack;
+	protected LinkedList<Color> backcolorStack = new LinkedList<Color>();
 	protected Color backcolor;
 
 	private XlsxRunHelper runHelper;
 
 	protected ExporterNature nature;
+	
+	protected String sheetAutoFilter;		
+	
+	protected String macroTemplate;		
+	
+	protected JasperPrint currentSheetJasperPrint;	
+	
+	protected Integer currentSheetPageScale;	
+	
+	protected Integer currentSheetFirstPageNumber;		
+	
+	protected JRXlsxExporterContext exporterContext = new ExporterContext();
 
+	
 	protected class ExporterContext extends BaseExporterContext implements JRXlsxExporterContext
 	{
 		public String getExportPropertiesPrefix()
@@ -157,10 +183,21 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	}
 
 	
+	/**
+	 * @see #JRXlsxExporter(JasperReportsContext)
+	 */
 	public JRXlsxExporter()
 	{
-		backcolorStack = new LinkedList<Color>();
-		backcolor = null;
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+
+	/**
+	 *
+	 */
+	public JRXlsxExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
 	}
 
 
@@ -171,7 +208,9 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	{
 		super.setParameters();
 
-		nature = new JRXlsxExporterNature(filter, isIgnoreGraphics, isIgnorePageMargins);
+		nature = new JRXlsxExporterNature(jasperReportsContext, filter, isIgnoreGraphics, isIgnorePageMargins);
+
+		macroTemplate =  macroTemplate == null ? getPropertiesUtil().getProperty(jasperPrint, PROPERTY_MACRO_TEMPLATE) : macroTemplate;
 		
 //		password = 
 //			getStringParameter(
@@ -184,13 +223,13 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	/**
 	 *
 	 */
-	public static JRPrintImage getImage(List<JasperPrint> jasperPrintList, String imageName) throws JRException
+	public JRPrintImage getImage(List<JasperPrint> jasperPrintList, String imageName) throws JRException
 	{
 		return getImage(jasperPrintList, getPrintElementIndex(imageName));
 	}
 
 
-	public static JRPrintImage getImage(List<JasperPrint> jasperPrintList, JRPrintElementIndex imageIndex) throws JRException
+	public JRPrintImage getImage(List<JasperPrint> jasperPrintList, JRPrintElementIndex imageIndex) throws JRException//FIXMECONTEXT move these to an abstract up?
 	{
 		JasperPrint report = jasperPrintList.get(imageIndex.getReportIndex());
 		JRPrintPage page = report.getPages().get(imageIndex.getPageIndex());
@@ -207,10 +246,10 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 		if(element instanceof JRGenericPrintElement)
 		{
 			JRGenericPrintElement genericPrintElement = (JRGenericPrintElement)element;
-			return ((GenericElementXlsxHandler)GenericElementHandlerEnviroment.getHandler(
+			return ((GenericElementXlsxHandler)GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
 					genericPrintElement.getGenericType(), 
 					XLSX_EXPORTER_KEY
-					)).getImage(genericPrintElement);
+					)).getImage(exporterContext, genericPrintElement);
 		}
 		
 		return (JRPrintImage) element;
@@ -244,13 +283,13 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	/**
 	 *
 	 */
-	protected String getImagePath(JRRenderable renderer, boolean isLazy, JRExporterGridCell gridCell)
+	protected String getImagePath(Renderable renderer, boolean isLazy, JRExporterGridCell gridCell)
 	{
 		String imagePath = null;
 
 		if (renderer != null)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
 			{
 				imagePath = rendererToImagePathMap.get(renderer.getId());
 			}
@@ -265,10 +304,10 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 					JRPrintElementIndex imageIndex = getElementIndex(gridCell);
 					imagesToProcess.add(imageIndex);
 
-					String mimeType = JRTypeSniffer.getImageMimeType(renderer.getImageType());//FIXMEPPTX this code for file extension is duplicated
+					String mimeType = renderer.getImageTypeValue().getMimeType();//FIXMEPPTX this code for file extension is duplicated
 					if (mimeType == null)
 					{
-						mimeType = JRRenderable.MIME_TYPE_JPEG;
+						mimeType = ImageTypeEnum.JPEG.getMimeType();
 					}
 					String extension = mimeType.substring(mimeType.lastIndexOf('/') + 1);
 
@@ -518,7 +557,7 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	protected String getHyperlinkURL(JRPrintHyperlink link)
 	{
 		String href = null;
-		JRHyperlinkProducer customHandler = getCustomHandler(link);
+		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);
 		if (customHandler == null)
 		{
 			switch(link.getHyperlinkTypeValue())
@@ -643,8 +682,8 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 					JRPrintElementIndex imageIndex = it.next();
 
 					JRPrintImage image = getImage(jasperPrintList, imageIndex);
-					JRRenderable renderer = image.getRenderer();
-					if (renderer.getType() == JRRenderable.TYPE_SVG)
+					Renderable renderer = image.getRenderable();
+					if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 					{
 						renderer =
 							new JRWrappingSvgRenderer(
@@ -654,10 +693,10 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 								);
 					}
 
-					String mimeType = JRTypeSniffer.getImageMimeType(renderer.getImageType());
+					String mimeType = renderer.getImageTypeValue().getMimeType();
 					if (mimeType == null)
 					{
-						mimeType = JRRenderable.MIME_TYPE_JPEG;
+						mimeType = ImageTypeEnum.JPEG.getMimeType();
 					}
 					String extension = mimeType.substring(mimeType.lastIndexOf('/') + 1);
 					
@@ -666,7 +705,7 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 					xlsxZip.addEntry(//FIXMEDOCX optimize with a different implementation of entry
 						new FileBufferedZipEntry(
 							"xl/media/" + imageName,
-							renderer.getImageData()
+							renderer.getImageData(jasperReportsContext)
 							)
 						);
 					
@@ -708,6 +747,10 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	{
 		closeSheet();
 		
+		currentSheetJasperPrint = jasperPrint;
+		currentSheetPageScale = sheetPageScale;
+		currentSheetFirstPageNumber = sheetFirstPageNumber;
+		
 		wbHelper.exportSheet(sheetIndex + 1, name);
 		ctHelper.exportSheet(sheetIndex + 1);
 		relsHelper.exportSheet(sheetIndex + 1);
@@ -720,6 +763,7 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 		Writer sheetWriter = sheetEntry.getWriter();
 		sheetHelper = 
 			new XlsxSheetHelper(
+				jasperReportsContext,
 				sheetWriter, 
 				sheetRelsHelper,
 				isCollapseRowSpan
@@ -737,7 +781,7 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 		
 		runHelper = new XlsxRunHelper(sheetWriter, fontMap, null);//FIXMEXLSX check this null
 		
-		sheetHelper.exportHeader(gridRowFreezeIndex, gridColumnFreezeIndex, jasperPrint);
+		sheetHelper.exportHeader(sheetPageScale == null ? 0 : sheetPageScale, gridRowFreezeIndex, gridColumnFreezeIndex, jasperPrint);
 		sheetRelsHelper.exportHeader(sheetIndex + 1);
 		drawingHelper.exportHeader();
 		drawingRelsHelper.exportHeader();
@@ -748,7 +792,46 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	{
 		if (sheetHelper != null)
 		{
-			sheetHelper.exportFooter(sheetIndex, jasperPrint, isIgnorePageMargins);
+		
+			
+			if(currentSheetFirstPageNumber != null && currentSheetFirstPageNumber > 0)
+			{
+				sheetHelper.exportFooter(
+						sheetIndex, 
+						currentSheetJasperPrint == null ? jasperPrint : currentSheetJasperPrint, 
+						isIgnorePageMargins, 
+						sheetAutoFilter,
+						currentSheetPageScale, 
+						currentSheetFirstPageNumber,
+						false
+						);
+					firstPageNotSet = false;
+			}
+			else if(documentFirstPageNumber != null && documentFirstPageNumber > 0 && firstPageNotSet)
+			{
+				sheetHelper.exportFooter(
+						sheetIndex, 
+						currentSheetJasperPrint == null ? jasperPrint : currentSheetJasperPrint, 
+						isIgnorePageMargins, 
+						sheetAutoFilter,
+						currentSheetPageScale, 
+						documentFirstPageNumber,
+						false
+						);
+					firstPageNotSet = false;
+			}
+			else
+			{
+				sheetHelper.exportFooter(
+						sheetIndex, 
+						currentSheetJasperPrint == null ? jasperPrint : currentSheetJasperPrint, 
+						isIgnorePageMargins, 
+						sheetAutoFilter,
+						currentSheetPageScale, 
+						null,
+						firstPageNotSet
+						);
+			}
 			sheetHelper.close();
 
 			sheetRelsHelper.exportFooter();
@@ -832,7 +915,7 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 
 		cellHelper.exportHeader(gridCell, rowIndex, colIndex);
 
-		JRRenderable renderer = image.getRenderer();
+		Renderable renderer = image.getRenderable();
 
 		if (
 			renderer != null &&
@@ -840,11 +923,11 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 			availableImageHeight > 0
 			)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 			{
 				// Non-lazy image renderers are all asked for their image data at some point.
 				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = JRImageRenderer.getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
+				renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
 			}
 		}
 		else
@@ -861,9 +944,9 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 			double normalHeight = availableImageHeight;
 
 			// Image load might fail.
-			JRRenderable tmpRenderer =
-				JRImageRenderer.getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension();
+			Renderable tmpRenderer =
+				RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
+			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
 			// If renderer was replaced, ignore image dimension.
 			if (tmpRenderer == renderer && dimension != null)
 			{
@@ -1203,7 +1286,7 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 			gridCell, rowIndex, colIndex, textValue, 
 			getConvertedPattern(text, pattern), 
 			getTextLocale(text), 
-			isWrapText(gridCell.getElement()), 
+			isWrapText(gridCell.getElement()) || Boolean.TRUE.equals(((JRXlsxExporterNature)nature).getColumnAutoFit(gridCell.getElement())), 
 			isCellHidden(gridCell.getElement()), 
 			isCellLocked(gridCell.getElement())
 			);
@@ -1250,7 +1333,7 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 			new TextValueHandler() 
 			{
 				public void handle(BooleanTextValue textValue) throws JRException {
-					writeText();
+					sheetHelper.write("<v>" + textValue.getValue() + "</v>");
 				}
 				
 				public void handle(DateTextValue textValue) throws JRException {
@@ -1318,13 +1401,11 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 		) throws JRException
 	{
 		GenericElementXlsxHandler handler = (GenericElementXlsxHandler) 
-			GenericElementHandlerEnviroment.getHandler(
+			GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
 				element.getGenericType(), XLSX_EXPORTER_KEY);
 
 		if (handler != null)
 		{
-			JRXlsxExporterContext exporterContext = new ExporterContext();
-
 			handler.exportElement(exporterContext, element, gridCell, colIndex, rowIndex);
 		}
 		else
@@ -1353,15 +1434,21 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 
 		try
 		{
-			xlsxZip = new XlsxZip();
+			String memoryThreshold = jasperPrint.getPropertiesMap().getProperty(FileBufferedOutputStream.PROPERTY_MEMORY_THRESHOLD);
+			xlsxZip = new XlsxZip(jasperReportsContext, memoryThreshold == null ? null : JRPropertiesUtil.asInteger(memoryThreshold));
 
 			wbHelper = new XlsxWorkbookHelper(xlsxZip.getWorkbookEntry().getWriter());
 			wbHelper.exportHeader();
 
 			relsHelper = new XlsxRelsHelper(xlsxZip.getRelsEntry().getWriter());
-			relsHelper.exportHeader();
-
 			ctHelper = new XlsxContentTypesHelper(xlsxZip.getContentTypesEntry().getWriter());
+			if(macroTemplate != null)
+			{
+				xlsxZip.addMacro(macroTemplate);
+				relsHelper.setContainsMacro(true);
+				ctHelper.setContainsMacro(true);
+			}
+			relsHelper.exportHeader();
 			ctHelper.exportHeader();
 			
 			styleHelper = 
@@ -1374,6 +1461,8 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 					isIgnoreCellBackground,
 					isFontSizeFixEnabled
 					);
+			
+			firstPageNotSet = true;
 		}
 		catch (IOException e)
 		{
@@ -1384,24 +1473,6 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	}
 
 
-	/**
-	 *
-	 */
-	@Override
-	protected void setColumnWidths(CutsInfo xCuts)
-	{
-		for(int col = 0; col < xCuts.size() - 1; col++)
-		{
-			setColumnWidth(
-				col, 
-				(!isRemoveEmptySpaceBetweenColumns || (xCuts.isCutNotEmpty(col) || xCuts.isCutSpanned(col))) 
-					? xCuts.getCut(col + 1) - xCuts.getCut(col) 
-					: 0
-				);
-		}
-	}
-
-	
 	protected void removeColumn(int col) {
 		//column width was already set to zero
 	}
@@ -1426,19 +1497,26 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	}
 
 
-	protected void setColumnWidth(int col, int width) 
+	protected void setColumnWidth(int col, int width, boolean autoFit) 
 	{
-		sheetHelper.exportColumn(col, width);
+		sheetHelper.exportColumn(col, width, autoFit);
+	}
+
+
+	protected void updateColumn(int col, boolean autoFit) 
+	{
 	}
 
 
 	protected void setRowHeight(
-		int rowIndex, 
-		int rowHeight
-		) throws JRException 
-	{
-		sheetHelper.exportRow(rowHeight);
-	}
+			int rowIndex, 
+			int rowHeight,
+			Cut yCut,
+			XlsRowLevelInfo levelInfo
+			) throws JRException 
+		{
+			sheetHelper.exportRow(rowHeight, yCut, levelInfo);
+		}
 
 	/**
 	 *
@@ -1451,6 +1529,44 @@ public class JRXlsxExporter extends JRXlsAbstractExporter
 	protected void setFreezePane(int rowIndex, int colIndex, boolean isRowEdge, boolean isColumnEdge)
 	{
 		//TODO: set freeze pane for element-level defined indexes
+	}
+
+	protected void setSheetName(String sheetName)
+	{
+		/* nothing to do here; it's done in createSheet() */
+	}
+
+	@Override
+	protected void setAutoFilter(String autoFilterRange)
+	{
+		sheetAutoFilter = autoFilterRange;
+	}
+	
+	protected void resetAutoFilters()
+	{
+		super.resetAutoFilters();
+		sheetAutoFilter = null;
+	}
+
+
+	@Override
+	protected void setRowLevels(XlsRowLevelInfo levelInfo, String level) 
+	{
+		/* nothing to do here; it's done in setRowHeight */
+	}
+	
+	public String getMacroTemplatePath() {
+		return macroTemplate;
+	}
+
+
+	public void setMacroTemplate(String macroTemplate) {
+		this.macroTemplate = macroTemplate;
+	}
+	
+	protected void setScale(Integer scale)
+	{
+		/* nothing to do here; it's already done in the abstract exporter */
 	}
 	
 }

@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
  * Crosstab measure definition.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: MeasureDefinition.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MeasureDefinition.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class MeasureDefinition
 {
@@ -127,7 +127,7 @@ public class MeasureDefinition
 	 */
 	public JRExtendedIncrementer getIncrementer()
 	{
-		return incrementerFactory.getExtendedIncrementer(calculation.getValue());//FIXMEENUM should we create new method in interface?
+		return incrementerFactory.getExtendedIncrementer(calculation);
 	}
 	
 	protected boolean isSystemDefined()

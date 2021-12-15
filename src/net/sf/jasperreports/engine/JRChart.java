@@ -27,7 +27,6 @@ import java.awt.Color;
 
 import net.sf.jasperreports.charts.type.EdgeEnum;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 
 /**
@@ -35,7 +34,7 @@ import net.sf.jasperreports.engine.util.JRProperties;
  * datasource can be also displayed in a chart, embedded in the report. There are a lot of chart types, each with
  * its own dataset and characteristics. This interface only defines the common properties.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRChart.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRChart.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRChart extends JRElement, JRAnchor, JRHyperlink, JRBoxContainer
 {
@@ -47,12 +46,12 @@ public interface JRChart extends JRElement, JRAnchor, JRHyperlink, JRBoxContaine
 	 * <p>
 	 * Defaults to <code>draw</code>.
 	 */
-	public static final String PROPERTY_CHART_RENDER_TYPE = JRProperties.PROPERTY_PREFIX + "chart.render.type";//FIXMECHART javadoc comment
+	public static final String PROPERTY_CHART_RENDER_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "chart.render.type";//FIXMECHART javadoc comment
 
 	/**
 	 * Property used to specify the chart theme name.
 	 */
-	public static final String PROPERTY_CHART_THEME = JRProperties.PROPERTY_PREFIX + "chart.theme";
+	public static final String PROPERTY_CHART_THEME = JRPropertiesUtil.PROPERTY_PREFIX + "chart.theme";
 
 
 	/**

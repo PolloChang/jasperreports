@@ -37,9 +37,11 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRReport;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.design.JRAbstractJavaCompiler;
 import net.sf.jasperreports.engine.design.JRCompilationSourceCode;
 import net.sf.jasperreports.engine.design.JRCompilationUnit;
@@ -56,16 +58,27 @@ import org.codehaus.groovy.control.Phases;
  * Calculator compiler that uses groovy to compile expressions.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net), Peter Severin (peter_p_s@users.sourceforge.net)
- * @version $Id: JRGroovyCompiler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRGroovyCompiler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRGroovyCompiler extends JRAbstractJavaCompiler 
 {
 
 	protected static final String SOURCE_ENCODING = "UTF-8";
 	
+	/**
+	 * 
+	 */
+	public JRGroovyCompiler(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext, false);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #JRGroovyCompiler(JasperReportsContext)}.
+	 */
 	public JRGroovyCompiler()
 	{
-		super(false);
+		this(DefaultJasperReportsContext.getInstance());
 	}
 	
 

@@ -31,21 +31,25 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import javax.sql.rowset.CachedRowSet;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRResultSetDataSource;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRValueParameter;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -57,7 +61,7 @@ import org.apache.commons.logging.LogFactory;
  * This query executer implementation offers built-in support for SQL queries.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRJdbcQueryExecuter.java 4596 2011-09-12 08:17:40Z teodord $
+ * @version $Id: JRJdbcQueryExecuter.java 5297 2012-04-25 09:18:10Z teodord $
  */
 public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 {
@@ -91,21 +95,30 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 	
 	protected static final String CACHED_ROWSET_CLASS = "com.sun.rowset.CachedRowSetImpl";
 
-	private Connection connection;
+	protected Connection connection;
 	
 	/**
 	 * The statement used to fire the query.
 	 */
-	private PreparedStatement statement;
+	protected PreparedStatement statement;
 
-	private ResultSet resultSet;
+	protected ResultSet resultSet;
 	
 	private boolean isCachedRowSet;
 
+	private TimeZone timeZone;
+	private boolean timeZoneOverride;
 	
-	public JRJdbcQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parameters)
+	/**
+	 * 
+	 */
+	public JRJdbcQueryExecuter(
+		JasperReportsContext jasperReportsContext, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parameters
+		)
 	{
-		super(dataset, parameters);
+		super(jasperReportsContext, dataset, parameters);
 		
 		connection = (Connection) getParameterValue(JRParameter.REPORT_CONNECTION);
 		if (connection == null)
@@ -117,10 +130,20 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 		}
 		
 		isCachedRowSet = getBooleanParameterOrProperty(JRJdbcQueryExecuterFactory.PROPERTY_CACHED_ROWSET, false);
+		
+		setTimeZone();
 
 		registerFunctions();
 		
 		parseQuery();		
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #JRJdbcQueryExecuter(JasperReportsContext, JRDataset, Map)}.
+	 */
+	public JRJdbcQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parameters)
+	{
+		this(DefaultJasperReportsContext.getInstance(), dataset, parameters);
 	}
 
 	
@@ -148,6 +171,20 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 		registerClauseFunction(CLAUSE_ID_BETWEEN_RIGHT_CLOSED, JRSqlBetweenClause.instance());	
 	}
 
+	protected void setTimeZone()
+	{
+		String timezoneId = (String) getParameterValue(JRJdbcQueryExecuterFactory.PROPERTY_TIME_ZONE, true);
+		if (timezoneId != null)
+		{
+			timeZoneOverride = true;
+		}
+		else
+		{
+			timezoneId = getPropertiesUtil().getProperty(dataset, JRJdbcQueryExecuterFactory.PROPERTY_TIME_ZONE);
+		}
+		timeZone = timezoneId == null || timezoneId.length() == 0 ? null : TimeZone.getTimeZone(timezoneId);
+	}
+
 
 	protected String getParameterReplacement(String parameterName)
 	{
@@ -160,7 +197,7 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 	 */
 	public JRDataSource createDatasource() throws JRException
 	{
-		JRDataSource dataSource = null;
+		JRResultSetDataSource dataSource = null;
 		
 		createStatement();
 		
@@ -173,12 +210,12 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 					try
 					{
 						Class<? extends CachedRowSet> clazz = (Class<? extends CachedRowSet>)Class.forName(CACHED_ROWSET_CLASS);
-						Constructor<? extends CachedRowSet> constructor = (Constructor<? extends CachedRowSet>)clazz.getConstructor();
+						Constructor<? extends CachedRowSet> constructor = clazz.getConstructor();
 						resultSet = constructor.newInstance();
 					}
 					catch (Exception e)
 					{
-						throw new JRRuntimeException(e);
+						throw new JRException(e);
 					}
 					
 					((CachedRowSet)resultSet).populate(statement.executeQuery());
@@ -189,7 +226,8 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 					}
 					catch (SQLException e)
 					{
-						log.error("Error while closing statement.", e);
+						if (log.isErrorEnabled())
+							log.error("Error while closing statement.", e);
 					}
 					finally
 					{
@@ -200,7 +238,8 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 				{
 					resultSet = statement.executeQuery();
 				}
-				dataSource = new JRResultSetDataSource(resultSet);
+				dataSource = new JRResultSetDataSource(getJasperReportsContext(), resultSet);
+				dataSource.setTimeZone(timeZone, timeZoneOverride);
 			}
 			catch (SQLException e)
 			{
@@ -225,9 +264,9 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 		{
 			try
 			{
-				String type = JRProperties.getProperty(dataset,	JRJdbcQueryExecuterFactory.PROPERTY_JDBC_RESULT_SET_TYPE);
-				String concurrency = JRProperties.getProperty(dataset, JRJdbcQueryExecuterFactory.PROPERTY_JDBC_CONCURRENCY);
-				String holdability = JRProperties.getProperty(dataset, JRJdbcQueryExecuterFactory.PROPERTY_JDBC_HOLDABILITY);
+				String type = getPropertiesUtil().getProperty(dataset,	JRJdbcQueryExecuterFactory.PROPERTY_JDBC_RESULT_SET_TYPE);
+				String concurrency = getPropertiesUtil().getProperty(dataset, JRJdbcQueryExecuterFactory.PROPERTY_JDBC_CONCURRENCY);
+				String holdability = getPropertiesUtil().getProperty(dataset, JRJdbcQueryExecuterFactory.PROPERTY_JDBC_HOLDABILITY);
 				
 				if (type == null && concurrency == null && holdability == null)
 				{
@@ -259,7 +298,7 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 					}
 				}
 				
-				int fetchSize = JRProperties.getIntegerProperty(dataset,
+				int fetchSize = getPropertiesUtil().getIntegerProperty(dataset,
 						JRJdbcQueryExecuterFactory.PROPERTY_JDBC_FETCH_SIZE,
 						0);
 				if (fetchSize != 0)
@@ -267,7 +306,7 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 					statement.setFetchSize(fetchSize);
 				}
 				
-				int maxFieldSize = JRProperties.getIntegerProperty(dataset,
+				int maxFieldSize = getPropertiesUtil().getIntegerProperty(dataset,
 						JRJdbcQueryExecuterFactory.PROPERTY_JDBC_MAX_FIELD_SIZE,
 						0);//FIXMENOW check the default of all zero default properties
 				if(maxFieldSize != 0)
@@ -323,13 +362,14 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 			log.debug("Parameter #" + parameterIndex + " (" + parameterName + " of type " + clazz.getName() + "): " + parameterValue);
 		}
 
-		setStatementParameter(parameterIndex, clazz, parameterValue);
+		setStatementParameter(parameterIndex, clazz, parameterValue, parameter);
 	}
 
 
 	protected int setStatementMultiParameters(int parameterIndex, String parameterName, boolean ignoreNulls) throws SQLException
 	{
-		Object paramValue = getParameterValue(parameterName);
+		JRValueParameter parameter = getValueParameter(parameterName);
+		Object paramValue = parameter.getValue();
 		int count;
 		int index = 0;
 		if (paramValue.getClass().isArray())
@@ -340,7 +380,7 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 				Object value = Array.get(paramValue, count);
 				if(!ignoreNulls || value != null)
 				{
-					setStatementMultiParameter(parameterIndex + index, parameterName, count, value);
+					setStatementMultiParameter(parameterIndex + index, parameterName, count, value, parameter);
 					++index;
 				}
 			}
@@ -355,7 +395,7 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 				
 				if(!ignoreNulls || value != null)
 				{
-					setStatementMultiParameter(parameterIndex + index, parameterName, count, value);
+					setStatementMultiParameter(parameterIndex + index, parameterName, count, value, parameter);
 					++index;
 				}
 			}
@@ -368,13 +408,8 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 	}
 
 	
-	protected int setStatementMultiParameters(int parameterIndex, String parameterName) throws SQLException
-	{
-		return setStatementMultiParameters(parameterIndex, parameterName, false);
-	}
-
-	
-	protected void setStatementMultiParameter(int parameterIndex, String parameterName, int valueIndex, Object value) throws SQLException
+	protected void setStatementMultiParameter(int parameterIndex, String parameterName, int valueIndex, Object value,
+			JRPropertiesHolder properties) throws SQLException
 	{
 		if (value == null)
 		{
@@ -389,11 +424,12 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 					" (" + parameterName + "[" + valueIndex + "] of type " + type.getName() + "): " + value);
 		}
 		
-		setStatementParameter(parameterIndex, type, value);
+		setStatementParameter(parameterIndex, type, value, properties);
 	}
 
 	
-	protected void setStatementParameter(int parameterIndex, Class<?> parameterType, Object parameterValue) throws SQLException
+	protected void setStatementParameter(int parameterIndex, Class<?> parameterType, Object parameterValue,
+			JRPropertiesHolder properties) throws SQLException
 	{
 		if (java.lang.Boolean.class.isAssignableFrom(parameterType))
 		{
@@ -496,36 +532,15 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 		}
 		else if (java.sql.Timestamp.class.isAssignableFrom(parameterType))
 		{
-			if (parameterValue == null)
-			{
-				statement.setNull(parameterIndex, Types.TIMESTAMP);
-			}
-			else
-			{
-				statement.setTimestamp( parameterIndex, (java.sql.Timestamp)parameterValue );
-			}
+			setTimestamp(parameterIndex, parameterValue, properties);
 		}
 		else if (java.sql.Time.class.isAssignableFrom(parameterType))
 		{
-			if (parameterValue == null)
-			{
-				statement.setNull(parameterIndex, Types.TIME);
-			}
-			else
-			{
-				statement.setTime( parameterIndex, (java.sql.Time)parameterValue );
-			}
+			setTime(parameterIndex, parameterValue, properties);
 		}
 		else if (java.util.Date.class.isAssignableFrom(parameterType))
 		{
-			if (parameterValue == null)
-			{
-				statement.setNull(parameterIndex, Types.DATE);
-			}
-			else
-			{
-				statement.setDate( parameterIndex, new java.sql.Date( ((java.util.Date)parameterValue).getTime() ) );
-			}
+			setDate(parameterIndex, parameterValue, properties);
 		}
 		else
 		{
@@ -540,6 +555,102 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 		}
 	}
 
+
+	protected void setTimestamp(int parameterIndex, Object parameterValue, JRPropertiesHolder properties)
+			throws SQLException
+	{
+		if (parameterValue == null)
+		{
+			statement.setNull(parameterIndex, Types.TIMESTAMP);
+		}
+		else
+		{
+			Calendar cal = getParameterCalendar(properties);
+			if (cal == null)
+			{
+				statement.setTimestamp(parameterIndex, (java.sql.Timestamp) parameterValue);
+			}
+			else
+			{
+				statement.setTimestamp(parameterIndex, (java.sql.Timestamp) parameterValue, cal);
+			}
+		}
+	}
+
+
+	protected void setTime(int parameterIndex, Object parameterValue, JRPropertiesHolder properties)
+			throws SQLException
+	{
+		if (parameterValue == null)
+		{
+			statement.setNull(parameterIndex, Types.TIME);
+		}
+		else
+		{
+			Calendar cal = getParameterCalendar(properties);
+			if (cal == null)
+			{
+				statement.setTime(parameterIndex, (java.sql.Time) parameterValue);
+			}
+			else
+			{
+				statement.setTime(parameterIndex, (java.sql.Time) parameterValue, cal);
+			}
+		}
+	}
+
+
+	protected void setDate(int parameterIndex, Object parameterValue, JRPropertiesHolder properties)
+			throws SQLException
+	{
+		if (parameterValue == null)
+		{
+			statement.setNull(parameterIndex, Types.DATE);
+		}
+		else
+		{
+			Calendar cal = getParameterCalendar(properties);
+			if (cal == null)
+			{
+				statement.setDate(parameterIndex, new java.sql.Date(((java.util.Date)parameterValue).getTime()));
+			}
+			else
+			{
+				statement.setDate(parameterIndex, new java.sql.Date(((java.util.Date)parameterValue).getTime()), cal);
+			}
+		}
+	}
+
+	protected Calendar getParameterCalendar(JRPropertiesHolder properties)
+	{
+		TimeZone tz;
+		if (timeZoneOverride)
+		{
+			// if we have a parameter, use it
+			tz = timeZone;
+		}
+		else
+		{
+			if (properties.hasProperties() && properties.getPropertiesMap().containsProperty(
+					JRJdbcQueryExecuterFactory.PROPERTY_TIME_ZONE))
+			{
+				// read the parameter level property
+				String timezoneId = getPropertiesUtil().getProperty(properties, 
+						JRJdbcQueryExecuterFactory.PROPERTY_TIME_ZONE);
+				tz = (timezoneId == null || timezoneId.length() == 0) ? null 
+						: TimeZone.getTimeZone(timezoneId);
+			}
+			else
+			{
+				// dataset/default property
+				tz = timeZone;
+			}
+		}
+
+		// using default JVM locale for the calendar
+		Calendar cal = tz == null ? null : Calendar.getInstance(tz);
+		return cal;
+	}
 	
 	/* (non-Javadoc)
 	 * @see net.sf.jasperreports.engine.util.JRQueryExecuter#close()

@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
@@ -64,10 +65,11 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.ExporterFilter;
@@ -79,6 +81,7 @@ import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
 import net.sf.jasperreports.engine.export.zip.ExportZipEntry;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZipEntry;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRTextAttribute;
@@ -88,7 +91,7 @@ import net.sf.jasperreports.engine.util.JRTextAttribute;
  * Exports a JasperReports document to ODF format. It has character output type and exports the document to a
  * grid-based layout.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROpenDocumentExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JROpenDocumentExporter.java 5217 2012-04-03 15:16:10Z teodord $
  */
 public abstract class JROpenDocumentExporter extends JRAbstractExporter
 {
@@ -122,22 +125,28 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 	protected String encoding;
 
 
-	/**
-	 * @deprecated
-	 */
-	protected Map<String,String> fontMap;
-
-	protected LinkedList<Color> backcolorStack;
+	protected LinkedList<Color> backcolorStack = new LinkedList<Color>();
 	protected Color backcolor;
 
 	protected StyleCache styleCache;
 
 	protected ExporterNature nature;
 
+	/**
+	 * @see #JROpenDocumentExporter(JasperReportsContext)
+	 */
 	public JROpenDocumentExporter()
 	{
-		backcolorStack = new LinkedList<Color>();
-		backcolor = null;
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+
+	/**
+	 *
+	 */
+	public JROpenDocumentExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
 	}
 
 
@@ -180,7 +189,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 //			imageMaps = new HashMap();
 			imagesToProcess = new ArrayList<JRPrintElementIndex>();
 
-			fontMap = (Map<String,String>) parameters.get(JRExporterParameter.FONT_MAP);
+			setFontMap();
 
 			setHyperlinkProducerFactory();
 
@@ -352,8 +361,8 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 				JRPrintElementIndex imageIndex = it.next();
 
 				JRPrintImage image = getImage(jasperPrintList, imageIndex);
-				JRRenderable renderer = image.getRenderer();
-				if (renderer.getType() == JRRenderable.TYPE_SVG)
+				Renderable renderer = image.getRenderable();
+				if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 				{
 					renderer =
 						new JRWrappingSvgRenderer(
@@ -366,7 +375,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 				oasisZip.addEntry(//FIXMEODT optimize with a different implementation of entry
 					new FileBufferedZipEntry(
 						"Pictures/" + getImageName(imageIndex),
-						renderer.getImageData()
+						renderer.getImageData(jasperReportsContext)
 						)
 					);
 			}
@@ -424,7 +433,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 		{
 			tableBuilder.buildColumnStyle(
 					col - 1,
-					xCuts.getCut(col) - xCuts.getCut(col - 1)
+					xCuts.getCutOffset(col) - xCuts.getCutOffset(col - 1)
 					);
 			tableBuilder.buildColumnHeader(col - 1);
 			tableBuilder.buildColumnFooter();
@@ -434,7 +443,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 		for(int row = 0; row < grid.length; row++)
 		{
 			int emptyCellColSpan = 0;
-			int emptyCellWidth = 0;
+			//int emptyCellWidth = 0;
 			int rowHeight = gridLayout.getRowHeight(row);
 
 			tableBuilder.buildRowStyle(row, rowHeight);
@@ -449,7 +458,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 					{
 						//writeEmptyCell(gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
-						emptyCellWidth = 0;
+						//emptyCellWidth = 0;
 					}
 
 					//writeOccupiedCells(1);
@@ -465,7 +474,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 					{
 						//writeEmptyCell(gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
-						emptyCellWidth = 0;
+						//emptyCellWidth = 0;
 					}
 
 					element = gridCell.getWrapper().getElement();
@@ -505,7 +514,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 				else
 				{
 					emptyCellColSpan++;
-					emptyCellWidth += gridCell.getWidth();
+					//emptyCellWidth += gridCell.getWidth();
 					exportEmptyCell(gridCell, 1);
 				}
 			}
@@ -746,13 +755,13 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	protected String getImagePath(JRRenderable renderer, boolean isLazy, JRExporterGridCell gridCell)
+	protected String getImagePath(Renderable renderer, boolean isLazy, JRExporterGridCell gridCell)
 	{
 		String imagePath = null;
 
 		if (renderer != null)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
 			{
 				imagePath = rendererToImagePathMap.get(renderer.getId());
 			}
@@ -1073,7 +1082,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 	protected String getHyperlinkURL(JRPrintHyperlink link)
 	{
 		String href = null;
-		JRHyperlinkProducer customHandler = getCustomHandler(link);
+		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);
 		if (customHandler == null)
 		{
 			switch(link.getHyperlinkTypeValue())

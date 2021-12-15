@@ -45,7 +45,6 @@ import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 import net.sf.jasperreports.engine.util.JRFontUtil;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRSingletonCache;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
@@ -57,7 +56,7 @@ import net.sf.jasperreports.engine.util.MarkupProcessorFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillTextElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillTextElement.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRFillTextElement extends JRFillElement implements JRTextElement
 {
@@ -74,13 +73,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	 */
 	private boolean isLeftToRight = true;
 	private JRTextMeasurer textMeasurer;
-	/**
-	 * @deprecated No longer used.
-	 */
 	private float lineSpacingFactor;
-	/**
-	 * @deprecated No longer used.
-	 */
 	private float leadingOffset;
 	private float textHeight;
 	private int textStart;
@@ -121,7 +114,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 
 	private void createTextMeasurer()
 	{
-		textMeasurer = JRTextMeasurerUtil.createTextMeasurer(this);
+		textMeasurer = JRTextMeasurerUtil.getInstance(filler.getJasperReportsContext()).createTextMeasurer(this);
 	}
 
 	protected void ensureTextMeasurer()
@@ -301,7 +294,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	}
 
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	protected float getLineSpacingFactor()
 	{
@@ -309,7 +302,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	}
 		
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	protected void setLineSpacingFactor(float lineSpacingFactor)
 	{
@@ -317,7 +310,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	}
 
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	protected float getLeadingOffset()
 	{
@@ -325,7 +318,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 	}
 		
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	protected void setLeadingOffset(float leadingOffset)
 	{
@@ -529,8 +522,8 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		setTextEnd(measuredText.getTextOffset());
 		setLineBreakOffsets(measuredText.getLineBreakOffsets());
 		setTextTruncateSuffix(measuredText.getTextSuffix());
-		//setLineSpacingFactor(measuredText.getLineSpacingFactor());
-		//setLeadingOffset(measuredText.getLeadingOffset());
+		setLineSpacingFactor(measuredText.getLineSpacingFactor());
+		setLeadingOffset(measuredText.getLeadingOffset());
 	}
 	
 	protected abstract boolean canOverflow();
@@ -857,13 +850,13 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		return text;
 	}
 
-	protected static MarkupProcessor getMarkupProcessor(String markup)
+	protected MarkupProcessor getMarkupProcessor(String markup)
 	{
 		MarkupProcessor markupProcessor = markupProcessors.get(markup);
 		
 		if (markupProcessor == null)
 		{
-			String factoryClass = JRProperties.getProperty(MarkupProcessorFactory.PROPERTY_MARKUP_PROCESSOR_FACTORY_PREFIX + markup);
+			String factoryClass = filler.getPropertiesUtil().getProperty(MarkupProcessorFactory.PROPERTY_MARKUP_PROCESSOR_FACTORY_PREFIX + markup);
 			if (factoryClass == null)
 			{
 				throw new JRRuntimeException("No markup processor factory specifyed for '" + markup + "' markup.");
@@ -894,7 +887,7 @@ public abstract class JRFillTextElement extends JRFillElement implements JRTextE
 		String fullText = fullStyledText.getText();
 		
 		boolean keepAllText = !canOverflow() 
-				&& JRProperties.getBooleanProperty(this, JRTextElement.PROPERTY_PRINT_KEEP_FULL_TEXT, false);
+				&& filler.getPropertiesUtil().getBooleanProperty(this, JRTextElement.PROPERTY_PRINT_KEEP_FULL_TEXT, false);
 		if (keepAllText)
 		{
 			//assert getTextStart() == 0

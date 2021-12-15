@@ -38,7 +38,7 @@ import net.sf.jasperreports.engine.type.BreakTypeEnum;
 /**
  * The actual implementation of a break element, used at design time.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignBreak.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignBreak.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignBreak extends JRDesignElement implements JRBreak
 {

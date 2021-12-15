@@ -70,7 +70,7 @@ import org.xml.sax.SAXParseException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStyledTextParser.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRStyledTextParser.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRStyledTextParser implements ErrorHandler
 {
@@ -389,7 +389,7 @@ public class JRStyledTextParser implements ErrorHandler
 				sbuffer.append(SPACE);
 				sbuffer.append(ATTRIBUTE_href);
 				sbuffer.append(EQUAL_QUOTE);
-				sbuffer.append(href);
+				sbuffer.append(JRStringUtil.htmlEncode(href));
 				sbuffer.append(QUOTE);
 			}
 			

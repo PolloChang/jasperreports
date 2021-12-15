@@ -171,8 +171,9 @@ import org.xml.sax.SAXParseException;
  * a digester in order to prepare it for parsing JasperReports xml definition files.
  *
  * @author Peter Severin (peter_p_s@users.sourceforge.net)
- * @version $Id: JRXmlDigesterFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXmlDigesterFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
+@SuppressWarnings("deprecation")
 public final class JRXmlDigesterFactory
 {
 
@@ -514,6 +515,7 @@ public final class JRXmlDigesterFactory
 				configurer.configureDigester(digester);
 			}
 			
+			digester.setRuleNamespaceURI(xmlParser.getNamespace());
 			for (Iterator<String> namesIt = componentsBundle.getComponentNames().iterator(); 
 					namesIt.hasNext();)
 			{

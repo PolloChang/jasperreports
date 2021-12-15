@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.type.ResetTypeEnum;
  * This is the superinterface for all datasets and contains common dataset properties.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRElementDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRElementDataset.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRElementDataset extends JRCloneable
 {

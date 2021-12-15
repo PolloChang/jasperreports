@@ -33,18 +33,21 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import jxl.Cell;
 import jxl.Sheet;
 import jxl.Workbook;
 import jxl.read.biff.BiffException;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRRewindableDataSource;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.FormatUtils;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
 
@@ -56,7 +59,7 @@ import net.sf.jasperreports.repo.RepositoryUtil;
  * names or set a flag to read the column names from the first row of the CSV file.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsDataSource.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXlsDataSource.java 5346 2012-05-08 12:08:01Z teodord $
  */
 public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewindableDataSource
 {
@@ -64,7 +67,7 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 
 	private DateFormat dateFormat = new SimpleDateFormat();
 	private NumberFormat numberFormat = new DecimalFormat();
-	private Map<String, Integer> columnNames = new HashMap<String, Integer>();
+	private Map<String, Integer> columnNames = new LinkedHashMap<String, Integer>();
 	private boolean useFirstRowAsHeader;
 	private int recordIndex = -1;
 
@@ -117,13 +120,23 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 	
 	/**
 	 * Creates a datasource instance that reads XLS data from a given location.
+	 * @param jasperReportsContext the JasperReportsContext
 	 * @param location a String representing XLS data source
 	 * @throws IOException 
 	 */
+	public JRXlsDataSource(JasperReportsContext jasperReportsContext, String location) throws JRException, IOException
+	{
+		this(RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(location));
+		this.closeInputStream = true;
+	}
+
+	
+	/**
+	 * @see #JRXlsDataSource(JasperReportsContext, String)
+	 */
 	public JRXlsDataSource(String location) throws JRException, IOException
 	{
-		this(RepositoryUtil.getInputStream(location));
-		this.closeInputStream = true;
+		this(DefaultJasperReportsContext.getInstance(), location);
 	}
 	
 
@@ -206,7 +219,7 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 			{
 				if (numberFormat != null)
 				{
-					return getFormattedNumber(numberFormat, fieldValue, valueClass);
+					return FormatUtils.getFormattedNumber(numberFormat, fieldValue, valueClass);
 				}
 				else 
 				{
@@ -216,7 +229,7 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 			else if (Date.class.isAssignableFrom(valueClass)){
 				if (dateFormat != null)
 				{
-					return getFormattedDate(dateFormat, fieldValue, valueClass);
+					return FormatUtils.getFormattedDate(dateFormat, fieldValue, valueClass);
 				} 
 				else
 				{
@@ -253,7 +266,7 @@ public class JRXlsDataSource extends JRAbstractTextDataSource implements JRRewin
 		}
 		else
 		{
-			Map<String, Integer> newColumnNames = new HashMap<String, Integer>();
+			Map<String, Integer> newColumnNames = new LinkedHashMap<String, Integer>();
 			for(Iterator<Integer> it = columnNames.values().iterator(); it.hasNext();)
 			{
 				Integer columnIndex = it.next();

@@ -38,7 +38,7 @@ import net.sf.jasperreports.engine.JRFont;
  * can be broken up into shaded regions to highlight portions of the range.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRMeterPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRMeterPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRMeterPlot extends JRChartPlot
 {
@@ -102,6 +102,13 @@ public interface JRMeterPlot extends JRChartPlot
 	 * @return the spacing between the ticks on the face of the meter
 	 */
 	public Double getTickIntervalDouble();
+	
+	/**
+	 * Returns the number of major ticks on the meter scale.
+	 *
+	 * @return the spacing between the ticks on the face of the meter
+	 */
+	public Integer getTickCount();
 
 	/**
 	 * Returns the background color of the meter.  This is the color of the meter's face.

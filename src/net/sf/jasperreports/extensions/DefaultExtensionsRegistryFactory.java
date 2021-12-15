@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 
 import net.sf.jasperreports.charts.ChartThemeBundle;
+import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElement;
+import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElementHtmlHandler;
 import net.sf.jasperreports.components.map.MapElementDocxHandler;
 import net.sf.jasperreports.components.map.MapElementGraphics2DHandler;
 import net.sf.jasperreports.components.map.MapElementHtmlHandler;
@@ -60,15 +62,17 @@ import net.sf.jasperreports.engine.export.ooxml.JRPptxExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 import net.sf.jasperreports.engine.fill.DefaultChartTheme;
 import net.sf.jasperreports.engine.query.DefaultQueryExecuterFactoryBundle;
-import net.sf.jasperreports.engine.query.QueryExecuterFactoryBundle;
+import net.sf.jasperreports.engine.query.JRQueryExecuterFactoryBundle;
 import net.sf.jasperreports.engine.scriptlets.DefaultScriptletFactory;
 import net.sf.jasperreports.engine.scriptlets.ScriptletFactory;
+import net.sf.jasperreports.engine.util.MessageProviderFactory;
+import net.sf.jasperreports.engine.util.ResourceBundleMessageProviderFactory;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultExtensionsRegistryFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DefaultExtensionsRegistryFactory.java 5136 2012-03-27 13:04:59Z teodord $
  */
 public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
@@ -144,6 +148,11 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 				{
 					return new SortElementHtmlHandler();
 				}
+				if (HeaderToolbarElement.ELEMENT_NAME.equals(elementName) 
+						&& JRXhtmlExporter.XHTML_EXPORTER_KEY.equals(exporterKey))
+				{
+					return new HeaderToolbarElementHtmlHandler();
+				}
 				return null;
 			}
 		};
@@ -153,7 +162,7 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 		{
 			public <T> List<T> getExtensions(Class<T> extensionType) 
 			{
-				if (QueryExecuterFactoryBundle.class.equals(extensionType))
+				if (JRQueryExecuterFactoryBundle.class.equals(extensionType))
 				{
 					return (List<T>) Collections.singletonList((Object)DefaultQueryExecuterFactoryBundle.getInstance());
 				}
@@ -168,6 +177,10 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 				else if (GenericElementHandlerBundle.class.equals(extensionType))
 				{
 					return (List<T>) Collections.singletonList((Object)HANDLER_BUNDLE);
+				}
+				else if (MessageProviderFactory.class.equals(extensionType))
+				{
+					return (List<T>) Collections.singletonList((Object) new ResourceBundleMessageProviderFactory());
 				}
 				return null;
 			}

@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.JRConstants;
  * Generic print element implementation that supports recorded values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRRecordedValuesGenericPrintElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRRecordedValuesGenericPrintElement.java 5407 2012-05-22 13:27:32Z lucianc $
  */
 public class JRRecordedValuesGenericPrintElement extends
 		JRTemplateGenericPrintElement implements JRRecordedValuesPrintElement
@@ -45,10 +45,35 @@ public class JRRecordedValuesGenericPrintElement extends
 	 * Creates a generic print element.
 	 * 
 	 * @param template the element template to be used by the element
+	 * @deprecated provide a source Id via {@link #JRRecordedValuesGenericPrintElement(JRTemplateGenericElement, int)}
 	 */
 	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template)
 	{
 		super(template);
+	}
+
+	/**
+	 * Creates a generic print element.
+	 * 
+	 * @param template the element template to be used by the element
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, int sourceElementId)
+	{
+		super(template, sourceElementId);
+	}
+
+	/**
+	 * Creates a generic print element.
+	 * 
+	 * @param template the element template to be used by the element
+	 * @param sourceElementId the Id of the source element
+	 * @param parameterCount the number of parameters that the element will have
+	 */
+	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, int sourceElementId,
+			int parameterCount)
+	{
+		super(template, sourceElementId, parameterCount);
 	}
 
 	public JRRecordedValues getRecordedValues()

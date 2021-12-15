@@ -28,7 +28,7 @@ import java.util.Map;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParameterContributor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ParameterContributor.java 4911 2012-01-19 15:29:07Z teodord $
  */
 public interface ParameterContributor
 {
@@ -38,4 +38,9 @@ public interface ParameterContributor
 	 */
 	public void contributeParameters(Map<String, Object> parameters) throws JRException;
 	
+	/**
+	 *
+	 */
+	public void dispose();
+
 }

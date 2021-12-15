@@ -38,7 +38,7 @@ import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillXySeries.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillXySeries.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillXySeries implements JRXySeries
 {

@@ -50,12 +50,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -67,20 +67,24 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.base.JRBaseFont;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.engine.fonts.FontInfo;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.util.FileBufferedWriter;
 import net.sf.jasperreports.engine.util.JRFontUtil;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 import org.apache.commons.logging.Log;
@@ -91,13 +95,13 @@ import org.apache.commons.logging.LogFactory;
  * a free-form layout. It uses the RTF Specification 1.6 (compatible with MS Word 6.0, 2003 and XP).
  * 
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRRtfExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRRtfExporter.java 5320 2012-04-27 15:37:05Z shertage $
  */
 public class JRRtfExporter extends JRAbstractExporter
 {
 	private static final Log log = LogFactory.getLog(JRRtfExporter.class);
 	
-	private static final String RTF_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.rtf.";
+	private static final String RTF_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.rtf.";
 	
 	private static final int LINE_SPACING_FACTOR = 240; //(int)(240 * 2/3f);
 
@@ -105,7 +109,7 @@ public class JRRtfExporter extends JRAbstractExporter
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String RTF_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "rtf";
+	public static final String RTF_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "rtf";
 	
 	/**
 	 *
@@ -127,11 +131,6 @@ public class JRRtfExporter extends JRAbstractExporter
 	// z order of the graphical objects in .rtf file
 	private int zorder = 1;
 
-	/**
-	 * @deprecated
-	 */
-	private Map<String,String> fontMap;
-
 	protected class ExporterContext extends BaseExporterContext implements JRRtfExporterContext
 	{
 		public String getExportPropertiesPrefix()
@@ -143,6 +142,24 @@ public class JRRtfExporter extends JRAbstractExporter
 	protected JRRtfExporterContext exporterContext = new ExporterContext();
 
 	
+	/**
+	 * @see #JRRtfExporter(JasperReportsContext)
+	 */
+	public JRRtfExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRRtfExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
+
 	/**
 	 * Export report in .rtf format
 	 */
@@ -174,8 +191,10 @@ public class JRRtfExporter extends JRAbstractExporter
 			colors = new ArrayList<Color>();
 			colors.add(null);
 
-			fontMap = (Map<String,String>) parameters.get(JRExporterParameter.FONT_MAP);
+			setFontMap();
+
 			setHyperlinkProducerFactory();
+			
 			StringBuffer sb = (StringBuffer)parameters.get(JRExporterParameter.OUTPUT_STRING_BUFFER);
 			if (sb != null) {
 				StringBuffer buffer = exportReportToBuffer();
@@ -937,7 +956,7 @@ public class JRRtfExporter extends JRAbstractExporter
 			writeAnchor(text.getAnchorName());
 		}
 
-		exportHyperlink(text);
+		boolean startedHyperlink = exportHyperlink(text);
 
 		// add parameters in case of styled text element
 		String plainText = styledText.getText();
@@ -1005,10 +1024,8 @@ public class JRRtfExporter extends JRAbstractExporter
 
 			iterator.setIndex(runLimit);
 		}
-//		if (startedHyperlink)
-//		{
-//			endHyperlink();
-//		}
+		
+		endHyperlink(startedHyperlink);
 
 		writer.write("\\par}}");
 		
@@ -1072,7 +1089,7 @@ public class JRRtfExporter extends JRAbstractExporter
 		int availableImageHeight = printImage.getHeight() - topPadding - bottomPadding;
 		availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
 
-		JRRenderable renderer = printImage.getRenderer();
+		Renderable renderer = printImage.getRenderable();
 
 		if (
 			renderer != null &&
@@ -1080,11 +1097,11 @@ public class JRRtfExporter extends JRAbstractExporter
 			availableImageHeight > 0
 			)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 			{
 				// Image renderers are all asked for their image data at some point.
 				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = JRImageRenderer.getOnErrorRendererForImageData(renderer, printImage.getOnErrorTypeValue());
+				renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, printImage.getOnErrorTypeValue());
 			}
 		}
 		else
@@ -1094,7 +1111,7 @@ public class JRRtfExporter extends JRAbstractExporter
 
 		if (renderer != null)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_SVG)
+			if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 			{
 				renderer =
 					new JRWrappingSvgRenderer(
@@ -1108,9 +1125,9 @@ public class JRRtfExporter extends JRAbstractExporter
 			int normalHeight = availableImageHeight;
 
 			// Image load might fail.
-			JRRenderable tmpRenderer =
-				JRImageRenderer.getOnErrorRendererForDimension(renderer, printImage.getOnErrorTypeValue());
-			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension();
+			Renderable tmpRenderer =
+				RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, printImage.getOnErrorTypeValue());
+			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
 			// If renderer was replaced, ignore image dimension.
 			if (tmpRenderer == renderer && dimension != null)
 			{
@@ -1218,7 +1235,8 @@ public class JRRtfExporter extends JRAbstractExporter
 			startElement(printImage);
 			exportPen(printImage.getForecolor());//FIXMEBORDER should we have lineColor here, if at all needed?
 			finishElement();
-			
+			boolean startedHyperlink = exportHyperlink(printImage);
+
 			writer.write("{\\shp{\\*\\shpinst\\shpbxpage\\shpbypage\\shpwr5\\shpfhdr0\\shpfblwtxt0\\shpz");
 			writer.write(String.valueOf(zorder++));
 			writer.write("\\shpleft");
@@ -1245,16 +1263,16 @@ public class JRRtfExporter extends JRAbstractExporter
 			writer.write("{\\sp{\\sn cropFromRight}{\\sv ");
 			writer.write(String.valueOf(cropRight));
 			writer.write("}}");
+			
+			writeShapeHyperlink(printImage);
 
 			if(printImage.getAnchorName() != null)
 			{
 				writeAnchor(printImage.getAnchorName());
 			}
 			
-			exportHyperlink(printImage);
-			
 			writer.write("{\\sp{\\sn pib}{\\sv {\\pict");
-			if (renderer.getImageType() == JRRenderable.IMAGE_TYPE_JPEG)
+			if (renderer.getImageTypeValue() == ImageTypeEnum.JPEG)
 			{
 				writer.write("\\jpegblip");
 			}
@@ -1264,7 +1282,7 @@ public class JRRtfExporter extends JRAbstractExporter
 			}
 			writer.write("\n");
 
-			ByteArrayInputStream bais = new ByteArrayInputStream(renderer.getImageData());
+			ByteArrayInputStream bais = new ByteArrayInputStream(renderer.getImageData(jasperReportsContext));
 
 			int count = 0;
 			int current = 0;
@@ -1286,6 +1304,7 @@ public class JRRtfExporter extends JRAbstractExporter
 
 			writer.write("\n}}}");
 			writer.write("}}\n");
+			endHyperlink(startedHyperlink);
 		}
 
 		int x = printImage.getX() + getOffsetX();
@@ -1497,7 +1516,7 @@ public class JRRtfExporter extends JRAbstractExporter
 	protected void exportGenericElement(JRGenericPrintElement element)
 	{
 		GenericElementRtfHandler handler = (GenericElementRtfHandler) 
-				GenericElementHandlerEnviroment.getHandler(
+				GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
 						element.getGenericType(), RTF_EXPORTER_KEY);
 		
 		if (handler != null)
@@ -1515,13 +1534,92 @@ public class JRRtfExporter extends JRAbstractExporter
 	}
 
 	
-	protected void exportHyperlink(JRPrintHyperlink link) throws IOException
+	protected boolean exportHyperlink(JRPrintHyperlink link) throws IOException
+	{
+		String hl = null;
+		String local ="";
+		boolean result = false;
+		
+		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);
+		if (customHandler == null)
+		{
+			switch(link.getHyperlinkTypeValue())
+			{
+			case REFERENCE :
+			{
+				if (link.getHyperlinkReference() != null)
+				{
+					hl = link.getHyperlinkReference();
+				}
+				break;
+			}
+			case LOCAL_ANCHOR :
+			{
+				if (link.getHyperlinkAnchor() != null)
+				{
+					hl = link.getHyperlinkAnchor();
+					local = "\\\\l ";
+				}
+				break;
+			}
+			case LOCAL_PAGE :
+			{
+				if (link.getHyperlinkPage() != null)
+				{
+					hl = JR_PAGE_ANCHOR_PREFIX + reportIndex + "_" + link.getHyperlinkPage().toString();
+					local = "\\\\l ";
+				}
+				break;
+			}
+			case REMOTE_ANCHOR :
+			{
+				if (
+						link.getHyperlinkReference() != null &&
+						link.getHyperlinkAnchor() != null
+						)
+				{
+					hl = link.getHyperlinkReference() + "#" + link.getHyperlinkAnchor();
+				}
+				break;
+			}
+			case REMOTE_PAGE :
+			{
+				if (
+						link.getHyperlinkReference() != null &&
+						link.getHyperlinkPage() != null
+						)
+				{
+					hl = link.getHyperlinkReference() + "#" + JR_PAGE_ANCHOR_PREFIX + "0_" + link.getHyperlinkPage().toString();
+				}
+				break;
+			}
+			case NONE :
+			default :
+			{
+				break;
+			}
+			}
+		}
+		else
+		{
+			hl = customHandler.getHyperlink(link);
+		}
+		
+		if (hl != null)
+		{
+			writer.write("{\\field{\\*\\fldinst HYPERLINK " + local + "\"" + hl + "\"}{\\fldrslt ");
+			result = true;
+		}
+		return result;
+	}
+	
+	protected void writeShapeHyperlink (JRPrintHyperlink link) throws IOException
 	{
 		String hlloc = null;
 		String hlfr = null;
 		String hlsrc = null;
 		
-		JRHyperlinkProducer customHandler = getCustomHandler(link);
+		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);
 		if (customHandler == null)
 		{
 			switch(link.getHyperlinkTypeValue())
@@ -1614,6 +1712,14 @@ public class JRRtfExporter extends JRAbstractExporter
 	}
 
 
+	protected void endHyperlink(boolean startedHyperlink) throws IOException
+	{
+		if(startedHyperlink)
+		{
+			writer.write("}}");
+		}
+	}
+	
 	protected void writeAnchor(String anchorName) throws IOException
 	{
 		writer.write("{\\*\\bkmkstart ");

@@ -25,13 +25,14 @@ package net.sf.jasperreports.j2ee.servlets;
 
 import javax.servlet.http.HttpServletResponse;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.export.JRXlsAbstractExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: XlsxServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxServlet.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class XlsxServlet extends AbstractXlsServlet
 {
@@ -43,7 +44,7 @@ public class XlsxServlet extends AbstractXlsServlet
 	 */
 	protected JRXlsAbstractExporter getXlsExporter()
 	{
-		return new JRXlsxExporter();
+		return new JRXlsxExporter(DefaultJasperReportsContext.getInstance());
 	}
 
 	@Override

@@ -25,6 +25,8 @@ package net.sf.jasperreports.components.sort;
 
 import java.io.IOException;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.component.Component;
 import net.sf.jasperreports.engine.component.ComponentKey;
 import net.sf.jasperreports.engine.component.ComponentXmlWriter;
@@ -36,9 +38,27 @@ import net.sf.jasperreports.engine.xml.JRXmlWriter;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortComponentXmlWriter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SortComponentXmlWriter.java 5050 2012-03-12 10:11:26Z teodord $
  */
-public class SortComponentXmlWriter implements ComponentXmlWriter {
+public class SortComponentXmlWriter implements ComponentXmlWriter 
+{
+	private JasperReportsContext jasperReportsContext;
+	
+	/**
+	 * @deprecated Replaced by {@link #SortComponentXmlWriter(JasperReportsContext)}.
+	 */
+	public SortComponentXmlWriter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	/**
+	 * 
+	 */
+	public SortComponentXmlWriter(JasperReportsContext jasperReportsContext)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+	}
 
 	public void writeToXml(ComponentKey componentKey, Component component,
 			JRXmlWriter reportWriter) throws IOException {
@@ -53,24 +73,31 @@ public class SortComponentXmlWriter implements ComponentXmlWriter {
 		JRXmlWriteHelper writer = reportWriter.getXmlWriteHelper();
 		
 		String namespaceURI = componentKey.getNamespace();
-		String schemaLocation = ComponentsEnvironment
-			.getComponentsBundle(namespaceURI).getXmlParser().getPublicSchemaLocation();
+		String schemaLocation = 
+			ComponentsEnvironment.getInstance(jasperReportsContext).getBundle(namespaceURI).getXmlParser().getPublicSchemaLocation();
 		XmlNamespace componentNamespace = new XmlNamespace(namespaceURI, componentKey.getNamespacePrefix(),
 				schemaLocation);
 		
 		writer.startElement("sort", componentNamespace);
 		
-		writer.addAttribute(SortComponent.PROPERTY_COLUMN_NAME, sortComponent.getSortFieldName());
-		writer.addAttribute(SortComponent.PROPERTY_COLUMN_TYPE, sortComponent.getSortFieldType());
-		writer.addAttribute(SortComponent.PROPERTY_HANDLER_COLOR, sortComponent.getHandlerColor());
-		writer.addAttribute(SortComponent.PROPERTY_HANDLER_FONT_SIZE, sortComponent.getHandlerFontSize());
-		writer.addAttribute(SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalAlign());
-		writer.addAttribute(SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalAlign());
 		
 		if (sortComponent.getEvaluationTime() != EvaluationTimeEnum.NOW) {
 			writer.addAttribute(SortComponent.PROPERTY_EVALUATION_TIME, sortComponent.getEvaluationTime());
 		}
 		writer.addAttribute(SortComponent.PROPERTY_EVALUATION_GROUP, sortComponent.getEvaluationGroup());
+		
+		// write symbol settings
+		writer.startElement("symbol");
+		if (sortComponent.getHandlerColor() != null)
+		{
+			writer.addAttribute(SortComponent.PROPERTY_HANDLER_COLOR, sortComponent.getHandlerColor());
+		}
+		writer.addAttribute(SortComponent.PROPERTY_COLUMN_TYPE, sortComponent.getSortFieldType());
+		writer.addAttribute(SortComponent.PROPERTY_COLUMN_NAME, sortComponent.getSortFieldName());
+		writer.addAttribute(SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalAlign());
+		writer.addAttribute(SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalAlign());
+		reportWriter.writeFont(sortComponent.getSymbolFont());
+		writer.closeElement();
 
 		writer.closeElement();
 	}

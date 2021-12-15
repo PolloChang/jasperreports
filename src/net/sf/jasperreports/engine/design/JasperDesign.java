@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstab;
@@ -69,7 +70,7 @@ import net.sf.jasperreports.engine.util.JRVisitorSupport;
  *
  * @see net.sf.jasperreports.engine.xml.JRXmlLoader
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperDesign.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JasperDesign.java 5337 2012-05-04 09:15:58Z lucianc $
  */
 public class JasperDesign extends JRBaseReport
 {
@@ -172,7 +173,7 @@ public class JasperDesign extends JRBaseReport
 	 */
 	private Map<String, JRDataset> datasetMap = new HashMap<String, JRDataset>();
 	private List<JRDataset> datasetList = new ArrayList<JRDataset>();
-
+	
 	/**
 	 * Constructs a JasperDesign object and fills it with the default variables and parameters.
 	 */
@@ -854,7 +855,7 @@ public class JasperDesign extends JRBaseReport
 
 
 	/**
-	 *
+	 * @deprecated To be removed.
 	 */
 	public JRSortField removeSortField(String fieldName)
 	{
@@ -1237,6 +1238,30 @@ public class JasperDesign extends JRBaseReport
 			JROrigin origin = new JROrigin(type);
 			((JRDesignSection) section).setOrigin(origin);
 		}
+	}
+	
+	/**
+	 * Sets the unique identifier for the report.
+	 * 
+	 * @param uuid the identifier
+	 */
+	public void setUUID(UUID uuid)
+	{
+		mainDesignDataset.setUUID(uuid);
+	}
+	
+	/**
+	 * Determines whether the report has an existing unique identifier.
+	 * 
+	 * Note that when no existing identifier is set, {@link #getUUID()} would generate and return
+	 * an identifier.
+	 * 
+	 * @return whether the report has an externally set unique identifier
+	 * @see #setUUID(UUID)
+	 */
+	public boolean hasUUID()
+	{
+		return mainDesignDataset.hasUUID();
 	}
 	
 }

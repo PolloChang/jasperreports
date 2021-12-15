@@ -44,16 +44,18 @@ import javax.print.attribute.standard.OrientationRequested;
 import javax.print.attribute.standard.PageRanges;
 import javax.print.attribute.standard.PrinterIsAcceptingJobs;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.print.JRPrinterAWT;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintServiceExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPrintServiceExporter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRPrintServiceExporter extends JRAbstractExporter implements Printable
 {
@@ -73,6 +75,24 @@ public class JRPrintServiceExporter extends JRAbstractExporter implements Printa
 	private PrintService printService;
 	private Boolean[] printStatus;
 	
+	/**
+	 * @see #JRPrintServiceExporter(JasperReportsContext)
+	 */
+	public JRPrintServiceExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRPrintServiceExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
+
 	/**
 	 *
 	 */
@@ -196,7 +216,7 @@ public class JRPrintServiceExporter extends JRAbstractExporter implements Printa
 			{
 				setJasperPrint(jasperPrintList.get(reportIndex));
 
-				exporter = new JRGraphics2DExporter();
+				exporter = new JRGraphics2DExporter(jasperReportsContext);
 				exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 				exporter.setParameter(JRExporterParameter.PROGRESS_MONITOR, parameters.get(JRExporterParameter.PROGRESS_MONITOR));
 				exporter.setParameter(JRExporterParameter.OFFSET_X, parameters.get(JRExporterParameter.OFFSET_X));

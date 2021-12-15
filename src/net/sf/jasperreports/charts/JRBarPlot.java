@@ -23,46 +23,14 @@
  */
 package net.sf.jasperreports.charts;
 
-import net.sf.jasperreports.engine.JRChartPlot;
-import net.sf.jasperreports.engine.JRExpression;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBarPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBarPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
-public interface JRBarPlot extends JRChartPlot, JRCategoryAxisFormat, JRValueAxisFormat
+public interface JRBarPlot extends JRCategoryPlot
 {
-
-	/**
-	 * 
-	 */
-	public JRExpression getCategoryAxisLabelExpression();
-
-	/**
-	 * 
-	 */
-	public JRExpression getValueAxisLabelExpression();
-
-	/**
-	 * 
-	 */
-	public JRExpression getDomainAxisMinValueExpression();
-
-	/**
-	 * 
-	 */
-	public JRExpression getDomainAxisMaxValueExpression();
-
-	/**
-	 * 
-	 */
-	public JRExpression getRangeAxisMinValueExpression();
-
-	/**
-	 * 
-	 */
-	public JRExpression getRangeAxisMaxValueExpression();
 
 	/**
 	 * 

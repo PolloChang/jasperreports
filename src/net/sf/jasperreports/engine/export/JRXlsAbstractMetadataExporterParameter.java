@@ -23,13 +23,13 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 
 
 /**
  * Contains parameters useful for export to XLS format based on metadata.
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRXlsAbstractMetadataExporterParameter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXlsAbstractMetadataExporterParameter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRXlsAbstractMetadataExporterParameter extends JRXlsAbstractExporterParameter
 {
@@ -54,15 +54,15 @@ public class JRXlsAbstractMetadataExporterParameter extends JRXlsAbstractExporte
 	/**
 	 * Properties having this prefix contain comma-separated column names.
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_COLUMN_NAMES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.xls.column.names";
+	public static final String PROPERTY_COLUMN_NAMES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.column.names";
 	
 	
 	/**
 	 * A boolean that specifies whether the export header (the column names) should be written or not.
 	 * 
-	 *  @see JRProperties
+	 *  @see JRPropertiesUtil
 	 */
 	public static final JRXlsAbstractMetadataExporterParameter WRITE_HEADER = new JRXlsAbstractMetadataExporterParameter("Write Header");
 	
@@ -73,18 +73,18 @@ public class JRXlsAbstractMetadataExporterParameter extends JRXlsAbstractExporte
 	 * The property itself defaults to <code>false</code>.
 	 * </p>
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_WRITE_HEADER = JRProperties.PROPERTY_PREFIX + "export.xls.write.header";
+	public static final String PROPERTY_WRITE_HEADER = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.write.header";
 
 	
 	/**
 	 * A string that represents the name for the column that should appear in the XLS export.
 	 * It must be one of the values in {@link #COLUMN_NAMES COLUMN_NAMES}, if provided. 
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_COLUMN_NAME = JRProperties.PROPERTY_PREFIX + "export.xls.column.name";
+	public static final String PROPERTY_COLUMN_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.column.name";
 	
 	
 	/**
@@ -94,9 +94,9 @@ public class JRXlsAbstractMetadataExporterParameter extends JRXlsAbstractExporte
 	 * The property itself defaults to <code>false</code>.
 	 * </p>
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_REPEAT_VALUE = JRProperties.PROPERTY_PREFIX + "export.xls.repeat.value";
+	public static final String PROPERTY_REPEAT_VALUE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.repeat.value";
 	
 	
 	/**
@@ -105,8 +105,8 @@ public class JRXlsAbstractMetadataExporterParameter extends JRXlsAbstractExporte
 	 * The property itself defaults to the text value of the report element that this property is assigned to.
 	 * </p>
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_DATA = JRProperties.PROPERTY_PREFIX + "export.xls.data";
+	public static final String PROPERTY_DATA = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.data";
 	
 }

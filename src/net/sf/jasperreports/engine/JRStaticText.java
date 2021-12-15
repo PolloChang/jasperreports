@@ -28,7 +28,7 @@ package net.sf.jasperreports.engine;
  * An abstract representation of a report static text. It provides functionality for static texts.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStaticText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRStaticText.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRStaticText extends JRTextElement
 {

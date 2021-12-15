@@ -30,7 +30,7 @@ import net.sf.jasperreports.engine.export.JRRtfExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementRtfHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MapElementRtfHandler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class MapElementRtfHandler implements GenericElementRtfHandler
 {
@@ -49,7 +49,7 @@ public class MapElementRtfHandler implements GenericElementRtfHandler
 		try
 		{
 			JRRtfExporter exporter = (JRRtfExporter)exporterContext.getExporter();
-			exporter.exportImage(MapElementImageProvider.getImage(element));
+			exporter.exportImage(MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element));
 		}
 		catch (Exception e)
 		{

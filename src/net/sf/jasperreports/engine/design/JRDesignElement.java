@@ -28,6 +28,7 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
@@ -46,7 +47,7 @@ import net.sf.jasperreports.engine.type.StretchTypeEnum;
  * and compiled elements is that at design time they are more customizable. This class contains setters for properties
  * that can be only modified at design time.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignElement.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRDesignElement extends JRBaseElement
 {
@@ -88,6 +89,14 @@ public abstract class JRDesignElement extends JRBaseElement
 	}
 
 
+	/**
+	 *
+	 */
+	public void setUUID(UUID uuid)
+	{
+		this.uuid = uuid;
+	}
+		
 	/**
 	 * Sets the unique identifier for the element.
 	 */

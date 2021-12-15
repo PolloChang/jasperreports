@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.design;
 
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRElementGroup;
 import net.sf.jasperreports.engine.base.JRBaseElementGroup;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
@@ -32,7 +33,7 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignElementGroup.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignElementGroup.java 5404 2012-05-22 09:22:00Z lucianc $
  */
 public class JRDesignElementGroup extends JRBaseElementGroup implements JRChangeEventsSupport
 {
@@ -75,6 +76,12 @@ public class JRDesignElementGroup extends JRBaseElementGroup implements JRChange
 		
 		this.children.add(index, element);
 		getEventSupport().fireCollectionElementAddedEvent(PROPERTY_CHILDREN, element, index);
+	}
+
+	public void addElement(JRElement element)
+	{
+		this.children.add(element);
+		getEventSupport().fireCollectionElementAddedEvent(PROPERTY_CHILDREN, element, this.children.size() - 1);
 	}
 
 	/**

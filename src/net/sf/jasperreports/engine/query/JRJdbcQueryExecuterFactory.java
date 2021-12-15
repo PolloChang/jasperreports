@@ -28,8 +28,10 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRResultSetDataSource;
 import net.sf.jasperreports.engine.JRValueParameter;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * Query executer factory for SQL queries.
@@ -37,40 +39,58 @@ import net.sf.jasperreports.engine.util.JRProperties;
  * This factory creates JDBC query executers for SQL queries.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRJdbcQueryExecuterFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRJdbcQueryExecuterFactory.java 5305 2012-04-26 15:17:33Z teodord $
  * @see net.sf.jasperreports.engine.query.JRJdbcQueryExecuter
  */
-public class JRJdbcQueryExecuterFactory implements JRQueryExecuterFactory
+public class JRJdbcQueryExecuterFactory extends AbstractQueryExecuterFactory
 {	
 	/**
 	 * Property specifying the ResultSet fetch size.
 	 */
-	public static final String PROPERTY_JDBC_FETCH_SIZE = JRProperties.PROPERTY_PREFIX + "jdbc.fetch.size";
+	public static final String PROPERTY_JDBC_FETCH_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "jdbc.fetch.size";
 
 	/**
 	 * Property specifying the ResultSet type.
 	 */
-	public static final String PROPERTY_JDBC_RESULT_SET_TYPE = JRProperties.PROPERTY_PREFIX + "jdbc.result.set.type";
+	public static final String PROPERTY_JDBC_RESULT_SET_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "jdbc.result.set.type";
 
 	/**
 	 * Property specifying the ResultSet concurrency.
 	 */
-	public static final String PROPERTY_JDBC_CONCURRENCY = JRProperties.PROPERTY_PREFIX + "jdbc.concurrency";
+	public static final String PROPERTY_JDBC_CONCURRENCY = JRPropertiesUtil.PROPERTY_PREFIX + "jdbc.concurrency";
 
 	/**
 	 * Property specifying the ResultSet holdability.
 	 */
-	public static final String PROPERTY_JDBC_HOLDABILITY = JRProperties.PROPERTY_PREFIX + "jdbc.holdability";
+	public static final String PROPERTY_JDBC_HOLDABILITY = JRPropertiesUtil.PROPERTY_PREFIX + "jdbc.holdability";
 
 	/**
 	 * Property specifying the statement max field size.
 	 */
-	public static final String PROPERTY_JDBC_MAX_FIELD_SIZE = JRProperties.PROPERTY_PREFIX + "jdbc.max.field.size";
+	public static final String PROPERTY_JDBC_MAX_FIELD_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "jdbc.max.field.size";
 
 	/**
 	 * Flag property specifying if data will be stored in a cached rowset.
 	 */
-	public static final String PROPERTY_CACHED_ROWSET = JRProperties.PROPERTY_PREFIX + "jdbc.cached.rowset";
+	public static final String PROPERTY_CACHED_ROWSET = JRPropertiesUtil.PROPERTY_PREFIX + "jdbc.cached.rowset";
+
+	/**
+	 * Property specifying the default time zone to be used for sending and retrieving 
+	 * date/time values to and from the database.
+	 * 
+	 * In most cases no explicit time zone conversion would be required, and this property 
+	 * should not be set.
+	 * 
+	 * <p>
+	 * The property can be set globally, at dataset level, at parameter and field levels,
+	 * and as a report/dataset parameter.  Note that sending a value as parameter will 
+	 * override all properties, and the time zone will be used for all date/time parameters
+	 * and fields in the report. 
+	 * </p>
+	 * 
+	 * @see JRResultSetDataSource#setTimeZone(java.util.TimeZone, boolean)
+	 */
+	public static final String PROPERTY_TIME_ZONE = JRPropertiesUtil.PROPERTY_PREFIX + "jdbc.time.zone";
 
 	/**
 	 * SQL query language.
@@ -101,9 +121,13 @@ public class JRJdbcQueryExecuterFactory implements JRQueryExecuterFactory
 		Arrays.sort(queryParameterClassNames);
 	}
 	
-	public JRQueryExecuter createQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parameters) throws JRException
+	public JRQueryExecuter createQueryExecuter(
+		JasperReportsContext jasperReportsContext,
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parameters
+		) throws JRException
 	{
-		return new JRJdbcQueryExecuter(dataset, parameters);
+		return new JRJdbcQueryExecuter(jasperReportsContext, dataset, parameters);
 	}
 
 	public Object[] getBuiltinParameters()

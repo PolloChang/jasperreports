@@ -24,6 +24,8 @@
 package net.sf.jasperreports.engine.fill;
 
 import net.sf.jasperreports.engine.JRCommonText;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.AbstractTextMeasurerFactory;
 
 /**
  * Default text measurer factory.
@@ -31,17 +33,17 @@ import net.sf.jasperreports.engine.JRCommonText;
  * This factory produces {@link TextMeasurer} instances. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TextMeasurerFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TextMeasurerFactory.java 5311 2012-04-26 16:14:49Z teodord $
  */
-public class TextMeasurerFactory implements JRTextMeasurerFactory
+public class TextMeasurerFactory extends AbstractTextMeasurerFactory
 {
 
 	/**
 	 * Returns a {@link TextMeasurer} instance for the text object.
 	 */
-	public JRTextMeasurer createMeasurer(JRCommonText text)
+	public JRTextMeasurer createMeasurer(JasperReportsContext jasperReportsContext, JRCommonText text)
 	{
-		return new TextMeasurer(text);
+		return new TextMeasurer(jasperReportsContext, text);
 	}
 
 }

@@ -44,7 +44,7 @@ import org.apache.commons.logging.LogFactory;
  * Used to evaluate template source expressions.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillReportTemplate.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillReportTemplate.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class JRFillReportTemplate implements JRReportTemplate
 {
@@ -84,18 +84,18 @@ public class JRFillReportTemplate implements JRReportTemplate
 			}
 			else
 			{
-				template = loadTemplate(source, filler.fillContext);
+				template = loadTemplate(source, filler);
 			}
 		}
 		return template;
 	}
 
-	protected static JRTemplate loadTemplate(Object source, JRFillContext fillContext) throws JRException
+	protected static JRTemplate loadTemplate(Object source, JRBaseFiller filler) throws JRException
 	{
 		JRTemplate template;
-		if (fillContext.hasLoadedTemplate(source))
+		if (filler.fillContext.hasLoadedTemplate(source))
 		{
-			template = fillContext.getLoadedTemplate(source);
+			template = filler.fillContext.getLoadedTemplate(source);
 		}
 		else
 		{
@@ -106,26 +106,26 @@ public class JRFillReportTemplate implements JRReportTemplate
 			
 			if (source instanceof String)
 			{
-				template = JRXmlTemplateLoader.load((String) source);
+				template = JRXmlTemplateLoader.getInstance(filler.getJasperReportsContext()).loadTemplate((String) source);
 			}
 			else if (source instanceof File)
 			{
-				template = JRXmlTemplateLoader.load((File) source);
+				template = JRXmlTemplateLoader.getInstance(filler.getJasperReportsContext()).loadTemplate((File) source);
 			}
 			else if (source instanceof URL)
 			{
-				template = JRXmlTemplateLoader.load((URL) source);
+				template = JRXmlTemplateLoader.getInstance(filler.getJasperReportsContext()).loadTemplate((URL) source);
 			}
 			else if (source instanceof InputStream)
 			{
-				template = JRXmlTemplateLoader.load((InputStream) source);
+				template = JRXmlTemplateLoader.getInstance(filler.getJasperReportsContext()).loadTemplate((InputStream) source);
 			}
 			else
 			{
 				throw new JRRuntimeException("Unknown template source class " + source.getClass().getName());
 			}
 			
-			fillContext.registerLoadedTemplate(source, template);
+			filler.fillContext.registerLoadedTemplate(source, template);
 		}
 		return template;
 	}

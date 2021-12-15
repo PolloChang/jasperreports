@@ -46,7 +46,7 @@ import org.apache.commons.logging.LogFactory;
  * only one thread would do a read or write at one moment.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSwapFile.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRSwapFile.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRSwapFile
 {
@@ -88,7 +88,9 @@ public class JRSwapFile
 			}
 			boolean fileExists = swapFile.exists();
 			
-			if (JRProperties.getBooleanProperty(PROPERTY_DELETE_ON_EXIT))
+			@SuppressWarnings("deprecation")
+			boolean deleteOnExit = JRProperties.getBooleanProperty(PROPERTY_DELETE_ON_EXIT);
+			if (deleteOnExit)
 			{
 				swapFile.deleteOnExit();
 			}

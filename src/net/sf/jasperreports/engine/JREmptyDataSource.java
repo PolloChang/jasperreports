@@ -29,7 +29,7 @@ package net.sf.jasperreports.engine;
  * It is called empty data source because even though it has one or more records inside, all the report fields
  * are null for all the virtual records of the data source.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JREmptyDataSource.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JREmptyDataSource.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JREmptyDataSource implements JRRewindableDataSource
 {

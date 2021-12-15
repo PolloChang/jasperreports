@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRDesignHighLowDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignHighLowDataset.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHighLowDataset //FIXMECHART why is this different?
 {

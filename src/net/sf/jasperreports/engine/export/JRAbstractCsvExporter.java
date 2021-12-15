@@ -38,25 +38,27 @@ import java.io.Writer;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 
 /**
  * Exports a JasperReports document to CSV format.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractCsvExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRAbstractCsvExporter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRAbstractCsvExporter extends JRAbstractExporter
 {
 
-	private static final String CSV_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.csv.";
+	private static final String CSV_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.csv.";
 
 	/**
 	 *
@@ -80,6 +82,24 @@ public abstract class JRAbstractCsvExporter extends JRAbstractExporter
 	
 	protected JRExportProgressMonitor progressMonitor;
 	protected ExporterNature nature;
+
+	
+	/**
+	 * @see #JRAbstractCsvExporter(JasperReportsContext)
+	 */
+	public JRAbstractCsvExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRAbstractCsvExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
 
 	
 	/**
@@ -344,7 +364,7 @@ public abstract class JRAbstractCsvExporter extends JRAbstractExporter
 	{
 		if (nature == null)
 		{
-			nature = new JRCsvExporterNature(filter);
+			nature = new JRCsvExporterNature(jasperReportsContext, filter);
 		}
 
 		return nature;

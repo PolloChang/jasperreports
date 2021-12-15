@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.JRFont;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRDesignHighLowPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignHighLowPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignHighLowPlot extends JRBaseHighLowPlot
 {

@@ -48,7 +48,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillXyDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillXyDataset.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 {
@@ -177,7 +177,7 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 						seriesLinks = new HashMap<Pair, JRPrintHyperlink>();
 						itemHyperlinks.put(seriesName, seriesLinks);
 					}
-					Pair xyKey = new Pair(crtXySeries.getXValue(), crtXySeries.getYValue());
+					Pair<Number,Number> xyKey = new Pair<Number,Number>(crtXySeries.getXValue(), crtXySeries.getYValue());
 					seriesLinks.put(xyKey, crtXySeries.getPrintItemHyperlink());
 				}
 			}

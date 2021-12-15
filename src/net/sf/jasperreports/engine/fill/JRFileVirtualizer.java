@@ -35,9 +35,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRVirtualizable;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -49,7 +49,7 @@ import org.apache.commons.logging.LogFactory;
  * using it are only weakly referenced.
  * 
  * @author John Bindel
- * @version $Id: JRFileVirtualizer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFileVirtualizer.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 	
@@ -67,7 +67,7 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 	 * Temporary files will be deleted by explicitly calling {@link #cleanup() cleanup()} or from the virtualizer
 	 * <code>finalize()</code> method.
 	 */
-	public static final String PROPERTY_TEMP_FILES_SET_DELETE_ON_EXIT = JRProperties.PROPERTY_PREFIX + "virtualizer.files.delete.on.exit";
+	public static final String PROPERTY_TEMP_FILES_SET_DELETE_ON_EXIT = JRPropertiesUtil.PROPERTY_PREFIX + "virtualizer.files.delete.on.exit";
 
 	private final String directory;
 
@@ -111,7 +111,9 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 		File file = new File(directory, filename);
 		
 		if (file.createNewFile()) {
-			if (JRProperties.getBooleanProperty(PROPERTY_TEMP_FILES_SET_DELETE_ON_EXIT)) {
+			@SuppressWarnings("deprecation")
+			boolean deleteOnExit = net.sf.jasperreports.engine.util.JRProperties.getBooleanProperty(PROPERTY_TEMP_FILES_SET_DELETE_ON_EXIT);
+			if (deleteOnExit) {
 				file.deleteOnExit();
 			}
 

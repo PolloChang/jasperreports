@@ -32,6 +32,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
@@ -41,7 +42,7 @@ import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XmlServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XmlServlet.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class XmlServlet extends BaseHttpServlet
 {
@@ -227,7 +228,7 @@ public class XmlServlet extends BaseHttpServlet
 	 */
 	public JRXmlExporter getExporter()
 	{
-		return new JRXmlExporter();
+		return new JRXmlExporter(DefaultJasperReportsContext.getInstance());
 	}
 }
 

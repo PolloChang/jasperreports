@@ -32,7 +32,7 @@ package net.sf.jasperreports.engine.export;
  * order to find the selected output type in this order: OUTPUT_STREAM, OUTPUT_FILE, OUTPUT_FILE_NAME.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsExporterParameter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXlsExporterParameter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRXlsExporterParameter extends JRXlsAbstractExporterParameter
 {

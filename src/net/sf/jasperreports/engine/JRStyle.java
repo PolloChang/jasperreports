@@ -32,11 +32,10 @@ import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRStyle.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRStyle.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContainer, JRParagraphContainer, JRCloneable
 {
@@ -58,7 +57,7 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	 * set globally, at report level and at element level.
 	 */
 	public static final String PROPERTY_EVALUATION_TIME_ENABLED = 
-		JRProperties.PROPERTY_PREFIX + "style.evaluation.time.enabled";
+		JRPropertiesUtil.PROPERTY_PREFIX + "style.evaluation.time.enabled";
 	
 	/**
 	 * Gets the style unique name.

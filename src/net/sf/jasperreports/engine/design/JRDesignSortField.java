@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignSortField.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignSortField.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignSortField extends JRBaseSortField
 {
@@ -90,5 +90,17 @@ public class JRDesignSortField extends JRBaseSortField
 		getEventSupport().firePropertyChange(PROPERTY_TYPE, old, this.type);
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof JRDesignSortField) {
+			JRDesignSortField compareTo = (JRDesignSortField)obj;
+			if (this.name != null && this.type != null) {
+				return this.name.equals(compareTo.getName()) && this.type.equals(compareTo.getType());
+			} else {
+				return false;
+			}
+		}
+		return false;
+	}
 	
 }

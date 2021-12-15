@@ -24,14 +24,16 @@
 package net.sf.jasperreports.engine.fill;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
+import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.util.BigDecimalUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBigDecimalIncrementerFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBigDecimalIncrementerFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public final class JRBigDecimalIncrementerFactory extends JRAbstractExtendedIncrementerFactory
 {
@@ -125,7 +127,38 @@ public final class JRBigDecimalIncrementerFactory extends JRAbstractExtendedIncr
 		return incrementer;
 	}
 
-
+	protected static BigDecimal toBigDecimal(Object value)
+	{
+		if (value == null)
+		{
+			return null;
+		}
+		
+		BigDecimal bigDecimal;
+		if (value instanceof BigDecimal)
+		{
+			bigDecimal = (BigDecimal) value;
+		}
+		else if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long)
+		{
+			bigDecimal = BigDecimal.valueOf(((Number) value).longValue());
+		}
+		else if (value instanceof BigInteger)
+		{
+			bigDecimal = new BigDecimal((BigInteger) value);
+		}
+		else if (value instanceof Number)//this includes Double and Float
+		{
+			bigDecimal = BigDecimal.valueOf(((Number) value).doubleValue());
+		}
+		else
+		{
+			// assuming a number for now, not converting strings
+			throw new JRRuntimeException("Value " + value + " of type " + value.getClass().getName() 
+					+ " unsupported for BigDecimal conversion");
+		}
+		return bigDecimal;
+	}
 }
 
 
@@ -300,7 +333,7 @@ final class JRBigDecimalSumIncrementer extends JRAbstractExtendedIncrementer
 		)
 	{
 		BigDecimal value = (BigDecimal)variable.getIncrementedValue();
-		BigDecimal newValue = (BigDecimal)expressionValue;
+		BigDecimal newValue = JRBigDecimalIncrementerFactory.toBigDecimal(expressionValue);
 
 		if (newValue == null)
 		{
@@ -472,7 +505,7 @@ final class JRBigDecimalVarianceIncrementer extends JRAbstractExtendedIncremente
 		)
 	{
 		BigDecimal value = (BigDecimal)variable.getIncrementedValue();
-		BigDecimal newValue = (BigDecimal)expressionValue;
+		BigDecimal newValue = JRBigDecimalIncrementerFactory.toBigDecimal(expressionValue);
 		
 		if (newValue == null)
 		{

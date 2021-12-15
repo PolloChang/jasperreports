@@ -42,7 +42,7 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * A {@link JRGenericElement} used during report fill.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillGenericElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillGenericElement.java 5407 2012-05-22 13:27:32Z lucianc $
  */
 public class JRFillGenericElement extends JRFillElement implements
 		JRGenericElement
@@ -160,14 +160,14 @@ public class JRFillGenericElement extends JRFillElement implements
 		if (isEvaluateAuto())
 		{
 			JRRecordedValuesGenericPrintElement recordedValuesElement = 
-				new JRRecordedValuesGenericPrintElement(getTemplate());
+				new JRRecordedValuesGenericPrintElement(getTemplate(), elementId, parameters.length);
 			copyBasicAttributes(recordedValuesElement);
 			initDelayedEvaluationPrint(recordedValuesElement);
 			printElement = recordedValuesElement;
 		}
 		else
 		{
-			printElement = new JRTemplateGenericPrintElement(getTemplate());
+			printElement = new JRTemplateGenericPrintElement(getTemplate(), elementId, parameters.length);
 			copyBasicAttributes(printElement);
 			if (isEvaluateNow())
 			{

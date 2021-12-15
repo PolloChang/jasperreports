@@ -23,13 +23,14 @@
  */
 package net.sf.jasperreports.j2ee.servlets;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.export.JRXlsAbstractExporter;
 import net.sf.jasperreports.engine.export.JRXlsExporter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsServlet.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class XlsServlet extends AbstractXlsServlet
 {
@@ -41,7 +42,7 @@ public class XlsServlet extends AbstractXlsServlet
 	 */
 	protected JRXlsAbstractExporter getXlsExporter()
 	{
-		return new JRXlsExporter();
+		return new JRXlsExporter(DefaultJasperReportsContext.getInstance());
 	}
 
 	

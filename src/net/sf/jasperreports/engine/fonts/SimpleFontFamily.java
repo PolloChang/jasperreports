@@ -23,22 +23,19 @@
  */
 package net.sf.jasperreports.engine.fonts;
 
-import java.awt.Font;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import net.sf.jasperreports.engine.JRFont;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRDataUtils;
-import net.sf.jasperreports.engine.util.JRFontUtil;
-import net.sf.jasperreports.engine.util.JRProperties;
-import net.sf.jasperreports.engine.util.JRStyledText;
 
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleFontFamily.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SimpleFontFamily.java 5166 2012-03-28 13:11:05Z teodord $
  */
 public class SimpleFontFamily implements FontFamily
 {
@@ -46,6 +43,7 @@ public class SimpleFontFamily implements FontFamily
 	/**
 	 * 
 	 */
+	private JasperReportsContext jasperReportsContext;
 	private String name;
 	private FontFace normalFace;
 	private FontFace boldFace;
@@ -60,6 +58,22 @@ public class SimpleFontFamily implements FontFamily
 	private String defaultExportFont;
 	private Map<String,String> exportFonts;
 	private Set<String> locales;
+	
+	/**
+	 * @see #SimpleFontFamily(JasperReportsContext)
+	 */
+	public SimpleFontFamily()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+	
+	/**
+	 * 
+	 */
+	public SimpleFontFamily(JasperReportsContext jasperReportsContext)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+	}
 	
 	/**
 	 * 
@@ -82,7 +96,7 @@ public class SimpleFontFamily implements FontFamily
 	 */
 	public void setNormal(String normal)
 	{
-		normalFace = createFontFace(normal);
+		normalFace = SimpleFontFace.getInstance(jasperReportsContext, normal);
 	}
 	
 	/**
@@ -90,7 +104,7 @@ public class SimpleFontFamily implements FontFamily
 	 */
 	public void setBold(String bold)
 	{
-		boldFace = createFontFace(bold);
+		boldFace = SimpleFontFace.getInstance(jasperReportsContext, bold);
 	}
 	
 	/**
@@ -98,7 +112,7 @@ public class SimpleFontFamily implements FontFamily
 	 */
 	public void setItalic(String italic)
 	{
-		italicFace = createFontFace(italic);
+		italicFace = SimpleFontFace.getInstance(jasperReportsContext, italic);
 	}
 	
 	/**
@@ -106,7 +120,7 @@ public class SimpleFontFamily implements FontFamily
 	 */
 	public void setBoldItalic(String boldItalic)
 	{
-		boldItalicFace = createFontFace(boldItalic);
+		boldItalicFace = SimpleFontFace.getInstance(jasperReportsContext, boldItalic);
 	}
 
 	/**
@@ -300,30 +314,6 @@ public class SimpleFontFamily implements FontFamily
 	public boolean supportsLocale(Locale locale)
 	{
 		return locales == null || locales.contains(JRDataUtils.getLocaleCode(locale));
-	}
-	
-	/**
-	 * 
-	 */
-	private static SimpleFontFace createFontFace(String value)
-	{
-		SimpleFontFace fontFace = null;
-
-		if (value != null)
-		{
-			if (value.trim().toUpperCase().endsWith(".TTF"))
-			{
-				fontFace = new SimpleFontFace(value);
-			}
-			else
-			{
-				JRFontUtil.checkAwtFont(value, JRProperties.getBooleanProperty(JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT));
-				
-				fontFace = new SimpleFontFace(new Font(value, Font.PLAIN, JRProperties.getIntegerProperty(JRFont.DEFAULT_FONT_SIZE)));
-			}
-		}
-		
-		return fontFace;
 	}
 	
 }

@@ -27,16 +27,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.design.JRCompiler;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.xml.JRReportSaxParserFactory;
+import net.sf.jasperreports.engine.xml.PrintSaxParserFactory;
 
 /**
  * Class that provides static methods for loading, getting and setting properties.
@@ -53,7 +62,8 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * </p> 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRProperties.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRProperties.java 5180 2012-03-29 13:23:12Z teodord $
+ * @deprecated Replaced by {@link JRPropertiesUtil}.
  */
 public final class JRProperties
 {
@@ -64,11 +74,13 @@ public final class JRProperties
 	
 	/**
 	 * The prefix used by all properties.
+	 * @deprecated Replaced by {@link JRPropertiesUtil#PROPERTY_PREFIX}.
 	 */
 	public static final String PROPERTY_PREFIX = "net.sf.jasperreports.";
 	
 	/**
 	 * The name of the system property that specifies the properties file name.
+	 * @deprecated Replaced by {@link DefaultJasperReportsContext#PROPERTIES_FILE}.
 	 */
 	public static final String PROPERTIES_FILE = PROPERTY_PREFIX + "properties";
 	
@@ -85,6 +97,7 @@ public final class JRProperties
 	 * Whether to validate the xml report when compiling.
 	 * <p>
 	 * Defaults to <code>true</code>.
+	 * @deprecated Replaced by {@link JRReportSaxParserFactory#COMPILER_XML_VALIDATION}.
 	 */
 	public static final String COMPILER_XML_VALIDATION = PROPERTY_PREFIX + "compiler.xml.validation";
 	
@@ -92,6 +105,7 @@ public final class JRProperties
 	 * Whether to keep the java file generated when the report is compiled.
 	 * <p>
 	 * Defaults to <code>false</code>.
+	 * @deprecated Replaced by {@link JRCompiler#COMPILER_KEEP_JAVA_FILE}.
 	 */
 	public static final String COMPILER_KEEP_JAVA_FILE = PROPERTY_PREFIX + "compiler.keep.java.file";
 	
@@ -99,6 +113,7 @@ public final class JRProperties
 	 * The temporary directory used by the report compiler. 
 	 * <p>
 	 * Defaults to <code>System.getProperty("user.dir")</code>.
+	 * @deprecated Replaced by {@link JRCompiler#COMPILER_TEMP_DIR}.
 	 */
 	public static final String COMPILER_TEMP_DIR = PROPERTY_PREFIX + "compiler.temp.dir";
 	
@@ -106,6 +121,7 @@ public final class JRProperties
 	 * The classpath used by the report compiler. 
 	 * <p>
 	 * Defaults to <code>System.getProperty("java.class.path")</code>.
+	 * @deprecated Replaced by {@link JRCompiler#COMPILER_CLASSPATH}.
 	 */
 	public static final String COMPILER_CLASSPATH = PROPERTY_PREFIX + "compiler.classpath";
 	
@@ -113,16 +129,19 @@ public final class JRProperties
 	 * Validation flag used by the XML exporter.
 	 * <p>
 	 * Defaults to <code>true</code>.
+	 * @deprecated Replaced by {@link PrintSaxParserFactory#EXPORT_XML_VALIDATION}.
 	 */
 	public static final String EXPORT_XML_VALIDATION = PROPERTY_PREFIX + "export.xml.validation";
 	
 	/**
 	 * Prefix of properties that specify font files for the PDF exporter.
+	 * @deprecated Replaced by {@link JRPdfExporter#PDF_FONT_FILES_PREFIX}.
 	 */
 	public static final String PDF_FONT_FILES_PREFIX = PROPERTY_PREFIX + "export.pdf.font.";
 	
 	/**
 	 * Prefix of properties that specify font directories for the PDF exporter.
+	 * @deprecated Replaced by {@link JRPdfExporter#PDF_FONT_DIRS_PREFIX}.
 	 */
 	public static final String PDF_FONT_DIRS_PREFIX = PROPERTY_PREFIX + "export.pdf.fontdir.";
 	
@@ -131,9 +150,10 @@ public final class JRProperties
 	 */
 	public static final String QUERY_EXECUTER_FACTORY_PREFIX = PROPERTY_PREFIX + "query.executer.factory.";
 	
-	protected static Properties props;
+	// FIXME remove volatile after we get rid of restoreProperties()
+	protected static volatile ConcurrentHashMap<String, String> properties;
 	
-	protected static Properties savedProps;
+	protected static HashMap<String, String> savedProps;
 	
 	static
 	{
@@ -149,23 +169,33 @@ public final class JRProperties
 		{
 			Properties defaults = getDefaults();
 			String propFile = getSystemProperty(PROPERTIES_FILE);
+			Properties loadedProps;
 			if (propFile == null)
 			{
-				props = loadProperties(DEFAULT_PROPERTIES_FILE, defaults);
-				if (props == null)
+				loadedProps = loadProperties(DEFAULT_PROPERTIES_FILE, defaults);
+				if (loadedProps == null)
 				{
-					props = new Properties(defaults);
+					loadedProps = new Properties(defaults);
 				}
 			}
 			else
 			{
-				props = loadProperties(propFile, defaults);
-				if (props == null)
+				loadedProps = loadProperties(propFile, defaults);
+				if (loadedProps == null)
 				{
 					throw new JRRuntimeException("Could not load properties file \"" + propFile + "\"");
 				}
 			}
 
+			//FIXME configurable concurrency level?
+			properties = new ConcurrentHashMap<String, String>();
+			for (Enumeration<?> names = loadedProps.propertyNames(); names.hasMoreElements();)
+			{
+				String name = (String) names.nextElement();
+				String value = loadedProps.getProperty(name);
+				properties.put(name, value);
+			}
+			
 			loadSystemProperties();
 		}
 		catch (JRException e)
@@ -258,7 +288,7 @@ public final class JRProperties
 		String val = getSystemProperty(sysKey);
 		if (val != null)
 		{
-			props.setProperty(propKey, val);
+			properties.put(propKey, val);
 		}
 	}
 
@@ -322,7 +352,7 @@ public final class JRProperties
 	 */
 	public static String getProperty (String key)
 	{
-		return props.getProperty(key);
+		return properties.get(key);
 	}
 	
 	/**
@@ -333,7 +363,7 @@ public final class JRProperties
 	 */
 	public static boolean getBooleanProperty (String key)
 	{
-		return asBoolean(props.getProperty(key));
+		return asBoolean(properties.get(key));
 	}
 	
 	/**
@@ -344,7 +374,7 @@ public final class JRProperties
 	 */
 	public static int getIntegerProperty (String key)
 	{
-		return asInteger(props.getProperty(key));
+		return asInteger(properties.get(key));
 	}
 
 	/**
@@ -355,7 +385,7 @@ public final class JRProperties
 	 */
 	public static float getFloatProperty (String key)
 	{
-		return asFloat(props.getProperty(key));
+		return asFloat(properties.get(key));
 	}
 
 	/**
@@ -399,7 +429,7 @@ public final class JRProperties
 	 */
 	public static void setProperty (String key, String value)
 	{
-		props.setProperty(key, value);
+		properties.put(key, value);
 	}
 	
 	/**
@@ -410,7 +440,7 @@ public final class JRProperties
 	 */
 	public static void setProperty (String key, boolean value)
 	{
-		props.setProperty(key, String.valueOf(value));
+		properties.put(key, String.valueOf(value));
 	}
 	
 	/**
@@ -428,7 +458,7 @@ public final class JRProperties
 	 */
 	public static void removePropertyValue (String key)
 	{
-		props.remove(key);
+		properties.remove(key);
 	}
 	
 	/**
@@ -436,9 +466,10 @@ public final class JRProperties
 	 * 
 	 * @see #restoreProperties() 
 	 */
+	//FIXME implement per thread properties instead of this
 	public static void backupProperties ()
 	{
-		savedProps = (Properties) props.clone();
+		savedProps = new HashMap<String, String>(properties);
 	}
 	
 	/**
@@ -446,14 +477,15 @@ public final class JRProperties
 	 * 
 	 * @see #backupProperties() 
 	 */
+	//FIXME implement per thread properties instead of this
 	public static void restoreProperties ()
 	{
 		if (savedProps != null)
 		{
 			try
 			{
-				props.clear();
-				props.putAll(savedProps);
+				ConcurrentHashMap<String, String> newProps = new ConcurrentHashMap<String, String>(savedProps);
+				properties = newProps;
 			}
 			finally
 			{
@@ -506,13 +538,13 @@ public final class JRProperties
 	{
 		int prefixLength = prefix.length();
 		List<PropertySuffix> values = new ArrayList<PropertySuffix>();
-		for (Enumeration<String> names = (Enumeration<String>)props.propertyNames(); names.hasMoreElements();)
+		for (Map.Entry<String, String> entry : properties.entrySet())
 		{
-			String name = names.nextElement();
+			String name = entry.getKey();
 			if (name.startsWith(prefix))
 			{
 				String suffix = name.substring(prefixLength);
-				String value = props.getProperty(name);
+				String value = entry.getValue();
 				values.add(new PropertySuffix(name, suffix, value));
 			}
 		}
@@ -647,7 +679,43 @@ public final class JRProperties
 		
 		if (value == null)
 		{
-			value = props.getProperty(key);
+			value = properties.get(key);
+		}
+		
+		return value;
+	}
+
+	/**
+	 * Returns the value of a property, looking for it in several properties holders
+	 * and then in the system properties.
+	 * 
+	 * @param key the key
+	 * @param propertiesHolders the properties holders
+	 * @return the property value
+	 */
+	public static String getProperty (String key, JRPropertiesHolder ... propertiesHolders)
+	{
+		String value = null;
+		main: for (JRPropertiesHolder propertiesHolder : propertiesHolders)
+		{
+			while (propertiesHolder != null)
+			{
+				if (propertiesHolder.hasProperties())
+				{
+					String prop = propertiesHolder.getPropertiesMap().getProperty(key);
+					if (prop != null)
+					{
+						value = prop;
+						break main;
+					}
+				}
+				propertiesHolder = propertiesHolder.getParentProperties();
+			}
+		}
+		
+		if (value == null)
+		{
+			value = properties.get(key);
 		}
 		
 		return value;
@@ -671,7 +739,7 @@ public final class JRProperties
 		
 		if (value == null)
 		{
-			value = props.getProperty(key);
+			value = properties.get(key);
 		}
 		
 		return value;
@@ -691,6 +759,20 @@ public final class JRProperties
 		String value = getProperty(propertiesHolder, key);
 		
 		return value == null ? defaultValue : asBoolean(value);
+	}
+	
+	/**
+	 * Returns the value of a property as a Boolean object, looking first in the supplied properties holder
+	 * and then in the system properties.
+	 * 
+	 * @param propertiesHolder the properties holder
+	 * @param key the key
+	 * @return the property value or <code>null</code> if the property is not defined
+	 */
+	public static Boolean getBooleanProperty (JRPropertiesHolder propertiesHolder, String key)
+	{
+		String value = getProperty(propertiesHolder, key);
+		return value == null ? null : Boolean.valueOf(value);
 	}
 
 	/**
@@ -820,7 +902,7 @@ public final class JRProperties
 	 */
 	public static long getLongProperty (String key)
 	{
-		return asLong(props.getProperty(key));
+		return asLong(properties.get(key));
 	}
 
 	/**
@@ -908,7 +990,7 @@ public final class JRProperties
 	protected static void transfer(JRPropertiesMap source,
 			JRPropertiesHolder destination, String tranferPropertiesPrefix)
 	{
-		List<PropertySuffix> transferPrefixProps = getProperties(tranferPropertiesPrefix);
+		List<PropertySuffix> transferPrefixProps = getProperties(tranferPropertiesPrefix);//FIXME cache this
 		for (Iterator<PropertySuffix> prefixIt = transferPrefixProps.iterator(); prefixIt.hasNext();)
 		{
 			JRProperties.PropertySuffix transferPrefixProp = prefixIt.next();
@@ -935,7 +1017,7 @@ public final class JRProperties
 	 */
 	public static Character getCharacterProperty(String key)
 	{
-		return asCharacter(props.getProperty(key));
+		return asCharacter(properties.get(key));
 	}
 
 	/**

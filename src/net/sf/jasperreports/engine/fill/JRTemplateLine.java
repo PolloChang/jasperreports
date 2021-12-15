@@ -32,13 +32,14 @@ import net.sf.jasperreports.engine.JRLine;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.base.JRBasePen;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
+import net.sf.jasperreports.engine.util.ObjectUtils;
 
 
 /**
  * Line element information shared by multiple print line objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateLine.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplateLine.java 5180 2012-03-29 13:23:12Z teodord $
  * @see JRTemplatePrintLine
  */
 public class JRTemplateLine extends JRTemplateGraphicElement
@@ -125,6 +126,32 @@ public class JRTemplateLine extends JRTemplateGraphicElement
 			directionValue = LineDirectionEnum.getByValue(direction);
 		}
 		
+	}
+
+
+	public int getHashCode()
+	{
+		ObjectUtils.HashCode hash = ObjectUtils.hash();
+		addGraphicHash(hash);
+		hash.add(directionValue);
+		return hash.getHashCode();
+	}
+
+
+	public boolean isIdentical(Object object)
+	{
+		if (this == object)
+		{
+			return true;
+		}
+		
+		if (!(object instanceof JRTemplateLine))
+		{
+			return false;
+		}
+		
+		JRTemplateLine template = (JRTemplateLine) object;
+		return graphicIdentical(template) && ObjectUtils.equals(directionValue, template.directionValue);
 	}
 
 }

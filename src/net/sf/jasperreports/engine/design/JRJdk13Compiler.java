@@ -29,7 +29,9 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 
 import org.apache.commons.logging.Log;
@@ -38,7 +40,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRJdk13Compiler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRJdk13Compiler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRJdk13Compiler extends JRAbstractMultiClassCompiler
 {
@@ -55,6 +57,22 @@ public class JRJdk13Compiler extends JRAbstractMultiClassCompiler
 	private static final int MODERN_COMPILER_SUCCESS = 0;
 
 
+	/**
+	 *
+	 */
+	public JRJdk13Compiler(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #JRJdk13Compiler(JasperReportsContext)}.
+	 */
+	public JRJdk13Compiler()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+	
 	/**
 	 *
 	 */

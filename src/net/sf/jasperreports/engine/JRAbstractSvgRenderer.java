@@ -29,13 +29,14 @@ import java.awt.Rectangle;
 import java.awt.geom.Dimension2D;
 import java.awt.image.BufferedImage;
 
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.util.JRImageLoader;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractSvgRenderer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRAbstractSvgRenderer.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRAbstractSvgRenderer extends JRAbstractRenderer
 {
@@ -47,29 +48,56 @@ public abstract class JRAbstractSvgRenderer extends JRAbstractRenderer
 
 	
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getTypeValue()}.
 	 */
 	public byte getType()
 	{
-		return TYPE_SVG;
+		return getTypeValue().getValue();
 	}
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getImageTypeValue()}.
 	 */
 	public byte getImageType()
 	{
-		return IMAGE_TYPE_PNG;
+		return getImageTypeValue().getValue();
 	}
 
 
 	/**
 	 *
 	 */
-	public Dimension2D getDimension()
+	public RenderableTypeEnum getTypeValue()
+	{
+		return RenderableTypeEnum.SVG;
+	}
+
+
+	/**
+	 *
+	 */
+	public ImageTypeEnum getImageTypeValue()
+	{
+		return ImageTypeEnum.PNG;
+	}
+
+
+	/**
+	 *
+	 */
+	public Dimension2D getDimension(JasperReportsContext jasperReportsContext)
 	{
 		return null;
+	}
+
+
+	/**
+	 * @deprecated Replaced by {@link #getDimension(JasperReportsContext)}.
+	 */
+	public Dimension2D getDimension()
+	{
+		return getDimension(DefaultJasperReportsContext.getInstance());
 	}
 
 
@@ -83,24 +111,33 @@ public abstract class JRAbstractSvgRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getImageData(JasperReportsContext)}.
 	 */
 	public byte[] getImageData() throws JRException
 	{
-		int dpi = JRProperties.getIntegerProperty(PROPERTY_IMAGE_DPI, 72);
+		return getImageData(DefaultJasperReportsContext.getInstance());
+	}
+
+
+	/**
+	 *
+	 */
+	public byte[] getImageData(JasperReportsContext jasperReportsContext) throws JRException
+	{
+		int dpi = JRPropertiesUtil.getInstance(jasperReportsContext).getIntegerProperty(PROPERTY_IMAGE_DPI, 72);
 		double scale = dpi/72d;
 		
-		Dimension2D dimension = getDimension();
+		Dimension2D dimension = getDimension(jasperReportsContext);
 		if (dimension != null)
 		{
-			byte imageType = getImageType();
+			ImageTypeEnum imageType = getImageTypeValue();
 			BufferedImage bi =
 				new BufferedImage(
 					(int) (scale * dimension.getWidth()),
 					(int) (scale * dimension.getHeight()),
 					// avoid creating JPEG images with transparency that would result 
 					// in invalid image files for some viewers (browsers)
-					(imageType == JRRenderable.IMAGE_TYPE_GIF || imageType == JRRenderable.IMAGE_TYPE_PNG)  
+					(imageType == ImageTypeEnum.GIF || imageType == ImageTypeEnum.PNG)  
 						? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB 
 					);
 
@@ -112,10 +149,10 @@ public abstract class JRAbstractSvgRenderer extends JRAbstractRenderer
 				g.setColor(backcolor);
 				g.fillRect(0, 0, (int)dimension.getWidth(), (int)dimension.getHeight());
 			}
-			render(g, new Rectangle((int)dimension.getWidth(), (int)dimension.getHeight()));
+			render(jasperReportsContext, g, new Rectangle((int)dimension.getWidth(), (int)dimension.getHeight()));
 			g.dispose();
 			
-			return JRImageLoader.loadImageDataFromAWTImage(bi, getImageType());
+			return JRImageLoader.getInstance(jasperReportsContext).loadBytesFromAwtImage(bi, getImageTypeValue());
 		}
 		return null;
 	}

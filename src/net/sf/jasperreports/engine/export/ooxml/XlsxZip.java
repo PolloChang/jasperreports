@@ -24,17 +24,31 @@
 package net.sf.jasperreports.engine.export.ooxml;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.zip.ExportZipEntry;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZip;
+import net.sf.jasperreports.repo.RepositoryUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxZip.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxZip.java 5435 2012-06-11 15:37:36Z teodord $
  */
 public class XlsxZip extends FileBufferedZip
 {
+
+	/**
+	 * 
+	 */
+	private final JasperReportsContext jasperReportsContext;
 
 	/**
 	 * 
@@ -45,10 +59,30 @@ public class XlsxZip extends FileBufferedZip
 	private ExportZipEntry contentTypesEntry;
 	
 	/**
-	 * 
+	 * @deprecated Replaced by {@link #XlsxZip(JasperReportsContext)}.
 	 */
 	public XlsxZip() throws IOException
 	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+	
+	/**
+	 * 
+	 */
+	public XlsxZip(JasperReportsContext jasperReportsContext) throws IOException
+	{
+		this(jasperReportsContext, null);
+	}
+	
+	/**
+	 * 
+	 */
+	public XlsxZip(JasperReportsContext jasperReportsContext, Integer memoryThreshold) throws IOException
+	{
+		super(memoryThreshold);
+
+		this.jasperReportsContext = jasperReportsContext;
+		
 		workbookEntry = createEntry("xl/workbook.xml");
 		addEntry(workbookEntry);
 		
@@ -57,7 +91,7 @@ public class XlsxZip extends FileBufferedZip
 		
 		relsEntry = createEntry("xl/_rels/workbook.xml.rels");
 		addEntry(relsEntry);
-
+		
 		contentTypesEntry = createEntry("[Content_Types].xml");
 		addEntry(contentTypesEntry);
 		
@@ -142,6 +176,87 @@ public class XlsxZip extends FileBufferedZip
 		exportZipEntries.add(drawingRelsEntry);
 
 		return drawingRelsEntry;
+	}
+
+	/**
+	 * 
+	 */
+	public void addMacro(String template)
+	{
+		InputStream templateIs = null;
+		ZipInputStream templateZipIs = null;
+		try
+		{
+			templateIs = RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(template);
+			if (templateIs == null)
+			{
+				throw new JRRuntimeException("Macro template not found at : " + template);
+			}
+			else
+			{
+				templateZipIs = new ZipInputStream(templateIs);
+				
+				ZipEntry entry = null;
+				while ((entry = templateZipIs.getNextEntry()) != null)
+				{
+					if ("xl/vbaProject.bin".equals(entry.getName()))
+					{
+						break;
+					}
+				}
+				
+				if (entry != null)
+				{
+					ExportZipEntry macroEntry = createEntry("xl/vbaProject.bin");
+					OutputStream entryOs = macroEntry.getOutputStream();
+
+					long entryLength = entry.getSize();
+					
+					byte[] bytes = new byte[10000];
+					int ln = 0;
+					long readBytesLength = 0;
+					while (readBytesLength < entryLength && (ln = templateZipIs.read(bytes)) >= 0)
+					{
+						readBytesLength += ln;
+						entryOs.write(bytes, 0, ln);
+					}
+					
+					exportZipEntries.add(macroEntry);
+				}
+			}
+		}
+		catch (JRException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+		catch (IOException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+		finally
+		{
+			if (templateZipIs != null)
+			{
+				try
+				{
+					templateZipIs.close();
+				}
+				catch (IOException e)
+				{
+				}
+			}
+
+			if (templateIs != null)
+			{
+				try
+				{
+					templateIs.close();
+				}
+				catch (IOException e)
+				{
+				}
+			}
+		}
 	}
 	
 }

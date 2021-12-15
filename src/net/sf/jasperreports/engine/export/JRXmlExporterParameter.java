@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.JasperPrint;
  * images are saved as BASE64 encoded byte arrays in CDATA sections.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlExporterParameter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXmlExporterParameter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRXmlExporterParameter extends JRExporterParameter
 {
@@ -59,6 +59,9 @@ public class JRXmlExporterParameter extends JRExporterParameter
 	/**
 	 * A utility parameter that allows users to specify an alternate location for the DTD file. This is useful for users
 	 * who want to open the generated XML files in various editors that try to actually load the DTD for error checking.
+	 * 
+	 * @deprecated The parameter has been deprecated with the XML export transition to XML schema.
+	 * Setting a value for the parameter doesn't have any effect other than a warning log message.
 	 */
 	public static final JRXmlExporterParameter DTD_LOCATION = new JRXmlExporterParameter("DTD Location");
 

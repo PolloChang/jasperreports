@@ -23,26 +23,27 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRCommonText;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.fill.JRTextMeasurer;
-import net.sf.jasperreports.engine.fill.JRTextMeasurerFactory;
 
 /**
  * Factory of {@link JdkGlyphFixTextMeasurer} instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JdkGlyphFixTextMeasurerFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JdkGlyphFixTextMeasurerFactory.java 5311 2012-04-26 16:14:49Z teodord $
  * @see JRTextMeasurerUtil#PROPERTY_TEXT_MEASURER_FACTORY
  */
-public class JdkGlyphFixTextMeasurerFactory implements JRTextMeasurerFactory
+public class JdkGlyphFixTextMeasurerFactory extends AbstractTextMeasurerFactory
 {
 
 	/**
 	 * Creates a {@link JdkGlyphFixTextMeasurer} instance.
 	 */
-	public JRTextMeasurer createMeasurer(JRCommonText text)
+	public JRTextMeasurer createMeasurer(JasperReportsContext jasperReportsContext, JRCommonText text)
 	{
-		return new JdkGlyphFixTextMeasurer(text);
+		return new JdkGlyphFixTextMeasurer(jasperReportsContext, text);
 	}
 
 }

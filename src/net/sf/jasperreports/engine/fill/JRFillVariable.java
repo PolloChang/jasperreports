@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.type.ResetTypeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillVariable.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillVariable.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillVariable implements JRVariable, JRCalculable
 {
@@ -85,6 +85,18 @@ public class JRFillVariable implements JRVariable, JRCalculable
 		incrementGroup = factory.getGroup(variable.getIncrementGroup());
 		
 		helperVariables = new JRFillVariable[JRCalculable.HELPER_SIZE];
+	}
+
+
+	protected void reset()
+	{
+		previousOldValue = null;
+		oldValue = null;
+		estimatedValue = null;
+		incrementedValue = null;
+		value = null;
+		isInitialized = false;
+		savedValue = null;
 	}
 
 

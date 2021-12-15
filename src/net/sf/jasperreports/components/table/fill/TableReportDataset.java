@@ -26,6 +26,7 @@ package net.sf.jasperreports.components.table.fill;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRAbstractScriptlet;
 import net.sf.jasperreports.engine.JRDataset;
@@ -47,7 +48,7 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableReportDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TableReportDataset.java 5337 2012-05-04 09:15:58Z lucianc $
  */
 public class TableReportDataset implements JRDataset
 {
@@ -122,6 +123,12 @@ public class TableReportDataset implements JRDataset
 	public void addFirstGroup(JRGroup group)
 	{
 		groups.add(0, group);
+	}
+
+	@Override
+	public UUID getUUID()
+	{
+		return tableSubdataset.getUUID();
 	}
 
 	public String getName()

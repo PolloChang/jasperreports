@@ -36,15 +36,21 @@ import net.sf.jasperreports.components.table.BaseColumn;
 import net.sf.jasperreports.components.table.Cell;
 import net.sf.jasperreports.components.table.Column;
 import net.sf.jasperreports.components.table.ColumnGroup;
+import net.sf.jasperreports.components.table.StandardColumn;
 import net.sf.jasperreports.components.table.TableComponent;
+import net.sf.jasperreports.engine.JRChild;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRDatasetRun;
+import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRExpressionChunk;
 import net.sf.jasperreports.engine.JRGroup;
+import net.sf.jasperreports.engine.JRTextField;
+import net.sf.jasperreports.engine.design.JRDesignTextElement;
 import net.sf.jasperreports.engine.design.JasperDesign;
 
 /**
  * @author Veaceslav Chicu (schicu@users.sourceforge.net)
- * @version $Id: TableUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TableUtil.java 5409 2012-05-23 19:25:03Z teodord $
  */
 public class TableUtil 
 {
@@ -280,6 +286,82 @@ public class TableUtil
 			break;
 		}
 		return cell;
+	}
+
+	public static ColumnGroup getColumnGroupForColumn(BaseColumn column, List<BaseColumn> columns) {
+		for (BaseColumn bc: columns) {
+			if (bc instanceof ColumnGroup) {
+				ColumnGroup cg = (ColumnGroup) bc;
+				if (cg.getColumns().contains(column)) {
+					return cg;
+				} else {
+					return getColumnGroupForColumn(column, cg.getColumns());
+				}
+			}
+		}
+		return null;
+	}
+	
+	public static JRDesignTextElement getColumnHeaderTextElement(StandardColumn column) {
+		Cell header = column.getColumnHeader();
+		List<JRChild> detailElements = header == null ? null : header.getChildren();
+		
+		// only consider cells with a single text fields
+		if (detailElements == null || detailElements.size() != 1)
+		{
+			return null;
+		}
+
+		JRChild detailElement = detailElements.get(0);
+		if (detailElement instanceof JRDesignTextElement)
+		{
+			return (JRDesignTextElement) detailElement;
+		}
+
+		return null;
+	}
+
+	public static JRTextField getColumnDetailTextElement(Column column) {
+		Cell detailCell = column.getDetailCell();
+		List<JRChild> detailElements = detailCell == null ? null : detailCell.getChildren();
+		
+		// only consider cells with a single text fields
+		if (detailElements == null || detailElements.size() != 1)
+		{
+			return null;
+		}
+		
+		JRChild detailElement = detailElements.get(0);
+		if (detailElement instanceof JRTextField)
+		{
+			return (JRTextField) detailElement;
+		}
+		
+		return null;
+	}
+
+	public static boolean isSortableAndFilterable(JRTextField textField) 
+	{
+		if (textField != null)
+		{
+			JRExpression textExpression = textField.getExpression();
+			JRExpressionChunk[] chunks = textExpression == null ? null : textExpression.getChunks();
+			if (chunks == null || chunks.length != 1
+					|| (chunks[0].getType() != JRExpressionChunk.TYPE_FIELD
+					&& chunks[0].getType() != JRExpressionChunk.TYPE_VARIABLE))
+			{
+				return false;
+			}
+			
+			return true;
+		}
+		
+		return false;
+	}
+
+	public static int getColumnIndex(Column column, TableComponent table) {
+		List<BaseColumn> columns = getAllColumns(table);
+		return columns.indexOf(column);
 	}
 
 }

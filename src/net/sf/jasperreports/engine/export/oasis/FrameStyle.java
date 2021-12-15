@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.util.JRColorUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FrameStyle.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FrameStyle.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class FrameStyle extends BorderStyle
 {

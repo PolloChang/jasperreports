@@ -75,7 +75,6 @@ import net.sf.jasperreports.charts.JRXyDataset;
 import net.sf.jasperreports.charts.JRXySeries;
 import net.sf.jasperreports.charts.JRXyzDataset;
 import net.sf.jasperreports.charts.JRXyzSeries;
-import net.sf.jasperreports.charts.type.PlotOrientationEnum;
 import net.sf.jasperreports.charts.util.JRMeterInterval;
 import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.JRCrosstab;
@@ -91,12 +90,14 @@ import net.sf.jasperreports.crosstabs.type.CrosstabColumnPositionEnum;
 import net.sf.jasperreports.crosstabs.type.CrosstabPercentageEnum;
 import net.sf.jasperreports.crosstabs.type.CrosstabRowPositionEnum;
 import net.sf.jasperreports.crosstabs.type.CrosstabTotalPositionEnum;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRBreak;
 import net.sf.jasperreports.engine.JRChart;
 import net.sf.jasperreports.engine.JRChartDataset;
 import net.sf.jasperreports.engine.JRChartPlot;
+import net.sf.jasperreports.engine.JRChartPlot.JRSeriesColor;
 import net.sf.jasperreports.engine.JRChild;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRConditionalStyle;
@@ -147,8 +148,8 @@ import net.sf.jasperreports.engine.JRTextElement;
 import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.JRVisitor;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.TabStop;
-import net.sf.jasperreports.engine.JRChartPlot.JRSeriesColor;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.query.JRJdbcQueryExecuterFactory;
 import net.sf.jasperreports.engine.type.BreakTypeEnum;
@@ -181,7 +182,7 @@ import org.jfree.data.time.Day;
  * A writer that generates the Java code required to produce a given report template programmatically, using the JasperReports API.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRApiWriter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRApiWriter.java 5166 2012-03-28 13:11:05Z teodord $
  */
 public class JRApiWriter
 {
@@ -189,6 +190,11 @@ public class JRApiWriter
 
 	/**
 	 *
+	 */
+	private JasperReportsContext jasperReportsContext;
+
+	/**
+	 * @deprecated To be removed.
 	 */
 	private JRReport report;
 
@@ -207,13 +213,20 @@ public class JRApiWriter
 	
 	private JRApiWriterVisitor apiWriterVisitor = new JRApiWriterVisitor(this);
 
-	//TODO: remove this one below
-	JasperDesign jasperDesign = null;
-
 	private String indent;
+	
 	
 	/**
 	 *
+	 */
+	public JRApiWriter(JasperReportsContext jasperReportsContext)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+	}
+
+	
+	/**
+	 * @deprecated To be removed.
 	 */
 	protected JRApiWriter(JRReport report)
 	{
@@ -224,11 +237,10 @@ public class JRApiWriter
 	/**
 	 *
 	 */
-	public static String writeReport(JRReport report)
+	public String write(JRReport report)
 	{
-		JRApiWriter writer = new JRApiWriter(report);
 		StringWriter buffer = new StringWriter();//FIXME use file buffered writer
-		writer.writeReport(buffer);
+		writeReport(report, buffer);
 		return buffer.toString();
 	}
 
@@ -236,7 +248,7 @@ public class JRApiWriter
 	/**
 	 *
 	 */
-	public static void writeReport(
+	public void write(
 		JRReport report,
 		String destFileName
 		) throws JRException
@@ -250,8 +262,7 @@ public class JRApiWriter
 			? report.getProperty(JRExporterParameter.PROPERTY_CHARACTER_ENCODING)
 			: "UTF-8";//FIXME this is an export time config property
 			Writer out = new OutputStreamWriter(fos, encoding);
-			JRApiWriter writer = new JRApiWriter(report);
-			writer.writeReport(out);
+			writeReport(report, out);
 		}
 		catch (IOException e)
 		{
@@ -276,7 +287,7 @@ public class JRApiWriter
 	/**
 	 *
 	 */
-	public static void writeReport(
+	public void write(
 		JRReport report,
 		OutputStream outputStream
 		) throws JRException
@@ -288,8 +299,7 @@ public class JRApiWriter
 			: "UTF-8";
 			
 			Writer out = new OutputStreamWriter(outputStream, encoding);
-			JRApiWriter writer = new JRApiWriter(report);
-			writer.writeReport(out);
+			writeReport(report, out);
 		}
 		catch (Exception e)
 		{
@@ -299,9 +309,42 @@ public class JRApiWriter
 
 
 	/**
+	 * @see #write(JRReport)
+	 */
+	public static String writeReport(JRReport report)
+	{
+		return new JRApiWriter(DefaultJasperReportsContext.getInstance()).write(report);
+	}
+
+
+	/**
+	 * @see #write(JRReport, String)
+	 */
+	public static void writeReport(
+		JRReport report,
+		String destFileName
+		) throws JRException
+	{
+		new JRApiWriter(DefaultJasperReportsContext.getInstance()).write(report, destFileName);
+	}
+
+
+	/**
+	 * @see #write(JRReport, OutputStream)
+	 */
+	public static void writeReport(
+		JRReport report,
+		OutputStream outputStream
+		) throws JRException
+	{
+		new JRApiWriter(DefaultJasperReportsContext.getInstance()).write(report, outputStream);
+	}
+
+
+	/**
 	 *
 	 */
-	protected void writeReport(Writer aWriter)
+	protected void writeReport(JRReport report, Writer aWriter)
 	{
 		this.writer = aWriter;
 		indent = "";
@@ -324,6 +367,7 @@ public class JRApiWriter
 		write("import net.sf.jasperreports.crosstabs.fill.calculation.BucketDefinition;\n");
 		write("import net.sf.jasperreports.engine.*;\n");
 		write("import net.sf.jasperreports.engine.base.JRBaseChartPlot.JRBaseSeriesColor;\n");
+		write("import net.sf.jasperreports.engine.base.JRBaseFont;\n");
 		write("import net.sf.jasperreports.engine.design.*;\n");
 		write("import net.sf.jasperreports.engine.type.*;\n");
 		write("import net.sf.jasperreports.engine.util.ReportCreator;\n");
@@ -377,7 +421,7 @@ public class JRApiWriter
 			}
 		}
 		
-		writeTemplates(indent);
+		writeTemplates(report, indent);
 
 		write("\n");
 		
@@ -517,6 +561,15 @@ public class JRApiWriter
 
 
 	/**
+	 * @deprecated Replaced by {@link #writeReport(JRReport, Writer)}.
+	 */
+	protected void writeReport(Writer aWriter)
+	{
+		writeReport(report, aWriter);
+	}
+
+
+	/**
 	 * 
 	 *
 	 */
@@ -548,7 +601,7 @@ public class JRApiWriter
 	/**
 	 * 
 	 */
-	protected void writeTemplates(String indent)
+	protected void writeTemplates(JRReport report, String indent)
 	{
 		JRReportTemplate[] templates = report.getTemplates();
 		if (templates != null)
@@ -1294,21 +1347,30 @@ public class JRApiWriter
 	
 			write( chartName + ".setTitlePosition({0});\n", chart.getTitlePositionValue());
 			write( chartName + ".setTitleColor({0});\n", chart.getOwnTitleColor());
-			
-			writeFont( chart.getTitleFont(), chartName + ".getTitleFont()");
-
+			if(chart.getTitleFont() != null)
+			{
+				write( chartName + ".setTitleFont(new JRBaseFont());\n");
+				writeFont( chart.getTitleFont(), chartName + ".getTitleFont()");
+			}
 			writeExpression( chart.getTitleExpression(), chartName, "TitleExpression");
-	
 			write( chartName + ".setSubtitleColor({0});\n", chart.getOwnSubtitleColor());
 			
-			writeFont( chart.getSubtitleFont(), chartName + ".getSubtitleFont()");
+			if(chart.getSubtitleFont() != null)
+			{
+				write( chartName + ".setSubtitleFont(new JRBaseFont());\n");
+				writeFont( chart.getSubtitleFont(), chartName + ".getSubtitleFont()");
+			}
 
 			writeExpression( chart.getSubtitleExpression(), chartName, "SubtitleExpression");
 			write( chartName + ".setLegendColor({0});\n", chart.getOwnLegendColor());
 			write( chartName + ".setLegendBackgroundColor({0});\n", chart.getOwnLegendBackgroundColor());
 			write( chartName + ".setLegendPosition({0});\n", chart.getLegendPositionValue());
 
-			writeFont( chart.getLegendFont(), chartName + ".getLegendFont()");
+			if(chart.getLegendFont() != null)
+			{
+				write( chartName + ".setLegendFont(new JRBaseFont());\n");
+				writeFont( chart.getLegendFont(), chartName + ".getLegendFont()");
+			}
 	
 			writeExpression( chart.getAnchorNameExpression(), chartName, "AnchorNameExpression");
 			writeExpression( chart.getHyperlinkReferenceExpression(), chartName, "HyperlinkReferenceExpression");
@@ -1761,8 +1823,13 @@ public class JRApiWriter
 			
 			write( valueDisplayName + ".setColor({0});\n", valueDisplay.getColor());
 			write( valueDisplayName + ".setMask(\"{0}\");\n", valueDisplay.getMask());
-	
-			writeFont( valueDisplay.getFont(), valueDisplayName + ".getFont()");
+			write( valueDisplayName + ".setFont(new JRBaseFont());\n");
+			if(valueDisplay.getFont() != null)
+			{
+				write( valueDisplayName + ".setFont(new JRBaseFont());\n");
+				writeFont( valueDisplay.getFont(), valueDisplayName + ".getFont()");
+			}
+			
 			write( parentName + ".setValueDisplay(" + valueDisplayName + ");\n");
 			
 			flush();
@@ -1782,7 +1849,12 @@ public class JRApiWriter
 			write( "JRDesignItemLabel " + itemLabelName + " = new JRDesignItemLabel("+ parentName + ".getItemLabel(), " + parentName + ".getChart());\n");
 			write( itemLabelName + ".setColor({0});\n", itemLabel.getColor());
 			write( itemLabelName + ".setBackgroundColor({0});\n", itemLabel.getBackgroundColor());
-			writeFont( itemLabel.getFont(), itemLabelName + ".getFont()");
+			if(itemLabel.getFont() != null)
+			{
+				write( itemLabelName + ".setFont(new JRBaseFont());\n");
+				writeFont( itemLabel.getFont(), itemLabelName + ".getFont()");
+			}
+			
 			write( parentName + ".set" + itemLabelSuffix + "(" + itemLabelName + ");\n");
 	
 			flush();
@@ -1883,9 +1955,9 @@ public class JRApiWriter
 		{
 			write( plotName + ".setBackcolor({0});\n", plot.getOwnBackcolor());
 
-			if (plot.getOrientation() != null && plot.getOrientation() != PlotOrientation.VERTICAL)
+			if (plot.getOrientationValue() != null && plot.getOrientationValue().getOrientation() != PlotOrientation.VERTICAL)
 			{
-				write( plotName + ".setOrientation(PlotOrientation.{0});\n", PlotOrientationEnum.getByValue(plot.getOrientation()).name());
+				write( plotName + ".setOrientation(PlotOrientation.{0});\n", plot.getOrientationValue());
 			}
 
 			write( plotName + ".setBackgroundAlpha({0});\n", plot.getBackgroundAlphaFloat());
@@ -2056,14 +2128,17 @@ public class JRApiWriter
 		write( axisName + ".setLineColor({0});\n", axisLineColor);
 		write( axisName + ".setTickLabelMask(\"{0}\");\n", JRStringUtil.escapeJavaStringLiteral(axisTickLabelMask));
 		write( axisName + ".setVerticalTickLabel({0});\n", getBooleanText(axisVerticalTickLabels));
+
 		
 		if (axisLabelFont != null)
 		{
+			write( axisName + ".setLabelFont(new JRBaseFont());\n");
 			writeFont( axisLabelFont, axisName + ".getLabelFont()");
 		}
 
 		if (axisTickLabelFont != null)
 		{
+			write( axisName + ".setTickLabelFont(new JRBaseFont());\n");
 			writeFont( axisTickLabelFont, axisName + ".getTickLabelFont()");
 		}
 		if(isToSet)//FIXMEAPIWRITER check this
@@ -2730,10 +2805,12 @@ public class JRApiWriter
 				write( plotName + ".setMeterBackgroundColor({0});\n", plot.getMeterBackgroundColor());
 				write( plotName + ".setNeedleColor({0});\n", plot.getNeedleColor());
 				write( plotName + ".setTickColor({0});\n", plot.getTickColor());
+				write( plotName + ".setTickCount({0});\n", plot.getTickCount());
 				
 				writePlot( plot, plotName);
 				if (plot.getTickLabelFont() != null)
 				{
+					write( plotName + ".setTickLabelFont(new JRBaseFont());\n");
 					writeFont( plot.getTickLabelFont(), plotName + ".getTickLabelFont()");
 					flush();
 				}
@@ -2954,6 +3031,7 @@ public class JRApiWriter
 			write( crosstabName + ".setIgnoreWidth({0});\n", getBooleanText(crosstab.getIgnoreWidth()));
 	
 			writeReportElement( crosstab, crosstabName);
+			writeBox( crosstab.getLineBox(), crosstabName + ".getLineBox()");
 	
 			JRCrosstabParameter[] parameters = crosstab.getParameters();
 			if (parameters != null)
@@ -4017,7 +4095,7 @@ public class JRApiWriter
 			Class<?> reportCreatorClass = Class.forName(reportCreatorClassName);
 			ReportCreator reportCreator = (ReportCreator)reportCreatorClass.newInstance();
 			JasperDesign jasperDesign = reportCreator.create();
-			JRXmlWriter.writeReport(jasperDesign, destFileName, "UTF-8");
+			new JRXmlWriter(DefaultJasperReportsContext.getInstance()).write(jasperDesign, destFileName, "UTF-8");
 		}
 		catch (Exception e)
 		{

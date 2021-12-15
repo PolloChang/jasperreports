@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillLine.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillLine.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillLine extends JRFillGraphicElement implements JRLine
 {
@@ -113,7 +113,7 @@ public class JRFillLine extends JRFillGraphicElement implements JRLine
 	 */
 	protected JRPrintElement fill()
 	{
-		JRTemplatePrintLine printLine = new JRTemplatePrintLine(this.getJRTemplateLine());
+		JRTemplatePrintLine printLine = new JRTemplatePrintLine(this.getJRTemplateLine(), elementId);
 		printLine.setX(this.getX());
 		printLine.setY(this.getRelativeY());
 		printLine.setWidth(getWidth());

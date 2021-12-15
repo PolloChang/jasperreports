@@ -38,7 +38,7 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BuiltinExpressionEvaluatorDecorator.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BuiltinExpressionEvaluatorDecorator.java 5123 2012-03-23 21:49:01Z teodord $
  */
 public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEvaluator
 {
@@ -73,7 +73,7 @@ public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEva
 		BuiltinExpressionEvaluator builtinEvaluator = builtinEvaluators.get(expression);
 		if (builtinEvaluator != null)
 		{
-			return builtinEvaluator.evaluate();
+			return builtinEvaluator.evaluate(decorated);
 		}
 		
 		return decorated.evaluate(expression);
@@ -85,7 +85,7 @@ public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEva
 		BuiltinExpressionEvaluator builtinEvaluator = builtinEvaluators.get(expression);
 		if (builtinEvaluator != null)
 		{
-			return builtinEvaluator.evaluateEstimated();
+			return builtinEvaluator.evaluateEstimated(decorated);
 		}
 		
 		return decorated.evaluateEstimated(expression);
@@ -97,7 +97,7 @@ public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEva
 		BuiltinExpressionEvaluator builtinEvaluator = builtinEvaluators.get(expression);
 		if (builtinEvaluator != null)
 		{
-			return builtinEvaluator.evaluateOld();
+			return builtinEvaluator.evaluateOld(decorated);
 		}
 		
 		return decorated.evaluateOld(expression);

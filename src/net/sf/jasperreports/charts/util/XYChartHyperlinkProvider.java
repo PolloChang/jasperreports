@@ -36,7 +36,7 @@ import org.jfree.data.xy.XYDataset;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XYChartHyperlinkProvider.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XYChartHyperlinkProvider.java 5091 2012-03-15 15:00:37Z teodord $
  */
 public class XYChartHyperlinkProvider implements ChartHyperlinkProvider
 {
@@ -64,7 +64,7 @@ public class XYChartHyperlinkProvider implements ChartHyperlinkProvider
 			{
 				Number x = dataset.getX(itemEntity.getSeriesIndex(), itemEntity.getItem());
 				Number y = dataset.getY(itemEntity.getSeriesIndex(), itemEntity.getItem());
-				Pair xyKey = new Pair(x, y);
+				Pair<Number,Number> xyKey = new Pair<Number,Number>(x, y);
 				printHyperlink = serieHyperlinks.get(xyKey);
 			}
 		}

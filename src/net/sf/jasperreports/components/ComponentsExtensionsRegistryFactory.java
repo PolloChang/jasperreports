@@ -47,6 +47,7 @@ import net.sf.jasperreports.components.spiderchart.SpiderChartFillFactory;
 import net.sf.jasperreports.components.table.FillTableFactory;
 import net.sf.jasperreports.components.table.TableCompiler;
 import net.sf.jasperreports.components.table.TableDesignConverter;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.component.ComponentManager;
 import net.sf.jasperreports.engine.component.ComponentsBundle;
@@ -65,7 +66,7 @@ import net.sf.jasperreports.extensions.SingletonExtensionRegistry;
  * This registry factory is registered by default in JasperReports.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentsExtensionsRegistryFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ComponentsExtensionsRegistryFactory.java 5050 2012-03-12 10:11:26Z teodord $
  * @see ListComponent
  */
 public class ComponentsExtensionsRegistryFactory implements
@@ -96,7 +97,7 @@ public class ComponentsExtensionsRegistryFactory implements
 	{
 		final DefaultComponentsBundle bundle = new DefaultComponentsBundle();
 
-		ComponentsXmlHandler xmlHandler = new ComponentsXmlHandler();
+		ComponentsXmlHandler xmlHandler = new ComponentsXmlHandler(DefaultJasperReportsContext.getInstance());
 		
 		DefaultComponentXmlParser parser = new DefaultComponentXmlParser();
 		parser.setNamespace(NAMESPACE);

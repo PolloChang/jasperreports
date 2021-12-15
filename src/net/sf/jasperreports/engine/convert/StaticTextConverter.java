@@ -35,11 +35,12 @@ import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRStaticText;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
+import net.sf.jasperreports.engine.util.JRTextMeasurerUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StaticTextConverter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: StaticTextConverter.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public final class StaticTextConverter extends TextElementConverter
 {
@@ -76,7 +77,7 @@ public final class StaticTextConverter extends TextElementConverter
 		
 		printText.setText(staticText.getText());
 		
-		measureTextElement(printText);
+		JRTextMeasurerUtil.getInstance(reportConverter.getJasperReportsContext()).measureTextElement(printText);
 		
 		return printText;
 	}

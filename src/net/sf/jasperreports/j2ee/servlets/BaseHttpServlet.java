@@ -29,13 +29,15 @@ import java.util.List;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: BaseHttpServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BaseHttpServlet.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class BaseHttpServlet extends HttpServlet
 {
@@ -54,6 +56,14 @@ public abstract class BaseHttpServlet extends HttpServlet
 	public static final String BUFFERED_OUTPUT_REQUEST_PARAMETER = "buffered"; 
 	
 			
+	/**
+	 *
+	 */
+	public JasperReportsContext getJasperReportsContext()
+	{
+		return DefaultJasperReportsContext.getInstance();
+	}
+
 	/**
 	 *
 	 */

@@ -29,7 +29,7 @@ package net.sf.jasperreports.engine;
  * This class provides default empty implementations for scriptlet events. It is a convenience class that users
  * can extend when not all methods need to be implemented.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDefaultScriptlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDefaultScriptlet.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDefaultScriptlet extends JRAbstractScriptlet
 {

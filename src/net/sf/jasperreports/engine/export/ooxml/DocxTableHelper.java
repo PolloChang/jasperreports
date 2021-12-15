@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxTableHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DocxTableHelper.java 4646 2011-10-06 09:34:19Z teodord $
  */
 public class DocxTableHelper extends BaseHelper
 {
@@ -91,7 +91,7 @@ public class DocxTableHelper extends BaseHelper
 		write("   <w:tblGrid>\n");
 		for(int col = 1; col < xCuts.size(); col++)
 		{
-			write("    <w:gridCol w:w=\"" + LengthUtil.twip(xCuts.getCut(col) - xCuts.getCut(col - 1)) + "\"/>\n");
+			write("    <w:gridCol w:w=\"" + LengthUtil.twip(xCuts.getCutOffset(col) - xCuts.getCutOffset(col - 1)) + "\"/>\n");
 		}
 		write("   </w:tblGrid>\n");
 	}

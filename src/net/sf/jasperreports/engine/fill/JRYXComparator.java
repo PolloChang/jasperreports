@@ -30,20 +30,17 @@ import net.sf.jasperreports.engine.JRPrintElement;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRYXComparator.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRYXComparator.java 5214 2012-04-03 14:53:44Z teodord $
  */
-public class JRYXComparator implements Comparator
+public class JRYXComparator implements Comparator<JRPrintElement>
 {
 	
 
 	/**
 	 *
 	 */
-	public int compare(Object obj1, Object obj2)
+	public int compare(JRPrintElement elem1, JRPrintElement elem2)
 	{
-		JRPrintElement elem1 = (JRPrintElement)obj1;
-		JRPrintElement elem2 = (JRPrintElement)obj2;
-		
 		if (elem1.getY() == elem2.getY())
 		{
 			return elem1.getX() - elem2.getX();

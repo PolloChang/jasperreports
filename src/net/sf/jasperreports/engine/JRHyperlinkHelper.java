@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
  * Utility class that manages built-in hyperlink types.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRHyperlinkHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRHyperlinkHelper.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public final class JRHyperlinkHelper
 {

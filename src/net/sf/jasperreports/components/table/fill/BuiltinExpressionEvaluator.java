@@ -26,6 +26,7 @@ package net.sf.jasperreports.components.table.fill;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.fill.DatasetExpressionEvaluator;
 import net.sf.jasperreports.engine.fill.JRExpressionEvalException;
 import net.sf.jasperreports.engine.fill.JRFillField;
 import net.sf.jasperreports.engine.fill.JRFillParameter;
@@ -36,7 +37,7 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BuiltinExpressionEvaluator.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BuiltinExpressionEvaluator.java 5123 2012-03-23 21:49:01Z teodord $
  */
 public interface BuiltinExpressionEvaluator
 {
@@ -46,10 +47,10 @@ public interface BuiltinExpressionEvaluator
 			Map<String, JRFillVariable> variablesMap, 
 			WhenResourceMissingTypeEnum resourceMissingType) throws JRException;
 	
-	Object evaluate() throws JRExpressionEvalException;
+	Object evaluate(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException;
 
-	Object evaluateOld() throws JRExpressionEvalException;
+	Object evaluateOld(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException;
 
-	Object evaluateEstimated() throws JRExpressionEvalException; 
+	Object evaluateEstimated(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException; 
 
 }

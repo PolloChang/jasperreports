@@ -36,7 +36,7 @@ import java.util.Map;
  * An area on an image.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPrintImageArea.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPrintImageArea.java 5180 2012-03-29 13:23:12Z teodord $
  * @see JRPrintImageAreaHyperlink
  */
 public class JRPrintImageArea implements Serializable

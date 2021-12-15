@@ -35,9 +35,9 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * (designs, compiled reports, filled reports). It only contains constants and getters and setters for the most common
  * report properties and elements.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRReport.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRReport.java 5306 2012-04-26 15:22:28Z lucianc $
  */
-public interface JRReport extends JRDefaultStyleProvider, JRPropertiesHolder
+public interface JRReport extends JRDefaultStyleProvider, JRPropertiesHolder, JRIdentifiable
 {
 
 

@@ -60,12 +60,13 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStyleResolver.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRStyleResolver.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public final class JRStyleResolver
 {
 
 	private static final Integer INTEGER_ZERO = Integer.valueOf(0);
+
 
 	/**
 	 *
@@ -599,6 +600,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static Float getLineSpacingSize(JRParagraph paragraph)
 	{
 		Float ownLineSpacingSize = paragraph.getOwnLineSpacingSize();
@@ -621,6 +623,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static Integer getFirstLineIndent(JRParagraph paragraph)
 	{
 		Integer ownFirstLineIndent = paragraph.getOwnFirstLineIndent();
@@ -643,6 +646,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static Integer getLeftIndent(JRParagraph paragraph)
 	{
 		Integer ownLeftIndent = paragraph.getOwnLeftIndent();
@@ -665,6 +669,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static Integer getRightIndent(JRParagraph paragraph)
 	{
 		Integer ownRightIndent = paragraph.getOwnRightIndent();
@@ -687,6 +692,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static Integer getSpacingBefore(JRParagraph paragraph)
 	{
 		Integer ownSpacingBefore = paragraph.getOwnSpacingBefore();
@@ -709,6 +715,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static Integer getSpacingAfter(JRParagraph paragraph)
 	{
 		Integer ownSpacingAfter = paragraph.getOwnSpacingAfter();
@@ -731,6 +738,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static Integer getTabStopWidth(JRParagraph paragraph)
 	{
 		Integer ownTabStopWidth = paragraph.getOwnTabStopWidth();
@@ -969,6 +977,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static String getFontName(JRFont font)
 	{
 		String ownFontName = font.getOwnFontName();
@@ -991,6 +1000,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static String getFontName(JRStyle style)
 	{
 		String ownFontName = style.getOwnFontName();
@@ -1172,6 +1182,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static int getFontSize(JRFont font)
 	{
 		Integer ownFontSize = font.getOwnFontSize();
@@ -1212,6 +1223,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static String getPdfFontName(JRFont font)
 	{
 		String ownPdfFontName = font.getOwnPdfFontName();
@@ -1234,6 +1246,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static String getPdfFontName(JRStyle style)
 	{
 		String ownPdfFontName = style.getOwnPdfFontName();
@@ -1256,6 +1269,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static String getPdfEncoding(JRFont font)
 	{
 		String ownPdfEncoding = font.getOwnPdfEncoding();
@@ -1278,6 +1292,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static String getPdfEncoding(JRStyle style)
 	{
 		String ownPdfEncoding = style.getOwnPdfEncoding();
@@ -1300,6 +1315,7 @@ public final class JRStyleResolver
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public static boolean isPdfEmbedded(JRFont font)
 	{
 		Boolean ownPdfEmbedded = font.isOwnPdfEmbedded();

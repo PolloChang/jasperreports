@@ -26,7 +26,6 @@ package net.sf.jasperreports.charts.fill;
 import net.sf.jasperreports.charts.JRChartAxis;
 import net.sf.jasperreports.charts.type.AxisPositionEnum;
 import net.sf.jasperreports.engine.JRChart;
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.fill.JRFillChart;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
@@ -37,7 +36,7 @@ import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
  * dataset.
  *
  * @author Barry Klawans (barry@users.sourceforge.net)
- * @version $Id: JRFillChartAxis.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillChartAxis.java 5256 2012-04-10 15:31:43Z teodord $
  */
 public class JRFillChartAxis implements JRChartAxis
 {
@@ -49,8 +48,6 @@ public class JRFillChartAxis implements JRChartAxis
 	 * expressions and data.
 	 */
 	protected JRFillChart fillChart;
-
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 
 	public JRFillChartAxis(JRChartAxis axis, JRFillObjectFactory factory)

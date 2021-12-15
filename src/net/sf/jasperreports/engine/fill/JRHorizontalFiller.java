@@ -24,7 +24,6 @@
 package net.sf.jasperreports.engine.fill;
 
 import java.util.Iterator;
-import java.util.List;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
@@ -32,6 +31,7 @@ import net.sf.jasperreports.engine.JRGroup;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.FooterPositionEnum;
 import net.sf.jasperreports.engine.type.IncrementTypeEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
@@ -43,7 +43,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRHorizontalFiller.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRHorizontalFiller.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRHorizontalFiller extends JRBaseFiller
 {
@@ -59,17 +59,24 @@ public class JRHorizontalFiller extends JRBaseFiller
 	/**
 	 *
 	 */
-	protected JRHorizontalFiller(JasperReport jasperReport) throws JRException
+	protected JRHorizontalFiller(
+		JasperReportsContext jasperReportsContext, 
+		JasperReport jasperReport
+		) throws JRException
 	{
-		this(jasperReport, null, null);
+		this(jasperReportsContext, jasperReport, null, null);
 	}
 
 	/**
 	 *
 	 */
-	protected JRHorizontalFiller(JasperReport jasperReport, JRFillSubreport parentElement) throws JRException
+	protected JRHorizontalFiller(
+		JasperReportsContext jasperReportsContext, 
+		JasperReport jasperReport, 
+		JRFillSubreport parentElement
+		) throws JRException
 	{
-		super(jasperReport, null, parentElement);
+		super(jasperReportsContext, jasperReport, null, parentElement);
 
 		setPageHeight(pageHeight);
 	}
@@ -77,11 +84,14 @@ public class JRHorizontalFiller extends JRBaseFiller
 	/**
 	 *
 	 */
-	protected JRHorizontalFiller(JasperReport jasperReport, 
-			DatasetExpressionEvaluator evaluator, 
-			JRFillSubreport parentElement) throws JRException
+	protected JRHorizontalFiller(
+		JasperReportsContext jasperReportsContext, 
+		JasperReport jasperReport, 
+		DatasetExpressionEvaluator evaluator, 
+		JRFillSubreport parentElement
+		) throws JRException
 	{
-		super(jasperReport, evaluator, parentElement);
+		super(jasperReportsContext, jasperReport, evaluator, parentElement);
 
 		setPageHeight(pageHeight);
 	}
@@ -89,11 +99,14 @@ public class JRHorizontalFiller extends JRBaseFiller
 	/**
 	 *
 	 */
-	protected JRHorizontalFiller(JasperReport jasperReport, 
-			JREvaluator evaluator, 
-			JRFillSubreport parentElement) throws JRException
+	protected JRHorizontalFiller(
+		JasperReportsContext jasperReportsContext, 
+		JasperReport jasperReport, 
+		JREvaluator evaluator, 
+		JRFillSubreport parentElement
+		) throws JRException
 	{
-		this(jasperReport, (DatasetExpressionEvaluator) evaluator, parentElement);
+		this(jasperReportsContext, jasperReport, (DatasetExpressionEvaluator) evaluator, parentElement);
 	}
 
 
@@ -238,11 +251,6 @@ public class JRHorizontalFiller extends JRBaseFiller
 			//{
 				printPageStretchHeight = offsetY + bottomMargin;
 			//}
-
-			if (fillContext.isUsingVirtualizer())
-			{
-				removePageIdentityDataProvider();
-			}
 		}
 
 		if (fillContext.isIgnorePagination())
@@ -1202,7 +1210,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 			}
 
 			/*   */
-			fillSummaryOverflow(printBand);
+			fillSummaryOverflow();
 			
 			//DONE
 		}
@@ -1276,7 +1284,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 			offsetY += printBand.getHeight();
 
 			/*   */
-			fillSummaryOverflow(printBand);
+			fillSummaryOverflow();
 		}
 		
 		//DONE
@@ -1338,7 +1346,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 				}
 				
 				/*   */
-				fillSummaryOverflow(printBand);
+				fillSummaryOverflow();
 
 				//DONE
 			}
@@ -1400,7 +1408,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 				offsetY += printBand.getHeight();
 
 				/*   */
-				fillSummaryOverflow(printBand);
+				fillSummaryOverflow();
 				
 				//DONE
 			}
@@ -1458,7 +1466,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 			offsetY += printBand.getHeight();
 
 			/*   */
-			fillSummaryOverflow(printBand);
+			fillSummaryOverflow();
 			
 			//DONE
 		}
@@ -1517,7 +1525,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 				}
 
 				/*   */
-				fillSummaryOverflow(printBand);
+				fillSummaryOverflow();
 				
 				//DONE
 			}
@@ -1607,7 +1615,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 				}
 
 				/*   */
-				fillSummaryOverflow(printBand);
+				fillSummaryOverflow();
 				
 				//DONE
 			}
@@ -1670,7 +1678,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 				offsetY += printBand.getHeight();
 
 				/*   */
-				fillSummaryOverflow(printBand);
+				fillSummaryOverflow();
 			}
 			
 			//DONE
@@ -1735,7 +1743,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 					offsetY += printBand.getHeight();
 
 					/*   */
-					fillSummaryOverflow(printBand);
+					fillSummaryOverflow();
 				}
 				
 				//DONE
@@ -1777,7 +1785,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 					}
 
 					/*   */
-					fillSummaryOverflow(printBand);
+					fillSummaryOverflow();
 				}
 				else
 				{
@@ -1793,7 +1801,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	/**
 	 *
 	 */
-	private void fillSummaryOverflow(JRPrintBand printBand) throws JRException
+	private void fillSummaryOverflow() throws JRException
 	{
 		while (summary.willOverflow())
 		{
@@ -1816,7 +1824,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 				fillPageHeader(JRExpression.EVALUATION_DEFAULT);
 			}
 			
-			printBand = summary.fill(pageHeight - bottomMargin - offsetY - (isSummaryWithPageHeaderAndFooter?pageFooter.getHeight():0));
+			JRPrintBand printBand = summary.fill(pageHeight - bottomMargin - offsetY - (isSummaryWithPageHeaderAndFooter?pageFooter.getHeight():0));
 
 			fillBand(printBand);
 			offsetY += printBand.getHeight();
@@ -1906,20 +1914,10 @@ public class JRHorizontalFiller extends JRBaseFiller
 				printPageStretchHeight = offsetY + bottomMargin;
 			//}
 
-			if (fillContext.isUsingVirtualizer())
-			{
-				removePageIdentityDataProvider();
-			}
-
 			suspendSubreportRunner();
 		}
 
 		printPage = newPage();
-
-		if (isSubreport() && fillContext.isUsingVirtualizer())
-		{
-			addPageIdentityDataProvider();
-		}
 
 		if (isResetPageNumber)
 		{
@@ -2178,18 +2176,12 @@ public class JRHorizontalFiller extends JRBaseFiller
 	 */
 	protected void fillBand(JRPrintBand band)
 	{
-		List<JRPrintElement> elements = band.getElements();
-
-		if (elements != null && elements.size() > 0)
+		for(Iterator<JRPrintElement> it = band.iterateElements(); it.hasNext();)
 		{
-			JRPrintElement element = null;
-			for(Iterator<JRPrintElement> it = elements.iterator(); it.hasNext();)
-			{
-				element = it.next();
-				element.setX(element.getX() + offsetX);
-				element.setY(element.getY() + offsetY);
-				printPage.addElement(element);
-			}
+			JRPrintElement element = it.next();
+			element.setX(element.getX() + offsetX);
+			element.setY(element.getY() + offsetY);
+			printPage.addElement(element);
 		}
 	}
 

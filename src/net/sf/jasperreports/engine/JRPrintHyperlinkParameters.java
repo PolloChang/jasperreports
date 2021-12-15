@@ -32,7 +32,7 @@ import java.util.List;
  * A set of parameters associated with a print element.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPrintHyperlinkParameters.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPrintHyperlinkParameters.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRPrintHyperlinkParameters implements Serializable
 {

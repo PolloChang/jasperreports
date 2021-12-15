@@ -30,12 +30,12 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRJdk14ImageEncoder.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRJdk14ImageEncoder.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRJdk14ImageEncoder extends JRAbstractImageEncoder
 {
@@ -44,29 +44,29 @@ public class JRJdk14ImageEncoder extends JRAbstractImageEncoder
 	/**
 	 *
 	 */
-	public byte[] encode(BufferedImage bi, byte imageType) throws JRException
+	public byte[] encode(BufferedImage bi, ImageTypeEnum imageType) throws JRException
 	{
 		String formatName = null;
 
 		switch (imageType)
 		{
-			case JRRenderable.IMAGE_TYPE_GIF :
+			case GIF :
 			{
 				formatName = "gif";
 				break;
 			}
-			case JRRenderable.IMAGE_TYPE_PNG :
+			case PNG :
 			{
 				formatName = "png";
 				break;
 			}
-			case JRRenderable.IMAGE_TYPE_TIFF :
+			case TIFF :
 			{
 				formatName = "tiff";
 				break;
 			}
-			case JRRenderable.IMAGE_TYPE_JPEG :
-			case JRRenderable.IMAGE_TYPE_UNKNOWN :
+			case JPEG :
+			case UNKNOWN :
 			default:
 			{
 				formatName = "jpeg";

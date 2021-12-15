@@ -33,8 +33,10 @@ package net.sf.jasperreports.renderers;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractSvgRenderer;
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 import org.jfree.ui.Drawable;
 
@@ -45,7 +47,7 @@ import org.jfree.ui.Drawable;
  * used to allow JFreeChart objects to be included in the output report in vector form.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JCommonDrawableRenderer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JCommonDrawableRenderer.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JCommonDrawableRenderer extends JRAbstractSvgRenderer
 {
@@ -72,12 +74,20 @@ public class JCommonDrawableRenderer extends JRAbstractSvgRenderer
 	/**
 	 *
 	 */
-	public void render(Graphics2D grx, Rectangle2D rectangle) 
+	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) 
 	{
 		if (drawable != null) 
 		{
 			drawable.draw(grx, rectangle);
 		}
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
+	 */
+	public void render(Graphics2D grx, Rectangle2D rectangle) 
+	{
+		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);
 	}
 	
 }

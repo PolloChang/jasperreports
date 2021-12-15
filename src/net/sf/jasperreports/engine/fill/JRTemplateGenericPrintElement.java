@@ -38,7 +38,7 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * store common attributes. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTemplateGenericPrintElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplateGenericPrintElement.java 5407 2012-05-22 13:27:32Z lucianc $
  * @see JRTemplateGenericPrintElement
  */
 public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
@@ -47,16 +47,47 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
-	private Map<String,Object> parameters = new LinkedHashMap<String,Object>();
+	private Map<String,Object> parameters;
 	
 	/**
 	 * Creates a generic print element.
 	 * 
 	 * @param template the template to use for the element
+	 * @deprecated provide a source Id via {@link #JRTemplateGenericPrintElement(JRTemplateGenericElement, int)}
 	 */
 	public JRTemplateGenericPrintElement(JRTemplateGenericElement template)
 	{
 		super(template);
+		
+		parameters = new LinkedHashMap<String,Object>();
+	}
+	
+	/**
+	 * Creates a generic print element.
+	 * 
+	 * @param template the template to use for the element
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, int sourceElementId)
+	{
+		super(template, sourceElementId);
+		
+		parameters = new LinkedHashMap<String,Object>();
+	}
+	
+	/**
+	 * Creates a generic print element.
+	 * 
+	 * @param template the template to use for the element
+	 * @param sourceElementId the Id of the source element
+	 * @param parameterCount the number of parameters that the element will have
+	 */
+	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, int sourceElementId,
+			int parameterCount)
+	{
+		super(template, sourceElementId);
+		
+		parameters = new LinkedHashMap<String,Object>(parameterCount * 4 / 3, 0.75f);
 	}
 
 	/**

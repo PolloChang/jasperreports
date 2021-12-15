@@ -53,7 +53,7 @@ import net.sf.jasperreports.engine.type.RunDirectionEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CrosstabConverter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: CrosstabConverter.java 4844 2011-12-07 13:03:27Z lucianc $
  */
 public final class CrosstabConverter extends FrameConverter
 {
@@ -86,6 +86,7 @@ public final class CrosstabConverter extends FrameConverter
 		JRBasePrintFrame printFrame = new JRBasePrintFrame(reportConverter.getDefaultStyleProvider());
 		JRCrosstab crosstab = (JRCrosstab)element; 
 		
+		printFrame.copyBox(crosstab.getLineBox());
 		copyElement(reportConverter, crosstab, printFrame);
 		
 		List<JRPrintElement> children = getCrosstabChildren(reportConverter, crosstab);

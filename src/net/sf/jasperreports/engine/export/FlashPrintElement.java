@@ -34,9 +34,9 @@ import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.base.JRBaseGenericPrintElement;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
 
 import org.apache.commons.logging.Log;
@@ -51,7 +51,7 @@ import org.apache.commons.logging.LogFactory;
  * </p>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FlashPrintElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FlashPrintElement.java 5050 2012-03-12 10:11:26Z teodord $
  * @see FlashHtmlHandler
  */
 public final class FlashPrintElement
@@ -85,7 +85,16 @@ public final class FlashPrintElement
 	 * <p>
 	 * Defaults to <code>false</code>.
 	 */
-	public static final String PROPERTY_IGNORE_SIZE = JRProperties.PROPERTY_PREFIX + "export.swf.ignore.size";
+	public static final String PROPERTY_IGNORE_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "export.swf.ignore.size";
+	
+	/**
+	 * Property that determines the value of the allowScriptAccess parameter for Flash elements.
+	 * 
+	 * <p>
+	 * The property can be set at element, report and system levels.
+	 */
+	public static final String PROPERTY_ALLOW_SCRIPT_ACCESS = 
+			JRPropertiesUtil.PROPERTY_PREFIX + "export.flash.element.allow.script.access";
 	
 	private static final GenericElementHandlerBundle HANDLER_BUNDLE = new GenericElementHandlerBundle()
 	{

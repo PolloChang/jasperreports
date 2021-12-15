@@ -37,12 +37,12 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperCompileManager;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.design.JRCompiler;
+import net.sf.jasperreports.engine.xml.JRReportSaxParserFactory;
 
 import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
-import org.apache.tools.ant.taskdefs.MatchingTask;
 import org.apache.tools.ant.types.Path;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.resources.FileResource;
@@ -72,9 +72,9 @@ import org.apache.tools.ant.util.SourceFileScanner;
  * is older than the XML file will be compiled.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAntCompileTask.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRAntCompileTask.java 5217 2012-04-03 15:16:10Z teodord $
  */
-public class JRAntCompileTask extends MatchingTask
+public class JRAntCompileTask extends JRBaseAntTask
 {
 
 
@@ -220,50 +220,41 @@ public class JRAntCompileTask extends MatchingTask
 
 		reportFilesMap = new HashMap<String, String>();
 
-		JRProperties.backupProperties();
-		
+		if (tempdir != null)
+		{
+			jasperReportsContext.setProperty(JRCompiler.COMPILER_TEMP_DIR, String.valueOf(tempdir));
+		}
+
+		jasperReportsContext.setProperty(JRCompiler.COMPILER_KEEP_JAVA_FILE, String.valueOf(keepjava));
+
+		setCompilerClass(compiler);
+
+		jasperReportsContext.setProperty(JRReportSaxParserFactory.COMPILER_XML_VALIDATION, String.valueOf(xmlvalidation));
+
+		AntClassLoader classLoader = null;
+		if (classpath != null)
+		{
+			jasperReportsContext.setProperty(JRCompiler.COMPILER_CLASSPATH, String.valueOf(classpath));
+			
+			ClassLoader parentClassLoader = getClass().getClassLoader();
+			classLoader = new AntClassLoader(parentClassLoader, getProject(), classpath, true);
+			classLoader.setThreadContextLoader();
+		}
+
 		try
 		{
-			if (tempdir != null)
-			{
-				JRProperties.setProperty(JRProperties.COMPILER_TEMP_DIR, String.valueOf(tempdir));
-			}
-
-			JRProperties.setProperty(JRProperties.COMPILER_KEEP_JAVA_FILE, keepjava);
-
-			setCompilerClass(compiler);
-
-			JRProperties.setProperty(JRProperties.COMPILER_XML_VALIDATION, xmlvalidation);
-
-			AntClassLoader classLoader = null;
-			if (classpath != null)
-			{
-				JRProperties.setProperty(JRProperties.COMPILER_CLASSPATH, String.valueOf(classpath));
-				
-				ClassLoader parentClassLoader = getClass().getClassLoader();
-				classLoader = new AntClassLoader(parentClassLoader, getProject(), classpath, true);
-				classLoader.setThreadContextLoader();
-			}
-
-			try
-			{
-				/*   */
-				scanSrc();
-				/*   */
-				compile();
-			}
-			finally
-			{
-				if (classLoader != null)
-				{
-					classLoader.resetThreadContextLoader();
-				}				
-			}			
+			/*   */
+			scanSrc();
+			/*   */
+			compile();
 		}
 		finally
 		{
-			JRProperties.restoreProperties();
-		}
+			if (classLoader != null)
+			{
+				classLoader.resetThreadContextLoader();
+			}				
+		}			
 	}
 	
 	
@@ -272,7 +263,7 @@ public class JRAntCompileTask extends MatchingTask
 	{
 		if (compiler != null)
 		{
-			JRProperties.setProperty(JRProperties.COMPILER_CLASS, compiler);
+			jasperReportsContext.setProperty(JRCompiler.COMPILER_CLASS, compiler);
 		}
 	}
 	
@@ -322,7 +313,8 @@ public class JRAntCompileTask extends MatchingTask
 	 */
 	protected void scanSrc() throws BuildException
 	{
-		for(Iterator<Resource> it = src.iterator(); it.hasNext();)
+		for(@SuppressWarnings("unchecked")
+		Iterator<Resource> it = src.iterator(); it.hasNext();)
 		{
 			Resource resource = it.next();
 			FileResource fileResource = resource instanceof FileResource ? (FileResource)resource : null;
@@ -407,7 +399,7 @@ public class JRAntCompileTask extends MatchingTask
 				try
 				{
 					System.out.print("File : " + srcFileName + " ... ");
-					JasperCompileManager.compileReportToFile(srcFileName, destFileName);
+					JasperCompileManager.getInstance(jasperReportsContext).compileToFile(srcFileName, destFileName);
 					System.out.println("OK.");
 				}
 				catch(JRException e)

@@ -29,12 +29,14 @@
 
 package net.sf.jasperreports.engine.export;
 
+import java.util.Map;
+
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ExporterNature.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
  */
 public interface ExporterNature extends ExporterFilter
 {
@@ -68,7 +70,6 @@ public interface ExporterNature extends ExporterFilter
 	 */
 	public boolean isBreakAfterRow(JRPrintElement element);
 
-	
 	/**
 	 * Flag that specifies that empty cells are to be horizontally merged.
 	 * <p>
@@ -78,6 +79,13 @@ public interface ExporterNature extends ExporterFilter
 	 * 
 	 * @return whether empty cells are to be horizontally merged
 	 */
-	public abstract boolean isHorizontallyMergeEmptyCells();
-
+	public boolean isHorizontallyMergeEmptyCells();
+	
+	public void setXProperties(CutsInfo xCuts, JRPrintElement element, int row1, int col1, int row2, int col2);
+	
+	public void setXProperties(Map<String,Object> xCutsProperties, JRPrintElement element);
+	
+	public void setYProperties(CutsInfo yCuts, JRPrintElement element, int row1, int col1, int row2, int col2);
+	
+	public void setYProperties(Map<String,Object> yCutsProperties, JRPrintElement element);
 }

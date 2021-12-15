@@ -33,6 +33,7 @@ import java.io.Writer;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.util.CastorUtil;
 
 import org.exolab.castor.mapping.Mapping;
 import org.exolab.castor.mapping.MappingException;
@@ -40,13 +41,15 @@ import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.Marshaller;
 import org.exolab.castor.xml.Unmarshaller;
 import org.exolab.castor.xml.ValidationException;
+import org.exolab.castor.xml.XMLContext;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XmlUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XmlUtil.java 5101 2012-03-16 21:03:51Z teodord $
+ * @deprecated Replaced by {@link CastorUtil}.
  */
 public class XmlUtil
 {
@@ -143,7 +146,7 @@ public class XmlUtil
 		
 		try
 		{
-			Unmarshaller unmarshaller = new Unmarshaller(mapping);
+			Unmarshaller unmarshaller = new Unmarshaller(mapping);//FIXME initialization is not thread safe
 			unmarshaller.setWhitespacePreserve(true);
 			object = unmarshaller.unmarshal(new InputSource(is));
 		}
@@ -161,6 +164,25 @@ public class XmlUtil
 		}
 		
 		return object;
+	}
+	
+	public static Object read(InputStream is, XMLContext context)
+	{
+		try
+		{
+			Unmarshaller unmarshaller = context.createUnmarshaller();//FIXME initialization is not thread safe
+			unmarshaller.setWhitespacePreserve(true);
+			Object object = unmarshaller.unmarshal(new InputSource(is));
+			return object;
+		}
+		catch (MarshalException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+		catch (ValidationException e)
+		{
+			throw new JRRuntimeException(e);
+		}
 	}
 	
 	
@@ -197,7 +219,7 @@ public class XmlUtil
 	/**
 	 *
 	 */
-	public static Object read(InputStream is, Class clazz)
+	public static Object read(InputStream is, Class<?> clazz)
 	{
 		return read(is, getMappingFile(clazz));
 	}
@@ -206,7 +228,7 @@ public class XmlUtil
 	/**
 	 *
 	 */
-	public static Object read(Node node, Class clazz)
+	public static Object read(Node node, Class<?> clazz)
 	{
 		return read(node, getMappingFile(clazz));
 	}
@@ -428,7 +450,7 @@ public class XmlUtil
 	/**
 	 *
 	 */
-	private static String getMappingFile(Class clazz)
+	private static String getMappingFile(Class<?> clazz)
 	{
 		return clazz.getName().replace(".", "/") + ".xml";
 	}

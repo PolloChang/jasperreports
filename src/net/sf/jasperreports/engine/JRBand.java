@@ -24,7 +24,6 @@
 package net.sf.jasperreports.engine;
 
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 
 /**
@@ -32,7 +31,7 @@ import net.sf.jasperreports.engine.util.JRProperties;
  * bands: background, title, summary, page header, page footer, last page footer, column header and column footer.
  * @see JRSection
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBand.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBand.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRBand extends JRElementGroup
 {
@@ -41,7 +40,7 @@ public interface JRBand extends JRElementGroup
 	/**
 	 * 
 	 */
-	public static final String PROPERTY_SPLIT_TYPE = JRProperties.PROPERTY_PREFIX + "band.split.type";
+	public static final String PROPERTY_SPLIT_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "band.split.type";
 
 
 	/**

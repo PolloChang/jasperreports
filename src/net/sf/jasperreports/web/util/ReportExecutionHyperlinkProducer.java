@@ -29,57 +29,78 @@ import javax.servlet.http.HttpServletRequest;
 
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
-import net.sf.jasperreports.web.servlets.ReportServlet;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ReportExecutionHyperlinkProducer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ReportExecutionHyperlinkProducer.java 5378 2012-05-14 00:39:27Z teodord $
  */
 public class ReportExecutionHyperlinkProducer implements JRHyperlinkProducer
 {
+	public static final String HYPERLINK_TYPE_REPORT_EXECUTION = "ReportExecution";
+	public static final String PARAMETER_REPORT_URI = "jr.report";
+	private static final String PARAMETER_REPORT_URI_OLD = "jr.uri";
+	//private static final String PARAMETER_REPORT_URI_OLD = "_report";
+	
+	protected JasperReportsContext jasperReportsContext;
 	private HttpServletRequest request;
 	
 	/**
 	 *
 	 */
-	private ReportExecutionHyperlinkProducer(HttpServletRequest request)
+	protected ReportExecutionHyperlinkProducer(JasperReportsContext jasperReportsContext,HttpServletRequest request)
 	{
+		this.jasperReportsContext = jasperReportsContext;
 		this.request = request;
 	}
 
 	/**
 	 *
 	 */
-	public static ReportExecutionHyperlinkProducer getInstance(HttpServletRequest request)
+	public static ReportExecutionHyperlinkProducer getInstance(JasperReportsContext jasperReportsContext, HttpServletRequest request)
 	{
-		return new ReportExecutionHyperlinkProducer(request);
+		return new ReportExecutionHyperlinkProducer(jasperReportsContext, request);
 	}
 
 
 	/**
 	 *
 	 */
+	protected String getPath() 
+	{
+		return WebUtil.getInstance(jasperReportsContext).getReportExecutionPath();
+	}
+	
+	
+	/**
+	 *
+	 */
 	public String getHyperlink(JRPrintHyperlink hyperlink) 
 	{
 		String appContext = request.getContextPath();
-		String servletPath = request.getServletPath();
-		String reportUri = request.getParameter(ReportServlet.REQUEST_PARAMETER_REPORT_URI);
-		String reportAction = null;//request.getParameter(FillServlet.REPORT_ACTION);
-		String reportActionData = null;//request.getParameter(FillServlet.REPORT_ACTION_DATA);
+		String servletPath = getPath();
+		String reportUriParamName = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(WebUtil.PROPERTY_REQUEST_PARAMETER_REPORT_URI);
+		String reportUri = request.getParameter(reportUriParamName);
+//		String reportAction = null;//request.getParameter(FillServlet.REPORT_ACTION);
+//		String reportActionData = null;//request.getParameter(FillServlet.REPORT_ACTION_DATA);
 		
 		StringBuffer allParams = new StringBuffer();
 		
 		if (hyperlink.getHyperlinkParameters() != null)
 		{
-			List parameters = hyperlink.getHyperlinkParameters().getParameters();
+			List<JRPrintHyperlinkParameter> parameters = hyperlink.getHyperlinkParameters().getParameters();
 			if (parameters != null)
 			{
 				for (int i = 0; i < parameters.size(); i++)
 				{
-					JRPrintHyperlinkParameter parameter = (JRPrintHyperlinkParameter)parameters.get(i);
-					if (ReportServlet.REQUEST_PARAMETER_REPORT_URI.equals(parameter.getName()))
+					JRPrintHyperlinkParameter parameter = parameters.get(i);
+					if (
+						PARAMETER_REPORT_URI.equals(parameter.getName())
+						|| PARAMETER_REPORT_URI_OLD.equals(parameter.getName())
+						)
 					{
 						reportUri = (String)parameter.getValue();
 					}
@@ -101,7 +122,7 @@ public class ReportExecutionHyperlinkProducer implements JRHyperlinkProducer
 		
 		return 
 			appContext + (servletPath != null ? servletPath : "")
-				+ "?" + ReportServlet.REQUEST_PARAMETER_REPORT_URI + "=" + reportUri 
+				+ "?" + reportUriParamName + "=" + reportUri 
 //				+ (reportAction == null ? "" : "&" + FillServlet.REPORT_ACTION + "=" + reportAction) 
 //				+ (reportActionData == null ? "" : "&" + FillServlet.REPORT_ACTION_DATA + "=" + reportActionData)
 				+ allParams.toString();

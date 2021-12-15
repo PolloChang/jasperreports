@@ -27,11 +27,18 @@ package net.sf.jasperreports.engine;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPrintElement.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRPrintElement extends JRCommonElement, JRPropertiesHolder
 {
 
+	/**
+	 * A value used when no source element Id information is available.
+	 * 
+	 * @see #getSourceElementId()
+	 */
+	int UNSET_SOURCE_ELEMENT_ID = 0;
+	
 	/**
 	 *
 	 */
@@ -107,4 +114,12 @@ public interface JRPrintElement extends JRCommonElement, JRPropertiesHolder
 	 */
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg);
 
+	/**
+	 * Returns a numerical Id associated to the fill element that generated 
+	 * this print element.
+	 * 
+	 * @return the Id of the fill element that generated this element
+	 */
+	public int getSourceElementId();
+	
 }

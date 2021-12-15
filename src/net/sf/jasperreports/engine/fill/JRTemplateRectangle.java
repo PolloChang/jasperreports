@@ -32,13 +32,14 @@ import net.sf.jasperreports.engine.JRSubreport;
 import net.sf.jasperreports.engine.base.JRBasePen;
 import net.sf.jasperreports.engine.type.FillEnum;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.ObjectUtils;
 
 
 /**
  * Rectangle information shared by multiple print rectangle objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateRectangle.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplateRectangle.java 5180 2012-03-29 13:23:12Z teodord $
  * @see JRTemplatePrintRectangle
  */
 public class JRTemplateRectangle extends JRTemplateGraphicElement implements JRCommonRectangle
@@ -151,6 +152,33 @@ public class JRTemplateRectangle extends JRTemplateGraphicElement implements JRC
 	public void setRadius(Integer radius)
 	{
 		this.radius = radius;
+	}
+
+
+	public int getHashCode()
+	{
+		ObjectUtils.HashCode hash = ObjectUtils.hash();
+		addGraphicHash(hash);
+		hash.add(radius);
+		return hash.getHashCode();
+	}
+
+
+	public boolean isIdentical(Object object)
+	{
+		if (this == object)
+		{
+			return true;
+		}
+		
+		if (!(object instanceof JRTemplateRectangle))
+		{
+			return false;
+		}
+		
+		JRTemplateRectangle template = (JRTemplateRectangle) object;
+		return graphicIdentical(template) 
+				&& ObjectUtils.equals(radius, template.radius);
 	}
 
 

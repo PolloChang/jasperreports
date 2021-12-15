@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.data;
 
-import java.util.Locale;
 import java.util.TimeZone;
 
 import net.sf.jasperreports.engine.util.JRDataUtils;
@@ -33,7 +32,7 @@ import org.exolab.castor.mapping.GeneralizedFieldHandler;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: TimeZoneFieldHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TimeZoneFieldHandler.java 5370 2012-05-11 07:42:15Z teodord $
  */
 public class TimeZoneFieldHandler extends GeneralizedFieldHandler
 {
@@ -72,9 +71,9 @@ public class TimeZoneFieldHandler extends GeneralizedFieldHandler
 	/**
 	 *
 	 */
-	public Class getFieldType()
+	public Class<?> getFieldType()
 	{
-		return Locale.class;
+		return TimeZone.class;//FIXMECONTEXT is this correct?
 	}
 
 	/**

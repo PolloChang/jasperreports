@@ -26,7 +26,7 @@ package net.sf.jasperreports.engine;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRConstants.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRConstants.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRConstants
 {
@@ -48,8 +48,12 @@ public interface JRConstants
 	
 	public static final int PSEUDO_SERIAL_VERSION_UID_4_0_2 = 40002;
 	
-	public static final int PSEUDO_SERIAL_VERSION_UID_4_0_3 = 40003;
+	public static final int PSEUDO_SERIAL_VERSION_UID_4_0_3 = 40003;//4.0.3 is actually 4.1.1
 	
-	public static final int PSEUDO_SERIAL_VERSION_UID = PSEUDO_SERIAL_VERSION_UID_4_0_3;
+	public static final int PSEUDO_SERIAL_VERSION_UID_4_1_3 = 40103;
+	
+	public static final int PSEUDO_SERIAL_VERSION_UID_4_6_0 = 40600;
+	
+	public static final int PSEUDO_SERIAL_VERSION_UID = PSEUDO_SERIAL_VERSION_UID_4_6_0;
 	
 }

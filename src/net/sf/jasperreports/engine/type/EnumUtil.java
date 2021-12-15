@@ -28,7 +28,7 @@ package net.sf.jasperreports.engine.type;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: EnumUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: EnumUtil.java 4636 2011-09-28 15:21:15Z narcism $
  */
 public final class EnumUtil
 {
@@ -73,6 +73,24 @@ public final class EnumUtil
 			for(JREnum e:values)
 			{
 				if (name.equals(e.getName()))
+				{
+					return e;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 *
+	 */
+	public static JREnum getByEnumConstantName(JREnum[] values, String name)
+	{
+		if (values != null && name != null)
+		{
+			for(JREnum e:values)
+			{
+				if (name.equals(((Enum<?>)e).name()))
 				{
 					return e;
 				}

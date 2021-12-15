@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.crosstabs.design;
 
+import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
@@ -56,10 +57,12 @@ import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionCollector;
+import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.ReportContext;
+import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.design.JRDesignElement;
 import net.sf.jasperreports.engine.design.JRDesignVariable;
 import net.sf.jasperreports.engine.type.CalculationEnum;
@@ -77,7 +80,7 @@ import org.apache.commons.collections.SequencedHashMap;
  * Design-time {@link net.sf.jasperreports.crosstabs.JRCrosstab crosstab} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstab.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignCrosstab.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 {
@@ -125,11 +128,12 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 	protected boolean repeatRowHeaders = true;
 	protected RunDirectionEnum runDirectionValue;
 	protected List<JRCrosstabCell> cellsList;
-	protected Map<Pair,JRCrosstabCell> cellsMap;
+	protected Map<Pair<String,String>,JRCrosstabCell> cellsMap;
 	protected JRDesignCrosstabCell[][] crossCells;
 	protected JRDesignCellContents whenNoDataCell;
 	protected JRDesignCellContents headerCell;
 	protected Boolean ignoreWidth;
+	protected JRLineBox lineBox;
 	
 	private class MeasureClassChangeListener implements PropertyChangeListener, Serializable
 	{
@@ -143,6 +147,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 
 	private PropertyChangeListener measureClassChangeListener = new MeasureClassChangeListener();
 	
+	@SuppressWarnings("deprecation")
 	private static final Object[] BUILT_IN_PARAMETERS = new Object[] { 
 		JRParameter.REPORT_CONTEXT, ReportContext.class, 
 		JRParameter.REPORT_PARAMETERS_MAP, java.util.Map.class, 
@@ -177,7 +182,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		measuresMap = new HashMap<String, Integer>();
 		measures = new ArrayList<JRCrosstabMeasure>();
 		
-		cellsMap = new HashMap<Pair,JRCrosstabCell>();
+		cellsMap = new HashMap<Pair<String,String>,JRCrosstabCell>();
 		cellsList = new ArrayList<JRCrosstabCell>();
 		
 		addBuiltinParameters();
@@ -186,6 +191,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		addBuiltinVariables();
 		
 		dataset = new JRDesignCrosstabDataset();
+		lineBox = new JRBaseLineBox(this);
 	}
 
 	private void addBuiltinParameters()
@@ -599,7 +605,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 				if (rowTotalGroup != null && rowTotalGroup.equals(groupName))
 				{
 					it.remove();
-					cellsMap.remove(new Pair(rowTotalGroup, cell.getColumnTotalGroup()));
+					cellsMap.remove(new Pair<String,String>(rowTotalGroup, cell.getColumnTotalGroup()));
 					getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_CELLS, cell, -1);
 				}
 			}
@@ -670,7 +676,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 				if (columnTotalGroup != null && columnTotalGroup.equals(groupName))
 				{
 					it.remove();
-					cellsMap.remove(new Pair(cell.getRowTotalGroup(), columnTotalGroup));
+					cellsMap.remove(new Pair<String,String>(cell.getRowTotalGroup(), columnTotalGroup));
 					getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_CELLS, cell, -1);
 				}
 			}
@@ -844,7 +850,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 	 * @see JRCrosstabCell#getRowTotalGroup()
 	 * @see JRCrosstabCell#getColumnTotalGroup()
 	 */
-	public Map<Pair,JRCrosstabCell> getCellsMap()
+	public Map<Pair<String,String>,JRCrosstabCell> getCellsMap()
 	{
 		return cellsMap;
 	}
@@ -870,7 +876,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 			throw new JRException("Row group " + columnTotalGroup + " does not exist.");
 		}
 		
-		Pair cellKey = new Pair(rowTotalGroup, columnTotalGroup);
+		Pair<String,String> cellKey = new Pair<String,String>(rowTotalGroup, columnTotalGroup);
 		if (cellsMap.containsKey(cellKey))
 		{
 			throw new JRException("Duplicate cell in crosstab.");
@@ -896,7 +902,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 	 */
 	public JRCrosstabCell removeCell(String rowTotalGroup, String columnTotalGroup)
 	{
-		Object cellKey = new Pair(rowTotalGroup, columnTotalGroup);
+		Object cellKey = new Pair<String,String>(rowTotalGroup, columnTotalGroup);
 		
 		JRCrosstabCell cell = cellsMap.remove(cellKey);
 		if (cell != null)
@@ -1577,6 +1583,7 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		
 		clone.parametersMapExpression = JRCloneUtils.nullSafeClone(parametersMapExpression);
 		clone.dataset = JRCloneUtils.nullSafeClone(dataset);
+		clone.lineBox = lineBox.clone(clone);
 		
 		// keep group and measure cloned variables to reuse the clone instances
 		// in the variables list
@@ -1664,13 +1671,13 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		if (cellsList != null)
 		{
 			clone.cellsList = new ArrayList<JRCrosstabCell>(cellsList.size());
-			clone.cellsMap = new HashMap<Pair,JRCrosstabCell>(cellsList.size());
+			clone.cellsMap = new HashMap<Pair<String,String>,JRCrosstabCell>(cellsList.size());
 			for(int i = 0; i < cellsList.size(); i++)
 			{
 				JRCrosstabCell cell = JRCloneUtils.nullSafeClone(cellsList.get(i));
 				adjustCrosstabReference(clone, (JRDesignCellContents) cell.getContents());
 				clone.cellsList.add(cell);
-				clone.cellsMap.put(new Pair(cell.getRowTotalGroup(), cell.getColumnTotalGroup()), cell);
+				clone.cellsMap.put(new Pair<String,String>(cell.getRowTotalGroup(), cell.getColumnTotalGroup()), cell);
 			}
 		}
 		
@@ -1755,6 +1762,16 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		setIgnoreWidth(Boolean.valueOf(ignoreWidth));
 	}
 
+	public Color getDefaultLineColor()
+	{
+		return getForecolor();
+	}
+
+	public JRLineBox getLineBox()
+	{
+		return lineBox;
+	}
+
 	/*
 	 * These fields are only for serialization backward compatibility.
 	 */
@@ -1771,6 +1788,11 @@ public class JRDesignCrosstab extends JRDesignElement implements JRCrosstab
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
 			runDirectionValue = RunDirectionEnum.getByValue(runDirection);
+		}
+		
+		if (lineBox == null)
+		{
+			lineBox = new JRBaseLineBox(this);
 		}
 	}
 

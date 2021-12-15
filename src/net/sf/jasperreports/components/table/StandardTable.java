@@ -39,7 +39,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardTable.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: StandardTable.java 5421 2012-05-29 10:46:56Z teodord $
  */
 public class StandardTable implements TableComponent, Serializable, JRChangeEventsSupport
 {

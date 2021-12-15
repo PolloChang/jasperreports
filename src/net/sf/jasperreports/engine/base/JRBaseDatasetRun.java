@@ -24,11 +24,14 @@
 package net.sf.jasperreports.engine.base;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDatasetParameter;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 
@@ -36,17 +39,19 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base implementation of the {@link net.sf.jasperreports.engine.JRDatasetRun JRDatasetRun} interface.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseDatasetRun.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseDatasetRun.java 5340 2012-05-04 10:41:48Z lucianc $
  */
 public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+	protected UUID uuid;
 	protected String datasetName;
 	protected JRExpression parametersMapExpression;
 	protected JRDatasetParameter[] parameters;
 	protected JRExpression connectionExpression;
 	protected JRExpression dataSourceExpression;
+	protected JRPropertiesMap propertiesMap;
 	
 	
 	/**
@@ -67,10 +72,12 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 	{
 		factory.put(datasetRun, this);
 		
+		uuid = datasetRun.getUUID();
 		datasetName = datasetRun.getDatasetName();
 		parametersMapExpression = factory.getExpression(datasetRun.getParametersMapExpression());
 		connectionExpression = factory.getExpression(datasetRun.getConnectionExpression());
 		dataSourceExpression = factory.getExpression(datasetRun.getDataSourceExpression());
+		propertiesMap = JRPropertiesMap.getPropertiesClone(datasetRun);
 		
 		JRDatasetParameter[] datasetParams = datasetRun.getParameters();
 		if (datasetParams != null && datasetParams.length > 0)
@@ -81,6 +88,15 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 				parameters[i] = factory.getDatasetParameter(datasetParams[i]);
 			}
 		}
+	}
+
+	public UUID getUUID()
+	{
+		if (uuid == null)
+		{
+			uuid = UUID.randomUUID();
+		}
+		return uuid;
 	}
 
 	public String getDatasetName()
@@ -129,7 +145,27 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 		clone.dataSourceExpression = JRCloneUtils.nullSafeClone(dataSourceExpression);
 
 		clone.parameters = JRCloneUtils.cloneArray(parameters);
+		clone.propertiesMap = JRPropertiesMap.getPropertiesClone(this);
 
 		return clone;
+	}
+
+	public boolean hasProperties()
+	{
+		return propertiesMap != null && propertiesMap.hasProperties();
+	}
+
+	public JRPropertiesMap getPropertiesMap()
+	{
+		if (propertiesMap == null)
+		{
+			propertiesMap = new JRPropertiesMap();
+		}
+		return propertiesMap;
+	}
+
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
 	}
 }

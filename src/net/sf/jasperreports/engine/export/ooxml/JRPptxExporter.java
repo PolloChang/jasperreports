@@ -38,11 +38,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintElementIndex;
 import net.sf.jasperreports.engine.JRPrintEllipse;
@@ -53,23 +53,26 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
 import net.sf.jasperreports.engine.export.JRExportProgressMonitor;
 import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
 import net.sf.jasperreports.engine.export.LengthUtil;
 import net.sf.jasperreports.engine.export.zip.ExportZipEntry;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZipEntry;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStyledText;
-import net.sf.jasperreports.engine.util.JRTypeSniffer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -78,7 +81,7 @@ import org.apache.commons.logging.LogFactory;
 /**
  * Exports a JasperReports document to PPTX format.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPptxExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPptxExporter.java 5166 2012-03-28 13:11:05Z teodord $
  */
 public class JRPptxExporter extends JRAbstractExporter
 {
@@ -88,9 +91,9 @@ public class JRPptxExporter extends JRAbstractExporter
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String PPTX_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "pptx";
+	public static final String PPTX_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "pptx";
 	
-	protected static final String PPTX_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.pptx.";
+	protected static final String PPTX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.pptx.";
 
 	/**
 	 *
@@ -131,13 +134,9 @@ public class JRPptxExporter extends JRAbstractExporter
 	 */
 	protected int slideIndex;
 	
-	/**
-	 * @deprecated
-	 */
-	protected Map<String,String> fontMap;
-
 	private PptxRunHelper runHelper;
 
+	protected JRPptxExporterContext exporterContext = new ExporterContext();
 
 	protected class ExporterContext extends BaseExporterContext implements JRPptxExporterContext
 	{
@@ -157,10 +156,23 @@ public class JRPptxExporter extends JRAbstractExporter
 	}
 	
 	
+	/**
+	 * @see #JRPptxExporter(JasperReportsContext)
+	 */
 	public JRPptxExporter()
 	{
+		this(DefaultJasperReportsContext.getInstance());
 	}
 
+	
+	/**
+	 *
+	 */
+	public JRPptxExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
 
 	/**
 	 *
@@ -196,7 +208,7 @@ public class JRPptxExporter extends JRAbstractExporter
 			imagesToProcess = new ArrayList<JRPrintElementIndex>();
 //			hyperlinksMap = new HashMap();
 
-			fontMap = (Map<String,String>) parameters.get(JRExporterParameter.FONT_MAP);
+			setFontMap();
 
 			setHyperlinkProducerFactory();
 
@@ -262,13 +274,13 @@ public class JRPptxExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	public static JRPrintImage getImage(List<JasperPrint> jasperPrintList, String imageName) throws JRException
+	public JRPrintImage getImage(List<JasperPrint> jasperPrintList, String imageName) throws JRException
 	{
 		return getImage(jasperPrintList, getPrintElementIndex(imageName));
 	}
 
 
-	public static JRPrintImage getImage(List<JasperPrint> jasperPrintList, JRPrintElementIndex imageIndex) throws JRException
+	public JRPrintImage getImage(List<JasperPrint> jasperPrintList, JRPrintElementIndex imageIndex) throws JRException
 	{
 		JasperPrint report = jasperPrintList.get(imageIndex.getReportIndex());
 		JRPrintPage page = report.getPages().get(imageIndex.getPageIndex());
@@ -285,10 +297,10 @@ public class JRPptxExporter extends JRAbstractExporter
 		if(element instanceof JRGenericPrintElement)
 		{
 			JRGenericPrintElement genericPrintElement = (JRGenericPrintElement)element;
-			return ((GenericElementPptxHandler)GenericElementHandlerEnviroment.getHandler(
+			return ((GenericElementPptxHandler)GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
 					genericPrintElement.getGenericType(), 
 					PPTX_EXPORTER_KEY
-					)).getImage(genericPrintElement);
+					)).getImage(exporterContext, genericPrintElement);
 		}
 		
 		return (JRPrintImage) element;
@@ -366,8 +378,8 @@ public class JRPptxExporter extends JRAbstractExporter
 				JRPrintElementIndex imageIndex = it.next();
 
 				JRPrintImage image = getImage(jasperPrintList, imageIndex);
-				JRRenderable renderer = image.getRenderer();
-				if (renderer.getType() == JRRenderable.TYPE_SVG)
+				Renderable renderer = image.getRenderable();
+				if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 				{
 					renderer =
 						new JRWrappingSvgRenderer(
@@ -377,10 +389,10 @@ public class JRPptxExporter extends JRAbstractExporter
 							);
 				}
 
-				String mimeType = JRTypeSniffer.getImageMimeType(renderer.getImageType());
+				String mimeType = renderer.getImageTypeValue().getMimeType();
 				if (mimeType == null)
 				{
-					mimeType = JRRenderable.MIME_TYPE_JPEG;
+					mimeType = ImageTypeEnum.JPEG.getMimeType();
 				}
 				String extension = mimeType.substring(mimeType.lastIndexOf('/') + 1);
 				
@@ -389,7 +401,7 @@ public class JRPptxExporter extends JRAbstractExporter
 				pptxZip.addEntry(//FIXMEPPTX optimize with a different implementation of entry
 					new FileBufferedZipEntry(
 						"ppt/media/" + imageName,
-						renderer.getImageData()
+						renderer.getImageData(jasperReportsContext)
 						)
 					);
 				
@@ -1018,7 +1030,7 @@ public class JRPptxExporter extends JRAbstractExporter
 		int availableImageHeight = image.getHeight() - topPadding - bottomPadding;
 		availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
 
-		JRRenderable renderer = image.getRenderer();
+		Renderable renderer = image.getRenderable();
 
 		if (
 			renderer != null &&
@@ -1026,11 +1038,11 @@ public class JRPptxExporter extends JRAbstractExporter
 			availableImageHeight > 0
 			)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 			{
 				// Non-lazy image renderers are all asked for their image data at some point.
 				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = JRImageRenderer.getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
+				renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
 			}
 		}
 		else
@@ -1047,9 +1059,9 @@ public class JRPptxExporter extends JRAbstractExporter
 			double normalHeight = availableImageHeight;
 
 			// Image load might fail.
-			JRRenderable tmpRenderer =
-				JRImageRenderer.getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension();
+			Renderable tmpRenderer =
+				RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
+			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
 			// If renderer was replaced, ignore image dimension.
 			if (tmpRenderer == renderer && dimension != null)
 			{
@@ -1337,13 +1349,13 @@ public class JRPptxExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	protected String getImagePath(JRRenderable renderer, boolean isLazy)
+	protected String getImagePath(Renderable renderer, boolean isLazy)
 	{
 		String imagePath = null;
 
 		if (renderer != null)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
 			{
 				imagePath = rendererToImagePathMap.get(renderer.getId());
 			}
@@ -1358,10 +1370,10 @@ public class JRPptxExporter extends JRAbstractExporter
 					JRPrintElementIndex imageIndex = getElementIndex();
 					imagesToProcess.add(imageIndex);
 
-					String mimeType = JRTypeSniffer.getImageMimeType(renderer.getImageType());//FIXMEPPTX this code for file extension is duplicated
+					String mimeType = renderer.getImageTypeValue().getMimeType();//FIXMEPPTX this code for file extension is duplicated
 					if (mimeType == null)
 					{
-						mimeType = JRRenderable.MIME_TYPE_JPEG;
+						mimeType = ImageTypeEnum.JPEG.getMimeType();
 					}
 					String extension = mimeType.substring(mimeType.lastIndexOf('/') + 1);
 
@@ -1566,12 +1578,11 @@ public class JRPptxExporter extends JRAbstractExporter
 	protected void exportGenericElement(JRGenericPrintElement element)
 	{
 		GenericElementPptxHandler handler = (GenericElementPptxHandler) 
-		GenericElementHandlerEnviroment.getHandler(
+		GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
 				element.getGenericType(), PPTX_EXPORTER_KEY);
 
 		if (handler != null)
 		{
-			JRPptxExporterContext exporterContext = new ExporterContext();
 			handler.exportElement(exporterContext, element);
 		}
 		else
@@ -1706,7 +1717,7 @@ public class JRPptxExporter extends JRAbstractExporter
 	protected String getHyperlinkURL(JRPrintHyperlink link)
 	{
 		String href = null;
-		JRHyperlinkProducer customHandler = getCustomHandler(link);
+		JRHyperlinkProducer customHandler = getHyperlinkProducer(link);
 		if (customHandler == null)
 		{
 			switch(link.getHyperlinkTypeValue())

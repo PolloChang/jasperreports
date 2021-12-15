@@ -30,13 +30,16 @@ import java.util.Arrays;
 
 import javax.swing.JOptionPane;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRReport;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.convert.ReportConverter;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
 import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.engine.util.LocalJasperReportsContext;
 import net.sf.jasperreports.engine.util.SimpleFileResolver;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
 
@@ -46,7 +49,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignViewer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignViewer.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignViewer extends JRViewer
 {
@@ -54,24 +57,65 @@ public class JRDesignViewer extends JRViewer
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	/** Creates new form JRDesignViewer */
+	/**
+	 * @see #JRDesignViewer(JasperReportsContext, String, boolean)
+	 */
 	public JRDesignViewer(String fileName, boolean isXML) throws JRException
 	{
-		super(fileName, isXML);
-		hideUnusedComponents();
+		this(DefaultJasperReportsContext.getInstance(), fileName, isXML);
 	}
 	
-	/** Creates new form JRDesignViewer */
+	/**
+	 * @see #JRDesignViewer(JasperReportsContext, InputStream, boolean)
+	 */
 	public JRDesignViewer(InputStream is, boolean isXML) throws JRException
 	{
-		super(is, isXML);
+		this(DefaultJasperReportsContext.getInstance(), is, isXML);
+	}
+	
+	/**
+	 * @see #JRDesignViewer(JasperReportsContext, JRReport)
+	 */
+	public JRDesignViewer(JRReport report) throws JRException
+	{
+		this(DefaultJasperReportsContext.getInstance(), report);
+	}
+	
+	/**
+	 *
+	 */
+	public JRDesignViewer(
+		JasperReportsContext jasperReportsContext,
+		String fileName, 
+		boolean isXML
+		) throws JRException
+	{
+		super(jasperReportsContext, fileName, isXML, null, null);
 		hideUnusedComponents();
 	}
 	
-	/** Creates new form JRDesignViewer */
-	public JRDesignViewer(JRReport report) throws JRException
+	/**
+	 *
+	 */
+	public JRDesignViewer(
+		JasperReportsContext jasperReportsContext,
+		InputStream is, 
+		boolean isXML
+		) throws JRException
 	{
-		super(new ReportConverter(report, false).getJasperPrint());
+		super(jasperReportsContext, is, isXML, null, null);
+		hideUnusedComponents();
+	}
+	
+	/**
+	 *
+	 */
+	public JRDesignViewer(
+		JasperReportsContext jasperReportsContext,
+		JRReport report
+		) throws JRException
+	{
+		super(jasperReportsContext, new ReportConverter(jasperReportsContext, report, false).getJasperPrint(), null, null);
 		//reconfigureReloadButton();
 		hideUnusedComponents();
 	}
@@ -111,6 +155,15 @@ public class JRDesignViewer extends JRViewer
 	*/
 	protected void loadReport(String fileName, boolean isXmlReport) throws JRException
 	{
+		SimpleFileResolver fileResolver = new SimpleFileResolver(Arrays.asList(new File[]{new File(fileName).getParentFile(), new File(".")}));
+		fileResolver.setResolveAbsolutePath(true);
+		if (localJasperReportsContext == null)
+		{
+			localJasperReportsContext = new LocalJasperReportsContext(jasperReportsContext);
+			jasperReportsContext = localJasperReportsContext;
+		}
+		localJasperReportsContext.setFileResolver(fileResolver);
+		
 		if (isXmlReport)
 		{
 			JasperDesign jasperDesign = JRXmlLoader.load(fileName);
@@ -123,8 +176,8 @@ public class JRDesignViewer extends JRViewer
 		this.type = TYPE_FILE_NAME;
 		this.isXML = isXmlReport;
 		this.reportFileName = fileName;
-		this.fileResolver = new SimpleFileResolver(Arrays.asList(new File[]{new File(fileName).getParentFile(), new File(".")}));
-		this.fileResolver.setResolveAbsolutePath(true);
+		
+		//FIXME there are two more lines here in JRViewer; check other places too
 	}
 
 
@@ -157,7 +210,7 @@ public class JRDesignViewer extends JRViewer
 	
 	private void setReport(JRReport report) throws JRException
 	{
-		this.jasperPrint = new ReportConverter(report, false).getJasperPrint();		
+		this.jasperPrint = new ReportConverter(jasperReportsContext, report, false).getJasperPrint();		
 	}
 
 	/**
@@ -165,7 +218,7 @@ public class JRDesignViewer extends JRViewer
 	protected JRGraphics2DExporter getGraphics2DExporter() throws JRException
 	{
 		return 
-			new JRGraphics2DExporter()
+			new JRGraphics2DExporter(getJasperReportsContext())
 			{
 				protected void setDrawers()
 				{

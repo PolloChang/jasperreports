@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 /**
  * The actual implementation of a graphic element representing a straight line.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseLine.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseLine.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseLine extends JRBaseGraphicElement implements JRLine
 {

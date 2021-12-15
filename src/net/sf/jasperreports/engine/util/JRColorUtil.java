@@ -30,7 +30,7 @@ import net.sf.jasperreports.engine.type.ColorEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRColorUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRColorUtil.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public final class JRColorUtil
 {

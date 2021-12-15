@@ -23,33 +23,43 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.awt.Font;
 import java.awt.font.FontRenderContext;
 import java.awt.font.LineBreakMeasurer;
+import java.awt.font.TextAttribute;
 import java.awt.font.TextLayout;
+import java.awt.geom.Rectangle2D;
 import java.text.AttributedCharacterIterator;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.text.AttributedString;
+import java.text.Bidi;
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRParagraph;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRTextElement;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.export.AbstractTextRenderer;
 import net.sf.jasperreports.engine.export.AwtTextRenderer;
 import net.sf.jasperreports.engine.util.DelegatePropertiesHolder;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledText.Run;
+import net.sf.jasperreports.engine.util.MaxFontSizeFinder;
 import net.sf.jasperreports.engine.util.ParagraphUtil;
 
 import org.apache.commons.logging.Log;
@@ -60,34 +70,43 @@ import org.apache.commons.logging.LogFactory;
  * Default text measurer implementation.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: TextMeasurer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TextMeasurer.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class TextMeasurer implements JRTextMeasurer
 {
 	private static final Log log = LogFactory.getLog(TextMeasurer.class);
+	
+	//FIXME remove this after measureSimpleText() is proven to be stable
+	public static final String PROPERTY_MEASURE_SIMPLE_TEXTS = JRPropertiesUtil.PROPERTY_PREFIX + "measure.simple.text";
 
-	private JRCommonText textElement;
+	protected JasperReportsContext jasperReportsContext;
+	protected JRCommonText textElement;
 	private JRPropertiesHolder propertiesHolder;
+	
+	private boolean measureSimpleTexts;
+	private final Map<FontKey, FontInfo> fontInfos = new HashMap<FontKey, FontInfo>();
 
 	/**
 	 * 
 	 */
-	//private MaxFontSizeFinder maxFontSizeFinder;
+	private MaxFontSizeFinder maxFontSizeFinder;
 	
-	private int width;
+	protected int width;
 	private int height;
 	private int topPadding;
-	private int leftPadding;
+	protected int leftPadding;
 	private int bottomPadding;
-	private int rightPadding;
+	protected int rightPadding;
 	private JRParagraph jrParagraph;
 
-	//private float formatWidth;
-	private int maxHeight;
+	private float formatWidth;
+	protected int maxHeight;
 	private boolean canOverflow;
 	private Map<Attribute,Object> globalAttributes;
-	private TextMeasuredState measuredState;
-	private TextMeasuredState prevMeasuredState;
+	private boolean ignoreMissingFont;
+	
+	protected TextMeasuredState measuredState;
+	protected TextMeasuredState prevMeasuredState;
 	
 	protected static class TextMeasuredState implements JRMeasuredText, Cloneable
 	{
@@ -95,8 +114,11 @@ public class TextMeasurer implements JRTextMeasurer
 		
 		protected int textOffset;
 		protected int lines;
+		protected int fontSizeSum;
+		protected int firstLineMaxFontSize;
 		protected int paragraphStartLine;
 		protected float textHeight;
+		protected float firstLineLeading;
 		protected boolean isLeftToRight = true;
 		protected String textSuffix;
 		
@@ -123,6 +145,20 @@ public class TextMeasurer implements JRTextMeasurer
 			return textHeight;
 		}
 		
+		public float getLineSpacingFactor()
+		{
+			if (lines > 0 && fontSizeSum > 0)
+			{
+				return textHeight / fontSizeSum;
+			}
+			return 0;
+		}
+		
+		public float getLeadingOffset()
+		{
+			return firstLineLeading - firstLineMaxFontSize * getLineSpacingFactor();
+		}
+
 		public String getTextSuffix()
 		{
 			return textSuffix;
@@ -218,8 +254,9 @@ public class TextMeasurer implements JRTextMeasurer
 	/**
 	 * 
 	 */
-	public TextMeasurer(JRCommonText textElement)
+	public TextMeasurer(JasperReportsContext jasperReportsContext, JRCommonText textElement)
 	{
+		this.jasperReportsContext = jasperReportsContext;
 		this.textElement = textElement;
 		this.propertiesHolder = textElement instanceof JRPropertiesHolder ? (JRPropertiesHolder) textElement : null;//FIXMENOW all elements are now properties holders, so interfaces might be rearranged
 		if (textElement.getDefaultStyleProvider() instanceof JRPropertiesHolder)
@@ -230,6 +267,16 @@ public class TextMeasurer implements JRTextMeasurer
 					(JRPropertiesHolder)textElement.getDefaultStyleProvider()
 					);
 		}
+		
+		measureSimpleTexts = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(this.propertiesHolder, PROPERTY_MEASURE_SIMPLE_TEXTS, true);
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #TextMeasurer(JasperReportsContext, JRCommonText)}.
+	 */
+	public TextMeasurer(JRCommonText textElement)
+	{
+		this(DefaultJasperReportsContext.getInstance(), textElement);
 	}
 	
 	/**
@@ -292,16 +339,19 @@ public class TextMeasurer implements JRTextMeasurer
 			}
 		}
 		
-		//maxFontSizeFinder = MaxFontSizeFinder.getInstance(!JRCommonText.MARKUP_NONE.equals(textElement.getMarkup()));
+		maxFontSizeFinder = MaxFontSizeFinder.getInstance(!JRCommonText.MARKUP_NONE.equals(textElement.getMarkup()));
 
-//		formatWidth = width - leftPadding - rightPadding;
-//		formatWidth = formatWidth < 0 ? 0 : formatWidth;
+		formatWidth = width - leftPadding - rightPadding;
+		formatWidth = formatWidth < 0 ? 0 : formatWidth;
 		maxHeight = height + availableStretchHeight - topPadding - bottomPadding;
 		maxHeight = maxHeight < 0 ? 0 : maxHeight;
 		this.canOverflow = canOverflow;
 		this.globalAttributes = styledText.getGlobalAttributes();
 		
-		boolean saveLineBreakOffsets = JRProperties.getBooleanProperty(propertiesHolder, 
+		ignoreMissingFont = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(propertiesHolder, 
+				JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT, false);
+		
+		boolean saveLineBreakOffsets = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(propertiesHolder, 
 				JRTextElement.PROPERTY_SAVE_LINE_BREAKS, false);
 		
 		measuredState = new TextMeasuredState(saveLineBreakOffsets);
@@ -323,10 +373,14 @@ public class TextMeasurer implements JRTextMeasurer
 		/*   */
 		initialize(styledText, remainingTextStart, availableStretchHeight, canOverflow);
 
+		if (measureSimpleTexts && measureSimpleText(styledText, remainingTextStart))
+		{
+			// simple text measured
+			return measuredState;
+		}
+
 		AttributedCharacterIterator allParagraphs = 
-			styledText.getAwtAttributedString(
-				JRProperties.getBooleanProperty(propertiesHolder, JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT, false)
-				).getIterator();
+			styledText.getAwtAttributedString(ignoreMissingFont).getIterator();
 
 		int tokenPosition = remainingTextStart;
 		int lastParagraphStart = remainingTextStart;
@@ -363,6 +417,251 @@ public class TextMeasurer implements JRTextMeasurer
 		}
 		
 		return measuredState;
+	}
+	
+	protected static class FontKey
+	{
+		String family;
+		int size;
+		int style;
+		Number weight;
+		public FontKey(String family, int size, int style)
+		{
+			super();
+			this.family = family;
+			this.size = size;
+			this.style = style;
+		}
+		
+		@Override
+		public int hashCode()
+		{
+			int hash = 43;
+			hash = hash*29 + family.hashCode();
+			hash = hash*29 + size;
+			hash = hash*29 + style;
+			return hash;
+		}
+		
+		@Override
+		public boolean equals(Object obj)
+		{
+			FontKey info = (FontKey) obj;
+			return family.equals(info.family) && size == info.size && style == info.style;
+		}
+		
+		public String toString()
+		{
+			return "{family: " + family
+					+ ", size: " + size
+					+ ", style: " + style
+					+ "}";
+		}
+	}
+	
+	protected static class FontInfo
+	{
+		private static final int MIN_COUNT = 10;
+		private static final double FONT_SIZE_MIN_FACTOR = 0.1;
+		private static final double WIDTH_CHECK_FACTOR = 1.2;
+		
+		final Font font;
+		int measurementsCount;
+		double characterWidthSum;
+		
+		public FontInfo(Font font)
+		{
+			this.font = font;
+		}
+	}
+
+	protected boolean measureSimpleText(JRStyledText styledText, int remainingTextStart)
+	{
+		if (remainingTextStart != 0)
+		{
+			// not measuring text fragments for now
+			return false;
+		}
+		
+		List<Run> runs = styledText.getRuns();
+		if (runs.size() != 1)
+		{
+			// multiple styles
+			return false;
+		}
+		
+		String text = styledText.getText();
+		if (text.length() == 0 //this should not happen but still checking
+				|| text.indexOf('\n') >= 0 || text.indexOf('\t') >= 0)
+		{
+			// we don't handle newlines and tabs here
+			return false;
+		}
+		
+		if (hasParagraphIndents())
+		{
+			// not handling this case for now
+			return false;
+		}
+		
+		Run run = styledText.getRuns().get(0);
+		
+		if (run.attributes.get(TextAttribute.SUPERSCRIPT) != null)
+		{
+			// not handling this case, see JRStyledText.getAwtAttributedString
+			return false;
+		}
+		
+		String family = (String) run.attributes.get(TextAttribute.FAMILY);
+		Number size = (Number) run.attributes.get(TextAttribute.SIZE);
+		
+		if (family == null || size == null)
+		{
+			// this should not happen, but still checking
+			return false;
+		}
+		
+		int availableWidth = width - leftPadding - rightPadding;
+		
+		// a test to exclude cases of very large texts
+		if (text.length() * size.intValue() * FontInfo.FONT_SIZE_MIN_FACTOR > availableWidth)
+		{
+			return false;
+		}
+		
+		int style = 0;
+		Number posture = (Number) run.attributes.get(TextAttribute.POSTURE);
+		if (posture != null && !TextAttribute.POSTURE_REGULAR.equals(posture))
+		{
+			if (TextAttribute.POSTURE_OBLIQUE.equals(posture))
+			{
+				style |= Font.ITALIC;
+			}
+			else
+			{
+				// non standard posture
+				return false;
+			}
+		}
+		
+		Number weight = (Number) run.attributes.get(TextAttribute.WEIGHT);
+		if (weight != null && !TextAttribute.WEIGHT_REGULAR.equals(weight))
+		{
+			if (TextAttribute.WEIGHT_BOLD.equals(weight))
+			{
+				style |= Font.BOLD;
+			}
+			else
+			{
+				// non standard weight
+				return false;
+			}
+		}
+		
+		FontKey fontKey = new FontKey(family, size.intValue(), style);
+		FontInfo fontInfo = fontInfos.get(fontKey);
+		if (fontInfo == null)
+		{
+			// check bundled fonts
+			Font font = JRFontUtil.getAwtFontFromBundles(family, style, size.intValue(), styledText.getLocale(), false);
+			if (font == null)
+			{
+				// checking AWT font
+				JRFontUtil.checkAwtFont(family, ignoreMissingFont);
+				// creating AWT font
+				font = Font.getFont(run.attributes);
+			}
+			
+			fontInfo = new FontInfo(font);
+			fontInfos.put(fontKey, fontInfo);
+		}
+		
+		// FIXME implement more sophisticated heuristics; keep the measurements globally?
+		if (fontInfo.measurementsCount > FontInfo.MIN_COUNT)
+		{
+			// checking the current text against the avg character width
+			double avgCharWidth = fontInfo.characterWidthSum / fontInfo.measurementsCount;
+			if (avgCharWidth * text.length() > availableWidth * FontInfo.WIDTH_CHECK_FACTOR)
+			{
+				// not measuring based on the character width statistics
+				return false;
+			}
+		}
+		
+		//FIXME complex scripts still do TextLayout and Bidi here
+		Rectangle2D bounds = fontInfo.font.getStringBounds(text, getFontRenderContext());
+		
+		// adding the measurement to the font info statistics
+		++fontInfo.measurementsCount;
+		fontInfo.characterWidthSum += bounds.getWidth() / text.length();
+		
+		boolean fitsWidth = bounds.getWidth() <= availableWidth;
+		boolean fitsHeight = bounds.getHeight() <= maxHeight;
+		if (log.isTraceEnabled())
+		{
+			log.trace("simple text of length " + text.length() 
+					+ " measured to width " + bounds.getWidth()
+					+ " with font " + fontInfo
+					+ ", fits width" + fitsWidth
+					+ ", fits height" + fitsHeight);
+		}
+		
+		if (!fitsWidth)
+		{
+			// the text does not fit on one line
+			return false;
+		}
+		
+		// the whole text fits in one line
+		measuredState.isLeftToRight = isLeftToRight(text);
+		if (fitsHeight)
+		{
+			measuredState.lines = 1;
+			measuredState.textOffset = text.length();
+			measuredState.textHeight = (float) bounds.getHeight();
+		}
+		else
+		{
+			measuredState.textOffset = 0;
+			measuredState.textHeight = 0;
+		}
+
+		measuredState.firstLineLeading = - (float)bounds.getY();
+		measuredState.fontSizeSum = size.intValue();
+		measuredState.firstLineMaxFontSize = measuredState.fontSizeSum;
+		
+		return true;
+	}
+
+	protected boolean isLeftToRight(String text)
+	{
+		boolean leftToRight = true;
+		if (Bidi.requiresBidi(text.toCharArray(), 0, text.length()))
+		{
+			// determining the text direction
+			// using default LTR as there's no way to have other default in the text
+			Bidi bidi = new Bidi(text, Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
+			leftToRight = bidi.baseIsLeftToRight();
+		}
+		return leftToRight;
+	}
+	
+	protected boolean hasParagraphIndents()
+	{
+		Integer firstLineIndent = jrParagraph.getFirstLineIndent();
+		if (firstLineIndent != null && firstLineIndent.intValue() > 0)
+		{
+			return true;
+		}
+		
+		Integer leftIndent = jrParagraph.getLeftIndent();
+		if (leftIndent != null && leftIndent.intValue() > 0)
+		{
+			return true;
+		}
+		
+		Integer rightIndent = jrParagraph.getRightIndent();
+		return rightIndent != null && rightIndent.intValue() > 0;
 	}
 
 	/**
@@ -578,13 +877,13 @@ public class TextMeasurer implements JRTextMeasurer
 
 	protected boolean isToTruncateAtChar()
 	{
-		return JRProperties.getBooleanProperty(propertiesHolder, 
+		return JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(propertiesHolder, 
 				JRTextElement.PROPERTY_TRUNCATE_AT_CHAR, false);
 	}
 
 	protected String getTruncateSuffix()
 	{
-		String truncateSuffx = JRProperties.getProperty(propertiesHolder,
+		String truncateSuffx = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(propertiesHolder,
 				JRTextElement.PROPERTY_TRUNCATE_SUFFIX);
 		if (truncateSuffx != null)
 		{
@@ -597,6 +896,7 @@ public class TextMeasurer implements JRTextMeasurer
 		return truncateSuffx;
 	}
 	
+
 	protected boolean renderNextLine(LineBreakMeasurer lineMeasurer, AttributedCharacterIterator paragraph, List<Integer> tabIndexes, int[] currentTabHolder, TabStop[] nextTabStopHolder, boolean[] requireNextWordHolder)
 	{
 		boolean lineComplete = false;
@@ -774,22 +1074,28 @@ public class TextMeasurer implements JRTextMeasurer
 			measuredState.textHeight = newTextHeight;
 			measuredState.lines++;
 
-//			measuredState.fontSizeSum += 
-//				maxFontSizeFinder.findMaxFontSize(
-//					new AttributedString(
-//						paragraph, 
-//						lineStartPosition, 
-//						lineStartPosition + characterCount
-//						).getIterator(),
-//					textElement.getFontSize()
-//					);
+			if (
+				(tabIndexes == null || tabIndexes.size() == 0)
+				&& !hasParagraphIndents() 
+				)
+			{
+				measuredState.fontSizeSum += 
+					maxFontSizeFinder.findMaxFontSize(
+						new AttributedString(
+							paragraph, 
+							lineStartPosition, 
+							lineStartPosition + characterCount
+							).getIterator(),
+						textElement.getFontSize()
+						);
 
-//			if (measuredState.lines == 1)
-//			{
-//				measuredState.firstLineLeading = measuredState.textHeight;
-//				measuredState.firstLineMaxFontSize = measuredState.fontSizeSum;
-//			}
-
+				if (measuredState.lines == 1)
+				{
+					measuredState.firstLineLeading = measuredState.textHeight;
+					measuredState.firstLineMaxFontSize = measuredState.fontSizeSum;
+				}
+			}
+			
 			// here is the Y offset where we would draw the line
 			//lastDrawPosY = drawPosY;
 			//

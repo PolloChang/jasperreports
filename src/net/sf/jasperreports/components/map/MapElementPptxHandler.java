@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.export.ooxml.JRPptxExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementPptxHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MapElementPptxHandler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class MapElementPptxHandler implements GenericElementPptxHandler
 {
@@ -51,7 +51,7 @@ public class MapElementPptxHandler implements GenericElementPptxHandler
 		try
 		{
 			JRPptxExporter exporter = (JRPptxExporter)exporterContext.getExporter();
-			exporter.exportImage(getImage(element));
+			exporter.exportImage(getImage(exporterContext, element));
 		}
 		catch (Exception e)
 		{
@@ -63,8 +63,8 @@ public class MapElementPptxHandler implements GenericElementPptxHandler
 		return true;
 	}
 	
-	public JRPrintImage getImage(JRGenericPrintElement element) throws JRException
+	public JRPrintImage getImage(JRPptxExporterContext exporterContext, JRGenericPrintElement element) throws JRException
 	{
-		return MapElementImageProvider.getImage(element);
+		return MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element);
 	}
 }

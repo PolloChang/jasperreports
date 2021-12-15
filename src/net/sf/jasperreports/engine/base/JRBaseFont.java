@@ -44,7 +44,7 @@ import net.sf.jasperreports.engine.util.JRTextAttribute;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseFont.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseFont.java 5254 2012-04-10 15:18:36Z teodord $
  */
 public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, JRCloneable
 {
@@ -172,12 +172,12 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 		
 
 	/**
-	 * @deprecated To be removed.
+	 *
 	 */
 	public JRBaseFont(
 		JRStyleContainer styleContainer,
 		JRFont font
-		)
+		) // constructor used in chart themes
 	{
 		this(styleContainer);
 		

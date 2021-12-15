@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.JRConstants;
  * Print text implementation that supports recorded values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRRecordedValuesPrintText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRRecordedValuesPrintText.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRRecordedValuesPrintText extends JRTemplatePrintText implements JRRecordedValuesPrintElement
 {
@@ -39,9 +39,24 @@ public class JRRecordedValuesPrintText extends JRTemplatePrintText implements JR
 
 	private JRRecordedValues recordedValues;
 
+	/**
+	 * 
+	 * @param text
+	 * @deprecated provide a source Id via {@link #JRRecordedValuesPrintText(JRTemplateText, int)}
+	 */
 	public JRRecordedValuesPrintText(JRTemplateText text)
 	{
 		super(text);
+	}
+
+	/**
+	 * 
+	 * @param text
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRRecordedValuesPrintText(JRTemplateText text, int sourceElementId)
+	{
+		super(text, sourceElementId);
 	}
 
 	public JRRecordedValues getRecordedValues()

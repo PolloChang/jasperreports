@@ -24,16 +24,30 @@
 package net.sf.jasperreports.components.table.fill;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import net.sf.jasperreports.components.sort.SortElement;
+import net.sf.jasperreports.components.headertoolbar.HeaderLabelUtil;
+import net.sf.jasperreports.components.headertoolbar.HeaderLabelUtil.HeaderLabelBuiltinExpression;
+import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElement;
+import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElementUtils;
+import net.sf.jasperreports.components.sort.FieldFilter;
+import net.sf.jasperreports.components.sort.FilterTypesEnum;
+import net.sf.jasperreports.components.sort.SortElementHtmlHandler;
+import net.sf.jasperreports.components.sort.actions.FilterCommand;
+import net.sf.jasperreports.components.table.BaseColumn;
 import net.sf.jasperreports.components.table.Cell;
 import net.sf.jasperreports.components.table.Column;
 import net.sf.jasperreports.components.table.ColumnGroup;
 import net.sf.jasperreports.components.table.ColumnVisitor;
 import net.sf.jasperreports.components.table.TableComponent;
+import net.sf.jasperreports.components.table.util.TableUtil;
+import net.sf.jasperreports.engine.CompositeDatasetFilter;
+import net.sf.jasperreports.engine.DatasetFilter;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRChild;
 import net.sf.jasperreports.engine.JRDataset;
@@ -48,6 +62,7 @@ import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRQuery;
 import net.sf.jasperreports.engine.JRReport;
 import net.sf.jasperreports.engine.JRReportTemplate;
@@ -55,14 +70,15 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRScriptlet;
 import net.sf.jasperreports.engine.JRSection;
 import net.sf.jasperreports.engine.JRSortField;
+import net.sf.jasperreports.engine.JRStaticText;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.component.FillContext;
 import net.sf.jasperreports.engine.design.JRDesignBand;
-import net.sf.jasperreports.engine.design.JRDesignElement;
 import net.sf.jasperreports.engine.design.JRDesignElementGroup;
 import net.sf.jasperreports.engine.design.JRDesignExpression;
 import net.sf.jasperreports.engine.design.JRDesignFrame;
@@ -70,6 +86,8 @@ import net.sf.jasperreports.engine.design.JRDesignGenericElement;
 import net.sf.jasperreports.engine.design.JRDesignGenericElementParameter;
 import net.sf.jasperreports.engine.design.JRDesignGroup;
 import net.sf.jasperreports.engine.design.JRDesignSection;
+import net.sf.jasperreports.engine.export.JRHtmlExporter;
+import net.sf.jasperreports.engine.fill.DatasetExpressionEvaluator;
 import net.sf.jasperreports.engine.fill.JRExpressionEvalException;
 import net.sf.jasperreports.engine.fill.JRFillField;
 import net.sf.jasperreports.engine.fill.JRFillParameter;
@@ -79,21 +97,31 @@ import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
+import net.sf.jasperreports.engine.type.SortOrderEnum;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
 import net.sf.jasperreports.engine.type.StretchTypeEnum;
 import net.sf.jasperreports.engine.type.WhenNoDataTypeEnum;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
+import net.sf.jasperreports.engine.util.StyleUtil;
+import net.sf.jasperreports.web.util.JacksonUtil;
 
 /**
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableReport.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TableReport.java 5459 2012-06-19 11:26:56Z lucianc $
  */
 public class TableReport implements JRReport
 {
-
+	private static final String PROPERTY_UP_ARROW_CHAR = JRPropertiesUtil.PROPERTY_PREFIX + "components.sort.up.arrow.char"; //FIXMEJIVE move these from here
+	private static final String PROPERTY_DOWN_ARROW_CHAR = JRPropertiesUtil.PROPERTY_PREFIX + "components.sort.down.arrow.char";
+	private static final String PROPERTY_FILTER_CHAR = JRPropertiesUtil.PROPERTY_PREFIX + "components.filter.char";
+	
 	protected static final String SUMMARY_GROUP_NAME = "__SummaryGroup";
+
+	protected static final String HTML_CLASS_COLUMN_PREFIX = "col_";
+	protected static final String HTML_CLASS_COLUMN = "column";
 	
 	private final FillContext fillContext;
 	private final TableComponent table;
@@ -107,6 +135,8 @@ public class TableReport implements JRReport
 	private final JRDesignBand pageFooter;
 	private final JRDesignBand lastPageFooter;
 	
+	private final Map<Integer, String> headerHtmlClasses;
+	
 	public TableReport(
 		FillContext fillContext, 
 		TableComponent table, 
@@ -115,16 +145,18 @@ public class TableReport implements JRReport
 		Map<JRExpression, BuiltinExpressionEvaluator> builtinEvaluators
 		)
 	{
+		this.headerHtmlClasses = new HashMap<Integer,String>();
+		
 		this.fillContext = fillContext;
 		this.table = table;
 		this.parentReport = fillContext.getFiller().getJasperReport();
 		this.mainDataset = mainDataset;
 		this.builtinEvaluators = builtinEvaluators;
 		
+		this.columnHeader = createColumnHeader(fillColumns);
 		this.detail = wrapBand(createDetailBand(fillColumns), new JROrigin(BandTypeEnum.DETAIL));
 		this.title = createTitle(fillColumns);
 		this.summary = createSummary(fillColumns); 
-		this.columnHeader = createColumnHeader(fillColumns);
 		this.pageFooter = createPageFooter(fillColumns);
 		
 		setGroupBands(fillColumns);
@@ -166,16 +198,13 @@ public class TableReport implements JRReport
 		{
 			this.band = band;
 		}
-		
-		void addElement(int rowLevel, JRDesignElement element)
+
+		protected void elementAdded(JRElement element)
 		{
 			if (band.getHeight() < element.getHeight() + element.getY())
 			{
 				band.setHeight(element.getHeight() + element.getY());
 			}
-			
-			JRDesignElementGroup rowGroup = getRowElementGroup(rowLevel);
-			rowGroup.addElement(element);
 		}
 		
 		JRDesignElementGroup getRowElementGroup(int rowLevel)
@@ -213,15 +242,24 @@ public class TableReport implements JRReport
 			this.level = level;
 		}
 
+		protected boolean isEmpty(Cell cell)
+		{
+			return cell == null;
+		}
+		
 		public Void visitColumn(Column column)
 		{
 			Cell cell = columnCell(column);
 			
-			if (cell != null)
+			if (!isEmpty(cell))
 			{
-				JRDesignFrame cellFrame = createColumnCell(column, cell);
 				int rowSpan = cell.getRowSpan() == null ? 1 : cell.getRowSpan();
-				bandInfo.addElement(level + rowSpan - 1, cellFrame);
+				int rowLevel = level + rowSpan - 1;
+				JRDesignElementGroup elementGroup = bandInfo.getRowElementGroup(rowLevel);
+				
+				JRElement cellElement = createColumnCell(column, elementGroup, cell);
+				elementGroup.addElement(cellElement);
+				bandInfo.elementAdded(cellElement);
 				
 				yOffset += cell.getHeight();
 			}
@@ -233,11 +271,16 @@ public class TableReport implements JRReport
 
 		protected abstract Cell columnCell(Column column);
 		
-		protected JRDesignFrame createColumnCell(Column column, Cell cell)
+		protected JRElement createColumnCell(Column column, JRElementGroup parentGroup, Cell cell)
 		{
-			return createCellFrame(cell, 
+			return createColumnCell(column, parentGroup, cell, false);
+		}
+		
+		protected JRElement createColumnCell(Column column, JRElementGroup parentGroup, Cell cell, boolean forceFrame)
+		{
+			return createCell(parentGroup, cell, 
 					column.getWidth(), fillColumn.getWidth(), 
-					xOffset, yOffset);
+					xOffset, yOffset, column.hashCode(), forceFrame);
 		}
 		
 		public Void visitColumnGroup(ColumnGroup columnGroup)
@@ -248,10 +291,15 @@ public class TableReport implements JRReport
 			if (cell != null)
 			{
 				int rowSpan = cell.getRowSpan() == null ? 1 : cell.getRowSpan();
-				JRDesignFrame cellFrame = createCellFrame(cell, 
+				int rowLevel = level + rowSpan - 1;
+				JRDesignElementGroup elementGroup = bandInfo.getRowElementGroup(rowLevel);
+				
+				JRElement cellElement = createCell(elementGroup, cell, 
 						columnGroup.getWidth(), fillColumn.getWidth(), 
-						xOffset, yOffset);
-				bandInfo.addElement(level + rowSpan - 1, cellFrame);
+						xOffset, yOffset, null, false);
+				elementGroup.addElement(cellElement);
+				bandInfo.elementAdded(cellElement);
+				
 				cellHeight = cell.getHeight();
 				sublevel += rowSpan;
 			}
@@ -321,10 +369,15 @@ public class TableReport implements JRReport
 			
 			if (cell != null)
 			{
-				JRDesignFrame cellFrame = createCellFrame(cell, 
+				int rowLevel = level + rowSpan - 1;
+				JRDesignElementGroup elementGroup = bandInfo.getRowElementGroup(rowLevel);
+				
+				JRElement cellElement = createCell(elementGroup, cell, 
 						columnGroup.getWidth(), fillColumn.getWidth(), 
-						origXOffset, yOffset);
-				bandInfo.addElement(level + rowSpan - 1, cellFrame);
+						origXOffset, yOffset, null, false);
+				elementGroup.addElement(cellElement);
+				bandInfo.elementAdded(cellElement);
+				
 				yOffset += cell.getHeight();
 			}
 			
@@ -359,6 +412,20 @@ public class TableReport implements JRReport
 		{
 			return new DetailBandCreator(bandInfo, subcolumn, xOffset, yOffset, sublevel);
 		}
+
+		@Override
+		protected boolean isEmpty(Cell cell)
+		{
+			if (super.isEmpty(cell))
+			{
+				return true;
+			}
+			
+			// also threat zero height cells as empty.
+			// FIXME only doing this for the detail cells to minimize impact, it should apply to all cells
+			List<JRChild> children = cell.getChildren();
+			return cell.getHeight() == 0 && (children == null || children.isEmpty());
+		}
 	}
 	
 	protected JRBand createDetailBand(List<FillColumn> fillColumns)
@@ -381,10 +448,16 @@ public class TableReport implements JRReport
 	
 	protected class ColumnHeaderCreator extends ReportBandCreator
 	{
+		private Map<Integer, String> headerClasses;
+		private final AtomicBoolean firstColumn;// we need a mutable boolean reference
+		
 		public ColumnHeaderCreator(ReportBandInfo bandInfo, FillColumn fillColumn,
-				int xOffset, int yOffset, int level)
+				int xOffset, int yOffset, int level, 
+				Map<Integer, String> headerClasses, AtomicBoolean firstColumn)
 		{
 			super(bandInfo, fillColumn, xOffset, yOffset, level);
+			this.headerClasses = headerClasses;
+			this.firstColumn = firstColumn;
 		}
 
 		@Override
@@ -394,98 +467,170 @@ public class TableReport implements JRReport
 		}
 
 		@Override
-		protected JRDesignFrame createColumnCell(Column column, Cell cell)
+		protected JRDesignFrame createColumnCell(Column column, JRElementGroup parentGroup, Cell cell)
 		{
-			JRDesignFrame frame = super.createColumnCell(column, cell);
-			JRExpressionChunk sortExpression = getColumnSortExpression(column);
-			if (sortExpression != null)
-			{
-				addSortElement(column, frame, sortExpression);
+			JRDesignFrame frame = (JRDesignFrame) createColumnCell(column, parentGroup, cell, true);
+			JRTextField sortTextField = TableUtil.getColumnDetailTextElement(column);
+			if (sortTextField != null) {
+				addHeaderToolbarElement(column, frame, sortTextField);
 			}
 			return frame;
 		}
 
-		protected JRExpressionChunk getColumnSortExpression(Column column)
+		protected JRExpression getColumnHeaderLabelExpression(Cell header)
 		{
-			Cell detailCell = column.getDetailCell();
-			List<JRChild> detailElements = detailCell == null ? null : detailCell.getChildren();
+			List<JRChild> detailElements = header == null ? null : header.getChildren();
 			// only consider cells with a single text fields
 			if (detailElements == null || detailElements.size() != 1)
 			{
 				return null;
 			}
-			
+
 			JRChild detailElement = detailElements.get(0);
-			if (!(detailElement instanceof JRTextField))
+			if (detailElement instanceof JRTextField)
 			{
-				return null;
+				return ((JRTextField) detailElement).getExpression();
+			}
+
+			if (detailElement instanceof JRStaticText)
+			{
+				return createBuiltinExpression(new ConstantBuiltinExpression(((JRStaticText)detailElement).getText()));
 			}
 			
-			// see if the text field expression is $F{..} of $V{..}
-			JRTextField text = (JRTextField) detailElement;
-			JRExpression textExpression = text.getExpression();
-			JRExpressionChunk[] chunks = textExpression == null ? null : textExpression.getChunks();
-			if (chunks == null || chunks.length != 1
-					|| (chunks[0].getType() != JRExpressionChunk.TYPE_FIELD
-						&& chunks[0].getType() != JRExpressionChunk.TYPE_VARIABLE))
-			{
-				return null;
-			}
-			
-			// success
-			return chunks[0];
+			return null;
 		}
 
-		protected void addSortElement(Column column, JRDesignFrame frame,
-				JRExpressionChunk sortExpression)
+		protected void addHeaderToolbarElement(Column column, JRDesignFrame frame, JRTextField sortTextField)
 		{
 			Cell header = column.getColumnHeader();
-			
+
 			JRDesignGenericElement genericElement = new JRDesignGenericElement(header.getDefaultStyleProvider());
 
-			genericElement.setGenericType(SortElement.SORT_ELEMENT_TYPE);
+			genericElement.setGenericType(HeaderToolbarElement.ELEMENT_TYPE);
 			genericElement.setPositionType(net.sf.jasperreports.engine.type.PositionTypeEnum.FIX_RELATIVE_TO_TOP);
 			genericElement.setX(0);
 			genericElement.setY(0);
-			genericElement.setHeight(header.getHeight());
-			genericElement.setWidth(fillColumn.getWidth());
+			genericElement.setHeight(0);
+			genericElement.setWidth(0);
 			genericElement.setMode(ModeEnum.TRANSPARENT);
+			genericElement.setStretchType(StretchTypeEnum.RELATIVE_TO_BAND_HEIGHT);
 			
-			genericElement.getPropertiesMap().setProperty(SortElement.PROPERTY_DATASET_RUN, getName());
-			// not used for anything, but leaving it here anyway
-			genericElement.getPropertiesMap().setProperty(SortElement.PROPERTY_DYNAMIC_TABLE_BINDING, "true");
+			String name = null;
 			
-			String name = sortExpression.getText();
-			String columnType;
-			boolean filterable;
-			switch (sortExpression.getType())
-			{
-			case JRExpressionChunk.TYPE_FIELD:
-				columnType = SortElement.SORT_ELEMENT_TYPE_FIELD;
-				JRField field = getField(name);
-				filterable = String.class.equals(field.getValueClass());
-				break;
+			if (!TableUtil.isSortableAndFilterable(sortTextField)) {
+				genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_CAN_FILTER, Boolean.FALSE.toString());
+				genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_CAN_SORT, Boolean.FALSE.toString());
+			} else {
+				genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_CAN_FILTER, Boolean.TRUE.toString());
+				genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_CAN_SORT, Boolean.TRUE.toString());
 				
-			case JRExpressionChunk.TYPE_VARIABLE:
-				columnType = SortElement.SORT_ELEMENT_TYPE_VARIABLE;
-				JRVariable variable = getVariable(name);
-				filterable = String.class.equals(variable.getValueClass());
-				break;
+				JRExpressionChunk sortExpression = sortTextField.getExpression().getChunks()[0];
 				
-			default:
-				// never
-				throw new JRRuntimeException("Unrecognized filter expression type " + sortExpression.getType());
+				name = sortExpression.getText();
+				SortFieldTypeEnum columnType;
+				FilterTypesEnum filterType = null;
+				
+				switch (sortExpression.getType())
+				{
+				case JRExpressionChunk.TYPE_FIELD:
+					columnType = SortFieldTypeEnum.FIELD;
+					JRField field = getField(name);
+					filterType = HeaderToolbarElementUtils.getFilterType(field.getValueClass());
+					break;
+					
+				case JRExpressionChunk.TYPE_VARIABLE:
+					columnType = SortFieldTypeEnum.VARIABLE;
+					JRVariable variable = getVariable(name);
+					filterType = HeaderToolbarElementUtils.getFilterType(variable.getValueClass());
+					break;
+					
+				default:
+					// never
+					throw new JRRuntimeException("Unrecognized filter expression type " + sortExpression.getType());
+				}
+				
+				genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_COLUMN_TYPE, columnType.getName());
+				
+				if (filterType != null)
+				{
+					genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_FILTER_TYPE, filterType.getName());
+				}
+				genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_FILTER_PATTERN, sortTextField.getPattern());
+
+				JasperReportsContext jasperReportsContext = fillContext.getFiller().getJasperReportsContext();
+				JRPropertiesUtil propUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
+				String suffix = ""; 
+					
+				//FIXMEJIVE consider moving in separate method
+				JRSortField[] sortFields = TableReport.this.mainDataset.getSortFields();
+				if (sortFields != null)
+				{
+					for(JRSortField sortField : sortFields)
+					{
+						if (
+							sortField.getName().equals(name)
+							&& sortField.getType() == columnType
+							)
+						{
+							suffix += 
+								"" 
+								+ (sortField.getOrderValue() == SortOrderEnum.ASCENDING 
+									? propUtil.getProperty(PROPERTY_UP_ARROW_CHAR)
+									: (sortField.getOrderValue() == SortOrderEnum.DESCENDING 
+										? propUtil.getProperty(PROPERTY_DOWN_ARROW_CHAR)
+										: ""));
+						}
+					}
+				}
+
+				String serializedFilters = TableReport.this.mainDataset.getPropertiesMap().getProperty(FilterCommand.DATASET_FILTER_PROPERTY);
+				if (serializedFilters != null)
+				{
+					List<? extends DatasetFilter> existingFilters = JacksonUtil.getInstance(jasperReportsContext).loadList(serializedFilters, FieldFilter.class);
+					if (existingFilters != null)
+					{
+						List<FieldFilter> fieldFilters = new ArrayList<FieldFilter>();
+						SortElementHtmlHandler.getFieldFilters(new CompositeDatasetFilter(existingFilters), fieldFilters, name);
+						if (fieldFilters.size() > 0)
+						{
+							suffix += "" + propUtil.getProperty(PROPERTY_FILTER_CHAR);
+						}
+					}
+				}
+
+				if (suffix.length() > 0)
+				{
+					HeaderLabelBuiltinExpression evaluator = HeaderLabelUtil.alterHeaderLabel(frame, " " + suffix);
+					if (evaluator != null)
+					{
+						builtinEvaluators.put(evaluator.getExpression(), evaluator);
+					}
+				}
 			}
 			
-			addElementParameter(genericElement, SortElement.PARAMETER_SORT_COLUMN_NAME, name);
-			addElementParameter(genericElement, SortElement.PARAMETER_SORT_COLUMN_TYPE, columnType);
-			addElementParameter(genericElement, SortElement.PARAMETER_SORT_HANDLER_HORIZONTAL_ALIGN, "Right");
-			addElementParameter(genericElement, SortElement.PARAMETER_SORT_HANDLER_VERTICAL_ALIGN, "Middle");
+			int columnIndex = TableUtil.getColumnIndex(column, table);
+			String columnName = name != null ? name : String.valueOf(columnIndex);
+			String popupId = column.getUUID().toString();//columnName + "_" + column.hashCode();
+			String popupColumn = columnName + "_" + columnIndex;
 			
-			if (filterable)
-			{
-				genericElement.getPropertiesMap().setProperty(SortElement.PROPERTY_IS_FILTERABLE, "true");
+			if (firstColumn.compareAndSet(false, true)) {
+				// only setting on the first column to save memory
+				//FIXME a cleaner approach would be to set these another single generic element 
+				addColumnLabelParameters(genericElement, table);
 			}
+
+			genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_POPUP_ID, popupId);
+			genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_COLUMN_INDEX, Integer.toString(columnIndex));
+
+			genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_COLUMN_NAME, columnName);
+			genericElement.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_TABLE_UUID, fillContext.getComponentElement().getUUID().toString());
+			addElementParameter(genericElement, HeaderToolbarElement.PARAMETER_COLUMN_LABEL, getColumnHeaderLabelExpression(header));
+
+			frame.getPropertiesMap().setProperty(JRHtmlExporter.PROPERTY_HTML_CLASS, "columnHeader header_" + columnName + "_" + column.hashCode());
+			frame.getPropertiesMap().setProperty(JRHtmlExporter.PROPERTY_HTML_POPUP_ID, popupId);
+			frame.getPropertiesMap().setProperty(JRHtmlExporter.PROPERTY_HTML_POPUP_COLUMN, popupColumn);
+			
+			headerClasses.put(column.hashCode(), TableReport.HTML_CLASS_COLUMN + " " + TableReport.HTML_CLASS_COLUMN_PREFIX + popupColumn );
 			
 			frame.addElement(genericElement);
 		}
@@ -501,6 +646,25 @@ public class TableReport implements JRReport
 			
 			element.addParameter(param);
 		}
+
+		protected void addElementParameter(JRDesignGenericElement element, String name, JRExpression expression)
+		{
+			JRDesignGenericElementParameter param = new JRDesignGenericElementParameter();
+			param.setName(name);
+			param.setValueExpression(expression);
+			element.addParameter(param);
+		}
+		
+		protected void addColumnLabelParameters(JRDesignGenericElement element, TableComponent table) {
+			List<BaseColumn> columns = TableUtil.getAllColumns(table);
+			for(int i = 0, ln = columns.size(); i < ln; i++) {
+				BaseColumn column = columns.get(i);
+				JRExpression columnHeaderExpression = getColumnHeaderLabelExpression(column.getColumnHeader());
+
+				String paramName = HeaderToolbarElement.PARAM_COLUMN_LABEL_PREFIX + i + "|" + column.getUUID().toString();
+				addElementParameter(element, paramName, columnHeaderExpression);
+			}
+		}
 		
 		@Override
 		protected Cell columnGroupCell(ColumnGroup group)
@@ -512,7 +676,8 @@ public class TableReport implements JRReport
 		protected ReportBandCreator createSubVisitor(FillColumn subcolumn,
 				int xOffset, int yOffset, int sublevel)
 		{
-			return new ColumnHeaderCreator(bandInfo, subcolumn, xOffset, yOffset, sublevel);
+			return new ColumnHeaderCreator(bandInfo, subcolumn, xOffset, yOffset, sublevel, 
+					headerHtmlClasses, firstColumn);
 		}
 	}
 
@@ -526,7 +691,8 @@ public class TableReport implements JRReport
 		for (FillColumn subcolumn : fillColumns)
 		{
 			ColumnHeaderCreator subVisitor = new ColumnHeaderCreator(
-					bandInfo, subcolumn, xOffset, 0, 0);
+					bandInfo, subcolumn, xOffset, 0, 0, headerHtmlClasses,
+					new AtomicBoolean());
 			subVisitor.visit();
 			xOffset = subVisitor.xOffset;
 		}
@@ -849,19 +1015,19 @@ public class TableReport implements JRReport
 			}
 		}
 		
-		public Object evaluate() throws JRExpressionEvalException
+		public Object evaluate(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 		{
 			ensureValue();
 			return tableScriptlet.hasDetailOnPage();
 		}
 
-		public Object evaluateEstimated() throws JRExpressionEvalException
+		public Object evaluateEstimated(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 		{
 			ensureValue();
 			return tableScriptlet.hasDetailOnPage();
 		}
 
-		public Object evaluateOld() throws JRExpressionEvalException
+		public Object evaluateOld(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 		{
 			ensureValue();
 			return tableScriptlet.hasDetailOnPage();
@@ -932,12 +1098,23 @@ public class TableReport implements JRReport
 		mainDataset.addScriptlet(TABLE_SCRIPTLET_NAME, TableReportScriptlet.class);
 		mainDataset.addFirstGroup(summaryGroup);
 	}
-	
-	protected JRDesignFrame createCellFrame(Cell cell, 
+
+	protected JRElement createCell(JRElementGroup parentGroup, Cell cell, 
 			int originalWidth, int width, 
-			int x, int y)
+			int x, int y, Integer columnHashCode, 
+			boolean forceFrame)
 	{
+		if (!forceFrame)
+		{
+			JRElement cellElement = createCellElement(parentGroup, cell, originalWidth, width, x, y, columnHashCode);
+			if (cellElement != null)
+			{
+				return cellElement;
+			}
+		}
+		
 		JRDesignFrame frame = new JRDesignFrame(this);
+		frame.setElementGroup(parentGroup);
 		frame.setX(x);
 		frame.setY(y);
 		frame.setWidth(width);
@@ -947,6 +1124,10 @@ public class TableReport implements JRReport
 		frame.setStyle(cell.getStyle());
 		frame.setStyleNameReference(cell.getStyleNameReference());
 		frame.copyBox(cell.getLineBox());
+
+		if (columnHashCode != null && headerHtmlClasses.get(columnHashCode) != null) {
+			frame.getPropertiesMap().setProperty(JRHtmlExporter.PROPERTY_HTML_CLASS, headerHtmlClasses.get(columnHashCode));
+		}
 		
 		for (Iterator<JRChild> it = cell.getChildren().iterator(); it.hasNext();)
 		{
@@ -993,6 +1174,71 @@ public class TableReport implements JRReport
 		}
 		
 		return frame;
+	}
+	
+	protected JRElement createCellElement(JRElementGroup elementGroup, Cell cell, 
+			int originalWidth, int width, 
+			int x, int y, Integer columnHashCode)
+	{
+		List<JRChild> children = cell.getChildren();
+		if (children.size() != 1)
+		{
+			// several children
+			return null;
+		}
+		
+		JRChild child = children.get(0);
+		if (!(child instanceof JRStaticText || child instanceof JRTextField))
+		{
+			// only doing this for texts for now
+			return null;
+		}
+		
+		JRElement element = (JRElement) child;
+		if (element.getX() != 0 
+				|| element.getY() != 0 
+				|| element.getWidth() != originalWidth 
+				|| element.getHeight() != cell.getHeight())
+		{
+			// the element is not as large as the cell
+			return null;
+		}
+		
+		ModeEnum elementMode = StyleUtil.instance().resolveElementMode(element);
+		if (elementMode == null || elementMode == ModeEnum.TRANSPARENT)
+		{
+			// if the element is not necessarily opaque, check that the cell is transparent
+			ModeEnum cellMode = StyleUtil.instance().resolveMode(cell);
+			if (cellMode != ModeEnum.TRANSPARENT)
+			{
+				// the cell is not necessarily transparent, we need the frame
+				return null;
+			}
+		}
+		
+		if (StyleUtil.instance().hasBox(cell))
+		{
+			// the cell has box, we need the frame
+			return null;
+		}
+		
+		JRElement cellElement = element.clone(elementGroup, y);
+		cellElement.setX(x);
+		cellElement.setWidth(width);
+		cellElement.setStretchType(StretchTypeEnum.RELATIVE_TO_TALLEST_OBJECT);
+
+		if (columnHashCode != null && headerHtmlClasses.get(columnHashCode) != null)
+		{
+			cellElement.getPropertiesMap().setProperty(
+					JRHtmlExporter.PROPERTY_HTML_CLASS, headerHtmlClasses.get(columnHashCode));
+		}
+		
+		if (width != originalWidth)
+		{
+			scaleCellElement(element, originalWidth, width);
+		}
+		
+		return cellElement;
 	}
 
 	protected void scaleCellElement(JRElement element, Integer cellWidth,
@@ -1342,6 +1588,12 @@ public class TableReport implements JRReport
 	public boolean hasProperties()
 	{
 		return mainDataset.hasProperties();
+	}
+
+	@Override
+	public UUID getUUID()
+	{
+		return mainDataset.getUUID();
 	}
 
 }

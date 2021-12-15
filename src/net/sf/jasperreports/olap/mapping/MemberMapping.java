@@ -28,8 +28,9 @@ import java.util.Iterator;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: MemberMapping.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MemberMapping.java 5180 2012-03-29 13:23:12Z teodord $
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class MemberMapping implements Mapping
 {
 	private final Member member;

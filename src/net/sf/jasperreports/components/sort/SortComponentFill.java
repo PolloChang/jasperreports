@@ -38,11 +38,12 @@ import net.sf.jasperreports.engine.fill.JRFillVariable;
 import net.sf.jasperreports.engine.fill.JRTemplateGenericElement;
 import net.sf.jasperreports.engine.fill.JRTemplateGenericPrintElement;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
+import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 
 /**
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortComponentFill.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SortComponentFill.java 4648 2011-10-10 12:50:53Z lucianc $
  */
 public class SortComponentFill extends BaseFillComponent {
 
@@ -101,9 +102,11 @@ public class SortComponentFill extends BaseFillComponent {
 			template.setMode(sortComponent.getContext().getComponentElement().getModeValue());
 			template.setBackcolor(sortComponent.getContext().getComponentElement().getBackcolor());
 			template.setForecolor(sortComponent.getContext().getComponentElement().getForecolor());
+			
+			template = deduplicate(template);
 		}
 		
-		printElement = new JRTemplateGenericPrintElement(template);
+		printElement = new JRTemplateGenericPrintElement(template, elementId);
 		printElement.setX(element.getX());
 
 		printElement.setWidth(element.getWidth());
@@ -137,9 +140,13 @@ public class SortComponentFill extends BaseFillComponent {
 	protected void copy(JRGenericPrintElement printElement)
 	{
 		printElement.setParameterValue(SortElement.PARAMETER_SORT_COLUMN_NAME, sortComponent.getSortFieldName());
-		printElement.setParameterValue(SortElement.PARAMETER_SORT_COLUMN_TYPE, sortComponent.getSortFieldType());
+		printElement.setParameterValue(SortElement.PARAMETER_SORT_COLUMN_TYPE, sortComponent.getSortFieldType().getName());
 		printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_COLOR, sortComponent.getHandlerColor());
-		printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_FONT_SIZE, sortComponent.getHandlerFontSize());
+		printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_FONT, sortComponent.getSymbolFont());
+		
+		if (sortComponent.getSymbolFont() != null ) {
+			printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_FONT_SIZE, String.valueOf(sortComponent.getSymbolFont().getFontSize()));
+		} 
 		if (sortComponent.getHandlerHorizontalAlign() != null) 
 		{
 			printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalAlign().getName());
@@ -149,9 +156,10 @@ public class SortComponentFill extends BaseFillComponent {
 			printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalAlign().getName());
 		}
 		
-		if (isFilterable())
+		FilterTypesEnum filterType = getFilterType();
+		if (filterType != null)
 		{
-			printElement.getPropertiesMap().setProperty(SortElement.PROPERTY_IS_FILTERABLE, "true");
+			printElement.getPropertiesMap().setProperty(SortElement.PROPERTY_FILTER_TYPE, filterType.getName());
 		}
 		
 		String datasetName = JRAbstractCompiler.getUnitName(
@@ -159,23 +167,23 @@ public class SortComponentFill extends BaseFillComponent {
 		printElement.getPropertiesMap().setProperty(SortElement.PROPERTY_DATASET_RUN, datasetName);
 	}
 
-	protected boolean isFilterable()
+	protected FilterTypesEnum getFilterType()
 	{
-		String type = sortComponent.getSortFieldType();
+		SortFieldTypeEnum type = sortComponent.getSortFieldType();
 		String name = sortComponent.getSortFieldName();
 		JRFillDataset dataset = fillContext.getFillDataset();
 		
-		boolean filterable = false;
-		if (SortElement.SORT_ELEMENT_TYPE_FIELD.equals(type))
+		FilterTypesEnum filterType = null;
+		if (SortFieldTypeEnum.FIELD.equals(type))
 		{
 			JRFillField field = dataset.getFillField(name);
-			filterable = field != null && String.class.equals(field.getValueClass());
+			filterType = SortElementUtils.getFilterType(field.getValueClass());
 		}
-		else if (SortElement.SORT_ELEMENT_TYPE_VARIABLE.equals(type))
+		else if (SortFieldTypeEnum.VARIABLE.equals(type))
 		{
 			JRFillVariable variable = dataset.getFillVariable(name);
-			filterable = variable != null && String.class.equals(variable.getValueClass());
+			filterType = SortElementUtils.getFilterType(variable.getValueClass());
 		}
-		return filterable;
+		return filterType;
 	}
 }

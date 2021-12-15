@@ -32,7 +32,7 @@ import org.apache.commons.javaflow.Continuation;
  * using <a href="http://jakarta.apache.org/commons/sandbox/javaflow/">Javaflow</a> continuations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRContinuationSubreportRunner.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRContinuationSubreportRunner.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRContinuationSubreportRunner extends JRSubreportRunnable implements JRSubreportRunner
 {

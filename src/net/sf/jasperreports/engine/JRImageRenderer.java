@@ -32,12 +32,19 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.ColorModel;
 import java.awt.image.RenderedImage;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.lang.ref.SoftReference;
 import java.net.URL;
 import java.net.URLStreamHandlerFactory;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.JRImageLoader;
 import net.sf.jasperreports.engine.util.JRLoader;
@@ -47,7 +54,7 @@ import net.sf.jasperreports.repo.RepositoryUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRImageRenderer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRImageRenderer.java 5397 2012-05-21 01:10:02Z teodord $
  */
 public class JRImageRenderer extends JRAbstractRenderer
 {
@@ -57,12 +64,14 @@ public class JRImageRenderer extends JRAbstractRenderer
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+	private static final Log log = LogFactory.getLog(JRImageRenderer.class);
+	
 	/**
 	 *
 	 */
 	private byte[] imageData;
 	private String imageLocation;
-	private byte imageType = IMAGE_TYPE_UNKNOWN;
+	private ImageTypeEnum imageTypeValue = ImageTypeEnum.UNKNOWN;
 
 	/**
 	 *
@@ -79,7 +88,7 @@ public class JRImageRenderer extends JRAbstractRenderer
 		
 		if(imageData != null) 
 		{
-			imageType = JRTypeSniffer.getImageType(imageData);
+			imageTypeValue = JRTypeSniffer.getImageTypeValue(imageData);
 		}
 			
 	}
@@ -104,47 +113,29 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(String)}.
 	 */
 	public static JRRenderable getInstance(String imageLocation) throws JRException
 	{
-		return getInstance(imageLocation, OnErrorTypeEnum.ERROR, true);
+		return RenderableUtil.getInstance(DefaultJasperReportsContext.getInstance()).getRenderable(imageLocation);
 	}
 
 
 	/**
-	 * 
+	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(String, OnErrorTypeEnum)}.
 	 */
 	public static JRRenderable getInstance(String imageLocation, OnErrorTypeEnum onErrorType) throws JRException
 	{
-		return getInstance(imageLocation, onErrorType, true);
+		return RenderableUtil.getInstance(DefaultJasperReportsContext.getInstance()).getRenderable(imageLocation, onErrorType);
 	}
 
 
 	/**
-	 * 
+	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(String, OnErrorTypeEnum, boolean)}.
 	 */
 	public static JRRenderable getInstance(String imageLocation, OnErrorTypeEnum onErrorType, boolean isLazy) throws JRException
 	{
-		if (imageLocation == null)
-		{
-			return null;
-		}
-
-		if (isLazy)
-		{
-			return new JRImageRenderer(imageLocation);
-		}
-
-		try
-		{
-			byte[] data = RepositoryUtil.getBytes(imageLocation);
-			return new JRImageRenderer(data);
-		}
-		catch (JRException e)
-		{
-			return getOnErrorRenderer(onErrorType, e);
-		}
+		return RenderableUtil.getInstance(DefaultJasperReportsContext.getInstance()).getRenderable(imageLocation, onErrorType, isLazy);
 	}
 
 	
@@ -183,11 +174,11 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(Image, OnErrorTypeEnum)}.
 	 */
 	public static JRRenderable getInstance(Image img, OnErrorTypeEnum onErrorType) throws JRException
 	{
-		byte type = JRRenderable.IMAGE_TYPE_JPEG;
+		ImageTypeEnum type = ImageTypeEnum.JPEG;
 		if (img instanceof RenderedImage)
 		{
 			ColorModel colorModel = ((RenderedImage) img).getColorModel();
@@ -195,11 +186,11 @@ public class JRImageRenderer extends JRAbstractRenderer
 			if (colorModel.hasAlpha() 
 					&& colorModel.getTransparency() != Transparency.OPAQUE)
 			{
-				type = JRRenderable.IMAGE_TYPE_PNG;
+				type = ImageTypeEnum.PNG;
 			}
 		}
 		
-		return getInstance(img, type, onErrorType);
+		return getInstance(img, type.getValue(), onErrorType);
 	}
 
 
@@ -211,6 +202,7 @@ public class JRImageRenderer extends JRAbstractRenderer
 	 * @param imageType the type of the image as specified by one of the constants defined in the JRRenderable interface
 	 * @param onErrorType one of the error type constants defined in the {@link OnErrorTypeEnum}.
 	 * @return the image renderer instance
+	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(Image, ImageTypeEnum, OnErrorTypeEnum)}.
 	 */
 	public static JRRenderable getInstance(Image image, byte imageType, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -226,7 +218,7 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(InputStream, OnErrorTypeEnum)}.
 	 */
 	public static JRRenderable getInstance(InputStream is, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -242,7 +234,7 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(URL, OnErrorTypeEnum)}.
 	 */
 	public static JRRenderable getInstance(URL url, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -258,7 +250,7 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link RenderableUtil#getRenderable(File, OnErrorTypeEnum)}.
 	 */
 	public static JRRenderable getInstance(File file, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -274,7 +266,7 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link RenderableUtil#getOnErrorRendererForDimension(Renderable, OnErrorTypeEnum)}.
 	 */
 	public static JRRenderable getOnErrorRendererForDimension(JRRenderable renderer, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -291,7 +283,7 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link RenderableUtil#getOnErrorRendererForImageData(Renderable, OnErrorTypeEnum)}.
 	 */
 	public static JRRenderable getOnErrorRendererForImageData(JRRenderable renderer, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -310,17 +302,42 @@ public class JRImageRenderer extends JRAbstractRenderer
 	/**
 	 *
 	 */
-	public static JRImageRenderer getOnErrorRendererForImage(JRImageRenderer renderer, OnErrorTypeEnum onErrorType) throws JRException
+	public static JRImageRenderer getOnErrorRendererForImage(JasperReportsContext jasperReportsContext, JRImageRenderer renderer, OnErrorTypeEnum onErrorType) throws JRException
 	{
+		JRImageRenderer result;
 		try
 		{
-			renderer.getImage();
-			return renderer;
+			renderer.getImage(jasperReportsContext);
+			result = renderer;
 		}
-		catch (JRException e)
+		catch (JRException e) //FIXME this duplicates RenderableUtil.handleImageError
 		{
-			return getOnErrorRenderer(onErrorType, e); 
+			result = getOnErrorRenderer(onErrorType, e);
+			
+			if (log.isDebugEnabled())
+			{
+				log.debug("handled image error with type " + onErrorType, e);
+			}
 		}
+		catch (JRRuntimeException e)
+		{
+			result = getOnErrorRenderer(onErrorType, e); 
+			
+			if (log.isDebugEnabled())
+			{
+				log.debug("handled image error with type " + onErrorType, e);
+			}
+		}
+		return result;
+	}
+
+
+	/**
+	 * @deprecated Replaced by {@link #getOnErrorRendererForImage(JasperReportsContext, JRImageRenderer, OnErrorTypeEnum)}.
+	 */
+	public static JRImageRenderer getOnErrorRendererForImage(JRImageRenderer renderer, OnErrorTypeEnum onErrorType) throws JRException
+	{
+		return getOnErrorRendererForImage(DefaultJasperReportsContext.getInstance(), renderer, onErrorType);
 	}
 
 
@@ -353,18 +370,53 @@ public class JRImageRenderer extends JRAbstractRenderer
 		return renderer;
 	}
 
+	public static JRImageRenderer getOnErrorRenderer(OnErrorTypeEnum onErrorType, JRRuntimeException e) throws JRRuntimeException
+	{
+		JRImageRenderer renderer = null;
+		
+		switch (onErrorType)
+		{
+			case ICON :
+			{
+				renderer = new JRImageRenderer(JRImageLoader.NO_IMAGE_RESOURCE);
+				//FIXME cache these renderers
+				break;
+			}
+			case BLANK :
+			{
+				break;
+			}
+			case ERROR :
+			default :
+			{
+				throw e;
+			}
+		}
+
+		return renderer;
+	}
+
 
 	/**
 	 *
 	 */
-	public Image getImage() throws JRException
+	public Image getImage(JasperReportsContext jasperReportsContext) throws JRException
 	{
 		if (awtImageRef == null || awtImageRef.get() == null)
 		{
-			Image awtImage = JRImageLoader.loadImage(getImageData());
+			Image awtImage = JRImageLoader.getInstance(jasperReportsContext).loadAwtImageFromBytes(getImageData(jasperReportsContext));
 			awtImageRef = new SoftReference<Image>(awtImage);
 		}
 		return awtImageRef.get();
+	}
+
+
+	/**
+	 * @deprecated Replaced by {@link #getImage(JasperReportsContext)}.
+	 */
+	public Image getImage() throws JRException
+	{
+		return getImage(DefaultJasperReportsContext.getInstance());
 	}
 
 
@@ -378,42 +430,71 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getTypeValue()}.
 	 */
 	public byte getType()
 	{
-		return TYPE_IMAGE;
+		return getTypeValue().getValue();
 	}
 	
 	
-	public byte getImageType() {
-		return imageType;
+	/**
+	 * @deprecated Replaced by {@link #getImageTypeValue()}.
+	 */
+	public byte getImageType() 
+	{
+		return getImageTypeValue().getValue();
 	}
-	
 	
 
 	/**
 	 *
 	 */
+	public RenderableTypeEnum getTypeValue()
+	{
+		return RenderableTypeEnum.IMAGE;
+	}
+	
+	
+	/**
+	 *
+	 */
+	public ImageTypeEnum getImageTypeValue()
+	{
+		return imageTypeValue;
+	}
+	
+
+	/**
+	 * @deprecated Replaced by {@link #getDimension(JasperReportsContext)}.
+	 */
 	public Dimension2D getDimension() throws JRException
 	{
-		Image img = getImage();
+		return getDimension(DefaultJasperReportsContext.getInstance());
+	}
+
+
+	/**
+	 *
+	 */
+	public Dimension2D getDimension(JasperReportsContext jasperReportsContext) throws JRException
+	{
+		Image img = getImage(jasperReportsContext);
 		return new Dimension(img.getWidth(null), img.getHeight(null));
 	}
 
 
-	/**
-	 *
-	 */
-	public byte[] getImageData() throws JRException
+	@Override
+	public byte[] getImageData(JasperReportsContext jasperReportsContext)
+			throws JRException
 	{
 		if (imageData == null)
 		{
-			imageData = RepositoryUtil.getBytes(imageLocation);
+			imageData = RepositoryUtil.getInstance(jasperReportsContext).getBytesFromLocation(imageLocation);
 			
 			if(imageData != null) 
 			{
-				imageType = JRTypeSniffer.getImageType(imageData);
+				imageTypeValue = JRTypeSniffer.getImageTypeValue(imageData);
 			}
 		}
 
@@ -422,11 +503,29 @@ public class JRImageRenderer extends JRAbstractRenderer
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getImageData(JasperReportsContext)}.
+	 */
+	public byte[] getImageData() throws JRException
+	{
+		return getImageData(DefaultJasperReportsContext.getInstance());
+	}
+
+
+	/**
+	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
 	 */
 	public void render(Graphics2D grx, Rectangle2D rectangle) throws JRException
 	{
-		Image img = getImage();
+		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);
+	}
+
+
+	/**
+	 *
+	 */
+	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) throws JRException
+	{
+		Image img = getImage(jasperReportsContext);
 
 		grx.drawImage(
 			img, 
@@ -438,5 +537,24 @@ public class JRImageRenderer extends JRAbstractRenderer
 			);
 	}
 
+	
+	/*
+	 * These fields are only for serialization backward compatibility.
+	 */
+	private int PSEUDO_SERIAL_VERSION_UID = JRConstants.PSEUDO_SERIAL_VERSION_UID; //NOPMD
+	/**
+	 * @deprecated
+	 */
+	private byte imageType;
+	
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+		
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_4_6_0)
+		{
+			imageTypeValue = ImageTypeEnum.getByValue(imageType);
+		}
+	}
 
 }

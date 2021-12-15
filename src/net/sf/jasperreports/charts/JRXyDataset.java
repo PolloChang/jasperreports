@@ -28,7 +28,7 @@ import net.sf.jasperreports.engine.JRChartDataset;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXyDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXyDataset.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRXyDataset extends JRChartDataset
 {

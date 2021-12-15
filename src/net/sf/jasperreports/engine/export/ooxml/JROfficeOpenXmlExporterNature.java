@@ -29,24 +29,35 @@
 
 package net.sf.jasperreports.engine.export.ooxml;
 
+import java.util.Map;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.export.AbstractExporterNature;
+import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.ExporterFilter;
-import net.sf.jasperreports.engine.export.ExporterNature;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JROfficeOpenXmlExporterNature.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JROfficeOpenXmlExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
  */
-public abstract class JROfficeOpenXmlExporterNature implements ExporterNature
+public abstract class JROfficeOpenXmlExporterNature extends AbstractExporterNature
 {
-	protected ExporterFilter filter;
-
 	/**
 	 * 
 	 */
+	public JROfficeOpenXmlExporterNature(JasperReportsContext jasperReportsContext, ExporterFilter filter)
+	{
+		super(jasperReportsContext, filter);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #JROfficeOpenXmlExporterNature(JasperReportsContext, ExporterFilter)}. 
+	 */
 	public JROfficeOpenXmlExporterNature(ExporterFilter filter)
 	{
-		this.filter = filter;
+		this(DefaultJasperReportsContext.getInstance(), filter);
 	}
 	
 	/**
@@ -109,4 +120,5 @@ public abstract class JROfficeOpenXmlExporterNature implements ExporterNature
 	{
 		return false;
 	}
+	
 }

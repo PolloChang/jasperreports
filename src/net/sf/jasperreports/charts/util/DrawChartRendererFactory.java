@@ -25,19 +25,21 @@ package net.sf.jasperreports.charts.util;
 
 import java.awt.geom.Rectangle2D;
 
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
 
 import org.jfree.chart.JFreeChart;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DrawChartRendererFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DrawChartRendererFactory.java 5310 2012-04-26 16:07:49Z teodord $
  */
-public class DrawChartRendererFactory implements ChartRendererFactory
+public class DrawChartRendererFactory extends AbstractChartRenderableFactory
 {
 	
-	public JRRenderable getRenderer(
+	public Renderable getRenderable(
+		JasperReportsContext jasperReportsContext,
 		JFreeChart chart, 
 		ChartHyperlinkProvider chartHyperlinkProvider, 
 		Rectangle2D rectangle

@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.type.FooterPositionEnum;
  * The value of the associated group expression is what makes group records stick together. This value is the
  * thing that they have in common.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRGroup.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRGroup.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRGroup extends JRCloneable
 {

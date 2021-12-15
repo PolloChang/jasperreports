@@ -28,7 +28,7 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRComparableIncrementerFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRComparableIncrementerFactory.java 5213 2012-04-03 14:44:47Z teodord $
  */
 public final class JRComparableIncrementerFactory extends JRAbstractExtendedIncrementerFactory
 {
@@ -125,6 +125,7 @@ final class JRComparableLowestIncrementer extends JRAbstractExtendedIncrementer
 	/**
 	 *
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -181,6 +182,7 @@ final class JRComparableHighestIncrementer extends JRAbstractExtendedIncrementer
 	/**
 	 *
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,

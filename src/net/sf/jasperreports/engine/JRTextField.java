@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 /**
  * An abstract representation of a report static text. It provides functionality for static texts.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTextField.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTextField.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRTextField extends JRTextElement, JRAnchor, JRHyperlink
 {

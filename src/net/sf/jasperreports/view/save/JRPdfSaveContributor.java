@@ -33,12 +33,13 @@ import javax.swing.JOptionPane;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 import net.sf.jasperreports.view.JRSaveContributor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPdfSaveContributor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPdfSaveContributor.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRPdfSaveContributor extends JRSaveContributor
 {
@@ -49,11 +50,23 @@ public class JRPdfSaveContributor extends JRSaveContributor
 	private static final String EXTENSION_PDF = ".pdf"; 
 
 	/**
-	 * 
+	 * @see #JRPdfSaveContributor(JasperReportsContext, Locale, ResourceBundle)
 	 */
 	public JRPdfSaveContributor(Locale locale, ResourceBundle resBundle)
 	{
 		super(locale, resBundle);
+	}
+	
+	/**
+	 * 
+	 */
+	public JRPdfSaveContributor(
+		JasperReportsContext jasperReportsContext, 
+		Locale locale, 
+		ResourceBundle resBundle
+		)
+	{
+		super(jasperReportsContext, locale, resBundle);
 	}
 	
 	/**
@@ -100,7 +113,7 @@ public class JRPdfSaveContributor extends JRSaveContributor
 					)
 			)
 		{
-			JRPdfExporter exporter = new JRPdfExporter();
+			JRPdfExporter exporter = new JRPdfExporter(getJasperReportsContext());
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint); 
 			exporter.setParameter(JRExporterParameter.OUTPUT_FILE, file);
 			exporter.exportReport(); 

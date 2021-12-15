@@ -43,16 +43,19 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
+import net.sf.jasperreports.engine.query.JRJdbcQueryExecuterFactory;
 import net.sf.jasperreports.engine.util.JRImageLoader;
 
 
 /**
  * An implementation of a data source that uses a supplied <tt>ResultSet</tt>.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRResultSetDataSource.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRResultSetDataSource.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRResultSetDataSource implements JRDataSource
 {
@@ -64,16 +67,31 @@ public class JRResultSetDataSource implements JRDataSource
 	/**
 	 *
 	 */
+	private JasperReportsContext jasperReportsContext;
 	private ResultSet resultSet;
 	private Map<String,Integer> columnIndexMap = new HashMap<String,Integer>();
-	
+
+	private TimeZone timeZone;
+	private boolean timeZoneOverride;
+	private Map<JRField, Calendar> fieldCalendars = new HashMap<JRField, Calendar>();
+
 
 	/**
 	 *
 	 */
-	public JRResultSetDataSource(ResultSet rs)
+	public JRResultSetDataSource(JasperReportsContext jasperReportsContext, ResultSet resultSet)
 	{
-		resultSet = rs;
+		this.jasperReportsContext = jasperReportsContext;
+		this.resultSet = resultSet;
+	}
+
+
+	/**
+	 * @see #JRResultSetDataSource(JasperReportsContext, ResultSet)
+	 */
+	public JRResultSetDataSource(ResultSet resultSet)
+	{
+		this(DefaultJasperReportsContext.getInstance(), resultSet);
 	}
 
 
@@ -131,27 +149,15 @@ public class JRResultSetDataSource implements JRDataSource
 					|| clazz.equals(java.sql.Date.class)
 					)
 				{
-					objValue = resultSet.getDate(columnIndex.intValue());
-					if(resultSet.wasNull())
-					{
-						objValue = null;
-					}
+					objValue = readDate(columnIndex, field);
 				}
 				else if (clazz.equals(java.sql.Timestamp.class))
 				{
-					objValue = resultSet.getTimestamp(columnIndex.intValue());
-					if(resultSet.wasNull())
-					{
-						objValue = null;
-					}
+					objValue = readTimestamp(columnIndex, field);
 				}
 				else if (clazz.equals(java.sql.Time.class))
 				{
-					objValue = resultSet.getTime(columnIndex.intValue());
-					if(resultSet.wasNull())
-					{
-						objValue = null;
-					}
+					objValue = readTime(columnIndex, field);
 				}
 				else if (clazz.equals(java.lang.Double.class))
 				{
@@ -300,7 +306,7 @@ public class JRResultSetDataSource implements JRDataSource
 					}
 					else
 					{
-						objValue = JRImageLoader.loadImage(bytes);
+						objValue = JRImageLoader.getInstance(jasperReportsContext).loadAwtImageFromBytes(bytes);
 					}					
 				}
 				else
@@ -314,6 +320,45 @@ public class JRResultSetDataSource implements JRDataSource
 			}
 		}
 		
+		return objValue;
+	}
+
+
+	protected Object readDate(Integer columnIndex, JRField field) throws SQLException
+	{
+		Calendar calendar = getFieldCalendar(field);
+		Object objValue = calendar == null ? resultSet.getDate(columnIndex.intValue())
+				: resultSet.getDate(columnIndex.intValue(), calendar);
+		if(resultSet.wasNull())
+		{
+			objValue = null;
+		}
+		return objValue;
+	}
+
+
+	protected Object readTimestamp(Integer columnIndex, JRField field) throws SQLException
+	{
+		Calendar calendar = getFieldCalendar(field);
+		Object objValue = calendar == null ? resultSet.getTimestamp(columnIndex.intValue())
+				: resultSet.getTimestamp(columnIndex.intValue(), calendar);
+		if(resultSet.wasNull())
+		{
+			objValue = null;
+		}
+		return objValue;
+	}
+
+
+	protected Object readTime(Integer columnIndex, JRField field) throws SQLException
+	{
+		Calendar calendar = getFieldCalendar(field);
+		Object objValue = calendar == null ? resultSet.getTime(columnIndex.intValue())
+				: resultSet.getTime(columnIndex.intValue(), calendar);
+		if(resultSet.wasNull())
+		{
+			objValue = null;
+		}
 		return objValue;
 	}
 
@@ -501,5 +546,66 @@ public class JRResultSetDataSource implements JRDataSource
 			}
 		}
 		return baos.toByteArray();
+	}
+
+	/**
+	 * Sets the default time zone to be used for retrieving date/time values from the 
+	 * result set.
+	 * 
+	 * In most cases no explicit time zone conversion would be required for retrieving 
+	 * date/time values from the DB, and this parameter should be null.  
+	 * 
+	 * @param timeZone the default time zone
+	 * @param override whether the default time zone overrides time zones specified
+	 * as field-level properties
+	 * @see JRJdbcQueryExecuterFactory#PROPERTY_TIME_ZONE
+	 */
+	public void setTimeZone(TimeZone timeZone, boolean override)
+	{
+		this.timeZone = timeZone;
+		this.timeZoneOverride = override;
+	}
+	
+	protected Calendar getFieldCalendar(JRField field)
+	{
+		if (fieldCalendars.containsKey(field))
+		{
+			return fieldCalendars.get(field);
+		}
+		
+		Calendar calendar = createFieldCalendar(field);
+		fieldCalendars.put(field, calendar);
+		return calendar;
+	}
+
+	protected Calendar createFieldCalendar(JRField field)
+	{
+		TimeZone tz;
+		if (timeZoneOverride)
+		{
+			// if we have a parameter, use it
+			tz = timeZone;
+		}
+		else
+		{
+			if (field.hasProperties() && field.getPropertiesMap().containsProperty(
+					JRJdbcQueryExecuterFactory.PROPERTY_TIME_ZONE))
+			{
+				// read the field level property
+				String timezoneId = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(field, 
+						JRJdbcQueryExecuterFactory.PROPERTY_TIME_ZONE);
+				tz = (timezoneId == null || timezoneId.length() == 0) ? null 
+						: TimeZone.getTimeZone(timezoneId);
+			}
+			else
+			{
+				// dataset/default property
+				tz = timeZone;
+			}
+		}
+
+		// using default JVM locale for the calendar
+		Calendar cal = tz == null ? null : Calendar.getInstance(tz);
+		return cal;
 	}
 }

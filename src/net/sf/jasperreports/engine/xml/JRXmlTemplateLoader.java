@@ -37,9 +37,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRTemplate;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
 import org.apache.commons.logging.Log;
@@ -51,16 +53,48 @@ import org.xml.sax.SAXException;
  * Utility class that loads {@link JRTemplate templates} from XML representations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlTemplateLoader.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXmlTemplateLoader.java 5346 2012-05-08 12:08:01Z teodord $
  */
 public class JRXmlTemplateLoader
 {
 	
 	private static final Log log = LogFactory.getLog(JRXmlTemplateLoader.class);
 	
+	private JasperReportsContext jasperReportsContext;
+	
+	/**
+	 * @deprecated Replaced by {@link #JRXmlTemplateLoader(JasperReportsContext)}.
+	 */
 	protected JRXmlTemplateLoader()
 	{
+		this(DefaultJasperReportsContext.getInstance());
 	}
+	
+	/**
+	 *
+	 */
+	private JRXmlTemplateLoader(JasperReportsContext jasperReportsContext)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+	}
+	
+	/**
+	 *
+	 */
+	private static JRXmlTemplateLoader getDefaultInstance()
+	{
+		return new JRXmlTemplateLoader(DefaultJasperReportsContext.getInstance());
+	}
+	
+	
+	/**
+	 *
+	 */
+	public static JRXmlTemplateLoader getInstance(JasperReportsContext jasperReportsContext)
+	{
+		return new JRXmlTemplateLoader(jasperReportsContext);
+	}
+	
 	
 	/**
 	 * Parses a template XML found at a specified location into a {@link JRTemplate template object}.
@@ -71,9 +105,9 @@ public class JRXmlTemplateLoader
 	 * @throws JRException when the location cannot be resolved or read
 	 * @see RepositoryUtil#getBytes(String)
 	 */
-	public static JRTemplate load(String location) throws JRException
+	public JRTemplate loadTemplate(String location) throws JRException
 	{
-		byte[] data = RepositoryUtil.getBytes(location);
+		byte[] data = RepositoryUtil.getInstance(jasperReportsContext).getBytesFromLocation(location);
 		return load(new ByteArrayInputStream(data));
 	}
 	
@@ -83,7 +117,7 @@ public class JRXmlTemplateLoader
 	 * @param file the template XML file
 	 * @return the template object
 	 */
-	public static JRTemplate load(File file)
+	public JRTemplate loadTemplate(File file)
 	{
 		BufferedInputStream fileIn;
 		try
@@ -118,7 +152,7 @@ public class JRXmlTemplateLoader
 	 * @param url the location of the template XML
 	 * @return the template object
 	 */
-	public static JRTemplate load(URL url)
+	public JRTemplate loadTemplate(URL url)
 	{
 		InputStream input;
 		try
@@ -153,15 +187,9 @@ public class JRXmlTemplateLoader
 	 * @param data the data stream
 	 * @return the template object
 	 */
-	public static JRTemplate load(InputStream data)
+	public JRTemplate loadTemplate(InputStream data)
 	{
-		JRXmlTemplateLoader loader = new JRXmlTemplateLoader();
-		return loader.loadTemplate(data);
-	}
-	
-	protected JRTemplate loadTemplate(InputStream data)
-	{
-		JRXmlDigester digester = JRXmlTemplateDigesterFactory.instance().createDigester();
+		JRXmlDigester digester = JRXmlTemplateDigesterFactory.instance().createDigester(jasperReportsContext);
 		try
 		{
 			return (JRTemplate) digester.parse(data);
@@ -174,6 +202,38 @@ public class JRXmlTemplateLoader
 		{
 			throw new JRRuntimeException("Error parsing template XML", e);
 		}
+	}
+	
+	/**
+	 * @see #loadTemplate(String)
+	 */
+	public static JRTemplate load(String location) throws JRException
+	{
+		return getDefaultInstance().loadTemplate(location);
+	}
+	
+	/**
+	 * @see #loadTemplate(File)
+	 */
+	public static JRTemplate load(File file)
+	{
+		return getDefaultInstance().loadTemplate(file);
+	}
+	
+	/**
+	 * @see #loadTemplate(URL)
+	 */
+	public static JRTemplate load(URL url)
+	{
+		return getDefaultInstance().loadTemplate(url);
+	}
+	
+	/**
+	 * @see #loadTemplate(InputStream)
+	 */
+	public static JRTemplate load(InputStream data)
+	{
+		return getDefaultInstance().loadTemplate(data);
 	}
 
 }

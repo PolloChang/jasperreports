@@ -36,8 +36,9 @@ import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
 import net.sf.jasperreports.engine.JRPrintImage;
-import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.PrintElementVisitor;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
@@ -51,7 +52,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePrintImage.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBasePrintImage.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPrintImage
 {
@@ -65,7 +66,7 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 	/**
 	 *
 	 */
-	protected JRRenderable renderer;
+	protected Renderable renderable;
 	protected ScaleImageEnum scaleImageValue;
 	protected Boolean isUsingCache = Boolean.TRUE;
 	protected HorizontalAlignEnum horizontalAlignmentValue;
@@ -107,21 +108,37 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 	{
 		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
 	}
-		
+	
 	/**
 	 *
 	 */
-	public JRRenderable getRenderer()
+	public Renderable getRenderable()
 	{
-		return renderer;
+		return renderable;
 	}
 		
 	/**
 	 *
 	 */
-	public void setRenderer(JRRenderable renderer)
+	public void setRenderable(Renderable renderable)
 	{
-		this.renderer = renderer;
+		this.renderable = renderable;
+	}
+		
+	/**
+	 * @deprecated Replaced by {@link #getRenderable()}.
+	 */
+	public net.sf.jasperreports.engine.JRRenderable getRenderer()
+	{
+		return getRenderable();
+	}
+		
+	/**
+	 * @deprecated Replaced by {@link #setRenderable(Renderable)}.
+	 */
+	public void setRenderer(net.sf.jasperreports.engine.JRRenderable renderer)
+	{
+		setRenderable(RenderableUtil.getWrappingRenderable(renderer));
 	}
 		
 	/**
@@ -537,8 +554,13 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 	 * @deprecated
 	 */
 	private byte onErrorType;
+	/**
+	 * @deprecated
+	 */
+	private net.sf.jasperreports.engine.JRRenderable renderer;
 
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -601,6 +623,18 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 		if (linkTarget == null)
 		{
 			 linkTarget = JRHyperlinkHelper.getLinkTarget(HyperlinkTargetEnum.getByValue(hyperlinkTarget));
+		}
+		
+		if (renderer != null && renderable == null)
+		{
+			if (renderer instanceof Renderable)
+			{
+				renderable = (Renderable)renderer;
+			}
+			else
+			{
+				renderable = RenderableUtil.getWrappingRenderable(renderer);
+			}
 		}
 	}
 

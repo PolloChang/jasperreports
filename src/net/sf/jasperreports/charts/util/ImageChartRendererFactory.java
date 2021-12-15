@@ -30,10 +30,12 @@ import java.util.List;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintImageAreaHyperlink;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.util.JRImageLoader;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.renderers.JRSimpleImageMapRenderer;
 
 import org.jfree.chart.JFreeChart;
@@ -41,18 +43,22 @@ import org.jfree.chart.JFreeChart;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageChartRendererFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ImageChartRendererFactory.java 5310 2012-04-26 16:07:49Z teodord $
  */
-public class ImageChartRendererFactory implements ChartRendererFactory
+public class ImageChartRendererFactory extends AbstractChartRenderableFactory
 {
 	
-	public JRRenderable getRenderer(
+	/**
+	 * 
+	 */
+	public Renderable getRenderable(
+		JasperReportsContext jasperReportsContext,
 		JFreeChart chart, 
 		ChartHyperlinkProvider chartHyperlinkProvider,
 		Rectangle2D rectangle
 		)
 	{
-		int dpi = JRProperties.getIntegerProperty(JRRenderable.PROPERTY_IMAGE_DPI, 72);
+		int dpi = JRPropertiesUtil.getInstance(jasperReportsContext).getIntegerProperty(Renderable.PROPERTY_IMAGE_DPI, 72);
 		double scale = dpi/72d;
 		
 		BufferedImage bi = 
@@ -78,7 +84,7 @@ public class ImageChartRendererFactory implements ChartRendererFactory
 
 		try
 		{
-			return new JRSimpleImageMapRenderer(JRImageLoader.loadImageDataFromAWTImage(bi, JRRenderable.IMAGE_TYPE_PNG), areaHyperlinks);
+			return new JRSimpleImageMapRenderer(JRImageLoader.getInstance(jasperReportsContext).loadBytesFromAwtImage(bi, ImageTypeEnum.PNG), areaHyperlinks);
 		}
 		catch (JRException e)
 		{

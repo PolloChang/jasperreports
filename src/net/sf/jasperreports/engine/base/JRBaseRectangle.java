@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * The actual implementation of a graphic element representing a rectangle.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseRectangle.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseRectangle.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseRectangle extends JRBaseGraphicElement implements JRRectangle
 {

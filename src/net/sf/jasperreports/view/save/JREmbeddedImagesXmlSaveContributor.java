@@ -33,13 +33,14 @@ import javax.swing.JOptionPane;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRXmlExporter;
 import net.sf.jasperreports.engine.export.JRXmlExporterParameter;
 import net.sf.jasperreports.view.JRSaveContributor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JREmbeddedImagesXmlSaveContributor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JREmbeddedImagesXmlSaveContributor.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JREmbeddedImagesXmlSaveContributor extends JRSaveContributor
 {
@@ -51,11 +52,23 @@ public class JREmbeddedImagesXmlSaveContributor extends JRSaveContributor
 	private static final String EXTENSION_JRPXML = ".jrpxml"; 
 
 	/**
-	 * 
+	 * @see #JREmbeddedImagesXmlSaveContributor(JasperReportsContext, Locale, ResourceBundle)
 	 */
 	public JREmbeddedImagesXmlSaveContributor(Locale locale, ResourceBundle resBundle)
 	{
 		super(locale, resBundle);
+	}
+	
+	/**
+	 * 
+	 */
+	public JREmbeddedImagesXmlSaveContributor(
+		JasperReportsContext jasperReportsContext, 
+		Locale locale, 
+		ResourceBundle resBundle
+		)
+	{
+		super(jasperReportsContext, locale, resBundle);
 	}
 	
 	/**
@@ -106,7 +119,7 @@ public class JREmbeddedImagesXmlSaveContributor extends JRSaveContributor
 					)
 			)
 		{
-			JRXmlExporter exporter = new JRXmlExporter();
+			JRXmlExporter exporter = new JRXmlExporter(getJasperReportsContext());
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint); 
 			exporter.setParameter(JRExporterParameter.OUTPUT_FILE, file);
 			exporter.setParameter(JRXmlExporterParameter.IS_EMBEDDING_IMAGES, Boolean.TRUE);

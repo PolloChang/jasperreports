@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.JRConstants;
  * Print image implementation that supports recorded values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRRecordedValuesPrintImage.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRRecordedValuesPrintImage.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRRecordedValuesPrintImage extends JRTemplatePrintImage implements JRRecordedValuesPrintElement
 {
@@ -40,9 +40,24 @@ public class JRRecordedValuesPrintImage extends JRTemplatePrintImage implements 
 
 	private JRRecordedValues recordedValues;
 
+	/**
+	 * 
+	 * @param image
+	 * @deprecated provide a source Id via {@link #JRRecordedValuesPrintImage(JRTemplateImage, int)}
+	 */
 	public JRRecordedValuesPrintImage(JRTemplateImage image)
 	{
 		super(image);
+	}
+
+	/**
+	 * 
+	 * @param image
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRRecordedValuesPrintImage(JRTemplateImage image, int sourceElementId)
+	{
+		super(image, sourceElementId);
 	}
 
 	public JRRecordedValues getRecordedValues()

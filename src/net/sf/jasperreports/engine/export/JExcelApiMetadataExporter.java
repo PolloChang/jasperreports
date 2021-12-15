@@ -38,9 +38,11 @@ import java.awt.Rectangle;
 import java.awt.geom.Dimension2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -62,6 +64,7 @@ import jxl.format.Pattern;
 import jxl.format.RGB;
 import jxl.format.UnderlineStyle;
 import jxl.format.VerticalAlignment;
+import jxl.read.biff.BiffException;
 import jxl.write.Blank;
 import jxl.write.DateFormat;
 import jxl.write.DateTime;
@@ -78,12 +81,12 @@ import jxl.write.WritableWorkbook;
 import jxl.write.WriteException;
 import jxl.write.biff.CellValue;
 import jxl.write.biff.RowsExceededException;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRCommonGraphicElement;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -94,9 +97,13 @@ import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.export.data.BooleanTextValue;
 import net.sf.jasperreports.engine.export.data.DateTextValue;
 import net.sf.jasperreports.engine.export.data.NumberTextValue;
@@ -106,15 +113,17 @@ import net.sf.jasperreports.engine.export.data.TextValueHandler;
 import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.engine.fonts.FontInfo;
 import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.JRImageLoader;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.repo.RepositoryUtil;
 
 import org.apache.commons.collections.ReferenceMap;
 import org.apache.commons.logging.Log;
@@ -123,7 +132,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JExcelApiMetadataExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JExcelApiMetadataExporter.java 5430 2012-06-07 13:02:21Z shertage $
  */
 public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 {
@@ -135,24 +144,24 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 	 * <p/>
 	 * This property is by default not set (<code>false</code>).
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_USE_TEMP_FILE = JRProperties.PROPERTY_PREFIX + "export.jxl.use.temp.file";
+	public static final String PROPERTY_USE_TEMP_FILE = JRPropertiesUtil.PROPERTY_PREFIX + "export.jxl.use.temp.file";
 
 	/**
 	 * Boolean property specifying whether the cell format pattern is user-defined.
 	 * When set to true, the exporter will assume that the specified pattern is well defined. 
 	 * If the pattern is invalid, it won't be taken into account by the Excel file viewer.
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_COMPLEX_FORMAT = JRProperties.PROPERTY_PREFIX + "export.jxl.cell.complex.format";
+	public static final String PROPERTY_COMPLEX_FORMAT = JRPropertiesUtil.PROPERTY_PREFIX + "export.jxl.cell.complex.format";
 
 	/**
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String JXL_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "jxl";
+	public static final String JXL_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "jxl";
 	
 
 	protected static final Colour WHITE = Colour.WHITE;
@@ -173,8 +182,8 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 
 	private Pattern backgroundMode = Pattern.SOLID;
 
-	private Map<String,NumberFormat> numberFormats;
-	private Map<String,DateFormat> dateFormats;
+	private Map<String,NumberFormat> numberFormats = new HashMap<String,NumberFormat>();
+	private Map<String,DateFormat> dateFormats = new HashMap<String,DateFormat>();
 
 	protected Map<Color,Colour> workbookColours = new HashMap<Color,Colour>();
 	protected Map<Colour,RGB> usedColours = new HashMap<Colour,RGB>();
@@ -195,12 +204,24 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 	protected JExcelApiExporterContext exporterContext = new ExporterContext();
 	
 
+	/**
+	 * @see #JExcelApiMetadataExporter(JasperReportsContext)
+	 */
 	public JExcelApiMetadataExporter()
 	{
-		numberFormats = new HashMap<String,NumberFormat>();
-		dateFormats = new HashMap<String,DateFormat>();
+		this(DefaultJasperReportsContext.getInstance());
 	}
 
+
+	/**
+	 *
+	 */
+	public JExcelApiMetadataExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+
+	
 	protected void setParameters()
 	{
 		super.setParameters();
@@ -216,17 +237,17 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 				JExcelApiExporterParameter.PROPERTY_PASSWORD
 				);
 		
-		nature = new JExcelApiExporterNature(filter, isIgnoreGraphics, isIgnorePageMargins);
+		nature = new JExcelApiExporterNature(jasperReportsContext, filter, isIgnoreGraphics, isIgnorePageMargins);
 		
 		useTempFile = 
-			JRProperties.getBooleanProperty(
+			JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(
 				jasperPrint,
 				PROPERTY_USE_TEMP_FILE,
 				false
 				);
 		
 		complexFormat = 
-			JRProperties.getBooleanProperty(
+			JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(
 				jasperPrint,
 				PROPERTY_COMPLEX_FORMAT,
 				false
@@ -279,15 +300,64 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 
 	protected void openWorkbook(OutputStream os) throws JRException
 	{
+		WorkbookSettings settings = new WorkbookSettings();
+		settings.setUseTemporaryFileDuringWrite(useTempFile);
+		
+		InputStream templateIs = null;
+
 		try
 		{
-			WorkbookSettings settings = new WorkbookSettings();
-			settings.setUseTemporaryFileDuringWrite(useTempFile);
-			workbook = Workbook.createWorkbook(os, settings);
+			if (workbookTemplate == null)
+			{
+				workbook = Workbook.createWorkbook(os, settings);
+			}
+			else
+			{
+				templateIs = RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(workbookTemplate);
+				if (templateIs == null)
+				{
+					throw new JRRuntimeException("Workbook template not found at : " + workbookTemplate);
+				}
+				else
+				{
+					Workbook template = Workbook.getWorkbook(templateIs);
+					workbook = Workbook.createWorkbook(os, template, settings);
+					if(!keepTemplateSheets)
+					{
+						for(int i = 0; i < workbook.getNumberOfSheets(); i++)
+						{
+							workbook.removeSheet(i);
+						}
+					}
+					else
+					{
+						sheetIndex += workbook.getNumberOfSheets();
+					}
+				}
+			}
+			
+			firstPageNotSet = true;
 		}
 		catch (IOException e)
 		{
 			throw new JRException("Error generating XLS report : " + jasperPrint.getName(), e);
+		}
+		catch (BiffException e) 
+		{
+			throw new JRException("Error generating XLS report : " + jasperPrint.getName(), e);
+		}
+		finally
+		{
+			if (templateIs != null)
+			{
+				try
+				{
+					templateIs.close();
+				}
+				catch (IOException e)
+				{
+				}
+			}
 		}
 	}
 
@@ -320,30 +390,64 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		}
 	}
 
-	protected void setColumnWidth(int col, int width)
+	protected void setColumnWidth(int col, int width, boolean autoFit)
 	{
-		CellView cv = sheet.getColumnView(col);
-		if(cv == null || cv.getSize() < 43 * width)
+		if (!autoFit)
 		{
-			cv = new CellView();
-			cv.setSize(43 * width);
+			CellView cv = sheet.getColumnView(col);
+			if(cv == null || cv.getSize() < 43 * width)
+			{
+				cv = new CellView();
+				cv.setSize(43 * width);
+				sheet.setColumnView(col, cv);
+			}
+		}
+	}
+
+	protected void updateColumn(int col, boolean autoFit)
+	{
+		if (autoFit)
+		{
+			CellView cv = new CellView();
+			cv.setAutosize(true);
 			sheet.setColumnView(col, cv);
 		}
 	}
 
-	protected void setRowHeight(int y, int lastRowHeight) throws JRException
+	protected void setRowHeight(int rowIndex, int lastRowHeight, Cut yCut, XlsRowLevelInfo levelInfo) throws JRException
 	{
-		try
+		Map<String, Object> cutProperties = yCut == null ? null : yCut.getPropertiesMap();
+		
+		boolean isAutoFit = cutProperties != null 
+				&& cutProperties.containsKey(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW) 
+				&& (Boolean)cutProperties.get(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW);
+		if (isAutoFit)
 		{
-			CellView cv = sheet.getRowView(y);
-			if(cv == null || cv.getSize() < LengthUtil.twip(lastRowHeight))
+			try
 			{
-				sheet.setRowView(y, LengthUtil.twip(lastRowHeight));
+				CellView cv = sheet.getRowView(rowIndex) == null ? new CellView() : sheet.getRowView(rowIndex);
+				cv.setAutosize(true);
+				sheet.setRowView(rowIndex, cv);
+			}
+			catch (RowsExceededException e)
+			{
+				throw new JRException("Too many rows in sheet " + sheet.getName() + ": " + rowIndex, e);
 			}
 		}
-		catch (RowsExceededException e)
+		else
 		{
-			throw new JRException("Too many rows in sheet " + sheet.getName() + ": " + y, e);
+			try
+			{
+				CellView cv = sheet.getRowView(rowIndex);
+				if(cv == null || cv.getSize() < LengthUtil.twip(lastRowHeight))
+				{
+					sheet.setRowView(rowIndex, LengthUtil.twip(lastRowHeight));
+				}
+			}
+			catch (RowsExceededException e)
+			{
+				throw new JRException("Too many rows in sheet " + sheet.getName() + ": " + rowIndex, e);
+			}
 		}
 	}
 
@@ -396,7 +500,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		
 		if (currentColumnName != null && currentColumnName.length() > 0) 
 		{
-			boolean repeatValue = JRProperties.getBooleanProperty(line, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
+			boolean repeatValue = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(line, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
 			
 			setColumnName(currentColumnName);
 			setColumnWidth(columnNamesMap.get(currentColumnName), line.getWidth());
@@ -459,7 +563,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		
 		if (currentColumnName != null && currentColumnName.length() > 0) 
 		{
-			boolean repeatValue = JRProperties.getBooleanProperty(element, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
+			boolean repeatValue = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(element, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
 			
 			setColumnName(currentColumnName);
 			setColumnWidth(columnNamesMap.get(currentColumnName), element.getWidth());
@@ -498,7 +602,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		if (currentColumnName != null && currentColumnName.length() > 0) 
 		{
 			String currentColumnData = textElement.getPropertiesMap().getProperty(JRXlsAbstractMetadataExporterParameter.PROPERTY_DATA);
-			boolean repeatValue = JRProperties.getBooleanProperty(textElement, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
+			boolean repeatValue = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(textElement, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
 			
 			setColumnName(currentColumnName);
 			setColumnWidth(columnNamesMap.get(currentColumnName), textElement.getWidth());
@@ -531,7 +635,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 					rotation, 
 					cellFont,
 					textElement,
-					isWrapText(textElement),
+					isWrapText(textElement) || Boolean.TRUE.equals(((JExcelApiExporterNature)nature).getColumnAutoFit(textElement)),
 					isCellLocked(textElement)
 					);
 			
@@ -849,13 +953,15 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		{
 			baseStyle.setDisplayFormat(getDateFormat(getConvertedPattern(textElement, textValue.getPattern())));
 			WritableCellFormat cellStyle = getLoadedCellStyle(baseStyle);
-			if (textValue.getValue() == null)
+			Date date = textValue.getValue();
+			if (date == null)
 			{
 				result = blank(cellStyle);
 			}
 			else
 			{
-				result = new DateTime(x, y, textValue.getValue(), cellStyle);
+				date = translateDateValue(textElement, date);
+				result = new DateTime(x, y, date, cellStyle);
 			}
 		}
 
@@ -987,7 +1093,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		String currentColumnName = element.getPropertiesMap().getProperty(JRXlsAbstractMetadataExporterParameter.PROPERTY_COLUMN_NAME);
 		if (currentColumnName != null && currentColumnName.length() > 0) 
 		{
-			boolean repeatValue = JRProperties.getBooleanProperty(element, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
+			boolean repeatValue = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(element, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
 			
 			setColumnName(currentColumnName);
 			setColumnWidth(columnNamesMap.get(currentColumnName), element.getWidth());
@@ -1008,7 +1114,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 			int availableImageHeight = element.getHeight() - topPadding - bottomPadding;
 			availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
 	
-			JRRenderable renderer = element.getRenderer();
+			Renderable renderer = element.getRenderable();
 	
 			if (
 				renderer != null &&
@@ -1016,14 +1122,14 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 				availableImageHeight > 0
 				)
 			{
-				if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+				if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 				{
 					// Image renderers are all asked for their image data and dimension at some point. 
 					// Better to test and replace the renderer now, in case of lazy load error.
-					renderer = JRImageRenderer.getOnErrorRendererForImageData(renderer, element.getOnErrorTypeValue());
+					renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, element.getOnErrorTypeValue());
 					if (renderer != null)
 					{
-						renderer = JRImageRenderer.getOnErrorRendererForDimension(renderer, element.getOnErrorTypeValue());
+						renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, element.getOnErrorTypeValue());
 					}
 				}
 				else
@@ -1046,7 +1152,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 				int normalWidth = availableImageWidth;
 				int normalHeight = availableImageHeight;
 	
-				Dimension2D dimension = renderer.getDimension();
+				Dimension2D dimension = renderer.getDimension(jasperReportsContext);
 				if (dimension != null)
 				{
 					normalWidth = (int) dimension.getWidth();
@@ -1101,7 +1207,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 				{
 					case CLIP:
 					{
-						int dpi = JRProperties.getIntegerProperty(JRRenderable.PROPERTY_IMAGE_DPI, 72);
+						int dpi = getPropertiesUtil().getIntegerProperty(Renderable.PROPERTY_IMAGE_DPI, 72);
 						double scale = dpi/72d;
 						
 						BufferedImage bi = 
@@ -1123,6 +1229,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 							);
 						
 						renderer.render(
+							jasperReportsContext,
 							grx, 
 							new Rectangle(
 								(int) (xalignFactor * (availableImageWidth - normalWidth)),
@@ -1132,13 +1239,13 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 								)
 							);
 	
-						imageData = JRImageLoader.loadImageDataFromAWTImage(bi, JRRenderable.IMAGE_TYPE_PNG);
+						imageData = JRImageLoader.getInstance(jasperReportsContext).loadBytesFromAwtImage(bi, ImageTypeEnum.PNG);
 	
 						break;
 					}
 					case FILL_FRAME:
 					{
-						imageData = renderer.getImageData();
+						imageData = renderer.getImageData(jasperReportsContext);
 	
 						break;
 					}
@@ -1160,7 +1267,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 								normalHeight = availableImageHeight;
 							}
 	
-							imageData = renderer.getImageData();
+							imageData = renderer.getImageData(jasperReportsContext);
 						}
 	
 						break;
@@ -1931,14 +2038,14 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		sheets.setHeaderMargin(0.0);
 		sheets.setFooterMargin(0.0);
 
-		String fitWidth = JRProperties.getProperty(jasperPrint, PROPERTY_FIT_WIDTH);
+		String fitWidth = getPropertiesUtil().getProperty(jasperPrint, PROPERTY_FIT_WIDTH);
 		if(fitWidth != null && fitWidth.length() > 0)
 		{
 			sheets.setFitWidth(Integer.valueOf(fitWidth));
 			sheets.setFitToPages(true);
 		}
 		
-		String fitHeight = JRProperties.getProperty(jasperPrint, PROPERTY_FIT_HEIGHT);
+		String fitHeight = getPropertiesUtil().getProperty(jasperPrint, PROPERTY_FIT_HEIGHT);
 		if(fitHeight != null && fitHeight.length() > 0)
 		{
 			sheets.setFitHeight(Integer.valueOf(fitHeight));
@@ -1979,6 +2086,22 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		if(sheetFooterRight != null)
 		{
 			sheets.getFooter().getRight().append(sheetFooterRight);
+		}
+		
+		if(sheetFirstPageNumber != null && sheetFirstPageNumber > 0)
+		{
+			sheets.setPageStart(sheetFirstPageNumber);
+			firstPageNotSet = false;
+		}
+		else if(documentFirstPageNumber != null && documentFirstPageNumber > 0 && firstPageNotSet)
+		{
+			sheets.setPageStart(documentFirstPageNumber);
+			firstPageNotSet = false;
+		}
+		if(!firstPageNotSet && sheets.getFooter().getCentre().empty())
+		{
+			sheets.getFooter().getCentre().append("Page ");
+			sheets.getFooter().getCentre().appendPageNumber();
 		}
 		
 		maxRowFreezeIndex = 0;
@@ -2226,7 +2349,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		String currentColumnName = element.getPropertiesMap().getProperty(JRXlsAbstractMetadataExporterParameter.PROPERTY_COLUMN_NAME);
 		if(currentColumnName != null && currentColumnName.length() > 0)
 		{
-			boolean repeatValue = JRProperties.getBooleanProperty(element, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
+			boolean repeatValue = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(element, JRXlsAbstractMetadataExporterParameter.PROPERTY_REPEAT_VALUE, false);
 			int colIndex = columnNamesMap.get(currentColumnName);
 			
 			setColumnName(currentColumnName);
@@ -2234,7 +2357,8 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 			setRowHeight(rowIndex, element.getHeight());
 			
 	
-			GenericElementJExcelApiMetadataHandler handler = (GenericElementJExcelApiMetadataHandler)GenericElementHandlerEnviroment.getHandler(
+			GenericElementJExcelApiMetadataHandler handler = 
+				(GenericElementJExcelApiMetadataHandler)GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
 					element.getGenericType(), 
 					JXL_EXPORTER_KEY);
 	
@@ -2288,7 +2412,7 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 			{
 				// we make this test to avoid reaching the global default value of the property directly
 				// and thus skipping the report level one, if present
-				return JRProperties.getBooleanProperty(element, PROPERTY_COMPLEX_FORMAT, complexFormat);
+				return JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(element, PROPERTY_COMPLEX_FORMAT, complexFormat);
 			}
 		return complexFormat;
 	}
@@ -2354,6 +2478,36 @@ public class JExcelApiMetadataExporter extends JRXlsAbstractMetadataExporter
 		maxColumnFreezeIndex = maxColIndex;
 		isFreezeRowEdge = isRowEdge;
 		isFreezeColumnEdge = isColumnEdge;
+	}
+
+	protected void setSheetName(String sheetName)
+	{
+		sheet.setName(sheetName);
+	}
+	
+	protected void setAutoFilter(String autoFilterRange)
+	{
+		// TODO support auto filter feature
+		
+	}
+
+	@Override
+	protected void setRowLevels(XlsRowLevelInfo levelInfo, String level) {
+		// TODO set row levels
+	}
+	
+	protected void setScale(Integer scale)
+	{
+		if (scale != null && scale > 9 && scale < 401)
+		{
+			SheetSettings sheetSettings = sheet.getSettings();
+			sheetSettings.setScaleFactor(scale);
+			
+			/* the scale factor takes precedence over fitWidth and fitHeight properties */			
+			sheetSettings.setFitWidth(0);
+			sheetSettings.setFitHeight(0);
+			sheetSettings.setFitToPages(false);
+		}
 	}
 	
 }

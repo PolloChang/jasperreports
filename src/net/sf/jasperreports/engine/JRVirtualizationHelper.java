@@ -27,11 +27,12 @@ package net.sf.jasperreports.engine;
  * Virtualization helper class.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRVirtualizationHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRVirtualizationHelper.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public final class JRVirtualizationHelper
 {
 	private static final ThreadLocal<JRVirtualizer> threadVirtualizer = new ThreadLocal<JRVirtualizer>();
+	private static final ThreadLocal<JasperReportsContext> threadJasperReportsContext = new ThreadLocal<JasperReportsContext>();
 
 	
 	/**
@@ -68,6 +69,43 @@ public final class JRVirtualizationHelper
 	public static JRVirtualizer getThreadVirtualizer()
 	{
 		return threadVirtualizer.get();
+	}
+	
+	
+	/**
+	 * Sets a JasperReportsContext to be used for the current thread.
+	 * <p>
+	 * The current thread's context is used when a report obtained by virtualization
+	 * is deserialized.
+	 * 
+	 * @param jasperReportsContext
+	 */
+	public static void setThreadJasperReportsContext(JasperReportsContext jasperReportsContext)
+	{
+		threadJasperReportsContext.set(jasperReportsContext);
+	}
+
+	
+	/**
+	 * Clears the JasperReportsContext associated to the current thread.
+	 */
+	public static void clearThreadJasperReportsContext()
+	{
+		threadJasperReportsContext.set(null);
+	}
+
+	
+	/**
+	 * Returns the JasperReportsContext associated to the current thread.
+	 * <p>
+	 * This method is used by {@link net.sf.jasperreports.engine.base.JRVirtualPrintPage JRVirtualPrintPage}
+	 * on deserialization.
+	 * 
+	 * @return the JasperReportsContext associated to the current thread
+	 */
+	public static JasperReportsContext getThreadJasperReportsContext()
+	{
+		return threadJasperReportsContext.get();
 	}
 	
 	

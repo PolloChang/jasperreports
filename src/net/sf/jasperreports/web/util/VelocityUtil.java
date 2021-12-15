@@ -25,6 +25,7 @@ package net.sf.jasperreports.web.util;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Map;
 
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -33,16 +34,10 @@ import org.apache.velocity.app.VelocityEngine;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: VelocityUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: VelocityUtil.java 5213 2012-04-03 14:44:47Z teodord $
  */
 public class VelocityUtil
 {
-	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-	
 	private static final VelocityEngine velocityEngine;
 	
 	static {
@@ -69,5 +64,9 @@ public class VelocityUtil
 		}
 		
 		return writer.getBuffer().toString();
+	}
+	
+	public static String processTemplate(String templateName, Map<String, Object> contextMap) {
+		return processTemplate(templateName, new VelocityContext(contextMap));
 	}
 }

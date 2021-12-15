@@ -34,13 +34,13 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * A report has one main data set and multiple sub data sets that can be instantiated by charts and crosstabs.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDataset.java 5337 2012-05-04 09:15:58Z lucianc $
  * 
  * @see net.sf.jasperreports.engine.JRDatasetRun
  * @see net.sf.jasperreports.engine.JRReport#getMainDataset()
  * @see net.sf.jasperreports.engine.JRReport#getDatasets()
  */
-public interface JRDataset extends JRPropertiesHolder, JRCloneable
+public interface JRDataset extends JRPropertiesHolder, JRCloneable, JRIdentifiable
 {
 
 	

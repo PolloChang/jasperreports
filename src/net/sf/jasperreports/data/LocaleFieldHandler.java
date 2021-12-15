@@ -32,7 +32,7 @@ import org.exolab.castor.mapping.GeneralizedFieldHandler;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: LocaleFieldHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: LocaleFieldHandler.java 5100 2012-03-16 20:17:36Z teodord $
  */
 public class LocaleFieldHandler extends GeneralizedFieldHandler
 {
@@ -71,7 +71,7 @@ public class LocaleFieldHandler extends GeneralizedFieldHandler
 	/**
 	 *
 	 */
-	public Class getFieldType()
+	public Class<?> getFieldType()
 	{
 		return Locale.class;
 	}

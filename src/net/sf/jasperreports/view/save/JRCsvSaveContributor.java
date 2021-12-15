@@ -33,12 +33,13 @@ import javax.swing.JOptionPane;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRCsvExporter;
 import net.sf.jasperreports.view.JRSaveContributor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCsvSaveContributor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCsvSaveContributor.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRCsvSaveContributor extends JRSaveContributor
 {
@@ -49,11 +50,23 @@ public class JRCsvSaveContributor extends JRSaveContributor
 	private static final String EXTENSION_CSV = ".csv"; 
 
 	/**
-	 * 
+	 * @see #JRCsvSaveContributor(JasperReportsContext, Locale, ResourceBundle)
 	 */
 	public JRCsvSaveContributor(Locale locale, ResourceBundle resBundle)
 	{
 		super(locale, resBundle);
+	}
+	
+	/**
+	 * 
+	 */
+	public JRCsvSaveContributor(
+		JasperReportsContext jasperReportsContext, 
+		Locale locale, 
+		ResourceBundle resBundle
+		)
+	{
+		super(jasperReportsContext, locale, resBundle);
 	}
 	
 	/**
@@ -100,7 +113,7 @@ public class JRCsvSaveContributor extends JRSaveContributor
 					)
 			)
 		{
-			JRCsvExporter exporter = new JRCsvExporter();
+			JRCsvExporter exporter = new JRCsvExporter(getJasperReportsContext());
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint); 
 			exporter.setParameter(JRExporterParameter.OUTPUT_FILE, file);
 			exporter.exportReport();

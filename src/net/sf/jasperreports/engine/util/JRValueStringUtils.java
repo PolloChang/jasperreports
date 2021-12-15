@@ -66,7 +66,7 @@ import org.w3c.tools.codec.Base64FormatException;
  * </p>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRValueStringUtils.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRValueStringUtils.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public final class JRValueStringUtils
 {
@@ -87,6 +87,16 @@ public final class JRValueStringUtils
 		defaultSerializer = new DefaultSerializer();
 	}
 	
+	/**
+	 * Determines if there's a built-in serializer for the value type.
+	 * 
+	 * @param valueClass the value type
+	 * @return whether the value type is handled by a built-in serializer
+	 */
+	public static boolean hasSerializer(String valueClass)
+	{
+		return serializers.containsKey(valueClass);
+	}
 	
 	/**
 	 * Converts a value into a String representation.

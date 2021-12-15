@@ -30,7 +30,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFieldFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFieldFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFieldFactory extends JRBaseFactory
 {

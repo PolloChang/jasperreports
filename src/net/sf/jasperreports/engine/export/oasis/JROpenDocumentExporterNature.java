@@ -29,14 +29,17 @@
 
 package net.sf.jasperreports.engine.export.oasis;
 
+import java.util.Map;
+
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.ExporterFilter;
 import net.sf.jasperreports.engine.export.ExporterNature;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROpenDocumentExporterNature.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JROpenDocumentExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
  */
 public abstract class JROpenDocumentExporterNature implements ExporterNature
 {
@@ -124,4 +127,25 @@ public abstract class JROpenDocumentExporterNature implements ExporterNature
 	}
 	
 	protected abstract byte getOpenDocumentNature();
+	
+	public void setXProperties(CutsInfo xCuts, JRPrintElement element, int row1, int col1, int row2, int col2)
+	{
+		// nothing to do here
+	}
+	
+	public void setXProperties(Map<String,Object> xCutsProperties, JRPrintElement element)
+	{
+		// nothing to do here
+	}
+	
+	public void setYProperties(CutsInfo yCuts, JRPrintElement element, int row1, int col1, int row2, int col2)
+	{
+		// nothing to do here
+	}
+	
+	public void setYProperties(Map<String,Object> yCutsProperties, JRPrintElement element)
+	{
+		// nothing to do here
+	}
+
 }

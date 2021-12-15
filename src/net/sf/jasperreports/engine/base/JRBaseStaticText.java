@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.JRVisitor;
  * This class is used for representing a static text element. Together with its parents, it contains the full
  * functionality needed for handling a static text.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseStaticText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseStaticText.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseStaticText extends JRBaseTextElement implements JRStaticText
 {

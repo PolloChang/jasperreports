@@ -46,7 +46,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * Fill time implementation of a frame element.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillFrame.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillFrame.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillFrame extends JRFillElement implements JRFrame
 {
@@ -268,7 +268,7 @@ public class JRFillFrame extends JRFillElement implements JRFrame
 
 	protected JRPrintElement fill() throws JRException
 	{		
-		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getTemplate());
+		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getTemplate(), elementId);
 		printFrame.setX(getX());
 		printFrame.setY(getRelativeY());
 		printFrame.setWidth(getWidth());
@@ -336,6 +336,7 @@ public class JRFillFrame extends JRFillElement implements JRFrame
 				}
 			}
 			
+			boxTemplate = filler.fillContext.deduplicate(boxTemplate);
 			templatesMap.put(style, boxTemplate);
 		}
 		

@@ -40,20 +40,20 @@ import net.sf.jasperreports.engine.JRChart;
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.base.JRBasePrintImage;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 import org.jfree.chart.JFreeChart;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ChartConverter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ChartConverter.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public final class ChartConverter extends ElementConverter
 {
@@ -94,7 +94,7 @@ public final class ChartConverter extends ElementConverter
 		printImage.setBookmarkLevel(chart.getBookmarkLevel());
 		printImage.setLinkType(chart.getLinkType());
 		printImage.setOnErrorType(OnErrorTypeEnum.ICON);
-		printImage.setRenderer(getRenderer(reportConverter, chart));
+		printImage.setRenderable(getRenderer(reportConverter, chart));
 		printImage.setScaleImage(ScaleImageEnum.CLIP);
 		
 		return printImage;
@@ -103,21 +103,21 @@ public final class ChartConverter extends ElementConverter
 	/**
 	 * 
 	 */
-	private JRRenderable getRenderer(ReportConverter reportConverter, JRChart chart)
+	private Renderable getRenderer(ReportConverter reportConverter, JRChart chart)
 	{
 		String renderType = chart.getRenderType();//FIXMETHEME try reuse this sequence
 		if(renderType == null)
 		{
-			renderType = JRProperties.getProperty(reportConverter.getReport(), JRChart.PROPERTY_CHART_RENDER_TYPE);
+			renderType = JRPropertiesUtil.getInstance(reportConverter.getJasperReportsContext()).getProperty(reportConverter.getReport(), JRChart.PROPERTY_CHART_RENDER_TYPE);
 		}
 		
 		String themeName = chart.getTheme();
 		if(themeName == null)
 		{
-			themeName = JRProperties.getProperty(reportConverter.getReport(), JRChart.PROPERTY_CHART_THEME);
+			themeName = JRPropertiesUtil.getInstance(reportConverter.getJasperReportsContext()).getProperty(reportConverter.getReport(), JRChart.PROPERTY_CHART_THEME);
 		}
 		
-		ChartTheme theme = ChartUtil.getChartTheme(themeName);
+		ChartTheme theme = ChartUtil.getInstance(reportConverter.getJasperReportsContext()).getTheme(themeName);
 		
 		ChartContext chartContext = new ConvertChartContext(chart);
 		
@@ -134,7 +134,8 @@ public final class ChartConverter extends ElementConverter
 		Rectangle2D rectangle = new Rectangle2D.Double(0, 0, chart.getWidth(), chart.getHeight());
 
 		return 
-			ChartUtil.getChartRendererFactory(renderType).getRenderer(
+			ChartUtil.getInstance(reportConverter.getJasperReportsContext()).getChartRenderableFactory(renderType).getRenderable(
+				reportConverter.getJasperReportsContext(),
 				jfreeChart, 
 				null,
 				rectangle

@@ -28,7 +28,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Random;
+import java.util.UUID;
 
+import net.sf.jasperreports.engine.Deduplicable;
 import net.sf.jasperreports.engine.JRCommonElement;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
@@ -39,6 +41,7 @@ import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.ObjectUtils;
 
 
 /**
@@ -46,9 +49,9 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * print elements.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplateElement.java 5180 2012-03-29 13:23:12Z teodord $
  */
-public abstract class JRTemplateElement implements JRCommonElement, Serializable, JRPropertiesHolder
+public abstract class JRTemplateElement implements JRCommonElement, Serializable, JRPropertiesHolder, Deduplicable
 {
 
 
@@ -62,6 +65,7 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	/**
 	 *
 	 */
+	private UUID uuid;
 	private String key;
 	private ModeEnum modeValue;
 	private Color forecolor;
@@ -117,13 +121,27 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	{
 		parentStyle = element.getStyle();
 		
-		setKey(element.getKey());
+		uuid = element.getUUID();
+		
+		key = element.getKey();
 		
 		modeValue = element.getOwnModeValue();
 		forecolor = element.getOwnForecolor();
 		backcolor = element.getOwnBackcolor();
 	}
 	
+	/**
+	 *
+	 */
+	public UUID getUUID()
+	{
+		if (uuid == null)
+		{
+			uuid = UUID.randomUUID();
+		}
+		return uuid;
+	}
+
 	/**
 	 *
 	 */
@@ -332,4 +350,30 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 		}
 	}
 
+	protected void addTemplateHash(ObjectUtils.HashCode hash)
+	{
+		hash.addIdentity(defaultStyleProvider == null ? null : defaultStyleProvider.getDefaultStyle());
+		hash.addIdentity(parentStyle);
+		hash.add(origin);
+		hash.add(key);
+		hash.add(modeValue);
+		hash.add(forecolor);
+		hash.add(backcolor);
+		hash.add(propertiesMap);
+	}
+	
+	protected boolean templateIdentical(JRTemplateElement template)
+	{
+		return (defaultStyleProvider == null 
+				? template.defaultStyleProvider == null 
+				: template.defaultStyleProvider != null 
+					&& ObjectUtils.equalsIdentity(defaultStyleProvider.getDefaultStyle(), template.defaultStyleProvider.getDefaultStyle()))
+				&& ObjectUtils.equalsIdentity(parentStyle, template.parentStyle)
+				&& ObjectUtils.equals(origin, template.origin)
+				&& ObjectUtils.equals(key, template.key)
+				&& ObjectUtils.equals(modeValue, template.modeValue)
+				&& ObjectUtils.equals(forecolor, template.forecolor)
+				&& ObjectUtils.equals(backcolor, template.backcolor)
+				&& ObjectUtils.equals(propertiesMap, template.propertiesMap);
+	}
 }

@@ -28,7 +28,7 @@ package net.sf.jasperreports.engine;
  * An abstract representation of a data source field. Each row in a dataset consists of one or more fields with unique
  * names. These names can be used in report expressions.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRField.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRField.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRField extends JRPropertiesHolder, JRCloneable
 {

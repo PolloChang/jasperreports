@@ -32,6 +32,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
@@ -41,7 +42,7 @@ import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: OdtServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: OdtServlet.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class OdtServlet extends BaseHttpServlet
 {
@@ -67,7 +68,7 @@ public class OdtServlet extends BaseHttpServlet
 		if (isBuffered.booleanValue())
 		{
 			FileBufferedOutputStream fbos = new FileBufferedOutputStream();
-			JROdtExporter exporter = new JROdtExporter();
+			JROdtExporter exporter = new JROdtExporter(DefaultJasperReportsContext.getInstance());
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT_LIST, jasperPrintList);
 			exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, fbos);
 
@@ -130,7 +131,7 @@ public class OdtServlet extends BaseHttpServlet
 			response.setContentType("application/vnd.oasis.opendocument.text");
 			//response.setHeader("Content-Disposition", "inline; filename=\"file.odt\"");
 
-			JROdtExporter exporter = new JROdtExporter();
+			JROdtExporter exporter = new JROdtExporter(DefaultJasperReportsContext.getInstance());
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT_LIST, jasperPrintList);
 			
 			OutputStream ouputStream = response.getOutputStream();

@@ -43,7 +43,7 @@ import net.sf.jasperreports.engine.JRVirtualizable;
  * GZips the pages that it doesn't need, but keeps them in memory.
  * 
  * @author John Bindel
- * @version $Id: JRGzipVirtualizer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRGzipVirtualizer.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRGzipVirtualizer extends JRAbstractLRUVirtualizer
 {
@@ -56,7 +56,7 @@ public class JRGzipVirtualizer extends JRAbstractLRUVirtualizer
 	 */
 	public JRGzipVirtualizer(int maxSize) {
 		super(maxSize);
-		this.zippedData = Collections.synchronizedMap(new HashMap());
+		this.zippedData = Collections.synchronizedMap(new HashMap<String,byte[]>());
 	}
 
 	protected void dispose(String virtualId) {

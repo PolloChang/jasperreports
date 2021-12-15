@@ -23,17 +23,19 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: MarkupProcessorFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MarkupProcessorFactory.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public interface MarkupProcessorFactory
 {
 	/**
 	 * 
 	 */
-	public static final String PROPERTY_MARKUP_PROCESSOR_FACTORY_PREFIX = JRProperties.PROPERTY_PREFIX + "markup.processor.factory.";
+	public static final String PROPERTY_MARKUP_PROCESSOR_FACTORY_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "markup.processor.factory.";
 	
 	/**
 	 * 

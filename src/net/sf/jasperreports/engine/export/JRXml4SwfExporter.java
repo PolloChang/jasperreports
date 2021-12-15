@@ -28,27 +28,47 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * This is a modified version of the JRXmlExporter class, which produces an XML document that is used by the Flash viewer.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXml4SwfExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXml4SwfExporter.java 5166 2012-03-28 13:11:05Z teodord $
  */
 public class JRXml4SwfExporter extends JRXmlExporter
 {
 	/**
 	 *
 	 */
-	private static final String XML4SWF_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.xml4swf.";
+	private static final String XML4SWF_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml4swf.";
 
 	/**
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String XML4SWF_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "xml4swf";
+	public static final String XML4SWF_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "xml4swf";
+	
+
+	/**
+	 * @see #JRXml4SwfExporter(JasperReportsContext)
+	 */
+	public JRXml4SwfExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRXml4SwfExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
 	
 
 	/**

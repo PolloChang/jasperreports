@@ -28,7 +28,6 @@ import java.util.Map;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRValueParameter;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 
 /**
@@ -39,8 +38,9 @@ import net.sf.jasperreports.engine.util.JRProperties;
  * Query executer factory instances must be thread-safe as they are cached and used as singletons.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRQueryExecuterFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRQueryExecuterFactory.java 5397 2012-05-21 01:10:02Z teodord $
  * @see net.sf.jasperreports.engine.query.JRQueryExecuter
+ * @deprecated Replaced by {@link QueryExecuterFactory}.
  */
 public interface JRQueryExecuterFactory
 {
@@ -51,8 +51,9 @@ public interface JRQueryExecuterFactory
 	 * <p/>
 	 * To obtain query executer factories, a property having the query language appended to this prefix is used 
 	 * to get the query executer factory name.
+	 * @deprecated Replaced by {@link QueryExecuterFactory#QUERY_EXECUTER_FACTORY_PREFIX}.
 	 */
-	public static final String QUERY_EXECUTER_FACTORY_PREFIX = JRProperties.PROPERTY_PREFIX + "query.executer.factory.";
+	public static final String QUERY_EXECUTER_FACTORY_PREFIX = QueryExecuterFactory.QUERY_EXECUTER_FACTORY_PREFIX;
 
 	
 	/**
@@ -81,6 +82,7 @@ public interface JRQueryExecuterFactory
 	 * 
 	 * @return a query executer
 	 * @throws JRException
+	 * @deprecated Replaced by {@link QueryExecuterFactory#createQueryExecuter(net.sf.jasperreports.engine.JasperReportsContext, JRDataset, Map)}.
 	 */
 	public JRQueryExecuter createQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parameters) throws JRException;
 

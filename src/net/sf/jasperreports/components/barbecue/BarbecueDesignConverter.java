@@ -38,7 +38,7 @@ import org.apache.commons.logging.LogFactory;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarbecueDesignConverter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarbecueDesignConverter.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class BarbecueDesignConverter implements ComponentDesignConverter
 {
@@ -95,7 +95,7 @@ public class BarbecueDesignConverter implements ComponentDesignConverter
 			Barcode barcode = BarcodeProviders.createBarcode(barcodeInfo);
 			BarbecueRenderer renderer = new BarbecueRenderer(barcode);
 			renderer.setRotation(BarbecueStyleResolver.getRotationValue(element));
-			image.setRenderer(renderer);
+			image.setRenderable(renderer);
 			return image;
 		}
 		catch (Exception e)

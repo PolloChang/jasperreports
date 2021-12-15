@@ -28,15 +28,15 @@ import java.util.Iterator;
 import java.util.List;
 
 import net.sf.jasperreports.engine.JRPropertiesMap;
-import net.sf.jasperreports.engine.util.JRProperties;
-import net.sf.jasperreports.engine.util.JRProperties.PropertySuffix;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.extensions.DefaultExtensionsRegistry;
 import net.sf.jasperreports.extensions.ExtensionsRegistry;
 import net.sf.jasperreports.extensions.ExtensionsRegistryFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleFontExtensionsRegistryFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SimpleFontExtensionsRegistryFactory.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class SimpleFontExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
@@ -54,7 +54,7 @@ public class SimpleFontExtensionsRegistryFactory implements ExtensionsRegistryFa
 	 */
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties)
 	{
-		List<PropertySuffix> fontFamiliesProperties = JRProperties.getProperties(properties, SIMPLE_FONT_FAMILIES_PROPERTY_PREFIX);
+		List<PropertySuffix> fontFamiliesProperties = JRPropertiesUtil.getProperties(properties, SIMPLE_FONT_FAMILIES_PROPERTY_PREFIX);
 		List<String> fontFamiliesLocations = new ArrayList<String>();
 		for (Iterator<PropertySuffix> it = fontFamiliesProperties.iterator(); it.hasNext();)
 		{

@@ -37,6 +37,8 @@ import net.sf.jasperreports.engine.base.JRBasePen;
 import net.sf.jasperreports.engine.type.FillEnum;
 import net.sf.jasperreports.engine.util.JRPenUtil;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.ObjectUtils;
+import net.sf.jasperreports.engine.util.ObjectUtils.HashCode;
 
 
 /**
@@ -44,7 +46,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * print element instances.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateGraphicElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplateGraphicElement.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRTemplateGraphicElement extends JRTemplateElement implements JRCommonGraphicElement
 {
@@ -179,4 +181,20 @@ public abstract class JRTemplateGraphicElement extends JRTemplateElement impleme
 			pen = null;
 		}
 	}
+
+	protected void addGraphicHash(HashCode hash)
+	{
+		addTemplateHash(hash);
+		hash.addIdentical(linePen);
+		hash.add(fillValue);
+	}
+
+	protected boolean graphicIdentical(JRTemplateGraphicElement template)
+	{
+		return templateIdentical(template)
+				&& ObjectUtils.identical(linePen, template.linePen)
+				&& ObjectUtils.equals(fillValue, template.fillValue);
+	}
+	
+	
 }

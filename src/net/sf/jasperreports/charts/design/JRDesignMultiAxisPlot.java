@@ -41,7 +41,7 @@ import net.sf.jasperreports.engine.design.JRDesignChart;
  * axis chart.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRDesignMultiAxisPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignMultiAxisPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignMultiAxisPlot extends JRBaseMultiAxisPlot
 {
@@ -49,8 +49,7 @@ public class JRDesignMultiAxisPlot extends JRBaseMultiAxisPlot
 	public static final String PROPERTY_CHART = "chart";
 	
 	public static final String PROPERTY_AXES = "axes";
-	
-	private JRDesignChart chart;
+	 
 	/**
 	 *
 	 */
@@ -78,7 +77,7 @@ public class JRDesignMultiAxisPlot extends JRBaseMultiAxisPlot
 		axes.add(axis);
 		if (axes.size() == 1)
 		{
-			chart.setDataset(axis.getChart().getDataset());
+			((JRDesignChart) getChart()).setDataset(axis.getChart().getDataset());
 		}
 		getEventSupport().fireCollectionElementAddedEvent(PROPERTY_AXES, axis, axes.size() - 1);
 	}
@@ -94,7 +93,7 @@ public class JRDesignMultiAxisPlot extends JRBaseMultiAxisPlot
 		axes.add(index, axis);
 		if (axes.size() == 1)
 		{
-			chart.setDataset(axis.getChart().getDataset());
+			((JRDesignChart) getChart()).setDataset(axis.getChart().getDataset());
 		}
 		getEventSupport().fireCollectionElementAddedEvent(PROPERTY_AXES, axis, index);
 	}
@@ -110,7 +109,7 @@ public class JRDesignMultiAxisPlot extends JRBaseMultiAxisPlot
 			if (idx >= 0)
 			{
 				axes.remove(idx);
-				chart.setDataset(axis.getChart().getDataset());
+				((JRDesignChart) getChart()).setDataset(axis.getChart().getDataset());
 				getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_AXES, axis, idx);
 			}
 		}
@@ -126,19 +125,19 @@ public class JRDesignMultiAxisPlot extends JRBaseMultiAxisPlot
 		for(Iterator<JRChartAxis> it = tmpList.iterator(); it.hasNext();){
 			removeAxis(it.next());
 		}
-		chart.setDataset(null);
+		((JRDesignChart) getChart()).setDataset(null);
 	}
-
-	/**
-	 * Returns the definition of the multiple axis chart.  This is separate
-	 * from and distinct that the definition of the nested charts.
-	 *
-	 * @return the chart object for this plot
-	 */
-	public JRChart getChart()
-	{
-			return chart;
-	}
+//
+//	/**
+//	 * Returns the definition of the multiple axis chart.  This is separate
+//	 * from and distinct that the definition of the nested charts.
+//	 *
+//	 * @return the chart object for this plot
+//	 */
+//	public JRChart getChart()
+//	{
+//			return chart;
+//	}
 
 	/**
 	 * Sets the chart object that this plot belongs to.  The chart object defines

@@ -27,6 +27,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
@@ -53,7 +54,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * the most common element properties, and their getter/setter methods. It also has a constructor for initializing
  * these properties.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseElement.java 5404 2012-05-22 09:22:00Z lucianc $
  */
 public abstract class JRBaseElement implements JRElement, Serializable, JRChangeEventsSupport
 {
@@ -83,6 +84,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 	/**
 	 *
 	 */
+	protected UUID uuid;
 	protected String key;
 	protected PositionTypeEnum positionTypeValue;
 	protected StretchTypeEnum stretchTypeValue = StretchTypeEnum.NO_STRETCH;
@@ -138,6 +140,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		parentStyle = factory.getStyle(element.getStyle());
 		parentStyleNameReference = element.getStyleNameReference();
 
+		uuid = element.getUUID();
 		key = element.getKey();
 		positionTypeValue = element.getPositionTypeValue();
 		stretchTypeValue = element.getStretchTypeValue();
@@ -204,9 +207,21 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 	/**
 	 *
 	 */
+	public UUID getUUID()
+	{
+		if (uuid == null)
+		{
+			uuid = UUID.randomUUID();
+		}
+		return uuid;
+	}
+
+	/**
+	 *
+	 */
 	public String getKey()
 	{
-		return this.key;
+		return key;
 	}
 
 	/**
@@ -528,6 +543,14 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		
 		clone.elementGroup = parentGroup;
 		
+		return clone;
+	}
+
+	@Override
+	public JRElement clone(JRElementGroup parentGroup, int y)
+	{
+		JRBaseElement clone = (JRBaseElement) clone(parentGroup);
+		clone.y = y;
 		return clone;
 	}
 

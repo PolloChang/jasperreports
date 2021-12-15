@@ -27,6 +27,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
@@ -42,7 +43,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePrintElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBasePrintElement.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBasePrintElement implements JRPrintElement, Serializable
 {
@@ -53,6 +54,7 @@ public class JRBasePrintElement implements JRPrintElement, Serializable
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+	protected UUID uuid;
 	protected JROrigin origin;
 	protected String key;
 	
@@ -71,6 +73,7 @@ public class JRBasePrintElement implements JRPrintElement, Serializable
 	protected JRStyle style;
 	
 	private JRPropertiesMap propertiesMap;
+	private int sourceElementId;
 
 	
 	/**
@@ -90,6 +93,18 @@ public class JRBasePrintElement implements JRPrintElement, Serializable
 		return defaultStyleProvider;
 	}
 	
+	/**
+	 *
+	 */
+	public UUID getUUID()
+	{
+		if (uuid == null)
+		{
+			uuid = UUID.randomUUID();
+		}
+		return uuid;
+	}
+
 	/**
 	 *
 	 */
@@ -332,6 +347,22 @@ public class JRBasePrintElement implements JRPrintElement, Serializable
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		throw new UnsupportedOperationException();
+	}
+
+	public int getSourceElementId()
+	{
+		return sourceElementId;
+	}
+
+	/**
+	 * Sets the source/fill element Id for the print element.
+	 * 
+	 * @param sourceElementId
+	 * @see #getSourceElementId()
+	 */
+	public void setSourceElementId(int sourceElementId)
+	{
+		this.sourceElementId = sourceElementId;
 	}
 
 }

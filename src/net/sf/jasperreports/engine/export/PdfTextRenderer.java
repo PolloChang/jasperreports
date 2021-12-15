@@ -23,123 +23,52 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 import com.lowagie.text.DocumentException;
-import com.lowagie.text.Element;
 import com.lowagie.text.pdf.ColumnText;
-import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfWriter;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PdfTextRenderer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: PdfTextRenderer.java 5050 2012-03-12 10:11:26Z teodord $
  */
-public class PdfTextRenderer extends AbstractTextRenderer
+public class PdfTextRenderer extends AbstractPdfTextRenderer
 {
 	/**
-	 * 
-	 */
-	private JRPdfExporter pdfExporter;
-	private PdfContentByte pdfContentByte;
-	private int horizontalAlignment;
-	private float leftOffsetFactor;
-	private float rightOffsetFactor;
-
-	
-	/**
-	 * 
+	 * @deprecated Replaced by {@link #PdfTextRenderer(JasperReportsContext, boolean)}.
 	 */
 	public static PdfTextRenderer getInstance()
 	{
 		return 
 			new PdfTextRenderer(
-				JRProperties.getBooleanProperty(JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT)
+				DefaultJasperReportsContext.getInstance(),
+				JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT)
 				);
 	}
 	
 	
 	/**
-	 * 
+	 * @deprecated Replaced by {@link #PdfTextRenderer(JasperReportsContext, boolean)}. 
 	 */
 	public PdfTextRenderer(boolean ignoreMissingFont)
 	{
-		super(false, ignoreMissingFont);
+		this(DefaultJasperReportsContext.getInstance(), ignoreMissingFont);
 	}
 	
 	
 	/**
 	 * 
 	 */
-	public void initialize(
-		JRPdfExporter pdfExporter, 
-		PdfContentByte pdfContentByte,
-		JRPrintText text,
-		int offsetX,
-		int offsetY
-		)
+	public PdfTextRenderer(JasperReportsContext jasperReportsContext, boolean ignoreMissingFont)
 	{
-		this.pdfExporter = pdfExporter;
-		this.pdfContentByte = pdfContentByte;
-		
-		horizontalAlignment = Element.ALIGN_LEFT;
-		leftOffsetFactor = 0f;
-		rightOffsetFactor = 0f;
-		
-		//FIXMETAB 0.2f was a fair approximation
-		switch (text.getHorizontalAlignmentValue())
-		{
-			case JUSTIFIED :
-			{
-				horizontalAlignment = Element.ALIGN_JUSTIFIED_ALL;
-				leftOffsetFactor = 0f;
-				rightOffsetFactor = 0f;
-				break;
-			}
-			case RIGHT :
-			{
-				if (text.getRunDirectionValue() == RunDirectionEnum.LTR)
-				{
-					horizontalAlignment = Element.ALIGN_RIGHT;
-				}
-				else
-				{
-					horizontalAlignment = Element.ALIGN_LEFT;
-				}
-				leftOffsetFactor = -0.2f;
-				rightOffsetFactor = 0f;
-				break;
-			}
-			case CENTER :
-			{
-				horizontalAlignment = Element.ALIGN_CENTER;
-				leftOffsetFactor = -0.1f;
-				rightOffsetFactor = 0.1f;
-				break;
-			}
-			case LEFT :
-			default :
-			{
-				if (text.getRunDirectionValue() == RunDirectionEnum.LTR)
-				{
-					horizontalAlignment = Element.ALIGN_LEFT;
-				}
-				else
-				{
-					horizontalAlignment = Element.ALIGN_RIGHT;
-				}
-				leftOffsetFactor = 0f;
-				rightOffsetFactor = 0.2f;
-				break;
-			}
-		}
-
-		super.initialize(text, offsetX, offsetY);
+		super(jasperReportsContext, ignoreMissingFont);
 	}
 	
 	
@@ -190,31 +119,6 @@ public class PdfTextRenderer extends AbstractTextRenderer
 		{
 			throw new JRRuntimeException(e);
 		}
-
-//		ColumnText colText = new ColumnText(pdfContentByte);
-//		colText.setSimpleColumn(
-//			getPhrase(styledText, text),
-//			x + leftPadding,
-//			jasperPrint.getPageHeight()
-//				- y
-//				- topPadding
-//				- verticalOffset
-//				- text.getLeadingOffset(),
-//				//+ text.getLineSpacingFactor() * text.getFont().getSize(),
-//			x + width - rightPadding,
-//			jasperPrint.getPageHeight()
-//				- y
-//				- height
-//				+ bottomPadding,
-//			0,//text.getLineSpacingFactor(),// * text.getFont().getSize(),
-//			horizontalAlignment
-//			);
-//
-//		colText.setLeading(0, text.getLineSpacingFactor());// * text.getFont().getSize());
-//		colText.setRunDirection(
-//			text.getRunDirectionValue() == RunDirectionEnum.LTR
-//			? PdfWriter.RUN_DIRECTION_LTR : PdfWriter.RUN_DIRECTION_RTL
-//			);
 	}
 	
 

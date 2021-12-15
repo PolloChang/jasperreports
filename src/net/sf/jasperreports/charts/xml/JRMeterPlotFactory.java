@@ -35,7 +35,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRMeterPlotFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRMeterPlotFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRMeterPlotFactory extends JRBaseFactory
 {
@@ -48,6 +48,7 @@ public class JRMeterPlotFactory extends JRBaseFactory
 	public static final String ATTRIBUTE_meterColor = "meterColor";
 	public static final String ATTRIBUTE_needleColor = "needleColor";
 	public static final String ATTRIBUTE_tickColor = "tickColor";
+	public static final String ATTRIBUTE_tickCount = "tickCount";
 
 	/**
 	 *
@@ -97,6 +98,12 @@ public class JRMeterPlotFactory extends JRBaseFactory
 		if (tickColor != null && tickColor.length() > 0)
 		{
 			meterPlot.setTickColor(JRColorUtil.getColor(tickColor, null));
+		}
+		
+		String tickCount = atts.getValue(ATTRIBUTE_tickCount);
+		if (tickCount != null && tickCount.length() > 0)
+		{
+			meterPlot.setTickCount(Integer.valueOf(tickCount));
 		}
 
 		return meterPlot;

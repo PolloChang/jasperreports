@@ -27,16 +27,32 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRJikesCompiler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRJikesCompiler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRJikesCompiler extends JRAbstractMultiClassCompiler
 {
+	/**
+	 * 
+	 */
+	public JRJikesCompiler(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
 
+	/**
+	 * @deprecated Replaced by {@link #JRJikesCompiler(JasperReportsContext)}.
+	 */
+	public JRJikesCompiler()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
 
 	/**
 	 *

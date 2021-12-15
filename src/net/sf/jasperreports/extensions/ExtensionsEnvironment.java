@@ -23,9 +23,10 @@
  */
 package net.sf.jasperreports.extensions;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.util.ClassUtils;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,7 +36,7 @@ import org.apache.commons.logging.LogFactory;
  * {@link ExtensionsRegistry} instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ExtensionsEnvironment.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ExtensionsEnvironment.java 5050 2012-03-12 10:11:26Z teodord $
  * @see #getExtensionsRegistry()
  */
 public final class ExtensionsEnvironment
@@ -58,7 +59,7 @@ public final class ExtensionsEnvironment
 	 * the property value at a later time will have no effect. 
 	 */
 	public static final String PROPERTY_EXTENSIONS_REGISTRY_CLASS = 
-		JRProperties.PROPERTY_PREFIX + "extensions.registry.class";
+		JRPropertiesUtil.PROPERTY_PREFIX + "extensions.registry.class";
 	
 	private static ExtensionsRegistry systemRegistry;
 	private static final ThreadLocal<ExtensionsRegistry> threadRegistry = new InheritableThreadLocal<ExtensionsRegistry>();
@@ -70,7 +71,7 @@ public final class ExtensionsEnvironment
 	
 	private static ExtensionsRegistry createDefaultRegistry()
 	{
-		String registryClass = JRProperties.getProperty(PROPERTY_EXTENSIONS_REGISTRY_CLASS);
+		String registryClass = JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getProperty(PROPERTY_EXTENSIONS_REGISTRY_CLASS);
 		
 		if (log.isDebugEnabled())
 		{

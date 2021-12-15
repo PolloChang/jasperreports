@@ -28,10 +28,12 @@ import java.io.Writer;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxContentTypesHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxContentTypesHelper.java 4959 2012-02-01 12:35:07Z teodord $
  */
 public class XlsxContentTypesHelper extends BaseHelper
 {
+	private boolean containsMacro;
+	
 	/**
 	 * 
 	 */
@@ -43,18 +45,38 @@ public class XlsxContentTypesHelper extends BaseHelper
 	/**
 	 *
 	 */
+	public void setContainsMacro(boolean containsMacro)
+	{
+		this.containsMacro = containsMacro;
+	}
+
+	/**
+	 *
+	 */
 	public void exportHeader()
 	{
 		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 		write("<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">\n");
+		if (containsMacro)
+		{
+			write("  <Default Extension=\"bin\" ContentType=\"application/vnd.ms-office.vbaProject\"/>\n");
+		}
 		write("  <Default Extension=\"gif\" ContentType=\"image/gif\"/>\n");
 		write("  <Default Extension=\"jpeg\" ContentType=\"image/jpeg\"/>\n");
 		write("  <Default Extension=\"png\" ContentType=\"image/png\"/>\n");
 		write("  <Default Extension=\"tiff\" ContentType=\"image/tiff\"/>\n");
 		write("  <Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>\n");
 		write("  <Default Extension=\"xml\" ContentType=\"application/xml\"/>\n");
+		if (containsMacro)
+		{
+			write("  <Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.ms-excel.sheet.macroEnabled.main+xml\"/>\n");
+			write("  <Override PartName=\"/xl/vbaProject.bin\" ContentType=\"application/vnd.ms-office.vbaProject\"/>\n");
+		}
+		else
+		{
+			write("  <Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>\n");
+		}
 		write("  <Override PartName=\"/xl/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml\"/>\n");
-		write("  <Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>\n");
 	}
 	
 

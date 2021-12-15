@@ -36,12 +36,12 @@ import net.sf.jasperreports.engine.JRException;
  * The implementation will run the query and create a {@link net.sf.jasperreports.engine.JRDataSource JRDataSource}
  * from the result.
  * <p/>
- * The query executers would usually be initialized by a {@link net.sf.jasperreports.engine.query.JRQueryExecuterFactory JRQueryExecuterFactory}
+ * The query executers would usually be initialized by a {@link net.sf.jasperreports.engine.query.QueryExecuterFactory QueryExecuterFactory}
  * with the query and the parameter values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRQueryExecuter.java 4595 2011-09-08 15:55:10Z teodord $
- * @see net.sf.jasperreports.engine.query.JRQueryExecuterFactory
+ * @version $Id: JRQueryExecuter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @see net.sf.jasperreports.engine.query.QueryExecuterFactory
  */
 public interface JRQueryExecuter
 {

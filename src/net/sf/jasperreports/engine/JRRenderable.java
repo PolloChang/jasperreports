@@ -35,90 +35,110 @@ import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 import java.io.Serializable;
 
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRRenderable.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRRenderable.java 5180 2012-03-29 13:23:12Z teodord $
+ * @deprecated Replaced by {@link Renderable}.
  */
 public interface JRRenderable extends Serializable
 {
 	/**
-	 * Specifies the image resolution in dots-per-inch, for the images created by the engine when rasterizing SVGs or when clipping other renderers.
+	 * @deprecated Replaced by {@link Renderable#PROPERTY_IMAGE_DPI}.
 	 */
-	public static final String PROPERTY_IMAGE_DPI = JRProperties.PROPERTY_PREFIX + "image.dpi";
+	public static final String PROPERTY_IMAGE_DPI = Renderable.PROPERTY_IMAGE_DPI;
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link RenderableTypeEnum#IMAGE}.
 	 */
 	public static final byte TYPE_IMAGE = 0;
+
+	/**
+	 * @deprecated Replaced by {@link RenderableTypeEnum#SVG}.
+	 */
 	public static final byte TYPE_SVG = 1;
 
 	/**
-	 * A constant used for specifying that the image is of unknown type 
+	 * A constant used for specifying that the image is of unknown type
+	 * @deprecated Replaced by {@link ImageTypeEnum#UNKNOWN}.
 	 */
 	public static final byte IMAGE_TYPE_UNKNOWN = 0;
 	
 	/**
 	 * A constant used for specifying that the image is of GIF type
+	 * @deprecated Replaced by {@link ImageTypeEnum#GIF}.
 	 */
 	public static final byte IMAGE_TYPE_GIF = 1;
 	
 	/**
 	 * A constant used for specifying that the image is of the JPEG type
+	 * @deprecated Replaced by {@link ImageTypeEnum#JPEG}.
 	 */
 	public static final byte IMAGE_TYPE_JPEG = 2;
 	
 	/**
 	 * A constant used for specifying that the image is of the PNG type
+	 * @deprecated Replaced by {@link ImageTypeEnum#PNG}.
 	 */
 	public static final byte IMAGE_TYPE_PNG = 3;
 	
 	/**
 	 * A constant used for specifying that the image is of the TIFF type
+	 * @deprecated Replaced by {@link ImageTypeEnum#TIFF}.
 	 */
 	public static final byte IMAGE_TYPE_TIFF = 4; 
 
 	/**
-	 * image mime type constants
+	 * @deprecated Replaced by {@link ImageTypeEnum#GIF}.
 	 */
 	public static final String MIME_TYPE_GIF  = "image/gif";
+	/**
+	 * @deprecated Replaced by {@link ImageTypeEnum#JPEG}.
+	 */
 	public static final String MIME_TYPE_JPEG = "image/jpeg";
+	/**
+	 * @deprecated Replaced by {@link ImageTypeEnum#PNG}.
+	 */
 	public static final String MIME_TYPE_PNG  = "image/png";
+	/**
+	 * @deprecated Replaced by {@link ImageTypeEnum#TIFF}.
+	 */
 	public static final String MIME_TYPE_TIFF = "image/tiff";
 	
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link Renderable#getId()}.
 	 */
 	public String getId();
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link Renderable#getTypeValue()}.
 	 */
 	public byte getType();
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link Renderable#getImageTypeValue()}.
 	 */
 	public byte getImageType();
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link Renderable#getDimension(JasperReportsContext)}.
 	 */
 	public Dimension2D getDimension() throws JRException;
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link Renderable#getImageData(JasperReportsContext)}.
 	 */
 	public byte[] getImageData() throws JRException;
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link Renderable#render(JasperReportsContext, Graphics2D, Rectangle2D)}.
 	 */
 	public void render(Graphics2D grx, Rectangle2D rectangle) throws JRException;
 

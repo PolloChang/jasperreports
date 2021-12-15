@@ -28,10 +28,12 @@ import java.util.Map;
 import mondrian.olap.Connection;
 import mondrian.olap.Query;
 import mondrian.olap.Result;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRValueParameter;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.query.JRAbstractQueryExecuter;
 
 import org.apache.commons.logging.Log;
@@ -40,7 +42,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMondrianQueryExecuter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRMondrianQueryExecuter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 {
@@ -49,9 +51,16 @@ public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 	private Connection connection;
 	private Result result;
 
-	public JRMondrianQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap)
+	/**
+	 * 
+	 */
+	public JRMondrianQueryExecuter(
+		JasperReportsContext jasperReportsContext, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parametersMap
+		)
 	{
-		super(dataset, parametersMap);
+		super(jasperReportsContext, dataset, parametersMap);
 		
 		connection = (Connection) getParameterValue(JRMondrianQueryExecuterFactory.PARAMETER_MONDRIAN_CONNECTION);
 
@@ -61,6 +70,14 @@ public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 		}
 		
 		parseQuery();
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #JRMondrianQueryExecuter(JasperReportsContext, JRDataset, Map)}.
+	 */
+	public JRMondrianQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap)
+	{
+		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
 	}
 
 	protected String getParameterReplacement(String parameterName)

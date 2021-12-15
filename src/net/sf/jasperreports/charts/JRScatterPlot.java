@@ -28,9 +28,9 @@ import net.sf.jasperreports.engine.JRExpression;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRScatterPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRScatterPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
-public interface JRScatterPlot extends JRChartPlot, JRXAxisFormat, JRYAxisFormat
+public interface JRScatterPlot extends JRChartPlot, JRXAxisFormat, JRYAxisFormat, JRCommonLinePlot
 {
 	
 	/**
@@ -43,26 +43,6 @@ public interface JRScatterPlot extends JRChartPlot, JRXAxisFormat, JRYAxisFormat
 	 */
 	public JRExpression getYAxisLabelExpression();
 
-	/**
-	 * 
-	 */
-	public Boolean getShowLines();
-	
-	/**
-	 * 
-	 */
-	public void setShowLines(Boolean isShowLines);
-
-	/**
-	 * 
-	 */
-	public Boolean getShowShapes();
-
-	/**
-	 * 
-	 */
-	public void setShowShapes(Boolean isShowShapes);
-	
 	/**
 	 * 
 	 */

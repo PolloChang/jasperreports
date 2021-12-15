@@ -39,7 +39,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintTextFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPrintTextFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRPrintTextFactory extends JRBaseFactory
 {
@@ -107,17 +107,17 @@ public class JRPrintTextFactory extends JRBaseFactory
 			text.setMarkup(Boolean.valueOf(isStyledText) ? JRCommonText.MARKUP_STYLED_TEXT : JRCommonText.MARKUP_NONE);
 		}
 
-//		String lineSpacingFactor = atts.getValue(JRXmlConstants.ATTRIBUTE_lineSpacingFactor);
-//		if (lineSpacingFactor != null && lineSpacingFactor.length() > 0)
-//		{
-//			text.setLineSpacingFactor(Float.parseFloat(lineSpacingFactor));
-//		}
+		String lineSpacingFactor = atts.getValue(JRXmlConstants.ATTRIBUTE_lineSpacingFactor);
+		if (lineSpacingFactor != null && lineSpacingFactor.length() > 0)
+		{
+			text.setLineSpacingFactor(Float.parseFloat(lineSpacingFactor));
+		}
 
-//		String leadingOffset = atts.getValue(JRXmlConstants.ATTRIBUTE_leadingOffset);
-//		if (leadingOffset != null && leadingOffset.length() > 0)
-//		{
-//			text.setLeadingOffset(Float.parseFloat(leadingOffset));
-//		}
+		String leadingOffset = atts.getValue(JRXmlConstants.ATTRIBUTE_leadingOffset);
+		if (leadingOffset != null && leadingOffset.length() > 0)
+		{
+			text.setLeadingOffset(Float.parseFloat(leadingOffset));
+		}
 
 		text.setLinkType(atts.getValue(JRXmlConstants.ATTRIBUTE_hyperlinkType));
 		text.setLinkTarget(atts.getValue(JRXmlConstants.ATTRIBUTE_hyperlinkTarget));

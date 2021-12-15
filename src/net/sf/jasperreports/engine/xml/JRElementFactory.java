@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.xml;
 
 import java.util.Map;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.design.JRDesignElement;
@@ -39,7 +40,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRElementFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRElementFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRElementFactory extends JRBaseFactory
 {
@@ -52,6 +53,12 @@ public class JRElementFactory extends JRBaseFactory
 		JRXmlLoader xmlLoader = (JRXmlLoader)digester.peek(digester.getCount() - 1);
 
 		JRDesignElement element = (JRDesignElement)digester.peek();
+
+		String uuid = atts.getValue(JRXmlConstants.ATTRIBUTE_uuid);
+		if (uuid != null)
+		{
+			element.setUUID(UUID.fromString(uuid));
+		}
 
 		element.setKey(atts.getValue(JRXmlConstants.ATTRIBUTE_key));
 

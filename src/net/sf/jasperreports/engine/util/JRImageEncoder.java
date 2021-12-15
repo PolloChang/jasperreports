@@ -26,11 +26,12 @@ package net.sf.jasperreports.engine.util;
 import java.awt.Image;
 
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRImageEncoder.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRImageEncoder.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRImageEncoder
 {
@@ -39,6 +40,6 @@ public interface JRImageEncoder
 	/**
 	 *
 	 */
-	public byte[] encode(Image image, byte imageType) throws JRException;
+	public byte[] encode(Image image, ImageTypeEnum imageType) throws JRException;
 
 }

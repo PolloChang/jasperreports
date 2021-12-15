@@ -29,25 +29,35 @@
 
 package net.sf.jasperreports.engine.export;
 
+import java.util.Map;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCsvExporterNature.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCsvExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
  */
-public class JRCsvExporterNature implements ExporterNature
+public class JRCsvExporterNature extends AbstractExporterNature
 {
-	
-	private ExporterFilter filter;
 	
 	/**
 	 * 
 	 */
+	public JRCsvExporterNature(JasperReportsContext jasperReportsContext, ExporterFilter filter)
+	{
+		super(jasperReportsContext, filter);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #JRCsvExporterNature(JasperReportsContext, ExporterFilter)}. 
+	 */
 	public JRCsvExporterNature(ExporterFilter filter)
 	{
-		this.filter = filter;
+		this(DefaultJasperReportsContext.getInstance(), filter);
 	}
 	
 	/**

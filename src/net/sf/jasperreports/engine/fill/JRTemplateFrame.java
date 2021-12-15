@@ -36,12 +36,13 @@ import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.ObjectUtils;
 
 /**
  * Frame information shared by multiple print frame objects.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTemplateFrame.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplateFrame.java 5180 2012-03-29 13:23:12Z teodord $
  * @see net.sf.jasperreports.engine.fill.JRTemplatePrintFrame
  */
 public class JRTemplateFrame extends JRTemplateElement implements JRBoxContainer
@@ -235,5 +236,32 @@ public class JRTemplateFrame extends JRTemplateElement implements JRBoxContainer
 			bottomPadding = null;
 			rightPadding = null;
 		}
+	}
+
+
+	public int getHashCode()
+	{
+		ObjectUtils.HashCode hash = ObjectUtils.hash();
+		addTemplateHash(hash);
+		hash.addIdentical(lineBox);
+		return hash.getHashCode();
+	}
+
+
+	public boolean isIdentical(Object object)
+	{
+		if (this == object)
+		{
+			return true;
+		}
+		
+		if (!(object instanceof JRTemplateFrame))
+		{
+			return false;
+		}
+		
+		JRTemplateFrame template = (JRTemplateFrame) object;
+		return templateIdentical(template)
+				&& ObjectUtils.identical(lineBox, template.lineBox);
 	}
 }

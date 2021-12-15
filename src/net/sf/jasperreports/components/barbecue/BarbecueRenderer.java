@@ -29,8 +29,10 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractSvgRenderer;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.output.OutputException;
@@ -39,7 +41,7 @@ import net.sourceforge.barbecue.output.OutputException;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarbecueRenderer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarbecueRenderer.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class BarbecueRenderer extends JRAbstractSvgRenderer
 {
@@ -55,7 +57,7 @@ public class BarbecueRenderer extends JRAbstractSvgRenderer
 		this.barcode = barcode;
 	}
 	
-	public Dimension2D getDimension()
+	public Dimension2D getDimension(JasperReportsContext jasperReportsContext)
 	{
 		if(rotation != null) 
 		{
@@ -73,7 +75,23 @@ public class BarbecueRenderer extends JRAbstractSvgRenderer
 		}
 	}
 
+	/**
+	 * @deprecated Replaced by {@link #getDimension(JasperReportsContext)}.
+	 */
+	public Dimension2D getDimension()
+	{
+		return getDimension(DefaultJasperReportsContext.getInstance());
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
+	 */
 	public void render(Graphics2D grx, Rectangle2D rectangle) 
+	{
+		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);
+	}
+	
+	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) 
 	{
 		AffineTransform origTransform = grx.getTransform();
 		try

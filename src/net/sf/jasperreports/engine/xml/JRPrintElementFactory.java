@@ -37,7 +37,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintElementFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPrintElementFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRPrintElementFactory extends JRBaseFactory
 {
@@ -116,6 +116,12 @@ public class JRPrintElementFactory extends JRBaseFactory
 		if (origin != null && origin.length() > 0)
 		{
 			element.setOrigin(jasperPrint.getOriginsList().get(Integer.parseInt(origin)));
+		}
+		
+		String elementId = atts.getValue(JRXmlConstants.ATTRIBUTE_srcId);
+		if (elementId != null && elementId.length() > 0)
+		{
+			element.setSourceElementId(Integer.parseInt(elementId));
 		}
 
 		return element;

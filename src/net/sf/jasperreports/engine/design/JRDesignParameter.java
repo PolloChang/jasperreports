@@ -30,7 +30,7 @@ import net.sf.jasperreports.engine.base.JRBaseParameter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignParameter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignParameter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignParameter extends JRBaseParameter
 {

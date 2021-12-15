@@ -37,7 +37,7 @@ import java.util.StringTokenizer;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStringUtil.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRStringUtil.java 5397 2012-05-21 01:10:02Z teodord $
  */
 public final class JRStringUtil
 {
@@ -392,6 +392,56 @@ public final class JRStringUtil
 		}
 		
 		return sbuffer.toString();
+	}
+	
+	/**
+	 * Escapes a text so that it can be used as a Java String literal.
+	 * 
+	 * @param input
+	 */
+	public static String escapeJavaScript(String input) {
+		if (input == null) {
+			return input;
+		}
+
+		StringBuilder filtered = new StringBuilder(input.length());
+		char prevChar = '\u0000';
+		char c;
+		for (int i = 0; i < input.length(); i++) {
+			c = input.charAt(i);
+			if (c == '"') {
+				filtered.append("\\\"");
+			}
+			else if (c == '\'') {
+				filtered.append("\\'");
+			}
+			else if (c == '\\') {
+				filtered.append("\\\\");
+			}
+			else if (c == '/') {
+				filtered.append("\\/");
+			}
+			else if (c == '\t') {
+				filtered.append("\\t");
+			}
+			else if (c == '\n') {
+				if (prevChar != '\r') {
+					filtered.append("\\n");
+				}
+			}
+			else if (c == '\r') {
+				filtered.append("\\n");
+			}
+			else if (c == '\f') {
+				filtered.append("\\f");
+			}
+			else {
+				filtered.append(c);
+			}
+			prevChar = c;
+
+		}
+		return filtered.toString();
 	}
 	
 	

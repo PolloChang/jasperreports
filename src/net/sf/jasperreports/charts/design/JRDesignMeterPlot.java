@@ -44,7 +44,7 @@ import net.sf.jasperreports.engine.JRFont;
  * range can be further subdivided into multiple color coded regions.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRDesignMeterPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignMeterPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRDesignMeterPlot extends JRBaseMeterPlot
 {
@@ -66,6 +66,8 @@ public class JRDesignMeterPlot extends JRBaseMeterPlot
 	public static final String PROPERTY_SHAPE = "shape";
 	
 	public static final String PROPERTY_TICK_COLOR = "tickColor";
+	
+	public static final String PROPERTY_TICK_COUNT = "tickCount";
 	
 	public static final String PROPERTY_TICK_INTERVAL = "tickInterval";
 	
@@ -246,6 +248,18 @@ public class JRDesignMeterPlot extends JRBaseMeterPlot
 		Object old = this.tickColor;
 		this.tickColor = tickColor;
 		getEventSupport().firePropertyChange(PROPERTY_TICK_COLOR, old, this.tickColor);
+	}
+	
+	/**
+	 * Sets the number of major tick marks on the meter scale.
+	 *
+	 * @param tickCount the number of major tick marks
+	 */
+	public void setTickCount(Integer tickCount)
+	{
+		Object old = this.tickCount;
+		this.tickCount = tickCount;
+		getEventSupport().firePropertyChange(PROPERTY_TICK_COUNT, old, this.tickCount);
 	}
 	
 	/**

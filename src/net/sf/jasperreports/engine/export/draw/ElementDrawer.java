@@ -36,10 +36,12 @@ import java.awt.Graphics2D;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.legacy.BorderOffset;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
 import net.sf.jasperreports.engine.util.JRPenUtil;
@@ -50,11 +52,39 @@ import net.sf.jasperreports.engine.util.JRPenUtil;
  * @param <T> the type of the element that the drawer supports
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ElementDrawer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ElementDrawer.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public abstract class ElementDrawer<T extends JRPrintElement>
 {
+	private final JasperReportsContext jasperReportsContext;
 
+	/**
+	 * @deprecated Replaced by {@link #ElementDrawer(JasperReportsContext)}.
+	 */
+	public ElementDrawer()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+	
+	
+	/**
+	 *
+	 */
+	public ElementDrawer(JasperReportsContext jasperReportsContext)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+	}
+	
+	
+	/**
+	 *
+	 */
+	public JasperReportsContext getJasperReportsContext()
+	{
+		return jasperReportsContext;
+	}
+
+	
 	/**
 	 *
 	 */

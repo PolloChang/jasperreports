@@ -37,24 +37,23 @@ import java.util.TreeSet;
 import net.sf.jasperreports.crosstabs.fill.calculation.BucketDefinition.Bucket;
 import net.sf.jasperreports.crosstabs.fill.calculation.MeasureDefinition.MeasureValue;
 import net.sf.jasperreports.crosstabs.type.CrosstabTotalPositionEnum;
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.fill.JRCalculable;
 import net.sf.jasperreports.engine.fill.JRFillCrosstab;
 import net.sf.jasperreports.engine.type.CalculationEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 /**
  * Crosstab bucketing engine.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BucketingService.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BucketingService.java 5214 2012-04-03 14:53:44Z teodord $
  */
 public class BucketingService
 {
 	
-	public static final String PROPERTY_BUCKET_MEASURE_LIMIT = JRProperties.PROPERTY_PREFIX + "crosstab.bucket.measure.limit";
+	public static final String PROPERTY_BUCKET_MEASURE_LIMIT = JRPropertiesUtil.PROPERTY_PREFIX + "crosstab.bucket.measure.limit";
 	
 	protected static final byte DIMENSION_ROW = 0;
 
@@ -155,7 +154,7 @@ public class BucketingService
 		
 		zeroUserMeasureValues = initUserMeasureValues();
 		
-		bucketMeasureLimit = JRProperties.getIntegerProperty(PROPERTY_BUCKET_MEASURE_LIMIT, 0);
+		bucketMeasureLimit = JRPropertiesUtil.getInstance(fillCrosstab.getFiller().getJasperReportsContext()).getIntegerProperty(PROPERTY_BUCKET_MEASURE_LIMIT, 0);
 	}
 
 
@@ -617,7 +616,7 @@ public class BucketingService
 	}
 
 	
-	static protected class MapEntry implements Map.Entry<Bucket, Object>, Comparable
+	static protected class MapEntry implements Map.Entry<Bucket, Object>, Comparable<MapEntry>
 	{
 		final Bucket key;
 
@@ -644,9 +643,9 @@ public class BucketingService
 			throw new UnsupportedOperationException();
 		}
 
-		public int compareTo(Object o)
+		public int compareTo(MapEntry o)
 		{
-			return key.compareTo(((MapEntry) o).key);
+			return key.compareTo(o.key);
 		}
 		
 		public String toString()
@@ -975,15 +974,16 @@ public class BucketingService
 		CollectedList[] collectedHeaders = new CollectedList[BucketingService.DIMENSIONS];
 		collectedHeaders[DIMENSION_ROW] = createHeadersList(DIMENSION_ROW, bucketValueMap, 0, false);
 		
+		BucketMap columnTotalsMap = null;
 		BucketListMap collectedCols;
 		if (allBuckets[0].computeTotal())
 		{
-			BucketMap map = bucketValueMap;
+			columnTotalsMap = bucketValueMap;
 			for (int i = 0; i < rowBucketCount; ++i)
 			{
-				map = (BucketMap) map.getTotalEntry().getValue();
+				columnTotalsMap = (BucketMap) columnTotalsMap.getTotalEntry().getValue();
 			}
-			collectedCols = (BucketListMap) map;
+			collectedCols = (BucketListMap) columnTotalsMap;
 		}
 		else
 		{
@@ -998,8 +998,8 @@ public class BucketingService
 		int bucketMeasureCount = rowBuckets * colBuckets * origMeasureCount;
 		checkBucketMeasureCount(bucketMeasureCount);
 		
-		colHeaders = createHeaders(BucketingService.DIMENSION_COLUMN, collectedHeaders);
-		rowHeaders = createHeaders(BucketingService.DIMENSION_ROW, collectedHeaders);
+		colHeaders = createHeaders(BucketingService.DIMENSION_COLUMN, collectedHeaders, columnTotalsMap);
+		rowHeaders = createHeaders(BucketingService.DIMENSION_ROW, collectedHeaders, bucketValueMap);
 		
 		cells = new CrosstabCell[rowBuckets][colBuckets];
 		fillCells(collectedHeaders, bucketValueMap, 0, new int[]{0, 0}, new ArrayList<Bucket>(), new ArrayList<BucketMap>());
@@ -1116,18 +1116,19 @@ public class BucketingService
 	}
 
 
-	protected HeaderCell[][] createHeaders(byte dimension, CollectedList[] headersLists)
+	protected HeaderCell[][] createHeaders(byte dimension, CollectedList[] headersLists, BucketMap totalsMap)
 	{
 		HeaderCell[][] headers = new HeaderCell[buckets[dimension].length][headersLists[dimension].span];
 		
 		List<Bucket> vals = new ArrayList<Bucket>();
-		fillHeaders(dimension, headers, 0, 0, headersLists[dimension], vals);
+		fillHeaders(dimension, headers, 0, 0, headersLists[dimension], vals, totalsMap);
 		
 		return headers;
 	}
 
 	
-	protected void fillHeaders(byte dimension, HeaderCell[][] headers, int level, int col, CollectedList list, List<Bucket> vals)
+	protected void fillHeaders(byte dimension, HeaderCell[][] headers, int level, int col, CollectedList list, 
+			List<Bucket> vals, BucketMap totalsMap)
 	{
 		if (level == buckets[dimension].length)
 		{
@@ -1144,16 +1145,83 @@ public class BucketingService
 			Bucket[] values = new Bucket[buckets[dimension].length];
 			vals.toArray(values);
 			
-			headers[level][col] = new HeaderCell(values, subList.span, depthSpan);
+			MeasureValue[][] totals = retrieveHeaderTotals(dimension, values, totalsMap);
+			headers[level][col] = new HeaderCell(values, subList.span, depthSpan, totals);
 			
 			if (!subList.key.isTotal())
 			{
-				fillHeaders(dimension, headers, level + 1, col, subList, vals);
+				fillHeaders(dimension, headers, level + 1, col, subList, vals, totalsMap);
 			}
 			
 			col += subList.span;
 			vals.remove(vals.size() - 1);
 		}
+	}
+
+
+	private MeasureValue[][] retrieveHeaderTotals(byte dimension, Bucket[] values, BucketMap totalsMap)
+	{
+		// an array to advance on bucket levels with values and totals
+		int levelCount = buckets[dimension].length;
+		Object[] levelBuckets = new Object[levelCount + 1];
+		levelBuckets[0] = totalsMap;
+		
+		for (int idx = 0; idx < levelCount; ++idx)
+		{
+			// save this as it gets modified
+			Object valueBucket = levelBuckets[idx];
+			
+			// advance with totals
+			for (int lIdx = 0; lIdx <= idx; ++lIdx)
+			{
+				if (levelBuckets[lIdx] != null)
+				{
+					MapEntry entry = ((BucketMap) levelBuckets[lIdx]).getTotalEntry();
+					levelBuckets[lIdx] = entry == null ? null : entry.getValue();
+				}
+			}
+			
+			// advance with value if it exists, or total otherwise
+			if (valueBucket != null)
+			{
+				if (idx < values.length && values[idx] != null)
+				{
+					levelBuckets[idx + 1] = ((BucketMap) valueBucket).get(values[idx]);
+				}
+				else
+				{
+					// this is the total computed in the previous loop
+					levelBuckets[idx + 1] = levelBuckets[idx];
+				}
+			}
+		}
+		
+		if (dimension == DIMENSION_ROW)
+		{
+			// we need to advance through column totals
+			for (int idx = 0; idx < colBucketCount; ++idx)
+			{
+				for (int lIdx = 0; lIdx <= levelCount; ++lIdx)
+				{
+					if (levelBuckets[lIdx] != null)
+					{
+						MapEntry entry = ((BucketMap) levelBuckets[lIdx]).getTotalEntry();
+						levelBuckets[lIdx] = entry == null ? null : entry.getValue();
+					}
+				}
+			}
+		}
+		
+		MeasureValue[][] totals = new MeasureValue[levelCount + 1][];
+		for (int lIdx = 0; lIdx <= levelCount; ++lIdx)
+		{
+			MeasureValue[] measureValues = (MeasureValue[]) levelBuckets[lIdx];
+			if (measureValues != null)
+			{
+				totals[lIdx] = getUserMeasureValues(measureValues);
+			}
+		}
+		return totals;
 	}
 
 
@@ -1310,8 +1378,6 @@ public class BucketingService
 	
 	protected static abstract class CollectedList
 	{
-		private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-
 		int span;
 		Bucket key;
 		Object orderValue;
@@ -1351,8 +1417,6 @@ public class BucketingService
 	
 	protected static class SequentialCollectedList extends CollectedList
 	{
-		private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-
 		final CrosstabTotalPositionEnum totalPosition;
 		final LinkedList<CollectedList> list;
 		
@@ -1383,8 +1447,6 @@ public class BucketingService
 	
 	protected static class OrderedCollectedList extends CollectedList
 	{
-		private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-
 		final TreeSet<CollectedList> list;
 		
 		OrderedCollectedList(BucketDefinition bucketDefinition)
@@ -1407,7 +1469,7 @@ public class BucketingService
 		}
 	}
 	
-	protected static class CollectedListComparator implements Comparator
+	protected static class CollectedListComparator implements Comparator<CollectedList>
 	{
 		final BucketDefinition bucketDefinition;
 		final boolean totalFirst;
@@ -1419,15 +1481,12 @@ public class BucketingService
 					== CrosstabTotalPositionEnum.START;
 		}
 
-		public int compare(Object o1, Object o2)
+		public int compare(CollectedList l1, CollectedList l2)
 		{
-			if (o1 == o2)
+			if (l1 == l2)
 			{
 				return 0;
 			}
-			
-			CollectedList l1 = (CollectedList) o1;
-			CollectedList l2 = (CollectedList) o2;
 			
 			int order;
 			if (l1.key.isTotal())

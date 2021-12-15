@@ -26,11 +26,12 @@ package net.sf.jasperreports.engine.fonts;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.extensions.ExtensionsRegistry;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FontExtensionsRegistry.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FontExtensionsRegistry.java 5254 2012-04-10 15:18:36Z teodord $
  */
 public class FontExtensionsRegistry implements ExtensionsRegistry
 {
@@ -52,10 +53,12 @@ public class FontExtensionsRegistry implements ExtensionsRegistry
 				fontFamilies = new ArrayList<FontFamily>();
 				for (String location : fontFamiliesLocations)
 				{
-					fontFamilies.addAll(SimpleFontExtensionHelper.getInstance().loadFontFamilies(location));
+					fontFamilies.addAll(SimpleFontExtensionHelper.getInstance().loadFontFamilies(DefaultJasperReportsContext.getInstance(), location));
 				}
 			}
-			return (List<T>) fontFamilies;
+			@SuppressWarnings("unchecked")
+			List<T> extensions = (List<T>) fontFamilies;
+			return extensions;
 		}
 		return null;
 	}

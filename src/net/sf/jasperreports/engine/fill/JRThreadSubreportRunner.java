@@ -38,7 +38,7 @@ import org.apache.commons.logging.LogFactory;
  * the master thread.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRThreadSubreportRunner.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRThreadSubreportRunner.java 5414 2012-05-25 09:51:28Z lucianc $
  */
 public class JRThreadSubreportRunner extends JRSubreportRunnable implements JRSubreportRunner
 {
@@ -103,9 +103,20 @@ public class JRThreadSubreportRunner extends JRSubreportRunnable implements JRSu
 		}
 		catch (InterruptedException e)
 		{
-			if (log.isErrorEnabled())
+			if (subreportFiller.fillContext.isCanceled())
 			{
-				log.error("Fill " + subreportFiller.fillerId + ": exception", e);
+				// only debug when cancel was requested
+				if (log.isDebugEnabled())
+				{
+					log.debug("Fill " + subreportFiller.fillerId + ": exception", e);
+				}
+			}
+			else
+			{
+				if (log.isErrorEnabled())
+				{
+					log.error("Fill " + subreportFiller.fillerId + ": exception", e);
+				}
 			}
 			
 			throw new JRRuntimeException("Error encountered while waiting on the report filling thread.", e);
@@ -186,9 +197,20 @@ public class JRThreadSubreportRunner extends JRSubreportRunnable implements JRSu
 		}
 		catch(InterruptedException e)
 		{
-			if (log.isErrorEnabled())
+			if (subreportFiller.fillContext.isCanceled())
 			{
-				log.error("Fill " + subreportFiller.fillerId + ": exception", e);
+				// only log a debug message if cancel was requested
+				if (log.isDebugEnabled())
+				{
+					log.debug("Fill " + subreportFiller.fillerId + ": exception", e);
+				}
+			}
+			else
+			{
+				if (log.isErrorEnabled())
+				{
+					log.error("Fill " + subreportFiller.fillerId + ": exception", e);
+				}
 			}
 			
 			throw new JRException("Error encountered while waiting on the subreport filling thread.", e);

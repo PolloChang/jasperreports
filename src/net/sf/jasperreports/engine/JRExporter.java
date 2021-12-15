@@ -54,7 +54,7 @@ import java.util.Map;
  * </ul>
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRExporter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRExporter
 {
@@ -88,7 +88,7 @@ public interface JRExporter
 	 */
 	public Map<JRExporterParameter, Object> getParameters();
 
-
+	
 	/**
 	 *
 	 */

@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.export.draw.Offset;
  * A generic print element Graphics2D export handler.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: GenericElementGraphics2DHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: GenericElementGraphics2DHandler.java 4698 2011-10-14 10:47:26Z lucianc $
  */
 public interface GenericElementGraphics2DHandler extends GenericElementHandler
 {
@@ -43,6 +43,7 @@ public interface GenericElementGraphics2DHandler extends GenericElementHandler
 	 * @param grx the graphic context
 	 * @param element the generic element to export
 	 */
+	//FIXME grx and maybe offset could have been passed as part of the context
 	void exportElement(JRGraphics2DExporterContext context, JRGenericPrintElement element, Graphics2D grx, Offset offset);
 
 }

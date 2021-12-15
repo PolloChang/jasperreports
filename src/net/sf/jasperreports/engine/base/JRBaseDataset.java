@@ -26,6 +26,7 @@ package net.sf.jasperreports.engine.base;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDataset;
@@ -49,7 +50,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * The base implementation of {@link net.sf.jasperreports.engine.JRDataset JRDataset}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseDataset.java 5337 2012-05-04 09:15:58Z lucianc $
  */
 public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSupport
 {
@@ -58,6 +59,7 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 	public static final String PROPERTY_WHEN_RESOURCE_MISSING_TYPE = "whenResourceMissingType";
 
 	protected final boolean isMain;
+	protected UUID uuid;
 	protected String name;
 	protected String scriptletClass;
 	protected JRScriptlet[] scriptlets;
@@ -83,6 +85,7 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 	{
 		factory.put(dataset, this);
 		
+		uuid = dataset.getUUID();
 		name = dataset.getName();
 		scriptletClass = dataset.getScriptletClass();
 		resourceBundle = dataset.getResourceBundle();
@@ -164,6 +167,15 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 		filterExpression = factory.getExpression(dataset.getFilterExpression());
 	}
 
+	
+	public UUID getUUID()
+	{
+		if (uuid == null)
+		{
+			uuid = UUID.randomUUID();
+		}
+		return uuid;
+	}
 	
 	/**
 	 *

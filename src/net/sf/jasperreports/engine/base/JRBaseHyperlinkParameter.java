@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base implementation of {@link JRHyperlinkParameter JRHyperlinkParameter}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseHyperlinkParameter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseHyperlinkParameter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseHyperlinkParameter implements JRHyperlinkParameter, Serializable
 {

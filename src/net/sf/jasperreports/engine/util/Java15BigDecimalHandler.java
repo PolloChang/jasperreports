@@ -27,6 +27,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+
 /**
  * {@link BigDecimalHandler} implementation used on Java 1.5 or newer.
  * 
@@ -35,7 +37,7 @@ import java.math.RoundingMode;
  * divisions.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: Java15BigDecimalHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: Java15BigDecimalHandler.java 5088 2012-03-15 11:55:32Z teodord $
  * @see BigDecimalUtils#divide(BigDecimal, BigDecimal)
  * @see #PROPERTY_MINIMUM_PRECISION
  */
@@ -50,7 +52,7 @@ public class Java15BigDecimalHandler implements BigDecimalHandler
 	 * The property can only be set globally.  The default value is 16.
 	 */
 	public static final String PROPERTY_MINIMUM_PRECISION = 
-		JRProperties.PROPERTY_PREFIX + "big.decimal.minimum.precision";
+		JRPropertiesUtil.PROPERTY_PREFIX + "big.decimal.minimum.precision";
 	
 	private final int minPrecision;
 	private final ThreadLocal<MathContext[]> mathContexts;
@@ -71,6 +73,7 @@ public class Java15BigDecimalHandler implements BigDecimalHandler
 		this.mathContexts = new ThreadLocal<MathContext[]>();
 	}
 	
+	@SuppressWarnings("deprecation")
 	private static int readConfiguredPrecision()
 	{
 		return JRProperties.getIntegerProperty(PROPERTY_MINIMUM_PRECISION);

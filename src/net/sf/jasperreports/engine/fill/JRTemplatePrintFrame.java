@@ -25,6 +25,7 @@ package net.sf.jasperreports.engine.fill;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import net.sf.jasperreports.engine.JRConstants;
@@ -40,7 +41,7 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * attributes. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTemplatePrintFrame.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplatePrintFrame.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTemplatePrintFrame extends JRTemplatePrintElement implements JRPrintFrame, JRPrintElementContainer
 {
@@ -52,10 +53,24 @@ public class JRTemplatePrintFrame extends JRTemplatePrintElement implements JRPr
 	 * Creates a print frame element.
 	 * 
 	 * @param templateFrame the template frame that the element will use
+	 * @deprecated provide a source Id via {@link #JRTemplatePrintFrame(JRTemplateFrame, int)}
 	 */
 	public JRTemplatePrintFrame(JRTemplateFrame templateFrame)
 	{
 		super(templateFrame);
+		
+		elements = new ArrayList<JRPrintElement>();
+	}
+
+	/**
+	 * Creates a print frame element.
+	 * 
+	 * @param templateFrame the template frame that the element will use
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRTemplatePrintFrame(JRTemplateFrame templateFrame, int sourceElementId)
+	{
+		super(templateFrame, sourceElementId);
 		
 		elements = new ArrayList<JRPrintElement>();
 	}
@@ -68,6 +83,11 @@ public class JRTemplatePrintFrame extends JRTemplatePrintElement implements JRPr
 	public void addElement(JRPrintElement element)
 	{
 		elements.add(element);
+	}
+
+	public void addElements(Collection<? extends JRPrintElement> elements)
+	{
+		this.elements.addAll(elements);
 	}
 
 	/**

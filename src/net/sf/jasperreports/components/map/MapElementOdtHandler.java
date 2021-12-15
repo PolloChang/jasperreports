@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.export.oasis.JROdtExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementOdtHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MapElementOdtHandler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class MapElementOdtHandler implements GenericElementOdtHandler
 {
@@ -51,7 +51,7 @@ public class MapElementOdtHandler implements GenericElementOdtHandler
 		try
 		{
 			JROdtExporter exporter = (JROdtExporter)exporterContext.getExporter();
-			exporter.exportImage(exporterContext.getTableBuilder(), MapElementImageProvider.getImage(element), gridCell);
+			exporter.exportImage(exporterContext.getTableBuilder(), MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element), gridCell);
 		}
 		catch (Exception e)
 		{

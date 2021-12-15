@@ -31,7 +31,7 @@ import net.sf.jasperreports.engine.base.JRBoxPen;
  * This is useful for drawing borders around text elements and images. Boxes can have borders and paddings, which can
  * have different width and colour on each side of the element.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRLineBox.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRLineBox.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRLineBox extends JRPenContainer
 {

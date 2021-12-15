@@ -39,7 +39,7 @@ package net.sf.jasperreports.engine;
  * properties are relative to the frame instead of the band. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFrame.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFrame.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRFrame extends JRElement, JRElementGroup, JRBoxContainer
 {

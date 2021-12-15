@@ -47,7 +47,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * An immutable representation of the layout of a Meter chart.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRBaseMeterPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseMeterPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 {
@@ -114,6 +114,11 @@ public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 	 * The color to use for each tick on the face of the meter.
 	 */
 	protected Color tickColor;
+	
+	/**
+	 * The number of major ticks on the meter scale.
+	 */
+	protected Integer tickCount;
 
 	/**
 	 * The font to use when writing tick labels.
@@ -171,7 +176,7 @@ public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 		meterAngleInteger = meterPlot.getMeterAngleInteger();
 		units = meterPlot.getUnits();
 		tickIntervalDouble = meterPlot.getTickIntervalDouble();
-
+		tickCount = meterPlot.getTickCount();
 		meterBackgroundColor = meterPlot.getMeterBackgroundColor();
 		needleColor = meterPlot.getNeedleColor();
 		tickColor = meterPlot.getTickColor();
@@ -255,6 +260,14 @@ public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 	public Color getTickColor()
 	{
 		return tickColor;
+	}
+
+	/**
+	 *
+	 */
+	public Integer getTickCount()
+	{
+		return tickCount;
 	}
 
 	/**

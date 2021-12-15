@@ -24,22 +24,21 @@
 package net.sf.jasperreports.engine.fill;
 
 import net.sf.jasperreports.engine.JRCommonText;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * Text measurer factory.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTextMeasurerFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTextMeasurerFactory.java 5089 2012-03-15 12:46:09Z teodord $
  * @see JRTextMeasurer
+ * @deprecated Replaced by {@link net.sf.jasperreports.engine.util.JRTextMeasurerFactory}.
  */
 public interface JRTextMeasurerFactory
 {
 
 	/**
-	 * Creates a text measurer for a text object.
-	 * 
-	 * @param text the text object
-	 * @return a text measurer
+	 * @deprecated Replaced by {@link net.sf.jasperreports.engine.util.JRTextMeasurerFactory#createMeasurer(JasperReportsContext, JRCommonText)}.
 	 */
 	JRTextMeasurer createMeasurer(JRCommonText text);
 	

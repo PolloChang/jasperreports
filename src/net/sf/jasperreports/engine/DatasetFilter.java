@@ -30,11 +30,11 @@ import net.sf.jasperreports.engine.fill.DatasetFillContext;
  * 
  * <p>
  * Such a filter can be used in addition to the dataset filter expression to
- * match dataset rows based on a programatic criteria.
+ * match dataset rows based on a programmatic criteria.
  * </p>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DatasetFilter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DatasetFilter.java 4765 2011-10-28 09:04:08Z lucianc $
  * @see JRParameter#FILTER
  * @see JRDataset#getFilterExpression()
  */

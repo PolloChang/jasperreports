@@ -29,12 +29,23 @@ import net.sf.jasperreports.data.csv.CsvDataAdapter;
 import net.sf.jasperreports.data.csv.CsvDataAdapterService;
 import net.sf.jasperreports.data.ds.DataSourceDataAdapter;
 import net.sf.jasperreports.data.ds.DataSourceDataAdapterService;
+import net.sf.jasperreports.data.ejbql.EjbqlDataAdapter;
+import net.sf.jasperreports.data.ejbql.EjbqlDataAdapterService;
 import net.sf.jasperreports.data.empty.EmptyDataAdapter;
 import net.sf.jasperreports.data.empty.EmptyDataAdapterService;
+import net.sf.jasperreports.data.hibernate.HibernateDataAdapter;
+import net.sf.jasperreports.data.hibernate.HibernateDataAdapterService;
+import net.sf.jasperreports.data.hibernate.spring.SpringHibernateDataAdapter;
+import net.sf.jasperreports.data.hibernate.spring.SpringHibernateDataAdapterService;
 import net.sf.jasperreports.data.jdbc.JdbcDataAdapter;
+import net.sf.jasperreports.data.jdbc.JdbcDataAdapterImpl;
 import net.sf.jasperreports.data.jdbc.JdbcDataAdapterService;
 import net.sf.jasperreports.data.jndi.JndiDataAdapter;
 import net.sf.jasperreports.data.jndi.JndiDataAdapterService;
+import net.sf.jasperreports.data.json.JsonDataAdapter;
+import net.sf.jasperreports.data.json.JsonDataAdapterService;
+import net.sf.jasperreports.data.mondrian.MondrianDataAdapter;
+import net.sf.jasperreports.data.mondrian.MondrianDataAdapterService;
 import net.sf.jasperreports.data.provider.DataSourceProviderDataAdapter;
 import net.sf.jasperreports.data.provider.DataSourceProviderDataAdapterService;
 import net.sf.jasperreports.data.qe.QueryExecuterDataAdapter;
@@ -47,11 +58,14 @@ import net.sf.jasperreports.data.xml.RemoteXmlDataAdapter;
 import net.sf.jasperreports.data.xml.RemoteXmlDataAdapterService;
 import net.sf.jasperreports.data.xml.XmlDataAdapter;
 import net.sf.jasperreports.data.xml.XmlDataAdapterService;
+import net.sf.jasperreports.data.xmla.XmlaDataAdapter;
+import net.sf.jasperreports.data.xmla.XmlaDataAdapterService;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultDataAdapterServiceFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DefaultDataAdapterServiceFactory.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class DefaultDataAdapterServiceFactory implements DataAdapterServiceFactory
 {
@@ -72,57 +86,81 @@ public class DefaultDataAdapterServiceFactory implements DataAdapterServiceFacto
 	/**
 	 *
 	 */
-	public DataAdapterService getDataAdapterService(DataAdapter dataAdapter)
+	public DataAdapterService getDataAdapterService(JasperReportsContext jasperReportsContext, DataAdapter dataAdapter)
 	{
 		DataAdapterService dataAdapterService = null;
 		
 		if (dataAdapter instanceof BeanDataAdapter)
 		{
-			dataAdapterService = new BeanDataAdapterService((BeanDataAdapter)dataAdapter);
+			dataAdapterService = new BeanDataAdapterService(jasperReportsContext, (BeanDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof CsvDataAdapter)
 		{
-			dataAdapterService = new CsvDataAdapterService((CsvDataAdapter)dataAdapter);
+			dataAdapterService = new CsvDataAdapterService(jasperReportsContext, (CsvDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof DataSourceDataAdapter)
 		{
-			dataAdapterService = new DataSourceDataAdapterService((DataSourceDataAdapter)dataAdapter);
+			dataAdapterService = new DataSourceDataAdapterService(jasperReportsContext, (DataSourceDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof EmptyDataAdapter)
 		{
-			dataAdapterService = new EmptyDataAdapterService((EmptyDataAdapter)dataAdapter);
-		}
-		else if (dataAdapter instanceof JdbcDataAdapter)
-		{
-			dataAdapterService = new JdbcDataAdapterService((JdbcDataAdapter)dataAdapter);
+			dataAdapterService = new EmptyDataAdapterService(jasperReportsContext, (EmptyDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof JndiDataAdapter)
 		{
-			dataAdapterService = new JndiDataAdapterService((JndiDataAdapter)dataAdapter);//FIXME maybe want some cache here
+			dataAdapterService = new JndiDataAdapterService(jasperReportsContext, (JndiDataAdapter)dataAdapter);//FIXME maybe want some cache here
 		}
 		else if (dataAdapter instanceof DataSourceProviderDataAdapter)
 		{
-			dataAdapterService = new DataSourceProviderDataAdapterService((DataSourceProviderDataAdapter)dataAdapter);
+			dataAdapterService = new DataSourceProviderDataAdapterService(jasperReportsContext, (DataSourceProviderDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof QueryExecuterDataAdapter)
 		{
-			dataAdapterService = new QueryExecuterDataAdapterService((QueryExecuterDataAdapter)dataAdapter);
+			dataAdapterService = new QueryExecuterDataAdapterService(jasperReportsContext, (QueryExecuterDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof XlsDataAdapter)
 		{
-			dataAdapterService = new XlsDataAdapterService((XlsDataAdapter)dataAdapter);
+			dataAdapterService = new XlsDataAdapterService(jasperReportsContext, (XlsDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof XlsxDataAdapter)
 		{
-			dataAdapterService = new XlsxDataAdapterService((XlsxDataAdapter)dataAdapter);
+			dataAdapterService = new XlsxDataAdapterService(jasperReportsContext, (XlsxDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof RemoteXmlDataAdapter)
 		{
-			dataAdapterService = new RemoteXmlDataAdapterService((RemoteXmlDataAdapter)dataAdapter);
+			dataAdapterService = new RemoteXmlDataAdapterService(jasperReportsContext, (RemoteXmlDataAdapter)dataAdapter);
 		}
 		else if (dataAdapter instanceof XmlDataAdapter)
 		{
-			dataAdapterService = new XmlDataAdapterService((XmlDataAdapter)dataAdapter);
+			dataAdapterService = new XmlDataAdapterService(jasperReportsContext, (XmlDataAdapter)dataAdapter);
+		}
+		else if (dataAdapter instanceof JsonDataAdapter)
+		{
+			dataAdapterService = new JsonDataAdapterService(jasperReportsContext, (JsonDataAdapter)dataAdapter);
+		}
+		else if (dataAdapter instanceof HibernateDataAdapter)
+		{
+			dataAdapterService = new HibernateDataAdapterService(jasperReportsContext, (HibernateDataAdapter)dataAdapter);
+		}
+		else if (dataAdapter instanceof SpringHibernateDataAdapter)
+		{
+			dataAdapterService = new SpringHibernateDataAdapterService(jasperReportsContext, (SpringHibernateDataAdapter)dataAdapter);
+		}
+		else if (dataAdapter instanceof EjbqlDataAdapter)
+		{
+			dataAdapterService = new EjbqlDataAdapterService(jasperReportsContext, (EjbqlDataAdapter)dataAdapter);
+		}
+		else if (dataAdapter instanceof MondrianDataAdapter)
+		{
+			dataAdapterService = new MondrianDataAdapterService(jasperReportsContext, (MondrianDataAdapter)dataAdapter);
+		}
+		else if (dataAdapter instanceof XmlaDataAdapter)
+		{
+			dataAdapterService = new XmlaDataAdapterService(jasperReportsContext, (XmlaDataAdapter)dataAdapter);
+		}
+		else if (dataAdapter.getClass().getName().equals(JdbcDataAdapterImpl.class.getName()))
+		{
+			dataAdapterService = new JdbcDataAdapterService(jasperReportsContext, (JdbcDataAdapter)dataAdapter);
 		}
 		
 		return dataAdapterService;

@@ -40,15 +40,17 @@ import java.util.ResourceBundle;
 
 import javax.swing.JOptionPane;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRViewer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRViewer.java 5166 2012-03-28 13:11:05Z teodord $
  */
 public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 {
@@ -65,56 +67,120 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 	 * By default, this property is set to 0.
 	 * </p>
 	 */
-	public static final String VIEWER_RENDER_BUFFER_MAX_SIZE = JRProperties.PROPERTY_PREFIX + "viewer.render.buffer.max.size";
+	public static final String VIEWER_RENDER_BUFFER_MAX_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "viewer.render.buffer.max.size";
 
 	protected JRViewerController viewerContext;
 
-	/** Creates new form JRViewer */
+	/**
+	 * @see #JRViewer(JasperReportsContext, String, boolean, Locale, ResourceBundle)
+	 */
 	public JRViewer(String fileName, boolean isXML) throws JRException
 	{
 		this(fileName, isXML, null);
 	}
 
 
-	/** Creates new form JRViewer */
+	/**
+	 * @see #JRViewer(JasperReportsContext, InputStream, boolean, Locale, ResourceBundle)
+	 */
 	public JRViewer(InputStream is, boolean isXML) throws JRException
 	{
 		this(is, isXML, null);
 	}
 
 
-	/** Creates new form JRViewer */
+	/**
+	 * @see #JRViewer(JasperReportsContext, JasperPrint, Locale, ResourceBundle)
+	 */
 	public JRViewer(JasperPrint jrPrint)
 	{
 		this(jrPrint, null);
 	}
 
 
-	/** Creates new form JRViewer */
+	/**
+	 * @see #JRViewer(JasperReportsContext, String, boolean, Locale, ResourceBundle)
+	 */
 	public JRViewer(String fileName, boolean isXML, Locale locale) throws JRException
 	{
 		this(fileName, isXML, locale, null);
 	}
 
 
-	/** Creates new form JRViewer */
+	/**
+	 * @see #JRViewer(InputStream, boolean, Locale, ResourceBundle)
+	 */
 	public JRViewer(InputStream is, boolean isXML, Locale locale) throws JRException
 	{
 		this(is, isXML, locale, null);
 	}
 
 
-	/** Creates new form JRViewer */
+	/**
+	 * @see #JRViewer(JasperPrint, Locale, ResourceBundle)
+	 */
 	public JRViewer(JasperPrint jrPrint, Locale locale)
 	{
 		this(jrPrint, locale, null);
 	}
 
 
-	/** Creates new form JRViewer */
+	/**
+	 * @see #JRViewer(String, boolean, Locale, ResourceBundle)
+	 */
 	public JRViewer(String fileName, boolean isXML, Locale locale, ResourceBundle resBundle) throws JRException
 	{
-		initViewerContext(locale, resBundle);
+		this(
+			DefaultJasperReportsContext.getInstance(), 
+			fileName, 
+			isXML, 
+			locale, 
+			resBundle
+			);
+	}
+
+
+	/**
+	 * @see #JRViewer(InputStream, boolean, Locale, ResourceBundle)
+	 */
+	public JRViewer(InputStream is, boolean isXML, Locale locale, ResourceBundle resBundle) throws JRException
+	{
+		this(
+			DefaultJasperReportsContext.getInstance(), 
+			is, 
+			isXML, 
+			locale, 
+			resBundle
+			);
+	}
+
+
+	/**
+	 * @see #JRViewer(JasperReportsContext, JasperPrint, Locale, ResourceBundle)
+	 */
+	public JRViewer(JasperPrint jrPrint, Locale locale, ResourceBundle resBundle)
+	{
+		this(
+			DefaultJasperReportsContext.getInstance(), 
+			jrPrint, 
+			locale, 
+			resBundle
+			);
+	}
+
+
+	/**
+	 * 
+	 */
+	public JRViewer(
+		JasperReportsContext jasperReportsContext,
+		String fileName, 
+		boolean isXML, 
+		Locale locale, 
+		ResourceBundle resBundle
+		) throws JRException
+	{
+		initViewerContext(jasperReportsContext, locale, resBundle);
 
 		initComponents();
 
@@ -124,10 +190,18 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 	}
 
 
-	/** Creates new form JRViewer */
-	public JRViewer(InputStream is, boolean isXML, Locale locale, ResourceBundle resBundle) throws JRException
+	/**
+	 * 
+	 */
+	public JRViewer(
+		JasperReportsContext jasperReportsContext,
+		InputStream is, 
+		boolean isXML, 
+		Locale locale, 
+		ResourceBundle resBundle
+		) throws JRException
 	{
-		initViewerContext(locale, resBundle);
+		initViewerContext(jasperReportsContext, locale, resBundle);
 
 		initComponents();
 
@@ -137,10 +211,17 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 	}
 
 
-	/** Creates new form JRViewer */
-	public JRViewer(JasperPrint jrPrint, Locale locale, ResourceBundle resBundle)
+	/**
+	 * 
+	 */
+	public JRViewer(
+		JasperReportsContext jasperReportsContext,
+		JasperPrint jrPrint, 
+		Locale locale, 
+		ResourceBundle resBundle
+		)
 	{
-		initViewerContext(locale, resBundle);
+		initViewerContext(jasperReportsContext, locale, resBundle);
 
 		initComponents();
 
@@ -149,9 +230,22 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 		tlbToolBar.init();
 	}
 
+
+	/**
+	 * @deprecated Replaced by {@link #initViewerContext(JasperReportsContext, Locale, ResourceBundle)}.
+	 */
 	protected void initViewerContext(Locale locale, ResourceBundle resBundle)
 	{
-		viewerContext = new JRViewerController(locale, resBundle);
+		initViewerContext(DefaultJasperReportsContext.getInstance(), locale, resBundle);
+	}
+
+	
+	/**
+	 *
+	 */
+	protected void initViewerContext(JasperReportsContext jasperReportsContext, Locale locale, ResourceBundle resBundle)
+	{
+		viewerContext = new JRViewerController(jasperReportsContext, locale, resBundle);
 		setLocale(viewerContext.getLocale());
 		viewerContext.addListener(this);
 	}
@@ -213,6 +307,7 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 		return new JRViewerToolbar(viewerContext);
 	}
 
+	//FIXME add a method to do addHyperlinkListener without subclassing
 	protected JRViewerPanel createViewerPanel()
 	{
 		return new JRViewerPanel(viewerContext);

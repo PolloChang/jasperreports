@@ -23,13 +23,20 @@
  */
 package net.sf.jasperreports.engine;
 
+import java.awt.Graphics2D;
+import java.awt.geom.Dimension2D;
+import java.awt.geom.Rectangle2D;
+
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractRenderer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRAbstractRenderer.java 5180 2012-03-29 13:23:12Z teodord $
  */
-public abstract class JRAbstractRenderer implements JRRenderable
+public abstract class JRAbstractRenderer implements Renderable
 {
 
 	/**
@@ -60,4 +67,53 @@ public abstract class JRAbstractRenderer implements JRRenderable
 		return id;
 	}
 
+	
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	public RenderableTypeEnum getTypeValue()
+	{
+		return RenderableTypeEnum.getByValue(getType());
+	}
+
+
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	public ImageTypeEnum getImageTypeValue()
+	{
+		return ImageTypeEnum.getByValue(getImageType());
+	}
+
+
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	public Dimension2D getDimension(JasperReportsContext jasperReportsContext) throws JRException
+	{
+		return getDimension();
+	}
+
+
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	public byte[] getImageData(JasperReportsContext jasperReportsContext) throws JRException
+	{
+		return getImageData();
+	}
+
+
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) throws JRException
+	{
+		render(grx, rectangle);
+	}
 }

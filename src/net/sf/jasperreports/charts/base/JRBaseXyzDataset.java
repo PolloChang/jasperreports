@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRBaseXyzDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseXyzDataset.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseXyzDataset extends JRBaseChartDataset implements JRXyzDataset {
 	

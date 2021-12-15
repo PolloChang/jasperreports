@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 
 import net.sf.jasperreports.crosstabs.JRCellContents;
-import net.sf.jasperreports.engine.JRBox;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRLineBox;
@@ -43,7 +42,7 @@ import net.sf.jasperreports.engine.util.JRBoxUtil;
  * Base read-only implementation of {@link net.sf.jasperreports.crosstabs.JRCellContents JRCellContents}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCellContents.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseCellContents.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseCellContents extends JRBaseElementGroup implements JRCellContents
 {
@@ -133,7 +132,7 @@ public class JRBaseCellContents extends JRBaseElementGroup implements JRCellCont
 	/**
 	 * @deprecated
 	 */
-	private JRBox box;
+	private net.sf.jasperreports.engine.JRBox box;
 	
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{

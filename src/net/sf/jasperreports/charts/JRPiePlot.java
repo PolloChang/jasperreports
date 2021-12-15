@@ -28,7 +28,7 @@ import net.sf.jasperreports.engine.JRChartPlot;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPiePlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPiePlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRPiePlot extends JRChartPlot
 {

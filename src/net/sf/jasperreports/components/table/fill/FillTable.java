@@ -39,8 +39,11 @@ import net.sf.jasperreports.components.table.TableComponent;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertyExpression;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperReport;
@@ -48,6 +51,7 @@ import net.sf.jasperreports.engine.component.BaseFillComponent;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
 import net.sf.jasperreports.engine.design.JRAbstractCompiler;
 import net.sf.jasperreports.engine.design.JRReportCompileData;
+import net.sf.jasperreports.engine.export.JRHtmlExporter;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 import net.sf.jasperreports.engine.fill.JRTemplateFrame;
 import net.sf.jasperreports.engine.fill.JRTemplatePrintFrame;
@@ -61,7 +65,7 @@ import org.apache.commons.logging.LogFactory;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillTable.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FillTable.java 5338 2012-05-04 09:24:49Z teodord $
  */
 public class FillTable extends BaseFillComponent
 {
@@ -127,6 +131,37 @@ public class FillTable extends BaseFillComponent
 		return toPrint;
 	}
 	
+	protected JRPropertiesMap evaluateProperties(BaseColumn column, byte evaluation) throws JRException
+	{
+		JRPropertiesMap staticProperties = column.hasProperties() ? column.getPropertiesMap().cloneProperties() : null;
+		JRPropertiesMap mergedProperties = null;
+
+		JRPropertyExpression[] propExprs = column.getPropertyExpressions();
+		if (propExprs == null || propExprs.length == 0)
+		{
+			mergedProperties = staticProperties;
+		}
+		else
+		{
+			JRPropertiesMap dynamicProperties = new JRPropertiesMap();
+			
+			for (int i = 0; i < propExprs.length; i++)
+			{
+				JRPropertyExpression prop = propExprs[i];
+				String value = (String) evaluateExpression(prop.getValueExpression(), evaluation);
+				if (value != null)
+				{
+					dynamicProperties.setProperty(prop.getName(), value);
+				}
+			}
+			
+			mergedProperties = dynamicProperties.cloneProperties();
+			mergedProperties.setBaseProperties(staticProperties);
+		}
+		
+		return mergedProperties;
+	}
+	
 	protected class FillColumnEvaluator implements ColumnVisitor<FillColumn>
 	{
 		final byte evaluation;
@@ -141,7 +176,12 @@ public class FillTable extends BaseFillComponent
 			try
 			{
 				boolean toPrint = toPrintColumn(column, evaluation);
-				return toPrint ? new FillColumn(column) : null;
+				if (toPrint)
+				{
+					JRPropertiesMap properties = evaluateProperties(column, evaluation);
+					return new FillColumn(column, properties); 
+				}
+				return null;
 			}
 			catch (JRException e)
 			{
@@ -178,7 +218,8 @@ public class FillTable extends BaseFillComponent
 					}
 					else
 					{
-						fillColumn = new FillColumn(columnGroup, printWidth, subColumns);
+						JRPropertiesMap properties = evaluateProperties(columnGroup, evaluation);
+						fillColumn = new FillColumn(columnGroup, printWidth, subColumns, properties);
 					}
 				}
 				else
@@ -244,7 +285,7 @@ public class FillTable extends BaseFillComponent
 		
 		if (log.isDebugEnabled())
 		{
-			String tableReportXml = JRXmlWriter.writeReport(tableReport, "UTF-8");
+			String tableReportXml = new JRXmlWriter(fillContext.getFiller().getJasperReportsContext()).write(tableReport, "UTF-8");
 			log.debug("Generated table report:\n" + tableReportXml);
 		}
 		
@@ -304,8 +345,14 @@ public class FillTable extends BaseFillComponent
 				return FillPrepareResult.NO_PRINT_NO_OVERFLOW;
 			}
 			
-			FillPrepareResult result = fillSubreport.prepareSubreport(
-					availableHeight, filling);
+			JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate(), elementId);
+			JRLineBox lineBox = printFrame.getLineBox();
+
+			FillPrepareResult result = 
+				fillSubreport.prepareSubreport(
+					availableHeight - lineBox.getTopPadding() - lineBox.getBottomPadding(), 
+					filling
+					);
 			filling = result.willOverflow();
 			return result;
 		}
@@ -317,11 +364,15 @@ public class FillTable extends BaseFillComponent
 
 	public JRPrintElement fill()
 	{
-		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate());
+		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate(), elementId);
+		printFrame.getPropertiesMap().setProperty(JRHtmlExporter.PROPERTY_HTML_UUID, fillContext.getComponentElement().getUUID().toString());
+
+		JRLineBox lineBox = printFrame.getLineBox();
+		
 		printFrame.setX(fillContext.getComponentElement().getX());
 		printFrame.setY(fillContext.getElementPrintY());
-		printFrame.setWidth(fillWidth);
-		printFrame.setHeight(fillSubreport.getContentsStretchHeight());
+		printFrame.setWidth(fillWidth + lineBox.getLeftPadding() + lineBox.getRightPadding());
+		printFrame.setHeight(fillSubreport.getContentsStretchHeight() + lineBox.getTopPadding() + lineBox.getBottomPadding());
 		
 		List<JRStyle> styles = fillSubreport.getSubreportStyles();
 		for (Iterator<JRStyle> it = styles.iterator(); it.hasNext();)
@@ -354,6 +405,8 @@ public class FillTable extends BaseFillComponent
 			}
 		}
 		
+		fillSubreport.subreportPageFilled();
+		
 		return printFrame;
 	}
 
@@ -367,6 +420,7 @@ public class FillTable extends BaseFillComponent
 						fillContext.getElementOrigin(),
 						fillContext.getDefaultStyleProvider());
 			frameTemplate.setElement(fillContext.getComponentElement());
+			frameTemplate = deduplicate(frameTemplate);
 			
 			printFrameTemplates.put(style, frameTemplate);
 		}

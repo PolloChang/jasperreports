@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRConditionalStyle;
 import net.sf.jasperreports.engine.JRConstants;
@@ -55,13 +56,12 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.PositionTypeEnum;
 import net.sf.jasperreports.engine.type.StretchTypeEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillElement.java 5404 2012-05-22 09:22:00Z lucianc $
  */
 public abstract class JRFillElement implements JRElement, JRFillCloneable, JRStyleSetter
 {
@@ -93,6 +93,8 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	protected JRFillBand band;
 	
 	protected JROriginProvider originProvider;
+	
+	protected int elementId;
 
 	/**
 	 *
@@ -156,6 +158,8 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 			this.filler = filler;
 			this.expressionEvaluator = factory.getExpressionEvaluator();
 			this.defaultStyleProvider = factory.getDefaultStyleProvider();
+			
+			elementId = filler.assignElementId(this);
 
 			/*   */
 			printWhenGroupChanges = factory.getGroup(element.getPrintWhenGroupChanges());
@@ -182,6 +186,8 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		this.expressionEvaluator = element.expressionEvaluator;
 		this.defaultStyleProvider = element.defaultStyleProvider;
 		this.originProvider = element.originProvider;
+		
+		elementId = element.elementId;
 
 		/*   */
 		printWhenGroupChanges = element.printWhenGroupChanges;
@@ -212,6 +218,14 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	}
 
 
+	/**
+	 *
+	 */
+	public UUID getUUID()
+	{
+		return parent.getUUID();
+	}
+	
 	/**
 	 *
 	 */
@@ -714,6 +728,9 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		{
 			template = createElementTemplate();
 			transferProperties(template);
+			
+			// deduplicate to previously created identical objects
+			template = filler.fillContext.deduplicate(template);
 			
 			registerTemplate(style, template);
 		}
@@ -1347,6 +1364,12 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public JRElement clone(JRElementGroup parentGroup, int y)
+	{
+		throw new UnsupportedOperationException();
+	}
+
 	public boolean hasProperties()
 	{
 		return mergedProperties != null && mergedProperties.hasProperties();
@@ -1371,13 +1394,13 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	
 	protected void transferProperties(JRTemplateElement template)
 	{
-		JRProperties.transferProperties(parent, template, 
+		filler.getPropertiesUtil().transferProperties(parent, template, 
 				JasperPrint.PROPERTIES_PRINT_TRANSFER_PREFIX);
 	}
 	
 	protected void transferProperties(JRPrintElement element)
 	{
-		JRProperties.transferProperties(dynamicProperties, element, 
+		filler.getPropertiesUtil().transferProperties(dynamicProperties, element, 
 				JasperPrint.PROPERTIES_PRINT_TRANSFER_PREFIX);
 	}
 	
@@ -1430,7 +1453,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	
 	protected boolean isDelayedStyleEvaluation()
 	{
-		return JRProperties.getBooleanProperty(this, 
+		return filler.getPropertiesUtil().getBooleanProperty(this, 
 				JRStyle.PROPERTY_EVALUATION_TIME_ENABLED, false);
 	}
 }

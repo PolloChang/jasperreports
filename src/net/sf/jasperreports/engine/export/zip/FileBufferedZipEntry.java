@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FileBufferedZipEntry.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FileBufferedZipEntry.java 5435 2012-06-11 15:37:36Z teodord $
  */
 public class FileBufferedZipEntry implements ExportZipEntry 
 {
@@ -52,6 +52,16 @@ public class FileBufferedZipEntry implements ExportZipEntry
 	public FileBufferedZipEntry(String name)
 	{
 		this(name, null);
+	}
+	
+	/**
+	 * 
+	 */
+	public FileBufferedZipEntry(String name, int memoryThreshold)
+	{
+		this.name = name;
+
+		fbos = new FileBufferedOutputStream(memoryThreshold);
 	}
 	
 	/**

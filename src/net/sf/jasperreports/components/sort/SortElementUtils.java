@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.components.sort;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortElementUtils.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SortElementUtils.java 5339 2012-05-04 09:40:41Z narcism $
  */
 public class SortElementUtils {
 	
@@ -67,4 +68,24 @@ public class SortElementUtils {
 		return sortOrderMapping.get(sortOrder);
 	}
 
+	public static FilterTypesEnum getFilterType(Class<?> clazz) {
+		FilterTypesEnum result = null;
+		if (Number.class.isAssignableFrom(clazz)) 
+		{
+			result = FilterTypesEnum.NUMERIC;
+		}
+		else if (String.class.isAssignableFrom(clazz))
+		{
+			result = FilterTypesEnum.TEXT;
+		}
+		else if (Date.class.isAssignableFrom(clazz))
+		{
+			result = FilterTypesEnum.DATE;
+		}
+		else if (Boolean.class.isAssignableFrom(clazz))
+		{
+			result = FilterTypesEnum.BOOLEAN;
+		}
+		return result;
+	}
 }

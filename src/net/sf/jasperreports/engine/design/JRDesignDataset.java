@@ -40,8 +40,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.DatasetFilter;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractScriptlet;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDataSource;
@@ -59,7 +61,7 @@ import net.sf.jasperreports.engine.JRVirtualizer;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.engine.base.JRBaseDataset;
-import net.sf.jasperreports.engine.query.JRQueryExecuterFactory;
+import net.sf.jasperreports.engine.query.QueryExecuterFactory;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
@@ -73,7 +75,7 @@ import net.sf.jasperreports.engine.util.JRQueryExecuterUtils;
  * Implementation of {@link net.sf.jasperreports.engine.JRDataset JRDataset} to be used for report desing.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignDataset.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDesignDataset.java 5337 2012-05-04 09:15:58Z lucianc $
  */
 public class JRDesignDataset extends JRBaseDataset
 {
@@ -100,6 +102,8 @@ public class JRDesignDataset extends JRBaseDataset
 	public static final String PROPERTY_SORT_FIELDS = "sortFields";
 	
 	public static final String PROPERTY_VARIABLES = "variables";
+	
+	private boolean ownUUID;
 
 	/**
 	 * Scriptlets mapped by name.
@@ -156,6 +160,7 @@ public class JRDesignDataset extends JRBaseDataset
 	/**
 	 * An array containing the built-in parameters that can be found and used in any report dataset.
 	 */
+	@SuppressWarnings("deprecation")
 	private static final Object[] BUILT_IN_PARAMETERS = new Object[] { 
 		JRParameter.REPORT_CONTEXT, ReportContext.class, 
 		JRParameter.REPORT_PARAMETERS_MAP, java.util.Map.class, 
@@ -349,6 +354,31 @@ public class JRDesignDataset extends JRBaseDataset
 		return variable;
 	}
 
+	
+	/**
+	 * Sets the unique identifier for the report.
+	 * 
+	 * @param uuid the identifier
+	 */
+	public void setUUID(UUID uuid)
+	{
+		this.uuid = uuid;
+		this.ownUUID = uuid != null;
+	}
+	
+	/**
+	 * Determines whether the report has an existing unique identifier.
+	 * 
+	 * Note that when no existing identifier is set, {@link #getUUID()} would generate and return
+	 * an identifier.
+	 * 
+	 * @return whether the report has an externally set unique identifier
+	 * @see #setUUID(UUID)
+	 */
+	public boolean hasUUID()
+	{
+		return ownUUID;
+	}
 	
 	/**
 	 * Sets the name of the dataset.
@@ -1109,7 +1139,7 @@ public class JRDesignDataset extends JRBaseDataset
 		{
 			if (oldLanguage != null)
 			{
-				JRQueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getQueryExecuterFactory(oldLanguage);
+				QueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getInstance(DefaultJasperReportsContext.getInstance()).getExecuterFactory(oldLanguage);//FIXMECONTEXT use some thread local
 				Object[] builtinParameters = queryExecuterFactory.getBuiltinParameters();
 				if (builtinParameters != null)
 				{
@@ -1119,7 +1149,7 @@ public class JRDesignDataset extends JRBaseDataset
 
 			if (newLanguage != null)
 			{
-				JRQueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getQueryExecuterFactory(newLanguage);
+				QueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getInstance(DefaultJasperReportsContext.getInstance()).getExecuterFactory(newLanguage);
 				Object[] builtinParameters = queryExecuterFactory.getBuiltinParameters();
 				if (builtinParameters != null)
 				{

@@ -27,18 +27,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import net.sf.jasperreports.engine.JRAbstractScriptlet;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.ParameterContributor;
 import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.ParameterContributorFactory;
-import net.sf.jasperreports.engine.util.JRClassLoader;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DataAdapterParameterContributorFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DataAdapterParameterContributorFactory.java 5346 2012-05-08 12:08:01Z teodord $
  */
 public final class DataAdapterParameterContributorFactory implements ParameterContributorFactory
 {
@@ -64,40 +62,16 @@ public final class DataAdapterParameterContributorFactory implements ParameterCo
 	{
 		List<ParameterContributor> contributors = new ArrayList<ParameterContributor>();
 
-		String dataAdapterUri = JRProperties.getProperty(context.getDataset(), "net.sf.jasperreports.data.adapter");
+		String dataAdapterUri = JRPropertiesUtil.getInstance(context.getJasperReportsContext()).getProperty(context.getDataset(), "net.sf.jasperreports.data.adapter");
 		if (dataAdapterUri != null)
 		{
-			DataAdapter dataAdapter = (DataAdapter)RepositoryUtil.getResource(dataAdapterUri, DataAdapter.class);
-			ParameterContributor dataAdapterService = DataAdapterServiceUtil.getDataAdapterService(dataAdapter);
+			DataAdapter dataAdapter = RepositoryUtil.getInstance(context.getJasperReportsContext()).getResourceFromLocation(dataAdapterUri, DataAdapter.class);
+			ParameterContributor dataAdapterService = DataAdapterServiceUtil.getInstance(context.getJasperReportsContext()).getService(dataAdapter);
 			
 			return Collections.singletonList(dataAdapterService);
 		}
 
 		return contributors;
-	}
-	
-	/**
-	 *
-	 */
-	protected JRAbstractScriptlet getScriptlet(String scriptletClassName) throws JRException
-	{
-		JRAbstractScriptlet scriptlet = null;
-
-		try
-		{
-			Class<?> scriptletClass = JRClassLoader.loadClassForName(scriptletClassName);	
-			scriptlet = (JRAbstractScriptlet) scriptletClass.newInstance();
-		}
-		catch (ClassNotFoundException e)
-		{
-			throw new JRException("Error loading scriptlet class : " + scriptletClassName, e);
-		}
-		catch (Exception e)
-		{
-			throw new JRException("Error creating scriptlet class instance : " + scriptletClassName, e);
-		}
-		
-		return scriptlet;
 	}
 	
 }

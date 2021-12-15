@@ -27,8 +27,8 @@ import java.awt.Font;
 import java.awt.font.TextAttribute;
 import java.awt.geom.AffineTransform;
 import java.text.AttributedCharacterIterator;
-import java.text.AttributedString;
 import java.text.AttributedCharacterIterator.Attribute;
+import java.text.AttributedString;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,12 +38,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStyledText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRStyledText.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRStyledText implements Cloneable
 {
@@ -51,9 +52,10 @@ public class JRStyledText implements Cloneable
 	/**
 	 * 
 	 */
-	public static final String PROPERTY_AWT_IGNORE_MISSING_FONT = JRProperties.PROPERTY_PREFIX + "awt.ignore.missing.font";
+	public static final String PROPERTY_AWT_IGNORE_MISSING_FONT = JRPropertiesUtil.PROPERTY_PREFIX + "awt.ignore.missing.font";
 	
-	private static final String PROPERTY_AWT_SUPERSCRIPT_FIX_ENABLED = JRProperties.PROPERTY_PREFIX + "awt.superscript.fix.enabled";
+	private static final String PROPERTY_AWT_SUPERSCRIPT_FIX_ENABLED = JRPropertiesUtil.PROPERTY_PREFIX + "awt.superscript.fix.enabled";
+	@SuppressWarnings("deprecation")
 	private static final boolean AWT_SUPERSCRIPT_FIX_ENABLED = 
 		System.getProperty("java.version").startsWith("1.6") 
 		&& JRProperties.getBooleanProperty(PROPERTY_AWT_SUPERSCRIPT_FIX_ENABLED);

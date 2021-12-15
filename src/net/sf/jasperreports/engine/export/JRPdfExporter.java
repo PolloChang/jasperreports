@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRException;
@@ -75,8 +76,12 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.base.JRBaseFont;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.export.legacy.BorderOffset;
@@ -87,11 +92,11 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.util.BreakIteratorSplitCharacter;
 import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.util.JRPdfaIccProfileNotFoundException;
-import net.sf.jasperreports.engine.util.JRProperties;
-import net.sf.jasperreports.engine.util.JRProperties.PropertySuffix;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRTextAttribute;
 import net.sf.jasperreports.repo.RepositoryUtil;
@@ -108,6 +113,7 @@ import com.lowagie.text.FontFactory;
 import com.lowagie.text.Image;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
+import com.lowagie.text.SplitCharacter;
 import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.ColumnText;
 import com.lowagie.text.pdf.FontMapper;
@@ -129,20 +135,30 @@ import com.lowagie.text.pdf.PdfWriter;
  * a free-form layout.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPdfExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPdfExporter.java 5431 2012-06-08 11:54:37Z teodord $
  */
 public class JRPdfExporter extends JRAbstractExporter
 {
 
 	private static final Log log = LogFactory.getLog(JRPdfExporter.class);
 	
-	public static final String PDF_EXPORTER_PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "export.pdf.";
+	public static final String PDF_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.";
+
+	/**
+	 * Prefix of properties that specify font files for the PDF exporter.
+	 */
+	public static final String PDF_FONT_FILES_PREFIX = PDF_EXPORTER_PROPERTIES_PREFIX + "font.";
+	
+	/**
+	 * Prefix of properties that specify font directories for the PDF exporter.
+	 */
+	public static final String PDF_FONT_DIRS_PREFIX = PDF_EXPORTER_PROPERTIES_PREFIX + "fontdir.";
 
 	/**
 	 * The exporter key, as used in
 	 * {@link GenericElementHandlerEnviroment#getHandler(net.sf.jasperreports.engine.JRGenericElementType, String)}.
 	 */
-	public static final String PDF_EXPORTER_KEY = JRProperties.PROPERTY_PREFIX + "pdf";
+	public static final String PDF_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "pdf";
 	
 	private static final String EMPTY_BOOKMARK_TITLE = "";
 
@@ -202,18 +218,36 @@ public class JRPdfExporter extends JRAbstractExporter
 	/**
 	 *
 	 */
-	protected Map<JRRenderable,com.lowagie.text.Image> loadedImagesMap;
+	protected Map<Renderable,com.lowagie.text.Image> loadedImagesMap;
 	protected Image pxImage;
 
 	private BookmarkStack bookmarkStack;
 
-	/**
-	 * @deprecated
-	 */
-	private Map<FontKey,PdfFont> fontMap;
+	@SuppressWarnings("deprecation")
+	private Map<FontKey,PdfFont> pdfFontMap;
 
+	private SplitCharacter splitCharacter;
+	
 	protected JRPdfExporterContext exporterContext = new ExporterContext();
 	
+	/**
+	 * @see #JRPdfExporter(JasperReportsContext)
+	 */
+	public JRPdfExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	
+	/**
+	 *
+	 */
+	public JRPdfExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
+
 	/**
 	 *
 	 */
@@ -328,8 +362,8 @@ public class JRPdfExporter extends JRAbstractExporter
 						JRPdfExporterParameter.PROPERTY_PDF_VERSION
 						);
 
-			fontMap = (Map<FontKey,PdfFont>) parameters.get(JRExporterParameter.FONT_MAP);
-
+			setFontMap();
+			setSplitCharacter();
 			setHyperlinkProducerFactory();
 
 			pdfJavaScript = 
@@ -353,7 +387,7 @@ public class JRPdfExporter extends JRAbstractExporter
 				);
 			
 			// no export param for this
-			collapseMissingBookmarkLevels = JRProperties.getBooleanProperty(jasperPrint, 
+			collapseMissingBookmarkLevels = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(jasperPrint, 
 					JRPdfExporterParameter.PROPERTY_COLLAPSE_MISSING_BOOKMARK_LEVELS, false);
 
 			OutputStream os = (OutputStream)parameters.get(JRExporterParameter.OUTPUT_STREAM);
@@ -405,6 +439,38 @@ public class JRPdfExporter extends JRAbstractExporter
 		finally
 		{
 			resetExportContext();
+		}
+	}
+
+
+	@SuppressWarnings("deprecation")
+	protected void setFontMap()
+	{
+		pdfFontMap = (Map<FontKey,PdfFont>) parameters.get(JRExporterParameter.FONT_MAP);
+	}
+
+
+	protected void setSplitCharacter()
+	{
+		boolean useFillSplitCharacter;
+		Boolean useFillSplitCharacterParam = (Boolean) parameters.get(JRPdfExporterParameter.FORCE_LINEBREAK_POLICY);
+		if (useFillSplitCharacterParam == null)
+		{
+			useFillSplitCharacter = 
+				JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(
+					jasperPrint.getPropertiesMap(),
+					JRPdfExporterParameter.PROPERTY_FORCE_LINEBREAK_POLICY,
+					false
+					);
+		}
+		else
+		{
+			useFillSplitCharacter = useFillSplitCharacterParam.booleanValue();
+		}
+
+		if (useFillSplitCharacter)
+		{
+			splitCharacter = new BreakIteratorSplitCharacter();
 		}
 	}
 
@@ -540,7 +606,7 @@ public class JRPdfExporter extends JRAbstractExporter
 					pdfDictionary.put(PdfName.INFO, new PdfString("sRGB IEC61966-2.1"));
 					pdfDictionary.put(PdfName.S, PdfName.GTS_PDFA1);
 					
-					InputStream iccIs = RepositoryUtil.getInputStream(iccProfilePath);
+					InputStream iccIs = RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(iccProfilePath);
 					PdfICCBased pdfICCBased = new PdfICCBased(ICC_Profile.getInstance(iccIs));
 					pdfICCBased.remove(PdfName.ALTERNATE);
 					pdfDictionary.put(PdfName.DESTOUTPUTPROFILE, pdfWriter.addToBody(pdfICCBased).getIndirectReference());
@@ -576,26 +642,15 @@ public class JRPdfExporter extends JRAbstractExporter
 			for(reportIndex = 0; reportIndex < jasperPrintList.size(); reportIndex++)
 			{
 				setJasperPrint(jasperPrintList.get(reportIndex));
-				loadedImagesMap = new HashMap<JRRenderable,com.lowagie.text.Image>();
+				loadedImagesMap = new HashMap<Renderable,com.lowagie.text.Image>();
 				
-				Rectangle pageSize;
-				switch (jasperPrint.getOrientationValue())
-				{
-				case LANDSCAPE:
-					// using rotate to indicate landscape page
-					pageSize = new Rectangle(jasperPrint.getPageHeight(),
-							jasperPrint.getPageWidth()).rotate();
-					break;
-				default:
-					pageSize = new Rectangle(jasperPrint.getPageWidth(), 
-							jasperPrint.getPageHeight());
-					break;
-				}
-				document.setPageSize(pageSize);
+				setPageSize(null);
 				
 				BorderOffset.setLegacy(
-					JRProperties.getBooleanProperty(jasperPrint, BorderOffset.PROPERTY_LEGACY_BORDER_OFFSET, false)
+					JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(jasperPrint, BorderOffset.PROPERTY_LEGACY_BORDER_OFFSET, false)
 					);
+				
+				boolean sizePageToContent = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(jasperPrint, JRPdfExporterParameter.PROPERTY_SIZE_PAGE_TO_CONTENT, false);
 
 				List<JRPrintPage> pages = jasperPrint.getPages();
 				if (pages != null && pages.size() > 0)
@@ -623,6 +678,11 @@ public class JRPdfExporter extends JRAbstractExporter
 
 						JRPrintPage page = pages.get(pageIndex);
 
+						if (sizePageToContent)
+						{
+							setPageSize(page);
+						}
+						
 						document.newPage();
 						
 						pdfContentByte = pdfWriter.getDirectContent();
@@ -708,6 +768,43 @@ public class JRPdfExporter extends JRAbstractExporter
 		colText.go();
 
 		tagHelper.endPageAnchor();
+	}
+
+	/**
+	 *
+	 */
+	protected void setPageSize(JRPrintPage page) throws JRException, DocumentException, IOException
+	{
+		int pageWidth = jasperPrint.getPageWidth(); 
+		int pageHeight = jasperPrint.getPageHeight();
+		
+		if (page != null)
+		{
+			Collection<JRPrintElement> elements = page.getElements();
+			for (JRPrintElement element : elements)
+			{
+				int elementRight = element.getX() + element.getWidth();
+				int elementBottom = element.getY() + element.getHeight();
+				pageWidth = pageWidth < elementRight ? elementRight : pageWidth;
+				pageHeight = pageHeight < elementBottom ? elementBottom : pageHeight;
+			}
+			
+			pageWidth += jasperPrint.getRightMargin();
+			pageHeight += jasperPrint.getBottomMargin();
+		}
+		
+		Rectangle pageSize;
+		switch (jasperPrint.getOrientationValue())
+		{
+		case LANDSCAPE:
+			// using rotate to indicate landscape page
+			pageSize = new Rectangle(pageHeight, pageWidth).rotate();
+			break;
+		default:
+			pageSize = new Rectangle(pageWidth, pageHeight);
+			break;
+		}
+		document.setPageSize(pageSize);
 	}
 
 	/**
@@ -1127,7 +1224,7 @@ public class JRPdfExporter extends JRAbstractExporter
 		int availableImageHeight = printImage.getHeight() - topPadding - bottomPadding;
 		availableImageHeight = (availableImageHeight < 0)?0:availableImageHeight;
 
-		JRRenderable renderer = printImage.getRenderer();
+		Renderable renderer = printImage.getRenderable();
 
 		if (
 			renderer != null &&
@@ -1135,11 +1232,11 @@ public class JRPdfExporter extends JRAbstractExporter
 			availableImageHeight > 0
 			)
 		{
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 			{
 				// Image renderers are all asked for their image data at some point. 
 				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = JRImageRenderer.getOnErrorRendererForImageData(renderer, printImage.getOnErrorTypeValue());
+				renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, printImage.getOnErrorTypeValue());
 			}
 		}
 		else
@@ -1157,7 +1254,7 @@ public class JRPdfExporter extends JRAbstractExporter
 			float scaledWidth = availableImageWidth;
 			float scaledHeight = availableImageHeight;
 
-			if (renderer.getType() == JRRenderable.TYPE_IMAGE)
+			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
 			{
 				com.lowagie.text.Image image = null;
 
@@ -1171,7 +1268,7 @@ public class JRPdfExporter extends JRAbstractExporter
 						// Image load might fail, from given image data. 
 						// Better to test and replace the renderer now, in case of lazy load error.
 						renderer = 
-							JRImageRenderer.getOnErrorRendererForDimension(
+							RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(
 								renderer, 
 								printImage.getOnErrorTypeValue()
 								);
@@ -1183,7 +1280,7 @@ public class JRPdfExporter extends JRAbstractExporter
 						int normalWidth = availableImageWidth;
 						int normalHeight = availableImageHeight;
 
-						Dimension2D dimension = renderer.getDimension();
+						Dimension2D dimension = renderer.getDimension(jasperReportsContext);
 						if (dimension != null)
 						{
 							normalWidth = (int)dimension.getWidth();
@@ -1206,6 +1303,7 @@ public class JRPdfExporter extends JRAbstractExporter
 							g.fillRect(0, 0, minWidth, minHeight);
 						}
 						renderer.render(
+							jasperReportsContext,
 							g,
 							new java.awt.Rectangle(
 								(xoffset > 0 ? 0 : xoffset),
@@ -1236,21 +1334,22 @@ public class JRPdfExporter extends JRAbstractExporter
 						{
 							try
 							{
-								image = com.lowagie.text.Image.getInstance(renderer.getImageData());
+								image = com.lowagie.text.Image.getInstance(renderer.getImageData(jasperReportsContext));
 								imageTesterPdfContentByte.addImage(image, 10, 0, 0, 10, 0, 0);
 							}
 							catch(Exception e)
 							{
 								JRImageRenderer tmpRenderer = 
 									JRImageRenderer.getOnErrorRendererForImage(
-										JRImageRenderer.getInstance(renderer.getImageData()), 
+										jasperReportsContext,
+										JRImageRenderer.getInstance(renderer.getImageData(jasperReportsContext)), 
 										printImage.getOnErrorTypeValue()
 										);
 								if (tmpRenderer == null)
 								{
 									break;
 								}
-								java.awt.Image awtImage = tmpRenderer.getImage();
+								java.awt.Image awtImage = tmpRenderer.getImage(jasperReportsContext);
 								image = com.lowagie.text.Image.getInstance(awtImage, null);
 							}
 
@@ -1274,21 +1373,22 @@ public class JRPdfExporter extends JRAbstractExporter
 						{
 							try
 							{
-								image = com.lowagie.text.Image.getInstance(renderer.getImageData());
+								image = com.lowagie.text.Image.getInstance(renderer.getImageData(jasperReportsContext));
 								imageTesterPdfContentByte.addImage(image, 10, 0, 0, 10, 0, 0);
 							}
 							catch(Exception e)
 							{
 								JRImageRenderer tmpRenderer = 
 									JRImageRenderer.getOnErrorRendererForImage(
-										JRImageRenderer.getInstance(renderer.getImageData()), 
+										jasperReportsContext,
+										JRImageRenderer.getInstance(renderer.getImageData(jasperReportsContext)), 
 										printImage.getOnErrorTypeValue()
 										);
 								if (tmpRenderer == null)
 								{
 									break;
 								}
-								java.awt.Image awtImage = tmpRenderer.getImage();
+								java.awt.Image awtImage = tmpRenderer.getImage(jasperReportsContext);
 								image = com.lowagie.text.Image.getInstance(awtImage, null);
 							}
 
@@ -1331,7 +1431,7 @@ public class JRPdfExporter extends JRAbstractExporter
 				
 				Rectangle2D clip = null;
 
-				Dimension2D dimension = renderer.getDimension();
+				Dimension2D dimension = renderer.getDimension(jasperReportsContext);
 				if (dimension != null)
 				{
 					normalWidth = dimension.getWidth();
@@ -1402,7 +1502,7 @@ public class JRPdfExporter extends JRAbstractExporter
 
 				Rectangle2D rectangle = new Rectangle2D.Double(0, 0, displayWidth, displayHeight);
 
-				renderer.render(g, rectangle);
+				renderer.render(jasperReportsContext, g, rectangle);
 				g.dispose();
 
 				pdfContentByte.saveState();
@@ -1739,11 +1839,11 @@ public class JRPdfExporter extends JRAbstractExporter
 			}
 		}
 
-//		if (splitCharacter != null)
-//		{
-//			//TODO use line break offsets if available?
-//			chunk.setSplitCharacter(splitCharacter);
-//		}
+		if (splitCharacter != null)
+		{
+			//TODO use line break offsets if available?
+			chunk.setSplitCharacter(splitCharacter);
+		}
 
 		return chunk;
 	}
@@ -1769,6 +1869,7 @@ public class JRPdfExporter extends JRAbstractExporter
 	 * @param setFontLines whether to set underline and strikethrough as font style
 	 * @return the PDF font for the specified attributes
 	 */
+	@SuppressWarnings("deprecation")
 	protected Font getFont(Map<Attribute,Object> attributes, Locale locale, boolean setFontLines)
 	{
 		JRFont jrFont = new JRBaseFont(attributes);
@@ -1793,7 +1894,7 @@ public class JRPdfExporter extends JRAbstractExporter
 
 		if (fontMap != null && fontMap.containsKey(key))
 		{
-			pdfFont = fontMap.get(key);
+			pdfFont = pdfFontMap.get(key);
 		}
 		else
 		{
@@ -1934,7 +2035,7 @@ public class JRPdfExporter extends JRAbstractExporter
 
 			try
 			{
-				bytes = RepositoryUtil.getBytes(pdfFont.getPdfFontName());
+				bytes = RepositoryUtil.getInstance(jasperReportsContext).getBytesFromLocation(pdfFont.getPdfFontName());
 			}
 			catch(JRException e)
 			{
@@ -1989,7 +2090,16 @@ public class JRPdfExporter extends JRAbstractExporter
 	 */
 	public void exportText(JRPrintText text) throws DocumentException
 	{
-		PdfTextRenderer textRenderer = PdfTextRenderer.getInstance();//FIXMETAB optimize this
+		AbstractPdfTextRenderer textRenderer = 
+			text.getLeadingOffset() == 0 
+			? new PdfTextRenderer(
+				jasperReportsContext,
+				getPropertiesUtil().getBooleanProperty(JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT)
+				) 
+			: new SimplePdfTextRenderer(
+				jasperReportsContext,
+				getPropertiesUtil().getBooleanProperty(JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT)//FIXMECONTEXT replace with getPropertiesUtil in all exporters
+				);//FIXMETAB optimize this
 		
 		textRenderer.initialize(this, pdfContentByte, text, getOffsetX(), getOffsetY());
 		
@@ -2000,21 +2110,17 @@ public class JRPdfExporter extends JRAbstractExporter
 			return;
 		}
 
-		int xFillCorrection = 0;
-		int yFillCorrection = 0;
 		double angle = 0;
 
 		switch (text.getRotationValue())
 		{
 			case LEFT :
 			{
-				xFillCorrection = 1;
 				angle = Math.PI / 2;
 				break;
 			}
 			case RIGHT :
 			{
-				yFillCorrection = -1;
 				angle = - Math.PI / 2;
 				break;
 			}
@@ -2042,8 +2148,8 @@ public class JRPdfExporter extends JRAbstractExporter
 				backcolor.getBlue()
 				);
 			pdfContentByte.rectangle(
-				textRenderer.getX() + xFillCorrection,
-				jasperPrint.getPageHeight() - textRenderer.getY() + yFillCorrection,
+				textRenderer.getX(),
+				jasperPrint.getPageHeight() - textRenderer.getY(),
 				textRenderer.getWidth(),
 				- textRenderer.getHeight()
 				);
@@ -2396,12 +2502,12 @@ public class JRPdfExporter extends JRAbstractExporter
 	{
 		if (!fontsRegistered)
 		{
-			List<PropertySuffix> fontFiles = JRProperties.getProperties(JRProperties.PDF_FONT_FILES_PREFIX);
+			List<PropertySuffix> fontFiles = JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getProperties(PDF_FONT_FILES_PREFIX);//FIXMECONTEXT no default here and below
 			if (!fontFiles.isEmpty())
 			{
 				for (Iterator<PropertySuffix> i = fontFiles.iterator(); i.hasNext();)
 				{
-					JRProperties.PropertySuffix font = i.next();
+					JRPropertiesUtil.PropertySuffix font = i.next();
 					String file = font.getValue();
 					if (file.toLowerCase().endsWith(".ttc"))
 					{
@@ -2415,12 +2521,12 @@ public class JRPdfExporter extends JRAbstractExporter
 				}
 			}
 
-			List<PropertySuffix> fontDirs = JRProperties.getProperties(JRProperties.PDF_FONT_DIRS_PREFIX);
+			List<PropertySuffix> fontDirs = JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getProperties(PDF_FONT_DIRS_PREFIX);
 			if (!fontDirs.isEmpty())
 			{
 				for (Iterator<PropertySuffix> i = fontDirs.iterator(); i.hasNext();)
 				{
-					JRProperties.PropertySuffix dir = i.next();
+					JRPropertiesUtil.PropertySuffix dir = i.next();
 					FontFactory.registerDirectory(dir.getValue());
 				}
 			}
@@ -2624,7 +2730,7 @@ public class JRPdfExporter extends JRAbstractExporter
 	protected void exportGenericElement(JRGenericPrintElement element)
 	{
 		GenericElementPdfHandler handler = (GenericElementPdfHandler) 
-				GenericElementHandlerEnviroment.getHandler(
+				GenericElementHandlerEnviroment.getInstance(getJasperReportsContext()).getElementHandler(
 						element.getGenericType(), PDF_EXPORTER_KEY);
 		
 		if (handler != null)

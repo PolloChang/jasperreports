@@ -26,13 +26,16 @@ package net.sf.jasperreports.components.list;
 import java.sql.Connection;
 import java.util.Map;
 
+import net.sf.jasperreports.data.cache.DataCacheHandler;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRewindableDataSource;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.fill.FillDatasetPosition;
 import net.sf.jasperreports.engine.fill.JRFillDataset;
 import net.sf.jasperreports.engine.fill.JRFillDatasetRun;
 import net.sf.jasperreports.engine.fill.JRFillExpressionEvaluator;
@@ -47,7 +50,7 @@ import org.apache.commons.logging.LogFactory;
  * Used to iterate on the list subdataset at fill time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillDatasetRun.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FillDatasetRun.java 5340 2012-05-04 10:41:48Z lucianc $
  */
 public class FillDatasetRun extends JRFillDatasetRun
 {
@@ -57,6 +60,8 @@ public class FillDatasetRun extends JRFillDatasetRun
 	private final JRFillExpressionEvaluator expressionEvaluator;
 	
 	private Map<String, Object> parameterValues;
+	private FillDatasetPosition datasetPosition;
+	private boolean cacheIncluded;
 	private JRDataSource dataSource;
 	private Connection connection;
 	private boolean first;
@@ -97,11 +102,26 @@ public class FillDatasetRun extends JRFillDatasetRun
 			dataset.getResourceBundle() != null,//hasResourceBundle
 			false//hasFormatFactory
 			);
+		
+		JRFillDataset parentDataset = expressionEvaluator.getFillDataset();
+		datasetPosition = new FillDatasetPosition(parentDataset.getDatasetPosition());
+		datasetPosition.addAttribute("datasetRunUUID", getUUID());
+		parentDataset.setCacheRecordIndex(datasetPosition, evaluation);
+		
+		String cacheIncludedProp = JRPropertiesUtil.getOwnProperty(this, DataCacheHandler.PROPERTY_INCLUDED); 
+		cacheIncluded = JRPropertiesUtil.asBoolean(cacheIncludedProp, true);// default to true
 
 		if (dataSourceExpression != null)
 		{
-			dataSource = (JRDataSource) expressionEvaluator.evaluate(
-					dataSourceExpression, evaluation);
+			if (filler.getFillContext().hasDataSnapshot() && cacheIncluded) 
+			{
+				dataSource = null;
+			}
+			else
+			{
+				dataSource = (JRDataSource) expressionEvaluator.evaluate(
+						dataSourceExpression, evaluation);
+			}
 		}
 		else if (connectionExpression != null)
 		{
@@ -125,10 +145,15 @@ public class FillDatasetRun extends JRFillDatasetRun
 		{
 			dataset.setConnectionParameterValue(parameterValues, connection);
 		}
-		
+
+		// set fill position for caching
+		dataset.setFillPosition(datasetPosition);
+		dataset.setCacheSkipped(!cacheIncluded);
+
 		copyConnectionParameter(parameterValues);
 		dataset.initCalculator();
 		dataset.setParameterValues(parameterValues);
+		
 		dataset.initDatasource();
 		
 		dataset.start();
@@ -163,6 +188,7 @@ public class FillDatasetRun extends JRFillDatasetRun
 		}
 		
 		dataset.closeDatasource();
+		dataset.disposeParameterContributors();
 	}
 	
 	public void rewind() throws JRException

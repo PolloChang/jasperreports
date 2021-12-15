@@ -27,20 +27,22 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.ImageMapRenderable;
 import net.sf.jasperreports.engine.JRAbstractSvgRenderer;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRImageMapRenderer;
 import net.sf.jasperreports.engine.JRPrintImageAreaHyperlink;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 import org.jfree.chart.JFreeChart;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DrawChartRenderer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DrawChartRenderer.java 5078 2012-03-14 15:25:04Z teodord $
  */
-public class DrawChartRenderer extends JRAbstractSvgRenderer implements JRImageMapRenderer
+public class DrawChartRenderer extends JRAbstractSvgRenderer implements ImageMapRenderable
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
@@ -53,7 +55,7 @@ public class DrawChartRenderer extends JRAbstractSvgRenderer implements JRImageM
 		this.chartHyperlinkProvider = chartHyperlinkProvider;
 	}
 
-	public void render(Graphics2D grx, Rectangle2D rectangle) 
+	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) 
 	{
 		if (chart != null)
 		{
@@ -61,6 +63,17 @@ public class DrawChartRenderer extends JRAbstractSvgRenderer implements JRImageM
 		}
 	}
 	
+	/**
+	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
+	 */
+	public void render(Graphics2D grx, Rectangle2D rectangle) 
+	{
+		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);
+	}
+	
+	/**
+	 * @deprecated To be removed.
+	 */
 	public List<JRPrintImageAreaHyperlink> renderWithHyperlinks(Graphics2D grx, Rectangle2D rectangle) 
 	{
 		render(grx, rectangle);
@@ -69,7 +82,7 @@ public class DrawChartRenderer extends JRAbstractSvgRenderer implements JRImageM
 	}
 	
 	/**
-	 * @deprecated Replaced by {@link #renderWithHyperlinks(Graphics2D, Rectangle2D)}
+	 *
 	 */
 	public List<JRPrintImageAreaHyperlink> getImageAreaHyperlinks(Rectangle2D renderingArea) throws JRException
 	{

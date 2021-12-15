@@ -41,7 +41,7 @@ import org.apache.commons.digester.Digester;
 /**
  * 
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: SpiderChartDigester.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SpiderChartDigester.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class SpiderChartDigester implements XmlDigesterConfigurer
 {
@@ -50,6 +50,7 @@ public class SpiderChartDigester implements XmlDigesterConfigurer
 		addSpiderChartRules(digester);
 	}
 	
+	@SuppressWarnings("deprecation")
 	public static void addSpiderChartRules(Digester digester)
 	{
 		String componentNamespace = digester.getRuleNamespaceURI();

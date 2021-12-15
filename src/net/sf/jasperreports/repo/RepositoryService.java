@@ -28,9 +28,10 @@ import java.io.InputStream;
 
 
 
+
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RepositoryService.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: RepositoryService.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public interface RepositoryService
 {
@@ -40,17 +41,17 @@ public interface RepositoryService
 	public <T extends RepositoryContext> T createContext();
 
 	/**
-	 * 
+	 * @deprecated To be removed.
 	 */
 	public void setContext(RepositoryContext context);
 
 	/**
-	 * 
+	 * @deprecated To be removed.
 	 */
 	public void revertContext();
 
 	/**
-	 * 
+	 * @deprecated Replaced by {@link StreamRepositoryService#getInputStream(String)}.
 	 */
 	public InputStream getInputStream(String uri);
 	
@@ -67,5 +68,5 @@ public interface RepositoryService
 	/**
 	 * 
 	 */
-	public <K extends Resource> K getResource(String uri, Class<? extends Resource> resourceType);
+	public <K extends Resource> K getResource(String uri, Class<K> resourceType);
 }

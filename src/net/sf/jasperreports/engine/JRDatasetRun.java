@@ -27,11 +27,11 @@ package net.sf.jasperreports.engine;
  * Interface of an sub dataset instantiation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDatasetRun.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDatasetRun.java 5340 2012-05-04 10:41:48Z lucianc $
  * @see net.sf.jasperreports.engine.JRDataset
  * @see net.sf.jasperreports.engine.JRChartDataset#getDatasetRun()
  */
-public interface JRDatasetRun extends JRCloneable
+public interface JRDatasetRun extends JRCloneable, JRIdentifiable, JRPropertiesHolder
 {
 	/**
 	 * Returns the sub dataset name.

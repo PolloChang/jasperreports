@@ -26,8 +26,9 @@ package net.sf.jasperreports.repo;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RepositoryContext.java 4595 2011-09-08 15:55:10Z teodord $
- */
+ * @version $Id: RepositoryContext.java 5050 2012-03-12 10:11:26Z teodord $
+ * @deprecated To be removed.
+*/
 public interface RepositoryContext
 {
 	//public void setContext(Map<String, Object> parameterValues);

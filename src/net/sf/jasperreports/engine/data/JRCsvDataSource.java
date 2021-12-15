@@ -37,13 +37,16 @@ import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.FormatUtils;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
 import org.apache.commons.logging.Log;
@@ -61,7 +64,7 @@ import org.apache.commons.logging.LogFactory;
  * either specify a collection of column names or set a flag to read the column names from the first row of the CSV file.
  *
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRCsvDataSource.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCsvDataSource.java 5346 2012-05-08 12:08:01Z teodord $
  */
 public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDataSource
 {
@@ -71,7 +74,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	private NumberFormat numberFormat;
 	private char fieldDelimiter = ',';
 	private String recordDelimiter = "\n";
-	private Map<String, Integer> columnNames = new HashMap<String, Integer>();
+	private Map<String, Integer> columnNames = new LinkedHashMap<String, Integer>();
 	private boolean useFirstRowAsHeader;
 
 	private List<String> fields;
@@ -157,11 +160,12 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 
 	/**
 	 * Creates a datasource instance that reads CSV data from a given location, using the default encoding.
+	 * @param jasperReportsContext the JasperReportsContext
 	 * @param location a String representing CSV data source
 	 */
-	public JRCsvDataSource(String location) throws JRException
+	public JRCsvDataSource(JasperReportsContext jasperReportsContext, String location) throws JRException
 	{
-		this(RepositoryUtil.getInputStream(location));
+		this(RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(location));
 		
 		toClose = true;
 	}
@@ -169,13 +173,33 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 
 	/**
 	 * Creates a datasource instance that reads CSV data from a given location, using the specified encoding.
+	 * @param jasperReportsContext the JasperReportsContext
 	 * @param location a String representing CSV data source
+	 * @param charsetName the encoding to use
+	 */
+	public JRCsvDataSource(JasperReportsContext jasperReportsContext, String location, String charsetName) throws JRException, UnsupportedEncodingException
+	{
+		this(RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(location), charsetName);
+		
+		toClose = true;
+	}
+
+
+	/**
+	 * @see #JRCsvDataSource(JasperReportsContext, String)
+	 */
+	public JRCsvDataSource(String location) throws JRException
+	{
+		this(DefaultJasperReportsContext.getInstance(), location);
+	}
+
+
+	/**
+	 * @see #JRCsvDataSource(JasperReportsContext, String, String)
 	 */
 	public JRCsvDataSource(String location, String charsetName) throws JRException, UnsupportedEncodingException
 	{
-		this(RepositoryUtil.getInputStream(location), charsetName);
-		
-		toClose = true;
+		this(DefaultJasperReportsContext.getInstance(), location, charsetName);
 	}
 
 
@@ -199,7 +223,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 				if (useFirstRowAsHeader) 
 				{
 					parseRow();
-					this.columnNames = new HashMap<String, Integer>();
+					this.columnNames = new LinkedHashMap<String, Integer>();
 					for (int i = 0; i < fields.size(); i++) {
 						String name = fields.get(i);
 						this.columnNames.put(name, Integer.valueOf(i));
@@ -257,7 +281,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 				{
 					if (numberFormat != null)
 					{
-						return getFormattedNumber(numberFormat, fieldValue, valueClass);
+						return FormatUtils.getFormattedNumber(numberFormat, fieldValue, valueClass);
 					}
 					else 
 					{
@@ -267,7 +291,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 				else if (Date.class.isAssignableFrom(valueClass)){
 					if (dateFormat != null)
 					{
-						return getFormattedDate(dateFormat, fieldValue, valueClass);
+						return FormatUtils.getFormattedDate(dateFormat, fieldValue, valueClass);
 					} 
 					else
 					{
@@ -653,7 +677,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 		{
 			throw new JRRuntimeException("Cannot modify data source properties after data reading has started");
 		}
-		this.columnNames = new HashMap<String, Integer>();
+		this.columnNames = new LinkedHashMap<String, Integer>();
 		for (int i = 0; i < columnNames.length; i++)
 		{
 			this.columnNames.put(columnNames[i], Integer.valueOf(i));

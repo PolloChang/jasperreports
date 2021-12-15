@@ -28,7 +28,7 @@ package net.sf.jasperreports.engine.export;
  * Factory of {@link JROriginExporterFilter} instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JROriginExporterFilterFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JROriginExporterFilterFactory.java 5050 2012-03-12 10:11:26Z teodord $
  * @see JROriginExporterFilter#getFilter(net.sf.jasperreports.engine.JRPropertiesMap, String)
  */
 public class JROriginExporterFilterFactory implements ExporterFilterFactory
@@ -38,9 +38,12 @@ public class JROriginExporterFilterFactory implements ExporterFilterFactory
 	{
 		String originFilterPrefix = exporterContext.getExportPropertiesPrefix() 
 				+ JROriginExporterFilter.PROPERTY_EXCLUDE_ORIGIN_PREFIX;
-		return JROriginExporterFilter.getFilter(
+		return 
+			JROriginExporterFilter.getFilter(
+				exporterContext.getJasperReportsContext(),
 				exporterContext.getExportedReport().getPropertiesMap(), 
-				originFilterPrefix);
+				originFilterPrefix
+				);
 	}
 
 }

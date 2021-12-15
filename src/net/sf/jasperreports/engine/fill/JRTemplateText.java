@@ -51,13 +51,14 @@ import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.ObjectUtils;
 
 
 /**
  * Text element information shared by multiple print text objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplateText.java 5180 2012-03-29 13:23:12Z teodord $
  * @see JRTemplatePrintText
  */
 public class JRTemplateText extends JRTemplateElement implements JRAlignment, JRFont, JRCommonText, TextFormat
@@ -985,5 +986,72 @@ O	 * When hyperlink is of custom type, {@link HyperlinkTypeEnum#CUSTOM CUSTOM} i
 			paragraph.setLineSpacing(lineSpacingValue);
 			lineSpacingValue = null;
 		}
+	}
+
+	public int getHashCode()
+	{
+		ObjectUtils.HashCode hash = ObjectUtils.hash();
+		addTemplateHash(hash);
+		hash.add(horizontalAlignmentValue);
+		hash.add(verticalAlignmentValue);
+		hash.add(rotationValue);
+		hash.add(markup);
+		hash.add(linkType);
+		hash.add(linkTarget);
+		hash.addIdentical(lineBox);
+		hash.addIdentical(paragraph);
+		hash.add(fontName);
+		hash.add(isBold);
+		hash.add(isItalic);
+		hash.add(isUnderline);
+		hash.add(isStrikeThrough);
+		hash.add(fontSize);
+		hash.add(pdfFontName);
+		hash.add(pdfEncoding);
+		hash.add(isPdfEmbedded);
+		hash.add(valueClassName);
+		hash.add(pattern);
+		hash.add(formatFactoryClass);
+		hash.add(localeCode);
+		hash.add(timeZoneId);
+		return hash.getHashCode();
+	}
+
+	public boolean isIdentical(Object object)
+	{
+		if (this == object)
+		{
+			return true;
+		}
+		
+		if (!(object instanceof JRTemplateText))
+		{
+			return false;
+		}
+		
+		JRTemplateText template = (JRTemplateText) object;
+		return templateIdentical(template)
+				&& ObjectUtils.equals(horizontalAlignmentValue, template.horizontalAlignmentValue)
+				&& ObjectUtils.equals(verticalAlignmentValue, template.verticalAlignmentValue)
+				&& ObjectUtils.equals(rotationValue, template.rotationValue)
+				&& ObjectUtils.equals(markup, template.markup)
+				&& ObjectUtils.equals(linkType, template.linkType)
+				&& ObjectUtils.equals(linkTarget, template.linkTarget)
+				&& ObjectUtils.identical(lineBox, template.lineBox)
+				&& ObjectUtils.identical(paragraph, template.paragraph)
+				&& ObjectUtils.equals(fontName, template.fontName)
+				&& ObjectUtils.equals(isBold, template.isBold)
+				&& ObjectUtils.equals(isItalic, template.isItalic)
+				&& ObjectUtils.equals(isUnderline, template.isUnderline)
+				&& ObjectUtils.equals(isStrikeThrough, template.isStrikeThrough)
+				&& ObjectUtils.equals(fontSize, template.fontSize)
+				&& ObjectUtils.equals(pdfFontName, template.pdfFontName)
+				&& ObjectUtils.equals(pdfEncoding, template.pdfEncoding)
+				&& ObjectUtils.equals(isPdfEmbedded, template.isPdfEmbedded)
+				&& ObjectUtils.equals(valueClassName, template.valueClassName)
+				&& ObjectUtils.equals(pattern, template.pattern)
+				&& ObjectUtils.equals(formatFactoryClass, template.formatFactoryClass)
+				&& ObjectUtils.equals(localeCode, template.localeCode)
+				&& ObjectUtils.equals(timeZoneId, template.timeZoneId);
 	}
 }

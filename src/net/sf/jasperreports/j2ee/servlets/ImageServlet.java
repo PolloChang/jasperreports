@@ -34,19 +34,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPrintImage;
-import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.export.JRHtmlExporter;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRTypeSniffer;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ImageServlet.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class ImageServlet extends BaseHttpServlet
 {
@@ -75,10 +76,10 @@ public class ImageServlet extends BaseHttpServlet
 		{
 			try
 			{
-				JRRenderable pxRenderer = 
-					JRImageRenderer.getInstance("net/sf/jasperreports/engine/images/pixel.GIF");
-				imageData = pxRenderer.getImageData();
-				imageMimeType = JRRenderable.MIME_TYPE_GIF;
+				Renderable pxRenderer = 
+					RenderableUtil.getInstance(getJasperReportsContext()).getRenderable("net/sf/jasperreports/engine/images/pixel.GIF");
+				imageData = pxRenderer.getImageData(getJasperReportsContext());
+				imageMimeType = ImageTypeEnum.GIF.getMimeType();
 			}
 			catch (JRException e)
 			{
@@ -96,8 +97,8 @@ public class ImageServlet extends BaseHttpServlet
 			
 			JRPrintImage image = JRHtmlExporter.getImage(jasperPrintList, imageName);
 			
-			JRRenderable renderer = image.getRenderer();
-			if (renderer.getType() == JRRenderable.TYPE_SVG)
+			Renderable renderer = image.getRenderable();
+			if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 			{
 				renderer = 
 					new JRWrappingSvgRenderer(
@@ -107,11 +108,11 @@ public class ImageServlet extends BaseHttpServlet
 						);
 			}
 
-			imageMimeType = JRTypeSniffer.getImageMimeType(renderer.getImageType());
+			imageMimeType = renderer.getImageTypeValue().getMimeType();
 			
 			try
 			{
-				imageData = renderer.getImageData();
+				imageData = renderer.getImageData(getJasperReportsContext());
 			}
 			catch (JRException e)
 			{

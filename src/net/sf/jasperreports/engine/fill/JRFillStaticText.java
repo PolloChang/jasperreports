@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.JRVisitor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillStaticText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillStaticText.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 {
@@ -195,7 +195,7 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 	 */
 	protected JRPrintElement fill()
 	{
-		JRTemplatePrintText text = new JRTemplatePrintText(getJRTemplateText());
+		JRTemplatePrintText text = new JRTemplatePrintText(getJRTemplateText(), elementId);
 		text.setX(getX());
 		text.setY(getRelativeY());
 		text.setWidth(getWidth());
@@ -208,8 +208,8 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 //			text.setHeight(getHeight());
 //		}
 		text.setRunDirection(getRunDirectionValue());
-		//text.setLineSpacingFactor(getLineSpacingFactor());
-		//text.setLeadingOffset(getLeadingOffset());
+		text.setLineSpacingFactor(getLineSpacingFactor());
+		text.setLeadingOffset(getLeadingOffset());
 		text.setTextHeight(getTextHeight());
 		transferProperties(text);
 

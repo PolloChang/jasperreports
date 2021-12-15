@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.JRExpressionCollector;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ColumnExpressionCollector.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ColumnExpressionCollector.java 5106 2012-03-20 11:35:24Z teodord $
  */
 public class ColumnExpressionCollector implements ColumnVisitor<Void>
 {
@@ -57,6 +57,7 @@ public class ColumnExpressionCollector implements ColumnVisitor<Void>
 	
 	public Void visitColumn(Column column)
 	{
+		mainCollector.collectPropertyExpressions(column.getPropertyExpressions());
 		mainCollector.addExpression(column.getPrintWhenExpression());
 		collectCell(column.getTableHeader());
 		collectCell(column.getTableFooter());
@@ -72,6 +73,7 @@ public class ColumnExpressionCollector implements ColumnVisitor<Void>
 
 	public Void visitColumnGroup(ColumnGroup columnGroup)
 	{
+		mainCollector.collectPropertyExpressions(columnGroup.getPropertyExpressions());
 		mainCollector.addExpression(columnGroup.getPrintWhenExpression());
 		collectCell(columnGroup.getTableHeader());
 		collectCell(columnGroup.getTableFooter());

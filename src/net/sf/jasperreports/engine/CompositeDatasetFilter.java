@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.fill.DatasetFillContext;
  * A dataset filter that wraps several other filters and applies them as a conjunction.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CompositeDatasetFilter.java 4600 2011-09-12 10:32:17Z teodord $
+ * @version $Id: CompositeDatasetFilter.java 5349 2012-05-08 14:25:05Z teodord $
  */
 public class CompositeDatasetFilter implements DatasetFilter
 {
@@ -61,7 +61,7 @@ public class CompositeDatasetFilter implements DatasetFilter
 		return combined;
 	}
 	
-	private List<DatasetFilter> filters;
+	private List<? extends DatasetFilter> filters;
 	
 	/**
 	 * Creates a conjunction for several filters.
@@ -71,6 +71,11 @@ public class CompositeDatasetFilter implements DatasetFilter
 	public CompositeDatasetFilter(DatasetFilter ... filters)
 	{
 		this.filters = Arrays.asList(filters);
+	}
+
+	public CompositeDatasetFilter(List<? extends DatasetFilter> filters)
+	{
+		this.filters = filters;
 	}
 	
 	public void init(DatasetFillContext context)
@@ -94,6 +99,14 @@ public class CompositeDatasetFilter implements DatasetFilter
 		}
 
 		return matches;
+	}
+	
+	public List<? extends DatasetFilter> getFilters() {
+		return filters;
+	}
+
+	public void setFilters(List<? extends DatasetFilter> filters) {
+		this.filters = filters;
 	}
 
 }

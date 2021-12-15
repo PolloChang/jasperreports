@@ -33,12 +33,13 @@ import javax.swing.JOptionPane;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter;
 import net.sf.jasperreports.view.JRSaveContributor;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRDocxSaveContributor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDocxSaveContributor.java 5166 2012-03-28 13:11:05Z teodord $
  */
 public class JRDocxSaveContributor extends JRSaveContributor 
 {
@@ -49,11 +50,23 @@ public class JRDocxSaveContributor extends JRSaveContributor
 	private static final String EXTENSION_DOCX = ".docx";
 
 	/**
-	 * 
+	 * @see #JRDocxSaveContributor(JasperReportsContext, Locale, ResourceBundle)
 	 */
 	public JRDocxSaveContributor(Locale locale, ResourceBundle resBundle)
 	{
 		super(locale, resBundle);
+	}
+	
+	/**
+	 * 
+	 */
+	public JRDocxSaveContributor(
+		JasperReportsContext jasperReportsContext, 
+		Locale locale, 
+		ResourceBundle resBundle
+		)
+	{
+		super(jasperReportsContext, locale, resBundle);
 	}
 	
 	/**
@@ -100,7 +113,7 @@ public class JRDocxSaveContributor extends JRSaveContributor
 					)
 			)
 		{
-			JRDocxExporter exporter = new JRDocxExporter();
+			JRDocxExporter exporter = new JRDocxExporter(getJasperReportsContext());
 			exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 			exporter.setParameter(JRExporterParameter.OUTPUT_FILE, file);
 			exporter.exportReport();

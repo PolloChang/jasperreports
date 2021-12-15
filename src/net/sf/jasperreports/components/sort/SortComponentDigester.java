@@ -23,21 +23,20 @@
  */
 package net.sf.jasperreports.components.sort;
 
+import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.component.XmlDigesterConfigurer;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.xml.JRXmlConstants;
 import net.sf.jasperreports.engine.xml.XmlConstantPropertyRule;
 
 import org.apache.commons.digester.Digester;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortComponentDigester.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SortComponentDigester.java 4638 2011-09-28 15:24:57Z narcism $
  */
 public class SortComponentDigester implements XmlDigesterConfigurer
 {
-
 	public void configureDigester(Digester digester)
 	{
 		addSortComponentRules(digester);
@@ -50,23 +49,20 @@ public class SortComponentDigester implements XmlDigesterConfigurer
 		
 		digester.addSetProperties(sortComponentPattern, new String[] {
 				SortComponent.PROPERTY_EVALUATION_TIME,
-				SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN,
-				SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN}, 
+				}, 
 				new String[0]);
-				
-		digester.addRule(sortComponentPattern, 
-				new XmlConstantPropertyRule(
-						SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN,
-						HorizontalAlignEnum.values()));
-		digester.addRule(sortComponentPattern, 
-				new XmlConstantPropertyRule(
-						SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN,
-						VerticalAlignEnum.values()));
+		
 		digester.addRule(sortComponentPattern, 
 				new XmlConstantPropertyRule(
 						SortComponent.PROPERTY_EVALUATION_TIME,
 						EvaluationTimeEnum.values()));
 
+		digester.addFactoryCreate(sortComponentPattern + "/symbol", SortComponentSymbolFactory.class.getName());
+		
+		digester.setRuleNamespaceURI(JRXmlConstants.JASPERREPORTS_NAMESPACE);
+
+		digester.addFactoryCreate(sortComponentPattern + "/symbol/font", SortComponentSymbolFontFactory.class.getName());
+		digester.addSetNext(sortComponentPattern + "/symbol/font", "setSymbolFont", JRFont.class.getName());
 	}
 
 }

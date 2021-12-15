@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
  * Base implementation of {@link net.sf.jasperreports.engine.JRSubreportReturnValue JRSubreportReturnValue}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseSubreportReturnValue.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseSubreportReturnValue.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Serializable
 {

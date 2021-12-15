@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.engine.xml;
 
+import java.util.UUID;
+
 import net.sf.jasperreports.engine.design.JRDesignDataset;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
 
@@ -30,7 +32,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDatasetFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDatasetFactory.java 5337 2012-05-04 09:15:58Z lucianc $
  */
 public class JRDatasetFactory extends JRBaseFactory
 {
@@ -48,6 +50,12 @@ public class JRDatasetFactory extends JRBaseFactory
 		if (whenResourceMissingType != null)
 		{
 			dataset.setWhenResourceMissingType(whenResourceMissingType);
+		}
+		
+		String uuid = attributes.getValue(JRXmlConstants.ATTRIBUTE_uuid);
+		if (uuid != null)
+		{
+			dataset.setUUID(UUID.fromString(uuid));
 		}
 
 		return dataset;

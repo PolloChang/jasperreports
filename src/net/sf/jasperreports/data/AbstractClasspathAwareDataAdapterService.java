@@ -30,13 +30,14 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.FileResolver;
-import net.sf.jasperreports.engine.util.JRResourcesUtil;
 import net.sf.jasperreports.engine.util.SimpleFileResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractClasspathAwareDataAdapterService.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: AbstractClasspathAwareDataAdapterService.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public abstract class AbstractClasspathAwareDataAdapterService extends AbstractDataAdapterService 
 {
@@ -44,8 +45,17 @@ public abstract class AbstractClasspathAwareDataAdapterService extends AbstractD
 	/**
 	 *
 	 */
-	public AbstractClasspathAwareDataAdapterService(ClasspathAwareDataAdapter dataAdapter) {
-		super(dataAdapter);
+	public AbstractClasspathAwareDataAdapterService(JasperReportsContext jasperReportsContext, ClasspathAwareDataAdapter dataAdapter) 
+	{
+		super(jasperReportsContext, dataAdapter);
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #AbstractClasspathAwareDataAdapterService(JasperReportsContext, ClasspathAwareDataAdapter)}.
+	 */
+	public AbstractClasspathAwareDataAdapterService(ClasspathAwareDataAdapter dataAdapter) 
+	{
+		this(DefaultJasperReportsContext.getInstance(), dataAdapter);
 	}
 
 	/**
@@ -53,7 +63,7 @@ public abstract class AbstractClasspathAwareDataAdapterService extends AbstractD
 	 */
 	protected ClassLoader getClassLoader()
 	{
-		FileResolver fileResolver = JRResourcesUtil.getFileResolver(null);
+		FileResolver fileResolver = null;//FIXMECONTEXT JRResourcesUtil.getFileResolver(null);
 		if (fileResolver == null)
 		{
 			SimpleFileResolver sfr = new SimpleFileResolver(new File("."));//FIXMEREPO

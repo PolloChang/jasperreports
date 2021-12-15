@@ -26,9 +26,12 @@ package net.sf.jasperreports.engine.base;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRConstants;
@@ -58,7 +61,7 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseReport.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseReport.java 5347 2012-05-08 12:50:30Z teodord $
  */
 public class JRBaseReport implements JRReport, Serializable, JRChangeEventsSupport
 {
@@ -685,6 +688,64 @@ public class JRBaseReport implements JRReport, Serializable, JRChangeEventsSuppo
 	 */
 	public JRBand getNoData() {
 		return noData;
+	}
+	
+	/**
+	 *
+	 */
+	public JRBand[] getAllBands()
+	{
+		List<JRBand> bands = new ArrayList<JRBand>();
+		
+		addBand(title, bands);
+		addBand(pageHeader, bands);
+		addBand(columnHeader, bands);
+
+		for (JRGroup group : mainDataset.getGroups())
+		{
+			addBands(group.getGroupHeaderSection(), bands);
+			addBands(group.getGroupHeaderSection(), bands);
+		}
+
+		addBands(detailSection, bands);
+		
+		addBand(columnFooter, bands);
+		addBand(pageFooter, bands);
+		addBand(lastPageFooter, bands);
+		addBand(summary, bands);
+		addBand(noData, bands);
+		
+		return bands.toArray(new JRBand[bands.size()]);
+	}
+
+	/**
+	 *
+	 */
+	private void addBand(JRBand band, List<JRBand> bands)
+	{
+		if (band != null)
+		{
+			bands.add(band);
+		}
+	}
+
+	/**
+	 *
+	 */
+	private void addBands(JRSection section, List<JRBand> bands)
+	{
+		if (section != null)
+		{
+			for (JRBand band : section.getBands())
+			{
+				addBand(band, bands);
+			}
+		}
+	}
+
+	public UUID getUUID()
+	{
+		return mainDataset.getUUID();
 	}
 	
 	private transient JRPropertyChangeSupport eventSupport;//FIXMECLONE cloneable for reset?

@@ -70,8 +70,11 @@ import net.sf.jasperreports.components.table.StandardTableFactory;
 import net.sf.jasperreports.components.table.TableComponent;
 import net.sf.jasperreports.components.table.TableReportContextXmlRule;
 import net.sf.jasperreports.components.table.WhenNoDataTypeTableEnum;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRPropertyExpression;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.component.Component;
 import net.sf.jasperreports.engine.component.ComponentKey;
 import net.sf.jasperreports.engine.component.ComponentXmlWriter;
@@ -82,9 +85,12 @@ import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
 import net.sf.jasperreports.engine.util.XmlNamespace;
 import net.sf.jasperreports.engine.xml.JRExpressionFactory;
+import net.sf.jasperreports.engine.xml.JRPropertyDigesterRule;
+import net.sf.jasperreports.engine.xml.JRPropertyExpressionFactory;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
 import net.sf.jasperreports.engine.xml.StyleContainerRule;
+import net.sf.jasperreports.engine.xml.UuidPropertyRule;
 import net.sf.jasperreports.engine.xml.XmlConstantPropertyRule;
 
 import org.apache.commons.digester.Digester;
@@ -93,11 +99,28 @@ import org.apache.commons.digester.Digester;
  * XML handler (digester + writer) for built-in component implementations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentsXmlHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ComponentsXmlHandler.java 5191 2012-03-30 11:36:57Z teodord $
  * @see ComponentsExtensionsRegistryFactory
  */
 public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXmlWriter
 {
+	private JasperReportsContext jasperReportsContext;
+	
+	/**
+	 * @deprecated Replaced by {@link #ComponentsXmlHandler(JasperReportsContext)}.
+	 */
+	public ComponentsXmlHandler()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	/**
+	 * 
+	 */
+	public ComponentsXmlHandler(JasperReportsContext jasperReportsContext)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+	}
 
 	public void configureDigester(Digester digester)
 	{
@@ -127,6 +150,7 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 		digester.addSetNext(listContentsPattern, "setContents");
 	}
 
+	@SuppressWarnings("deprecation")
 	protected void addBarbecueRules(Digester digester)
 	{
 		String barcodePattern = "*/componentElement/barbecue";
@@ -199,6 +223,7 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 				"*/componentElement/PDF417", PDF417Component.class);
 	}
 	
+	@SuppressWarnings("deprecation")
 	protected <T> void addBaseBarcode4jRules(Digester digester, 
 			String barcodePattern, Class<T> barcodeComponentClass)
 	{
@@ -263,6 +288,7 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 				JRExpression.class.getName());
 	}
 
+	@SuppressWarnings("deprecation")
 	protected void addTableRules(Digester digester)
 	{
 		String tablePattern = "*/componentElement/table";
@@ -272,7 +298,11 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 		String columnPattern = "*/column";
 		digester.addObjectCreate(columnPattern, StandardColumn.class);
 		digester.addSetNext(columnPattern, "addColumn");
-		digester.addSetProperties(columnPattern);
+		digester.addSetProperties(columnPattern,
+				//properties to be ignored by this rule
+				new String[]{"uuid"}, 
+				new String[0]);
+		digester.addRule(columnPattern, new UuidPropertyRule("uuid", "UUID"));
 		addExpressionRules(digester, columnPattern + "/printWhenExpression", 
 				JRExpressionFactory.BooleanExpressionFactory.class, "setPrintWhenExpression",
 				true);
@@ -287,7 +317,11 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 		String columnGroupPattern = "*/columnGroup";
 		digester.addObjectCreate(columnGroupPattern, StandardColumnGroup.class);
 		digester.addSetNext(columnGroupPattern, "addColumn");
-		digester.addSetProperties(columnGroupPattern);
+		digester.addSetProperties(columnGroupPattern,
+				//properties to be ignored by this rule
+				new String[]{"uuid"}, 
+				new String[0]);
+		digester.addRule(columnGroupPattern, new UuidPropertyRule("uuid", "UUID"));
 		addExpressionRules(digester, columnGroupPattern + "/printWhenExpression", 
 				JRExpressionFactory.BooleanExpressionFactory.class, "setPrintWhenExpression",
 				true);
@@ -297,6 +331,16 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 		addTableGroupCellRules(digester, columnGroupPattern + "/groupFooter", "addGroupFooter");
 		addTableCellRules(digester, columnGroupPattern + "/columnHeader", "setColumnHeader");
 		addTableCellRules(digester, columnGroupPattern + "/columnFooter", "setColumnFooter");
+
+		/*   */
+		digester.addRule("*/property", new JRPropertyDigesterRule());
+		
+		String propertyExpressionPattern = "*/" + JRXmlConstants.ELEMENT_propertyExpression;
+		digester.addFactoryCreate(propertyExpressionPattern, JRPropertyExpressionFactory.class.getName());
+		digester.addSetNext(propertyExpressionPattern, "addPropertyExpression", JRPropertyExpression.class.getName());
+		digester.addFactoryCreate(propertyExpressionPattern, JRExpressionFactory.StringExpressionFactory.class.getName());
+		digester.addSetNext(propertyExpressionPattern, "setValueExpression", JRExpression.class.getName());
+		digester.addCallMethod(propertyExpressionPattern, "setText", 0);
 	}
 	
 	protected void addTableCellRules(Digester digester, String pattern, 
@@ -370,12 +414,12 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 		else if (component instanceof SpiderChartComponent)
 		{
 			SpiderChartComponent spiderChart = (SpiderChartComponent) component;
-			SpiderChartXmlWriter spiderChartWriter = new SpiderChartXmlWriter();
+			SpiderChartXmlWriter spiderChartWriter = new SpiderChartXmlWriter(jasperReportsContext);
 			spiderChartWriter.writeToXml(componentKey, spiderChart, reportWriter);
 		}
 		else if (component instanceof SortComponent)
 		{
-			SortComponentXmlWriter sortWriter = new SortComponentXmlWriter();
+			SortComponentXmlWriter sortWriter = new SortComponentXmlWriter(jasperReportsContext);
 			sortWriter.writeToXml(componentKey, component, reportWriter);
 		}
 		else if (component instanceof MapComponent)
@@ -496,7 +540,10 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 				try
 				{
 					writer.startElement("column");
+					writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, column.getUUID().toString());
 					writer.addAttribute("width", column.getWidth());
+					reportWriter.writeProperties(column);
+					reportWriter.writePropertyExpressions(column.getPropertyExpressions());
 					writer.writeExpression(JRXmlConstants.ELEMENT_printWhenExpression, 
 							JRXmlWriter.JASPERREPORTS_NAMESPACE, 
 							column.getPrintWhenExpression());
@@ -522,7 +569,10 @@ public class ComponentsXmlHandler implements XmlDigesterConfigurer, ComponentXml
 				try
 				{
 					writer.startElement("columnGroup");
+					writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, columnGroup.getUUID().toString());
 					writer.addAttribute("width", columnGroup.getWidth());
+					reportWriter.writeProperties(columnGroup);
+					reportWriter.writePropertyExpressions(columnGroup.getPropertyExpressions());
 					writer.writeExpression(JRXmlConstants.ELEMENT_printWhenExpression, 
 							JRXmlWriter.JASPERREPORTS_NAMESPACE, 
 							columnGroup.getPrintWhenExpression());

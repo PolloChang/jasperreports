@@ -51,7 +51,7 @@ import org.apache.commons.collections.ReferenceMap;
  * Crosstab cell contents filler.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillCellContents.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillCellContents.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillCellContents extends JRFillElementContainer implements JRCellContents, JRStyleSetter
 {
@@ -59,11 +59,12 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 	private final Map<BoxContents,JRFillCellContents> boxContentsCache;
 	private final JRClonePool clonePool;
 	private final JROriginProvider originProvider;
+	private final int elementId;
 	
 	private JRFillCellContents original;
 	
 	private final JRCellContents parentCell;
-	private String cellType;
+	private final String cellType;
 	
 	private JRLineBox lineBox;
 	
@@ -91,6 +92,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		
 		parentCell = cell;
 		this.cellType = cellType;
+		elementId = filler.getFillContext().generateFillElementId();
 		
 		lineBox = cell.getLineBox().clone(this);
 		
@@ -126,6 +128,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		
 		parentCell = cellContents.parentCell;
 		cellType = cellContents.cellType;
+		elementId = cellContents.elementId;
 		
 		lineBox = cellContents.getLineBox().clone(this);
 		
@@ -382,7 +385,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		moveBandBottomElements();
 		removeBlankElements();
 
-		JRTemplatePrintFrame printCell = new JRTemplatePrintFrame(getTemplateFrame());
+		JRTemplatePrintFrame printCell = new JRTemplatePrintFrame(getTemplateFrame(), elementId);
 		printCell.setX(x);
 		printCell.setY(y);
 		printCell.setWidth(width);
@@ -400,12 +403,6 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 
 	protected void setCellProperties(JRTemplatePrintFrame printCell)
 	{
-		if (cellType != null)
-		{
-			printCell.getPropertiesMap().setProperty(
-					JRCellContents.PROPERTY_TYPE, cellType);
-		}
-		
 		if (verticalSpan > 1)
 		{
 			printCell.getPropertiesMap().setProperty(
@@ -428,6 +425,10 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		{
 			template = new JRTemplateFrame(getOrigin(), 
 					filler.getJasperPrint().getDefaultStyleProvider(), this);
+			template.getPropertiesMap().setProperty(
+					JRCellContents.PROPERTY_TYPE, cellType);
+			
+			template = filler.fillContext.deduplicate(template);
 			templateFrames.put(style, template);
 		}
 		return template;

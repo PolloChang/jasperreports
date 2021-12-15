@@ -24,71 +24,137 @@
 package net.sf.jasperreports.components.sort;
 
 import java.util.Locale;
+import java.util.TimeZone;
 
 import net.sf.jasperreports.engine.DatasetFilter;
 import net.sf.jasperreports.engine.EvaluationType;
+import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.fill.DatasetFillContext;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.engine.fill.JRFillDataset;
 
 /**
  * A dataset filter that matches String values based on substrings.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FieldFilter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FieldFilter.java 5257 2012-04-10 16:14:03Z narcism $
  */
-public class FieldFilter implements DatasetFilter
-{
-	
-	private static final Log log = LogFactory.getLog(FieldFilter.class);
+public class FieldFilter implements DatasetFilter {
 
-	private final String field;
-	private String filterValue;
+	private String field;
+
+	private String filterValueStart;
+	private String filterValueEnd;
 	
+	private String filterType;
+	private String filterTypeOperator;
+	private String filterPattern;
+
 	private DatasetFillContext context;
-	private Locale locale;
+	
+	private Boolean isValid;
 
+	private FilterTypesEnum filterTypeEnum;
+	
+	private AbstractFieldComparator<?> fieldComparator;
+	
+	public FieldFilter() {
+	}
+	
 	/**
 	 * Creates a field filter.
 	 * 
-	 * @param field the field name
-	 * @param filterValue the value to search for
+	 * 
 	 */
-	public FieldFilter(String field, String filterValue)
-	{
+	public FieldFilter(String field, String filterValueStart,
+			String filterValueEnd, String filterType, String filterTypeOperator) {
 		this.field = field;
-		this.filterValue = filterValue;
-	}
-	
-	public void init(DatasetFillContext context)
-	{
-		this.context = context;
-		this.locale = context.getLocale();
-		filterValue = filterValue.toLowerCase(locale);
+		this.filterValueStart = filterValueStart;
+		this.filterValueEnd = filterValueEnd;
+		this.filterType = filterType;
+		this.filterTypeOperator = filterTypeOperator;
 	}
 
-	public boolean matches(EvaluationType evaluation)
-	{
-		Object value = context.getFieldValue(field, evaluation);
-		if (value == null)
-		{
-			return false;
+	public void init(DatasetFillContext context) {
+		this.context = context;
+		this.filterTypeEnum = FilterTypesEnum.getByName(filterType);
+		if (fieldComparator == null) {
+			fieldComparator = FieldComparatorFactory
+					.createFieldComparator(
+							filterTypeEnum,
+							filterPattern,
+							context.getLocale() != null ? context.getLocale() : Locale.getDefault(),
+							(TimeZone) context.getParameterValue(JRParameter.REPORT_TIME_ZONE));
 		}
+	}
+
+	public boolean matches(EvaluationType evaluation) {
+		Object value = context.getFieldValue(field, evaluation);
+
+		fieldComparator.setValueStart(filterValueStart);
+		fieldComparator.setValueEnd(filterValueEnd);
+		fieldComparator.setCompareTo(value);
+		fieldComparator.setCompareToClass(((JRFillDataset)context).getFillField(field).getValueClass());
 		
-		if (!(value instanceof String))
-		{
-			if (log.isDebugEnabled())
-			{
-				log.debug("Not filtering non-String value for " + field);
-			}
+		
+		if (isValid == null) {
+			isValid = fieldComparator.isValid();
+		}
+		if (!isValid) {
 			return true;
 		}
-		
-		String fieldValue = (String) value;
-		fieldValue = fieldValue.toLowerCase();
-		
-		return fieldValue.contains(filterValue);
+		return fieldComparator.compare(filterTypeOperator);
 	}
 
+	public String getField() {
+		return this.field;
+	}
+
+	public String getFilterValueStart() {
+		return filterValueStart;
+	}
+
+	public void setFilterValueStart(String filterValueStart) {
+		this.filterValueStart = filterValueStart;
+	}
+
+	public String getFilterValueEnd() {
+		return filterValueEnd;
+	}
+
+	public void setFilterValueEnd(String filterValueEnd) {
+		this.filterValueEnd = filterValueEnd;
+	}
+
+	public String getFilterType() {
+		return filterType;
+	}
+
+	public String getFilterTypeOperator() {
+		return filterTypeOperator;
+	}
+
+	public void setFilterTypeOperator(String filterTypeOperator) {
+		this.filterTypeOperator = filterTypeOperator;
+	}
+
+	public FilterTypesEnum getFilterTypeEnum() {
+		return filterTypeEnum;
+	}
+
+	public Boolean getIsValid() {
+		return isValid;
+	}
+
+	public void setIsValid(Boolean isValid) {
+		this.isValid = isValid;
+	}
+	
+	public String getFilterPattern() {
+		return filterPattern;
+	}
+
+	public void setFilterPattern(String filterPattern) {
+		this.filterPattern = filterPattern;
+	}
+	
 }

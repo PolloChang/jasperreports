@@ -44,7 +44,7 @@ import net.sf.jasperreports.engine.util.JRImageLoader;
  * Converter of {@link JRComponentElement} into print elements.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentElementConverter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ComponentElementConverter.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public final class ComponentElementConverter extends ElementConverter
 {
@@ -76,7 +76,7 @@ public final class ComponentElementConverter extends ElementConverter
 		ComponentKey componentKey = componentElement.getComponentKey();
 		if (componentKey != null)
 		{
-			ComponentManager manager = ComponentsEnvironment.getComponentManager(
+			ComponentManager manager = ComponentsEnvironment.getInstance(reportConverter.getJasperReportsContext()).getManager(
 					componentKey);
 			if (manager != null && manager.getDesignConverter() != null)
 			{

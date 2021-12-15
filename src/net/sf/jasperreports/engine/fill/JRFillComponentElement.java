@@ -48,7 +48,7 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * A {@link JRComponentElement} which is used during report fill.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillComponentElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillComponentElement.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class JRFillComponentElement extends JRFillElement implements JRComponentElement, FillContext
 {
@@ -62,7 +62,7 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		super(filler, element, factory);
 		
 		ComponentKey componentKey = element.getComponentKey();
-		ComponentManager manager = ComponentsEnvironment.getComponentManager(componentKey);
+		ComponentManager manager = ComponentsEnvironment.getInstance(filler.getJasperReportsContext()).getManager(componentKey);
 		fillComponent = manager.getComponentFillFactory().toFillComponent(element.getComponent(), factory);
 		fillComponent.initialize(this);
 	}
@@ -73,7 +73,7 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		super(element, factory);
 		
 		ComponentKey componentKey = element.getComponentKey();
-		ComponentManager manager = ComponentsEnvironment.getComponentManager(componentKey);
+		ComponentManager manager = ComponentsEnvironment.getInstance(filler.getJasperReportsContext()).getManager(componentKey);
 		fillComponent = manager.getComponentFillFactory().cloneFillComponent(element.fillComponent, factory);
 		fillComponent.initialize(this);
 	}
@@ -211,6 +211,11 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 	public JRComponentElement getComponentElement()
 	{
 		return this;
+	}
+
+	public int getElementSourceId()
+	{
+		return elementId;
 	}
 
 	public JROrigin getElementOrigin()

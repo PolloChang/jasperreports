@@ -30,28 +30,28 @@ import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPrintImage;
-import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.export.JRHtmlExporter;
+import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRTypeSniffer;
+import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.web.WebReportContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ImageServlet.java 5074 2012-03-14 12:08:10Z teodord $
  */
-public class ImageServlet extends HttpServlet
+public class ImageServlet extends AbstractServlet
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
@@ -78,10 +78,10 @@ public class ImageServlet extends HttpServlet
 		{
 			try
 			{
-				JRRenderable pxRenderer = 
-					JRImageRenderer.getInstance("net/sf/jasperreports/engine/images/pixel.GIF");
-				imageData = pxRenderer.getImageData();
-				imageMimeType = JRRenderable.MIME_TYPE_GIF;
+				Renderable pxRenderer = 
+					RenderableUtil.getInstance(getJasperReportsContext()).getRenderable("net/sf/jasperreports/engine/images/pixel.GIF");
+				imageData = pxRenderer.getImageData(getJasperReportsContext());
+				imageMimeType = ImageTypeEnum.GIF.getMimeType();
 			}
 			catch (JRException e)
 			{
@@ -97,18 +97,19 @@ public class ImageServlet extends HttpServlet
 				throw new ServletException("No web report context found.");
 			}
 			
-			JasperPrint jasperPrint = (JasperPrint)webReportContext.getParameterValue(WebReportContext.REPORT_CONTEXT_PARAMETER_JASPER_PRINT);
-			if (jasperPrint == null)
+			JasperPrintAccessor jasperPrintAccessor = (JasperPrintAccessor) webReportContext.getParameterValue(
+					WebReportContext.REPORT_CONTEXT_PARAMETER_JASPER_PRINT_ACCESSOR);
+			if (jasperPrintAccessor == null)
 			{
 				throw new ServletException("No JasperPrint found in report context.");
 			}
 			
-			List<JasperPrint> jasperPrintList = Collections.singletonList(jasperPrint);
+			List<JasperPrint> jasperPrintList = Collections.singletonList(jasperPrintAccessor.getJasperPrint());
 			
 			JRPrintImage image = JRHtmlExporter.getImage(jasperPrintList, imageName);
 			
-			JRRenderable renderer = image.getRenderer();
-			if (renderer.getType() == JRRenderable.TYPE_SVG)
+			Renderable renderer = image.getRenderable();
+			if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
 			{
 				renderer = 
 					new JRWrappingSvgRenderer(
@@ -118,11 +119,11 @@ public class ImageServlet extends HttpServlet
 						);
 			}
 
-			imageMimeType = JRTypeSniffer.getImageMimeType(renderer.getImageType());
+			imageMimeType = renderer.getImageTypeValue().getMimeType();
 			
 			try
 			{
-				imageData = renderer.getImageData();
+				imageData = renderer.getImageData(getJasperReportsContext());
 			}
 			catch (JRException e)
 			{

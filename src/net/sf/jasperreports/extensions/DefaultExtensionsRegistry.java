@@ -31,11 +31,11 @@ import java.util.List;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.util.ClassLoaderResource;
 import net.sf.jasperreports.engine.util.ClassUtils;
 import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.util.JRProperties;
-import net.sf.jasperreports.engine.util.JRProperties.PropertySuffix;
 
 import org.apache.commons.collections.ReferenceMap;
 import org.apache.commons.logging.Log;
@@ -67,7 +67,7 @@ import org.apache.commons.logging.LogFactory;
  * is skipped and an error message is logged.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultExtensionsRegistry.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DefaultExtensionsRegistry.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class DefaultExtensionsRegistry implements ExtensionsRegistry
 {
@@ -85,14 +85,14 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 	 * The property prefix of extension registry factories.
 	 */
 	public final static String PROPERTY_REGISTRY_FACTORY_PREFIX = 
-			JRProperties.PROPERTY_PREFIX + "extension.registry.factory.";
+			JRPropertiesUtil.PROPERTY_PREFIX + "extension.registry.factory.";
 	
 	/**
 	 * A prefix that can be used to provide registry-specific properties,
 	 * by appending the registry ID and a fixed property suffix to it. 
 	 */
 	public static final String PROPERTY_REGISTRY_PREFIX = 
-			JRProperties.PROPERTY_PREFIX + "extension.";
+			JRPropertiesUtil.PROPERTY_PREFIX + "extension.";
 
 	private final ReferenceMap registrySetCache = new ReferenceMap(
 			ReferenceMap.WEAK, ReferenceMap.HARD);
@@ -159,8 +159,7 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 								+ url);
 					}
 					
-					JRPropertiesMap props = JRPropertiesMap.loadProperties(url);
-					registries = loadRegistries(props);
+					registries = loadRegistries(url);
 					
 					classLoaderRegistries.put(url, registries);
 				}
@@ -191,14 +190,16 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 		}
 	}
 	
-	protected List<ExtensionsRegistry> loadRegistries(JRPropertiesMap properties)
+	protected List<ExtensionsRegistry> loadRegistries(URL url)
 	{
+		JRPropertiesMap properties = JRPropertiesMap.loadProperties(url);
+		
 		List<ExtensionsRegistry> registries = new ArrayList<ExtensionsRegistry>();
-		List<PropertySuffix> factoryProps = JRProperties.getProperties(properties, 
+		List<PropertySuffix> factoryProps = JRPropertiesUtil.getProperties(properties, 
 				PROPERTY_REGISTRY_FACTORY_PREFIX);
 		for (Iterator<PropertySuffix> it = factoryProps.iterator(); it.hasNext();)
 		{
-			JRProperties.PropertySuffix factoryProp = it.next();
+			PropertySuffix factoryProp = it.next();
 			String registryId = factoryProp.getSuffix();
 			String factoryClass = factoryProp.getValue();
 			
@@ -218,7 +219,7 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 			{
 				//skip this registry
 				log.error("Error instantiating extensions registry for " 
-						+ registryId, e);
+						+ registryId + " from " + url, e);
 			}
 		}
 		return registries;

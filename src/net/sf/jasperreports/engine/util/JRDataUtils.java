@@ -32,7 +32,7 @@ import java.util.TimeZone;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDataUtils.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRDataUtils.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public final class JRDataUtils
 {
@@ -119,6 +119,33 @@ public final class JRDataUtils
 	public static boolean isLeapYear(int year)
 	{
 		return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+	}
+	
+	/**
+	 * Returns a translated date value that has the same fields in a specified
+	 * timezone as the passed value in the default timezone.
+	 * 
+	 * @param value the value to translate
+	 * @param tz the timezone to translate to
+	 * @return the date translated to the specified timezone
+	 */
+	public static Date translateToTimezone(Date value, TimeZone tz)
+	{
+		if (tz == null)
+		{
+			return value;
+		}
+		
+		TimeZone defaultTz = TimeZone.getDefault();
+		if (defaultTz.hasSameRules(tz))
+		{
+			// nothing to do
+			return value;
+		}
+		
+		long time = value.getTime();
+		Date adjustedDate = new Date(time + tz.getOffset(time) - defaultTz.getOffset(time));
+		return adjustedDate;
 	}
 	
 

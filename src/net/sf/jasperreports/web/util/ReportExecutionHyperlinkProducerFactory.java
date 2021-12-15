@@ -25,34 +25,40 @@ package net.sf.jasperreports.web.util;
 
 import javax.servlet.http.HttpServletRequest;
 
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
 import net.sf.jasperreports.engine.export.JRHyperlinkProducerFactory;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ReportExecutionHyperlinkProducerFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ReportExecutionHyperlinkProducerFactory.java 5378 2012-05-14 00:39:27Z teodord $
  */
 public class ReportExecutionHyperlinkProducerFactory extends JRHyperlinkProducerFactory
 {
+	/**
+	 * @deprecated Replaced by {@link ReportExecutionHyperlinkProducer#HYPERLINK_TYPE_REPORT_EXECUTION}.
+	 */
 	public static final String HYPERLINK_TYPE_REPORT_EXECUTION = "ReportExecution";
 	
+	private JasperReportsContext jasperReportsContext;
 	private HttpServletRequest request;
 	
 	/**
 	 *
 	 */
-	private ReportExecutionHyperlinkProducerFactory(HttpServletRequest request)
+	private ReportExecutionHyperlinkProducerFactory(JasperReportsContext jasperReportsContext, HttpServletRequest request)
 	{
+		this.jasperReportsContext = jasperReportsContext;
 		this.request = request;
 	}
 
 	/**
 	 *
 	 */
-	public static ReportExecutionHyperlinkProducerFactory getInstance(HttpServletRequest request)
+	public static ReportExecutionHyperlinkProducerFactory getInstance(JasperReportsContext jasperReportsContext, HttpServletRequest request)
 	{
-		return new ReportExecutionHyperlinkProducerFactory(request);
+		return new ReportExecutionHyperlinkProducerFactory(jasperReportsContext, request);
 	}
 
 	/**
@@ -60,12 +66,18 @@ public class ReportExecutionHyperlinkProducerFactory extends JRHyperlinkProducer
 	 */
 	public JRHyperlinkProducer getHandler(String linkType)
 	{
-		if (linkType == null || !HYPERLINK_TYPE_REPORT_EXECUTION.equals(linkType))
+		if (linkType != null)
 		{
-			return null;
+			if (ReportExecutionHyperlinkProducer.HYPERLINK_TYPE_REPORT_EXECUTION.equals(linkType))
+			{
+				return ReportExecutionHyperlinkProducer.getInstance(jasperReportsContext, request);
+			}
+			if (ReportInteractionHyperlinkProducer.HYPERLINK_TYPE_REPORT_INTERACTION.equals(linkType))
+			{
+				return ReportInteractionHyperlinkProducer.getInstance(jasperReportsContext, request);
+			}
 		}
-		
-		return ReportExecutionHyperlinkProducer.getInstance(request);
+		return null;
 	}
 
 }

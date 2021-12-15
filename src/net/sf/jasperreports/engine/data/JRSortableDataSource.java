@@ -50,7 +50,7 @@ import net.sf.jasperreports.engine.type.SortOrderEnum;
  * It will be removed from the library in future versions.
  * @deprecated Replaced by {@link ListOfArrayDataSource} and {@link DatasetSortUtil}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRSortableDataSource.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRSortableDataSource.java 5213 2012-04-03 14:44:47Z teodord $
  */
 public class JRSortableDataSource implements JRRewindableDataSource
 {
@@ -220,7 +220,7 @@ public class JRSortableDataSource implements JRRewindableDataSource
 	/**
 	 *
 	 */
-	class DataSourceComparator implements Comparator
+	class DataSourceComparator implements Comparator<Object[]>
 	{
 		int[] sortIndexes = null;
 		int[] sortOrders = null;
@@ -233,11 +233,9 @@ public class JRSortableDataSource implements JRRewindableDataSource
 			this.collatorFlags = collatorFlags;
 		}
 
-		public int compare(Object arg1, Object arg2)
+		@SuppressWarnings({ "rawtypes", "unchecked" })
+		public int compare(Object[] record1, Object[] record2)
 		{
-			Object[] record1 = (Object[])arg1;
-			Object[] record2 = (Object[])arg2;
-
 			int ret = 0;
 
 			for(int i = 0; i < sortIndexes.length; i++)

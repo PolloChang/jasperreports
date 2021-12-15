@@ -27,9 +27,9 @@ import java.awt.Color;
 
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRElementGroup;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRStyleContainer;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 
 /**
  * Crosstab cell contents interface.
@@ -44,7 +44,7 @@ import net.sf.jasperreports.engine.util.JRProperties;
  * </ul>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCellContents.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRCellContents.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRCellContents extends JRElementGroup, JRStyleContainer, JRBoxContainer
 {
@@ -60,7 +60,7 @@ public interface JRCellContents extends JRElementGroup, JRStyleContainer, JRBoxC
 	 * 
 	 * @see net.sf.jasperreports.engine.JRPrintFrame
 	 */
-	public static final String PROPERTIES_PREFIX = JRProperties.PROPERTY_PREFIX + "crosstab.cell.";
+	public static final String PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "crosstab.cell.";
 	
 	/**
 	 * A property that provides the type of the cell that generated a print frame.

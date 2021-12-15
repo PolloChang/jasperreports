@@ -23,16 +23,18 @@
  */
 package net.sf.jasperreports.engine.component;
 
+import net.sf.jasperreports.engine.Deduplicable;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.fill.JRTemplateElement;
 
 
 /**
  * A base abstract implementation of a fill component.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseFillComponent.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BaseFillComponent.java 4808 2011-11-21 13:44:22Z lucianc $
  */
 public abstract class BaseFillComponent implements FillComponent
 {
@@ -41,10 +43,12 @@ public abstract class BaseFillComponent implements FillComponent
 	 * The fill context, as set by {@link #initialize(FillContext)}.
 	 */
 	protected FillContext fillContext;
+	protected int elementId;
 	
 	public void initialize(FillContext fillContext)
 	{
 		this.fillContext = fillContext;
+		this.elementId = fillContext.getElementSourceId();
 	}
 
 	/**
@@ -84,4 +88,18 @@ public abstract class BaseFillComponent implements FillComponent
 		// NOOP
 	}
 	
+	/**
+	 * Deduplicates an object by looking for an identical one that's already
+	 * present in the fill context.
+	 * 
+	 * This operations should be performed on {@link JRTemplateElement element templates}
+	 * in order to prevent creation of a large number of identical instances.
+	 * 
+	 * @param object the object to deduplicate
+	 * @return a duplicate of the object if found, or the passed object if not
+	 */
+	protected <T extends Deduplicable> T deduplicate(T object)
+	{
+		return fillContext.getFiller().getFillContext().deduplicate(object);
+	}
 }

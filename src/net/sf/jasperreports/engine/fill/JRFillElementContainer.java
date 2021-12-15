@@ -53,7 +53,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * This is the base for band, frame and crosstab cell fillers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillElementContainer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillElementContainer.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRFillElementContainer extends JRFillElementGroup
 {
@@ -598,12 +598,15 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 							
 							Collection<JRPrintElement> printElements = subreport.getPrintElements();
 							addSubElements(printContainer, element, printElements);
+							
+							subreport.subreportPageFilled();
 						}
-						else if (element instanceof JRFillCrosstab)
-						{
-							List<JRPrintElement> printElements = ((JRFillCrosstab) element).getPrintElements();
-							addSubElements(printContainer, element, printElements);
-						}
+					}
+					// crosstabs do not return a fill() element
+					else if (element instanceof JRFillCrosstab)
+					{
+						List<? extends JRPrintElement> printElements = ((JRFillCrosstab) element).getPrintElements();
+						addSubElements(printContainer, element, printElements);
 					}
 				}
 			}
@@ -614,17 +617,27 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 	}
 
 
-	protected void addSubElements(JRPrintElementContainer printContainer, JRFillElement element, Collection<JRPrintElement> printElements)
+	protected void addSubElements(JRPrintElementContainer printContainer, JRFillElement element, 
+			Collection<? extends JRPrintElement> printElements)
 	{
-		JRPrintElement printElement;
-		if (printElements != null && printElements.size() > 0)
+		if (printContainer instanceof JRPrintBand)
 		{
-			for(Iterator<JRPrintElement> it = printElements.iterator(); it.hasNext();)
+			// adding the subelements as whole lists to bands so that we don't need
+			// another virtualized list at print band level
+			((JRPrintBand) printContainer).addOffsetElements(printElements, 
+					element.getX(), element.getRelativeY());
+		}
+		else
+		{
+			if (printElements != null && printElements.size() > 0)
 			{
-				printElement =it.next();
-				printElement.setX(element.getX() + printElement.getX());
-				printElement.setY(element.getRelativeY() + printElement.getY());
-				printContainer.addElement(printElement);
+				for(Iterator<? extends JRPrintElement> it = printElements.iterator(); it.hasNext();)
+				{
+					JRPrintElement printElement =it.next();
+					printElement.setX(element.getX() + printElement.getX());
+					printElement.setY(element.getRelativeY() + printElement.getY());
+					printContainer.addElement(printElement);
+				}
 			}
 		}
 	}
@@ -724,13 +737,17 @@ public abstract class JRFillElementContainer extends JRFillElementGroup
 			consolidatedStyle = filler.getJasperPrint().getStylesMap().get(consolidatedStyleName);
 			if (consolidatedStyle == null)
 			{
-				consolidatedStyle = new JRBaseStyle(consolidatedStyleName);
+				JRBaseStyle style = new JRBaseStyle(consolidatedStyleName);
 				for (int j = condStylesToApply.size() - 1; j >= 0; j--)
 				{
-					JRStyleResolver.appendStyle(consolidatedStyle, condStylesToApply.get(j));
+					JRStyleResolver.appendStyle(style, condStylesToApply.get(j));
 				}
 
-				filler.addPrintStyle(consolidatedStyle);
+				// deduplicate to previously created identical instances
+				style = filler.fillContext.deduplicate(style);
+				filler.addPrintStyle(style);
+				
+				consolidatedStyle = style;
 			}
 		}
 

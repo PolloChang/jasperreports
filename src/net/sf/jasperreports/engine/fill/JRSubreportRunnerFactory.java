@@ -23,14 +23,14 @@
  */
 package net.sf.jasperreports.engine.fill;
 
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 
 
 /**
  * Factory of {@link net.sf.jasperreports.engine.fill.JRSubreportRunner JRSubreportRunner} instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSubreportRunnerFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRSubreportRunnerFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRSubreportRunnerFactory
 {
@@ -38,7 +38,7 @@ public interface JRSubreportRunnerFactory
 	 * Property specifying the {@link net.sf.jasperreports.engine.fill.JRSubreportRunnerFactory JRSubreportRunnerFactory}
 	 * implementation to use for creating subreport runners.
 	 */
-	public static final String SUBREPORT_RUNNER_FACTORY = JRProperties.PROPERTY_PREFIX + "subreport.runner.factory";
+	public static final String SUBREPORT_RUNNER_FACTORY = JRPropertiesUtil.PROPERTY_PREFIX + "subreport.runner.factory";
 	
 	/**
 	 * Creates a new {@link net.sf.jasperreports.engine.fill.JRSubreportRunner JRSubreportRunner} instance.

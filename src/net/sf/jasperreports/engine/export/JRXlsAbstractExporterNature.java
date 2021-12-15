@@ -29,42 +29,69 @@
 
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.JRGenericPrintElement;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsAbstractExporterNature.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXlsAbstractExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
  */
-public class JRXlsAbstractExporterNature implements ExporterNature
+public class JRXlsAbstractExporterNature extends AbstractExporterNature
 {
 	
-	public static final String PROPERTY_BREAK_BEFORE_ROW = JRProperties.PROPERTY_PREFIX + "export.xls.break.before.row";
-	public static final String PROPERTY_BREAK_AFTER_ROW = JRProperties.PROPERTY_PREFIX + "export.xls.break.after.row";
+	public static final String PROPERTY_BREAK_BEFORE_ROW = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.break.before.row";
+	public static final String PROPERTY_BREAK_AFTER_ROW = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.break.after.row";
 
-	protected ExporterFilter filter;
 	protected boolean isIgnoreGraphics;
 	protected boolean isIgnorePageMargins;
 
 	/**
 	 * 
 	 */
-	protected JRXlsAbstractExporterNature(ExporterFilter filter, boolean isIgnoreGraphics)
+	protected JRXlsAbstractExporterNature(
+		JasperReportsContext jasperReportsContext,
+		ExporterFilter filter, 
+		boolean isIgnoreGraphics,
+		boolean isIgnorePageMargins
+		)
 	{
-		this(filter, isIgnoreGraphics, false);
+		super(jasperReportsContext, filter);
+		this.isIgnoreGraphics = isIgnoreGraphics;
+		this.isIgnorePageMargins = isIgnorePageMargins;
 	}
 	
 	/**
-	 * 
+	 * @deprecated Replaced by {@link #JRXlsAbstractExporterNature(JasperReportsContext, ExporterFilter, boolean, boolean)}. 
+	 */
+	protected JRXlsAbstractExporterNature(ExporterFilter filter, boolean isIgnoreGraphics)
+	{
+		this(DefaultJasperReportsContext.getInstance(), filter, isIgnoreGraphics, false);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #JRXlsAbstractExporterNature(JasperReportsContext, ExporterFilter, boolean, boolean)}. 
 	 */
 	protected JRXlsAbstractExporterNature(ExporterFilter filter, boolean isIgnoreGraphics, boolean isIgnorePageMargins)
 	{
-		this.filter = filter;
-		this.isIgnoreGraphics = isIgnoreGraphics;
-		this.isIgnorePageMargins = isIgnorePageMargins;
+		this(DefaultJasperReportsContext.getInstance(), filter, isIgnoreGraphics, isIgnorePageMargins);
+	}
+	
+	/**
+	 *
+	 */
+	public JRPropertiesUtil getPropertiesUtil()
+	{
+		return propertiesUtil;
 	}
 	
 	/**
@@ -141,4 +168,212 @@ public class JRXlsAbstractExporterNature implements ExporterNature
 		return Boolean.valueOf(element.getPropertiesMap().getProperty(PROPERTY_BREAK_AFTER_ROW)).booleanValue();
 	}
 	
+	/**
+	 *
+	 */
+	public Boolean getRowAutoFit(JRPrintElement element)
+	{
+		if (
+			element.hasProperties()
+			&& element.getPropertiesMap().containsProperty(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW)
+			)
+		{
+			// we make this test to avoid reaching the global default value of the property directly
+			// and thus skipping the report level one, if present
+			return getPropertiesUtil().getBooleanProperty(element, JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW, false);
+		}
+		return null;
+	}
+	
+	/**
+	 *
+	 */
+	public Boolean getColumnAutoFit(JRPrintElement element)
+	{
+		if (
+			element.hasProperties()
+			&& element.getPropertiesMap().containsProperty(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN)
+			)
+		{
+			// we make this test to avoid reaching the global default value of the property directly
+			// and thus skipping the report level one, if present
+			return getPropertiesUtil().getBooleanProperty(element, JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN, false);
+		}
+		return null;
+	}
+
+	public Integer getCustomColumnWidth(JRPrintElement element) {
+		if (element.hasProperties()
+			&& element.getPropertiesMap().containsProperty(JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH)
+			)
+		{
+			// we make this test to avoid reaching the global default value of the property directly
+			// and thus skipping the report level one, if present
+			return getPropertiesUtil().getIntegerProperty(element, JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH, 0);
+		}
+		return null;
+	}
+	
+	public Float getColumnWidthRatio(JRPrintElement element) {
+		if (element.hasProperties()
+			&& element.getPropertiesMap().containsProperty(JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH_RATIO)
+			)
+		{
+			// we make this test to avoid reaching the global default value of the property directly
+			// and thus skipping the report level one, if present
+			return getPropertiesUtil().getFloatProperty(element, JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH_RATIO, 0f);
+		}
+		return null;
+	}
+
+	public List<PropertySuffix> getRowLevelSuffixes(JRPrintElement element)
+	{
+		if (element.hasProperties())
+		{
+			return JRPropertiesUtil.getProperties(element,JRXlsAbstractExporter.PROPERTY_ROW_OUTLINE_LEVEL_PREFIX);
+		}
+		return null;
+		
+	}
+	
+	public String getSheetName(JRPrintElement element)
+	{
+		if (element.hasProperties()
+				&& element.getPropertiesMap().containsProperty(JRXlsAbstractExporterParameter.PROPERTY_SHEET_NAME)
+				)
+			{
+				// we make this test to avoid reaching the global default value of the property directly
+				// and thus skipping the report level one, if present
+				return getPropertiesUtil().getProperty(element, JRXlsAbstractExporterParameter.PROPERTY_SHEET_NAME);
+			}
+			return null;
+	}
+	
+	public Integer getPageScale(JRPrintElement element)
+	{
+		if (element.hasProperties()
+				&& element.getPropertiesMap().containsProperty(JRXlsAbstractExporter.PROPERTY_PAGE_SCALE)
+				)
+			{
+				// we make this test to avoid reaching the global default value of the property directly
+				// and thus skipping the report level one, if present
+				return getPropertiesUtil().getIntegerProperty(element, JRXlsAbstractExporter.PROPERTY_PAGE_SCALE, 0);
+			}
+			return null;
+	}
+
+	public Integer getFirstPageNumber(JRPrintElement element)
+	{
+		if (element.hasProperties()
+				&& element.getPropertiesMap().containsProperty(JRXlsAbstractExporter.PROPERTY_FIRST_PAGE_NUMBER)
+				)
+			{
+				// we make this test to avoid reaching the global default value of the property directly
+				// and thus skipping the report level one, if present
+				return getPropertiesUtil().getIntegerProperty(element, JRXlsAbstractExporter.PROPERTY_FIRST_PAGE_NUMBER, 0);
+			}
+			return null;
+	}
+
+	public void setXProperties(CutsInfo xCuts, JRPrintElement element, int row1, int col1, int row2, int col2)
+	{
+		Map<String,Object> xCutsProperties = xCuts.getPropertiesMap();
+		Cut cut = xCuts.getCut(col1);
+		Map<String,Object> cutProperties = cut.getPropertiesMap();
+		
+		Boolean columnAutoFit = getColumnAutoFit(element);
+		if (columnAutoFit != null)
+		{
+			if(!cutProperties.containsKey(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN))
+			{
+				cutProperties.put(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN, columnAutoFit);
+			}
+			else
+			{
+				cutProperties.put(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN, (Boolean)cutProperties.get(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_COLUMN) && columnAutoFit);
+			}
+		}
+
+		Integer columnCustomWidth = getCustomColumnWidth(element);
+		Integer cutColumnCustomWidth = (Integer)cutProperties.get(JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH);
+		if (columnCustomWidth != null && (cutColumnCustomWidth == null || cutColumnCustomWidth < columnCustomWidth))
+		{
+			cutProperties.put(JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH, columnCustomWidth);
+		}
+
+		setXProperties(xCutsProperties, element);
+		
+	}
+	
+	public void setXProperties(Map<String,Object> xCutsProperties, JRPrintElement element)
+	{
+		
+		Float widthRatio = getColumnWidthRatio(element);
+		Float xCutsWidthRatio = (Float)xCutsProperties.get(JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH_RATIO);
+		if(widthRatio != null && (xCutsWidthRatio == null || xCutsWidthRatio < widthRatio))
+		{
+			xCutsProperties.put(JRXlsAbstractExporter.PROPERTY_COLUMN_WIDTH_RATIO, widthRatio);
+		}
+
+		String sheetName = getSheetName(element);
+		if(sheetName != null)
+		{
+			xCutsProperties.put(JRXlsAbstractExporterParameter.PROPERTY_SHEET_NAME, sheetName);
+		}
+
+		Integer pageScale = getPageScale(element);
+		if(pageScale != null && pageScale > 9 && pageScale < 401)
+		{
+			xCutsProperties.put(JRXlsAbstractExporter.PROPERTY_PAGE_SCALE, pageScale);
+		}
+		
+		Integer firstPageNumber = getFirstPageNumber(element);
+		if(firstPageNumber != null)
+		{
+			xCutsProperties.put(JRXlsAbstractExporter.PROPERTY_FIRST_PAGE_NUMBER, firstPageNumber);
+		}
+	}
+	
+	public void setYProperties(CutsInfo yCuts, JRPrintElement element, int row1, int col1, int row2, int col2)
+	{
+		Map<String,Object> yCutsProperties = yCuts.getPropertiesMap();
+		Cut cut = yCuts.getCut(row1);
+		Map<String,Object> cutProperties = cut.getPropertiesMap();
+		
+		Boolean rowAutoFit = getRowAutoFit(element);
+		if (rowAutoFit != null)
+		{
+			if(!cutProperties.containsKey(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW))
+			{
+				cutProperties.put(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW, rowAutoFit);
+			}
+			else
+			{
+				cutProperties.put(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW, (Boolean)cutProperties.get(JRXlsAbstractExporter.PROPERTY_AUTO_FIT_ROW) && rowAutoFit);
+			}
+		}
+
+		List<PropertySuffix> rowLevelSuffixes = getRowLevelSuffixes(element);
+		if(rowLevelSuffixes != null && !rowLevelSuffixes.isEmpty())
+		{
+			SortedMap<String, Boolean> levelMap = new TreeMap<String, Boolean>();
+			for(PropertySuffix suffix : rowLevelSuffixes)
+			{
+				String level = suffix.getSuffix();
+				String marker = suffix.getValue();
+				
+				levelMap.put(level, "end".equalsIgnoreCase(marker));
+			}
+			
+			cutProperties.put(JRXlsAbstractExporter.PROPERTY_ROW_OUTLINE_LEVEL_PREFIX, levelMap);
+		}
+		
+		setYProperties(yCutsProperties, element);
+	}
+	
+	public void setYProperties(Map<String,Object> yCutsProperties, JRPrintElement element)
+	{
+		// nothing to do here
+	}
+
 }

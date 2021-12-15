@@ -53,7 +53,7 @@ import net.sf.jasperreports.engine.util.JRStyledTextParser;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintText.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplatePrintText.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPrintText
 {
@@ -73,13 +73,7 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	private short[] lineBreakOffsets;
 	private transient String truncatedText;
 	private Object value;
-	/**
-	 * @deprecated No longer used.
-	 */
 	private float lineSpacingFactor;
-	/**
-	 * @deprecated No longer used.
-	 */
 	private float leadingOffset;
 	private RunDirectionEnum runDirectionValue;
 	private float textHeight;
@@ -101,10 +95,22 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	 * Creates a print text element.
 	 * 
 	 * @param text the template text that the element will use
+	 * @deprecated provide a source Id via {@link #JRTemplatePrintText(JRTemplateText, int)}
 	 */
 	public JRTemplatePrintText(JRTemplateText text)
 	{
 		super(text);
+	}
+	
+	/**
+	 * Creates a print text element.
+	 * 
+	 * @param text the template text that the element will use
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRTemplatePrintText(JRTemplateText text, int sourceElementId)
+	{
+		super(text, sourceElementId);
 	}
 
 	/**
@@ -245,7 +251,7 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	}
 
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	public float getLineSpacingFactor()
 	{
@@ -253,7 +259,7 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	}
 		
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	public void setLineSpacingFactor(float lineSpacingFactor)
 	{
@@ -261,7 +267,7 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	}
 
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	public float getLeadingOffset()
 	{
@@ -269,7 +275,7 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	}
 		
 	/**
-	 * @deprecated No longer used.
+	 *
 	 */
 	public void setLeadingOffset(float leadingOffset)
 	{

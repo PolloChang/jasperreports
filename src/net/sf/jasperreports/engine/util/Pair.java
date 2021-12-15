@@ -30,14 +30,15 @@ import java.io.Serializable;
  * Utility class used to pair two objects.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: Pair.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: Pair.java 5221 2012-04-04 14:08:30Z lucianc $
  */
-public class Pair implements Serializable
+//FIXME use generics everywhere
+public class Pair<T, U> implements Serializable
 {
 	private static final long serialVersionUID = 1; //too late to replace this now
 	
-	private final Object o1;
-	private final Object o2;
+	private final T o1;
+	private final U o2;
 	private final int hash;
 
 	
@@ -47,11 +48,21 @@ public class Pair implements Serializable
 	 * @param o1 the first member of the pair
 	 * @param o2 the second member of the pair
 	 */
-	public Pair(Object o1, Object o2)
+	public Pair(T o1, U o2)
 	{
 		this.o1 = o1;
 		this.o2 = o2;
 		this.hash = computeHash();
+	}
+	
+	public T first()
+	{
+		return o1;
+	}
+	
+	public U second()
+	{
+		return o2;
 	}
 
 	private int computeHash()
@@ -74,7 +85,7 @@ public class Pair implements Serializable
 			return false;
 		}
 		
-		Pair p = (Pair) o;
+		Pair<?, ?> p = (Pair<?, ?>) o;
 		
 		return (p.o1 == null ? o1 == null : (o1 != null && p.o1.equals(o1))) &&
 			(p.o2 == null ? o2 == null : (o2 != null && p.o2.equals(o2)));

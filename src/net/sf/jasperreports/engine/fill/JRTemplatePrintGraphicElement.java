@@ -37,7 +37,7 @@ import net.sf.jasperreports.engine.type.FillEnum;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintGraphicElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplatePrintGraphicElement.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTemplatePrintGraphicElement extends JRTemplatePrintElement implements JRPrintGraphicElement
 {
@@ -51,10 +51,20 @@ public class JRTemplatePrintGraphicElement extends JRTemplatePrintElement implem
 
 	/**
 	 *
+	 * @deprecated provide a source Id via {@link #JRTemplatePrintGraphicElement(JRTemplateGraphicElement, int)}
 	 */
 	protected JRTemplatePrintGraphicElement(JRTemplateGraphicElement graphicElement)
 	{
 		super(graphicElement);
+	}
+
+	/**
+	 *
+	 * @param sourceElementId the Id of the source element
+	 */
+	protected JRTemplatePrintGraphicElement(JRTemplateGraphicElement graphicElement, int sourceElementId)
+	{
+		super(graphicElement, sourceElementId);
 	}
 
 	/**

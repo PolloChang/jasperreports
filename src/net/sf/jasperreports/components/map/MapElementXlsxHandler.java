@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementXlsxHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MapElementXlsxHandler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class MapElementXlsxHandler implements GenericElementXlsxHandler
 {
@@ -55,7 +55,7 @@ public class MapElementXlsxHandler implements GenericElementXlsxHandler
 		try
 		{
 			JRXlsxExporter exporter = (JRXlsxExporter)exporterContext.getExporter();
-			exporter.exportImage(getImage(element), gridCell, colIndex, rowIndex, 0, 0, null);
+			exporter.exportImage(getImage(exporterContext, element), gridCell, colIndex, rowIndex, 0, 0, null);
 		}
 		catch (Exception e)
 		{
@@ -67,9 +67,9 @@ public class MapElementXlsxHandler implements GenericElementXlsxHandler
 		return true;
 	}
 	
-	public JRPrintImage getImage(JRGenericPrintElement element) throws JRException
+	public JRPrintImage getImage(JRXlsxExporterContext exporterContext, JRGenericPrintElement element) throws JRException
 	{
-		return MapElementImageProvider.getImage(element);
+		return MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element);
 	}
 
 }

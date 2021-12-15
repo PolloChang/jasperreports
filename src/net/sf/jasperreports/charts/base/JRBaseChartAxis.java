@@ -38,7 +38,7 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
  * Base read-only implementation of {@link JRChartAxis JRChartAxis}.
  *
  * @author Barry Klawans (barry@users.sourceforge.net)
- * @version $Id: JRBaseChartAxis.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseChartAxis.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBaseChartAxis implements JRChartAxis, Serializable
 {

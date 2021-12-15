@@ -31,17 +31,29 @@ import net.sf.jasperreports.engine.util.JRLoader;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: FileBufferedZip.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FileBufferedZip.java 5435 2012-06-11 15:37:36Z teodord $
  */
 public class FileBufferedZip extends AbstractZip
 {
+	/**
+	 * 
+	 */
+	private final Integer memoryThreshold;
 
 	/**
 	 * 
 	 */
 	public FileBufferedZip()
 	{
-		super();
+		this(null);
+	}
+	
+	/**
+	 * 
+	 */
+	public FileBufferedZip(Integer memoryThreshold)
+	{
+		this.memoryThreshold = memoryThreshold;
 	}
 	
 	/**
@@ -49,7 +61,7 @@ public class FileBufferedZip extends AbstractZip
 	 */
 	public ExportZipEntry createEntry(String name)
 	{
-		return new FileBufferedZipEntry(name);
+		return memoryThreshold == null ? new FileBufferedZipEntry(name) : new FileBufferedZipEntry(name, memoryThreshold);
 	}
 	
 	/**

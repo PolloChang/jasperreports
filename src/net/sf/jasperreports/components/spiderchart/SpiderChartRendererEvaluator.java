@@ -34,8 +34,10 @@ import net.sf.jasperreports.charts.type.EdgeEnum;
 import net.sf.jasperreports.charts.util.ChartUtil;
 import net.sf.jasperreports.components.charts.ChartCustomizer;
 import net.sf.jasperreports.components.charts.ChartSettings;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRComponentElement;
-import net.sf.jasperreports.engine.JRRenderable;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.util.JRFontUtil;
 
 import org.jfree.chart.JFreeChart;
@@ -51,7 +53,7 @@ import org.jfree.ui.RectangleEdge;
  * Spider Chart design evaluator.
  * 
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: SpiderChartRendererEvaluator.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SpiderChartRendererEvaluator.java 5397 2012-05-21 01:10:02Z teodord $
  */
 public class SpiderChartRendererEvaluator
 {
@@ -66,17 +68,31 @@ public class SpiderChartRendererEvaluator
 	
 	private static DefaultCategoryDataset sampleDataset;
 	
+	/**
+	 * @deprecated Replaced by {@link #evaluateRenderable(JasperReportsContext, JRComponentElement, SpiderChartSharedBean, ChartCustomizer, String, String)}. 
+	 */
+	public static net.sf.jasperreports.engine.JRRenderable evaluateRenderer(
+		JRComponentElement element, 
+		SpiderChartSharedBean spiderchartBean, 
+		ChartCustomizer chartCustomizer, 
+		String defaultRenderType,
+		String datasetType
+		)
+	{
+		return evaluateRenderable(DefaultJasperReportsContext.getInstance(), element, spiderchartBean, chartCustomizer, defaultRenderType, datasetType);
+	}
 	
 	/**
 	 * 
 	 */
-	public static JRRenderable evaluateRenderer(
-			JRComponentElement element, 
-			SpiderChartSharedBean spiderchartBean, 
-			ChartCustomizer chartCustomizer, 
-			String defaultRenderType,
-			String datasetType
-			)
+	public static Renderable evaluateRenderable(
+		JasperReportsContext jasperReportsContext,
+		JRComponentElement element, 
+		SpiderChartSharedBean spiderchartBean, 
+		ChartCustomizer chartCustomizer, 
+		String defaultRenderType,
+		String datasetType
+		)
 	{
 		SpiderChartComponent chartComponent = (SpiderChartComponent) element.getComponent();
 		ChartSettings chartSettings = chartComponent.getChartSettings();
@@ -249,7 +265,8 @@ public class SpiderChartRendererEvaluator
 		}
 		
 		return 
-			ChartUtil.getChartRendererFactory(renderType).getRenderer(
+			ChartUtil.getInstance(jasperReportsContext).getChartRenderableFactory(renderType).getRenderable(
+				jasperReportsContext,
 				jfreechart, 
 				spiderchartBean.getHyperlinkProvider(),
 				rectangle

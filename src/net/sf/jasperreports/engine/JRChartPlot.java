@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.SortedSet;
 
 import net.sf.jasperreports.charts.JRCategoryAxisFormat;
+import net.sf.jasperreports.charts.type.PlotOrientationEnum;
 
 import org.jfree.chart.plot.PlotOrientation;
 
@@ -37,7 +38,7 @@ import org.jfree.chart.plot.PlotOrientation;
  * characteristics, depending on the chart type it belongs to. This is the superinterface for all plots and contains common
  * properties.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRChartPlot.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRChartPlot.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public interface JRChartPlot extends JRCloneable
 {
@@ -68,14 +69,24 @@ public interface JRChartPlot extends JRCloneable
 
 
 	/**
-	 * Gets the plot orientation (horizontal or vertical).
+	 * @deprecated Replaced by {@link #getOrientationValue()}.
 	 */
 	public PlotOrientation getOrientation();
 	
 	/**
-	 * Sets the plot orientation (horizontal or vertical).
+	 * Gets the plot orientation (horizontal or vertical).
+	 */
+	public PlotOrientationEnum getOrientationValue();
+	
+	/**
+	 * @deprecated Replaced by {@link #setOrientation(PlotOrientationEnum)}.
 	 */
 	public void setOrientation(PlotOrientation orientation);
+
+	/**
+	 * Sets the plot orientation (horizontal or vertical).
+	 */
+	public void setOrientation(PlotOrientationEnum orientation);
 
 	/**
 	 * Gets the transparency factor for this plot background. The range is from 0 to 1, where 0 means transparent and 1

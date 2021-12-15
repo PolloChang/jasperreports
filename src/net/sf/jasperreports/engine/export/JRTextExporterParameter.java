@@ -24,7 +24,7 @@
 package net.sf.jasperreports.engine.export;
 
 import net.sf.jasperreports.engine.JRExporterParameter;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 
 /**
  * Contains parameters useful for export in plain text format.
@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.util.JRProperties;
  * OUTPUT_STREAM, OUTPUT_FILE, OUTPUT_FILE_NAME.
  *
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRTextExporterParameter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTextExporterParameter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTextExporterParameter extends JRExporterParameter
 {
@@ -48,7 +48,7 @@ public class JRTextExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * An integer representing the pixel/character horizontal ratio.
+	 * A float value representing the pixel/character horizontal ratio.
 	 */
 	public static final JRTextExporterParameter CHARACTER_WIDTH = new JRTextExporterParameter("Character Width");
 
@@ -58,13 +58,13 @@ public class JRTextExporterParameter extends JRExporterParameter
 	 * <p/>
 	 * This property is not set by default.
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_CHARACTER_WIDTH = JRProperties.PROPERTY_PREFIX + "export.text.character.width";
+	public static final String PROPERTY_CHARACTER_WIDTH = JRPropertiesUtil.PROPERTY_PREFIX + "export.text.character.width";
 
 
 	/**
-	 * An integer representing the pixel/character horizontal ratio.
+	 * A float value representing the pixel/character horizontal ratio.
 	 */
 	public static final JRTextExporterParameter CHARACTER_HEIGHT = new JRTextExporterParameter("Character Height");
 
@@ -74,9 +74,9 @@ public class JRTextExporterParameter extends JRExporterParameter
 	 * <p/>
 	 * This property is not set by default.
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_CHARACTER_HEIGHT = JRProperties.PROPERTY_PREFIX + "export.text.character.height";
+	public static final String PROPERTY_CHARACTER_HEIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "export.text.character.height";
 
 
 	/**
@@ -90,9 +90,9 @@ public class JRTextExporterParameter extends JRExporterParameter
 	 * <p/>
 	 * This property is not set by default.
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_PAGE_WIDTH = JRProperties.PROPERTY_PREFIX + "export.text.page.width";
+	public static final String PROPERTY_PAGE_WIDTH = JRPropertiesUtil.PROPERTY_PREFIX + "export.text.page.width";
 
 
 	/**
@@ -106,9 +106,9 @@ public class JRTextExporterParameter extends JRExporterParameter
 	 * <p/>
 	 * This property is not set by default.
 	 * 
-	 * @see JRProperties
+	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_PAGE_HEIGHT = JRProperties.PROPERTY_PREFIX + "export.text.page.height";
+	public static final String PROPERTY_PAGE_HEIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "export.text.page.height";
 
 
 	/**

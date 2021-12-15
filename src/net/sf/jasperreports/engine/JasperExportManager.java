@@ -50,12 +50,40 @@ import net.sf.jasperreports.engine.util.JRLoader;
  * @see net.sf.jasperreports.engine.export.JRXlsExporter
  * @see net.sf.jasperreports.engine.export.JRCsvExporter
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperExportManager.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JasperExportManager.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public final class JasperExportManager
 {
+	private JasperReportsContext jasperReportsContext;
 
 
+	/**
+	 *
+	 */
+	private JasperExportManager(JasperReportsContext jasperReportsContext)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+	}
+	
+	
+	/**
+	 *
+	 */
+	private static JasperExportManager getDefaultInstance()
+	{
+		return new JasperExportManager(DefaultJasperReportsContext.getInstance());
+	}
+	
+	
+	/**
+	 *
+	 */
+	public static JasperExportManager getInstance(JasperReportsContext jasperReportsContext)
+	{
+		return new JasperExportManager(jasperReportsContext);
+	}
+	
+	
 	/**
 	 * Exports the generated report file specified by the parameter into PDF format.
 	 * The resulting PDF file has the same name as the report object inside the source file,
@@ -65,7 +93,7 @@ public final class JasperExportManager
 	 * @return resulting PDF file name
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static String exportReportToPdfFile(String sourceFileName) throws JRException
+	public String exportToPdfFile(String sourceFileName) throws JRException
 	{
 		File sourceFile = new File(sourceFileName);
 
@@ -89,7 +117,7 @@ public final class JasperExportManager
 	 * @param destFileName   file name to place the PDF content into
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToPdfFile(
+	public void exportToPdfFile(
 		String sourceFileName, 
 		String destFileName
 		) throws JRException
@@ -108,13 +136,13 @@ public final class JasperExportManager
 	 * @param destFileName file name to place the PDF content into
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToPdfFile(
+	public void exportToPdfFile(
 		JasperPrint jasperPrint, 
 		String destFileName
 		) throws JRException
 	{
 		/*   */
-		JRPdfExporter exporter = new JRPdfExporter();
+		JRPdfExporter exporter = new JRPdfExporter(jasperReportsContext);
 		
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_FILE_NAME, destFileName);
@@ -131,7 +159,7 @@ public final class JasperExportManager
 	 * @param outputStream output stream to write the resulting PDF content to
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToPdfStream(
+	public void exportToPdfStream(
 		InputStream inputStream, 
 		OutputStream outputStream
 		) throws JRException
@@ -150,12 +178,12 @@ public final class JasperExportManager
 	 * @param outputStream output stream to write the resulting PDF content to
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToPdfStream(
+	public void exportToPdfStream(
 		JasperPrint jasperPrint, 
 		OutputStream outputStream
 		) throws JRException
 	{
-		JRPdfExporter exporter = new JRPdfExporter();
+		JRPdfExporter exporter = new JRPdfExporter(jasperReportsContext);
 		
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, outputStream);
@@ -172,11 +200,11 @@ public final class JasperExportManager
 	 * @return byte array representing the resulting PDF content 
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static byte[] exportReportToPdf(JasperPrint jasperPrint) throws JRException
+	public byte[] exportToPdf(JasperPrint jasperPrint) throws JRException
 	{
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-		JRPdfExporter exporter = new JRPdfExporter();
+		JRPdfExporter exporter = new JRPdfExporter(jasperReportsContext);
 		
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, baos);
@@ -203,7 +231,7 @@ public final class JasperExportManager
 	 * @return XML representation of the generated report
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static String exportReportToXmlFile(
+	public String exportToXmlFile(
 		String sourceFileName, 
 		boolean isEmbeddingImages
 		) throws JRException
@@ -240,7 +268,7 @@ public final class JasperExportManager
 	 *                          XML content itself using the Base64 encoder or be referenced as external resources
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToXmlFile(
+	public void exportToXmlFile(
 		String sourceFileName, 
 		String destFileName,
 		boolean isEmbeddingImages
@@ -271,13 +299,13 @@ public final class JasperExportManager
 	 *  
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToXmlFile(
+	public void exportToXmlFile(
 		JasperPrint jasperPrint, 
 		String destFileName,
 		boolean isEmbeddingImages
 		) throws JRException
 	{
-		JRXmlExporter exporter = new JRXmlExporter();
+		JRXmlExporter exporter = new JRXmlExporter(jasperReportsContext);
 		
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_FILE_NAME, destFileName);
@@ -297,7 +325,7 @@ public final class JasperExportManager
 	 * @param outputStream output stream to write the resulting XML representation to
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToXmlStream(
+	public void exportToXmlStream(
 		InputStream inputStream, 
 		OutputStream outputStream
 		) throws JRException
@@ -317,12 +345,12 @@ public final class JasperExportManager
 	 * @param outputStream output stream to write the resulting XML representation to
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToXmlStream(
+	public void exportToXmlStream(
 		JasperPrint jasperPrint, 
 		OutputStream outputStream
 		) throws JRException
 	{
-		JRXmlExporter exporter = new JRXmlExporter();
+		JRXmlExporter exporter = new JRXmlExporter(jasperReportsContext);
 		
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, outputStream);
@@ -340,11 +368,11 @@ public final class JasperExportManager
 	 * @return XML representation of the generated report
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static String exportReportToXml(JasperPrint jasperPrint) throws JRException
+	public String exportToXml(JasperPrint jasperPrint) throws JRException
 	{
 		StringBuffer sbuffer = new StringBuffer();
 
-		JRXmlExporter exporter = new JRXmlExporter();
+		JRXmlExporter exporter = new JRXmlExporter(jasperReportsContext);
 		
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_STRING_BUFFER, sbuffer);
@@ -366,7 +394,7 @@ public final class JasperExportManager
 	 * @return resulting HTML file name
 	 * @see net.sf.jasperreports.engine.export.JRHtmlExporter
 	 */
-	public static String exportReportToHtmlFile(
+	public String exportToHtmlFile(
 		String sourceFileName
 		) throws JRException
 	{
@@ -398,7 +426,7 @@ public final class JasperExportManager
 	 * @param destFileName   file name to place the HTML content into
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToHtmlFile(
+	public void exportToHtmlFile(
 		String sourceFileName, 
 		String destFileName
 		) throws JRException
@@ -423,21 +451,194 @@ public final class JasperExportManager
 	 * @param destFileName file name to place the HTML content into
 	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
 	 */
-	public static void exportReportToHtmlFile(
+	public void exportToHtmlFile(
 		JasperPrint jasperPrint, 
 		String destFileName
 		) throws JRException
 	{
-		JRHtmlExporter exporter = new JRHtmlExporter();
+		JRHtmlExporter exporter = new JRHtmlExporter(jasperReportsContext);
 		
 		exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
 		exporter.setParameter(JRExporterParameter.OUTPUT_FILE_NAME, destFileName);
 		
 		exporter.exportReport();
 	}
-
-
-	private JasperExportManager()
+	
+	
+	/**
+	 * @see #exportToPdfFile(String)
+	 */
+	public static String exportReportToPdfFile(String sourceFileName) throws JRException
 	{
+		return getDefaultInstance().exportToPdfFile(sourceFileName);
+	}
+
+
+	/**
+	 * @see #exportToPdfFile(String, String)
+	 */
+	public static void exportReportToPdfFile(
+		String sourceFileName, 
+		String destFileName
+		) throws JRException
+	{
+		getDefaultInstance().exportToPdfFile(sourceFileName, destFileName);
+	}
+
+	
+	/**
+	 * @see #exportToPdfFile(JasperPrint, String)
+	 */
+	public static void exportReportToPdfFile(
+		JasperPrint jasperPrint, 
+		String destFileName
+		) throws JRException
+	{
+		getDefaultInstance().exportToPdfFile(jasperPrint, destFileName);
+	}
+
+
+	/**
+	 * @see #exportToPdfStream(InputStream, OutputStream)
+	 */
+	public static void exportReportToPdfStream(
+		InputStream inputStream, 
+		OutputStream outputStream
+		) throws JRException
+	{
+		getDefaultInstance().exportToPdfStream(inputStream, outputStream);
+	}
+
+	
+	/**
+	 * Exports the generated report object received as first parameter into PDF format and
+	 * writes the results to the output stream specified by the second parameter.
+	 * 
+	 * @param jasperPrint  report object to export 
+	 * @param outputStream output stream to write the resulting PDF content to
+	 * @see net.sf.jasperreports.engine.export.JRPdfExporter
+	 * @see #exportToPdfStream(JasperPrint, OutputStream)
+	 */
+	public static void exportReportToPdfStream(
+		JasperPrint jasperPrint, 
+		OutputStream outputStream
+		) throws JRException
+	{
+		getDefaultInstance().exportToPdfStream(jasperPrint, outputStream);
+	}
+
+
+	/**
+	 * @see #exportToPdf(JasperPrint)
+	 */
+	public static byte[] exportReportToPdf(JasperPrint jasperPrint) throws JRException
+	{
+		return getDefaultInstance().exportToPdf(jasperPrint);
+	}
+
+	
+	/**
+	 * @see #exportToXmlFile(String, String, boolean)
+	 */
+	public static String exportReportToXmlFile(
+		String sourceFileName, 
+		boolean isEmbeddingImages
+		) throws JRException
+	{
+		return getDefaultInstance().exportToXmlFile(sourceFileName, isEmbeddingImages);
+	}
+
+
+	/**
+	 * @see #exportToXmlFile(String, String, boolean)
+	 */
+	public static void exportReportToXmlFile(
+		String sourceFileName, 
+		String destFileName,
+		boolean isEmbeddingImages
+		) throws JRException
+	{
+		getDefaultInstance().exportToXmlFile(sourceFileName, destFileName, isEmbeddingImages);
+	}
+
+	
+	/**
+	 * @see #exportToXmlFile(JasperPrint, String, boolean)
+	 */
+	public static void exportReportToXmlFile(
+		JasperPrint jasperPrint, 
+		String destFileName,
+		boolean isEmbeddingImages
+		) throws JRException
+	{
+		getDefaultInstance().exportToXmlFile(jasperPrint, destFileName, isEmbeddingImages);
+	}
+
+
+	/**
+	 * @see #exportToXmlStream(InputStream, OutputStream)
+	 */
+	public static void exportReportToXmlStream(
+		InputStream inputStream, 
+		OutputStream outputStream
+		) throws JRException
+	{
+		getDefaultInstance().exportToXmlStream(inputStream, outputStream);
+	}
+
+	
+	/**
+	 * @see #exportToXmlStream(JasperPrint, OutputStream)
+	 */
+	public static void exportReportToXmlStream(
+		JasperPrint jasperPrint, 
+		OutputStream outputStream
+		) throws JRException
+	{
+		getDefaultInstance().exportToXmlStream(jasperPrint, outputStream);
+	}
+
+
+	/**
+	 * @see #exportToXml(JasperPrint)
+	 */
+	public static String exportReportToXml(JasperPrint jasperPrint) throws JRException
+	{
+		return getDefaultInstance().exportToXml(jasperPrint);
+	}
+
+
+	/**
+	 * @see #exportToHtmlFile(String)
+	 */
+	public static String exportReportToHtmlFile(
+		String sourceFileName
+		) throws JRException
+	{
+		return getDefaultInstance().exportToHtmlFile(sourceFileName);
+	}
+
+
+	/**
+	 * @see #exportToHtmlFile(String, String)
+	 */
+	public static void exportReportToHtmlFile(
+		String sourceFileName, 
+		String destFileName
+		) throws JRException
+	{
+		getDefaultInstance().exportToHtmlFile(sourceFileName, destFileName);
+	}
+
+	
+	/**
+	 * @see #exportToHtmlFile(JasperPrint, String)
+	 */
+	public static void exportReportToHtmlFile(
+		JasperPrint jasperPrint, 
+		String destFileName
+		) throws JRException
+	{
+		getDefaultInstance().exportToHtmlFile(jasperPrint, destFileName);
 	}
 }

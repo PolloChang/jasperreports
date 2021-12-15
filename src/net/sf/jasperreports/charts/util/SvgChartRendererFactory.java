@@ -28,8 +28,9 @@ import java.io.StringWriter;
 import java.util.List;
 
 import net.sf.jasperreports.engine.JRPrintImageAreaHyperlink;
-import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.renderers.BatikRenderer;
 
 import org.apache.batik.dom.GenericDOMImplementation;
@@ -42,12 +43,13 @@ import org.w3c.dom.Document;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SvgChartRendererFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SvgChartRendererFactory.java 5310 2012-04-26 16:07:49Z teodord $
  */
-public class SvgChartRendererFactory implements ChartRendererFactory
+public class SvgChartRendererFactory extends AbstractChartRenderableFactory
 {
 	
-	public JRRenderable getRenderer(
+	public Renderable getRenderable(
+		JasperReportsContext jasperReportsContext,
 		JFreeChart chart, 
 		ChartHyperlinkProvider chartHyperlinkProvider,
 		Rectangle2D rectangle

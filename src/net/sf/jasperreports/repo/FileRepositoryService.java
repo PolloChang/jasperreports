@@ -24,231 +24,183 @@
 package net.sf.jasperreports.repo;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
-import net.sf.jasperreports.data.DataAdapter;
-import net.sf.jasperreports.data.XmlUtil;
-import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JasperCompileManager;
-import net.sf.jasperreports.engine.JasperReport;
-import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.util.JRResourcesUtil;
-import net.sf.jasperreports.engine.util.JRSaver;
-import net.sf.jasperreports.engine.util.SimpleFileResolver;
-
-import org.exolab.castor.mapping.Mapping;
-import org.xml.sax.InputSource;
-
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FileRepositoryService.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FileRepositoryService.java 5050 2012-03-12 10:11:26Z teodord $
  */
-public class FileRepositoryService extends DefaultRepositoryService
+public class FileRepositoryService implements StreamRepositoryService
 {
+	private JasperReportsContext jasperReportsContext;
+	private String root;
+	private boolean resolveAbsolutePath;//FIXMEREPO consider giving up on this
+	
+	/**
+	 * @deprecated Replaced by {@link #FileRepositoryService(JasperReportsContext, String, boolean)}. 
+	 */
+	public FileRepositoryService(String root, boolean resolveAbsolutePath)
+	{
+		this(DefaultJasperReportsContext.getInstance(), root, resolveAbsolutePath);
+	}
+	
 	/**
 	 * 
 	 */
-	private static final Mapping mapping = new Mapping();
-	static
+	public FileRepositoryService(
+		JasperReportsContext jasperReportsContext,
+		String root, 
+		boolean resolveAbsolutePath
+		)
 	{
-		loadMapping(mapping, "net/sf/jasperreports/data/csv/CsvDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/ds/DataSourceDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/empty/EmptyDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/jdbc/JdbcDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/jndi/JndiDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/provider/DataSourceProviderDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/qe/QueryExecuterDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/xls/XlsDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/xml/RemoteXmlDataAdapterImpl.xml");
-		loadMapping(mapping, "net/sf/jasperreports/data/xml/XmlDataAdapterImpl.xml");
+		this.jasperReportsContext = jasperReportsContext;
+		this.root = root;
+		this.resolveAbsolutePath = resolveAbsolutePath;
 	}
 	
 	/**
-	 *
+	 * 
 	 */
-	private static void loadMapping(Mapping mapping, String mappingFile)
+	public void setRoot(String root)
 	{
-		InputStream mis = null;
-		
-		try
-		{
-			mis = JRLoader.getLocationInputStream(mappingFile);
-
-			mapping.loadMapping(
-				new InputSource(mis)
-				);
-		}
-		catch (JRException e)
-		{
-			throw new JRRuntimeException(e);
-		}
-		finally
-		{
-			if (mis != null) // FIXME
-			{
-				try
-				{
-					mis.close();
-				}
-				catch(IOException e)
-				{
-					e.printStackTrace();
-				}
-			}
-		}
+		this.root = root;
 	}
 	
-	
-	@Override
-	public void saveResource(String uri, Resource resource)
+	/**
+	 * 
+	 */
+	public String getRoot()
 	{
-		if (ReportResource.class.getName().equals(resource.getClass().getName()))
+		return root;
+	}
+	
+	/**
+	 * @deprecated To be removed.
+	 */
+	public void setContext(RepositoryContext context)
+	{
+	}
+	
+	/**
+	 * @deprecated To be removed.
+	 */
+	public void revertContext()
+	{
+	}
+
+	/**
+	 * 
+	 */
+	public InputStream getInputStream(String uri)
+	{
+		File file = null;
+
+		if (uri != null)
 		{
-			SimpleFileResolver fileResolver = (SimpleFileResolver)JRResourcesUtil.getFileResolver(null);
-			File rootFolder = fileResolver.getFolders().get(0);
-			File jasperFile = new File(rootFolder, uri);
-			
+			file = new File(getRoot(), uri);
+			if (!file.exists() || !file.isFile())
+			{
+				if (resolveAbsolutePath)
+				{
+					file = new File(uri);
+					if (!file.exists() || !file.isFile())
+					{
+						file = null;
+					}
+				}
+				else
+				{
+					file = null;
+				}
+			}
+
+		}
+
+		InputStream is = null;
+
+		if (file != null)
+		{
 			try
 			{
-				JRSaver.saveObject(((ReportResource)resource).getValue(), jasperFile);
+				is = new FileInputStream(file);
 			}
-			catch (JRException e)
+			catch (IOException e)
 			{
 				throw new JRRuntimeException(e);
 			}
 		}
+		
+		return is;
 	}
 	
-	@Override
-	public <K extends Resource> K getResource(String uri, Class<? extends Resource> resourceType)
+	/**
+	 * 
+	 */
+	public OutputStream getOutputStream(String uri)
 	{
-		if (ReportResource.class.getName().equals(resourceType.getName()))
+		File file = null;
+
+		if (uri != null)
 		{
-			String reportUri = uri;
-			String lcReportUri = reportUri.toLowerCase();
-			if (lcReportUri.endsWith(".jasper"))
-			{
-				reportUri = reportUri.substring(0, lcReportUri.lastIndexOf(".jasper"));
-			}
-			else if (lcReportUri.endsWith(".jrxml"))
-			{
-				reportUri = reportUri.substring(0, lcReportUri.lastIndexOf(".jrxml"));
-			}
-			String jasperUri = reportUri + ".jasper"; 
-			String jrxmlUri = reportUri + ".jrxml";
-			
-			InputStream jrxmlIs = getInputStream(jrxmlUri);
-			InputStream jasperIs = getInputStream(jasperUri);
-			boolean toCompile = false;
-			if (jasperIs == null)
-			{
-				if (jrxmlIs == null)
-				{
-					throw new JRRuntimeException("Report not found: " + reportUri);
-				}
-				else
-				{
-					toCompile = true;
-					//jasperFile = new File(jrxmlFile.getParentFile(), new File(reportUri).getName() + ".jasper");
-				}
-			}
-			else
-			{
-				if (jrxmlIs == null)
-				{
-					//jrxmlFile = new File(jasperFile.getParentFile(), new File(reportUri).getName() + ".jrxml");
-				}
-			}
-
-			JasperReport jasperReport = null;
-
-			if (
-				toCompile
-//				!jasperFile.exists()
-//				|| (jasperFile.lastModified() < jrxmlFile.lastModified())
-				)
-			{
-				//JasperCompileManager.compileReportToFile(jrxmlFile.getAbsolutePath(), jasperFile.getAbsolutePath());
-				try
-				{
-					jasperReport = JasperCompileManager.compileReport(jrxmlIs);
-					ReportResource resource = new ReportResource();
-					resource.setReport(jasperReport);
-					saveResource(jasperUri, resource);
-				}
-				catch (JRException e)
-				{
-					throw new JRRuntimeException(e);
-				}
-			}
-			else
-			{
-				try
-				{
-					jasperReport = (JasperReport)JRLoader.loadObject(jasperIs);
-				}
-				catch (JRException e)
-				{
-					throw new JRRuntimeException(e);
-				}
-				finally
-				{
-					try
-					{
-						jasperIs.close();
-					}
-					catch (IOException e)
-					{
-					}
-				}
-			}
-			
-//			request.getSession().setAttribute(DEFAULT_JASPER_FILE_SESSION_ATTRIBUTE, jasperFile);
-//			request.getSession().setAttribute(DEFAULT_JRXML_FILE_SESSION_ATTRIBUTE, jrxmlFile);
-
-//			jasperReport = RepositoryUtil.getReport(jasperUri);
-////					null,
-////					null,
-////					getFileResolver()
-////					);
-			ReportResource resource = null;
-			resource = new ReportResource();
-			resource.setReport(jasperReport);
-			return (K)resource;
+			file = new File(getRoot(), uri);
 		}
-		else if (DataAdapter.class.isAssignableFrom(resourceType))
+
+		OutputStream os = null;
+
+		if (file != null)
 		{
-			DataAdapter dataAdapter = null;
-			InputStream is = getInputStream(uri);
-			
-			if (is != null)
+			try
 			{
-				try
-				{
-					dataAdapter = (DataAdapter)XmlUtil.read(is, mapping);
-				}
-				finally
-				{
-					if (is != null)
-					{
-						try
-						{
-							is.close();
-						}
-						catch (IOException e)
-						{
-						}
-					}
-				}
+				os = new FileOutputStream(file);
 			}
-			
-			return (K)dataAdapter;
+			catch (IOException e)
+			{
+				throw new JRRuntimeException(e);
+			}
 		}
 		
-		return (K)super.getResource(uri, resourceType);
+		return os;
+	}
+	
+	/**
+	 * 
+	 */
+	public Resource getResource(String uri)
+	{
+		throw new JRRuntimeException("Not implemented.");//FIXMEREPO
+	}
+	
+	/**
+	 * 
+	 */
+	public void saveResource(String uri, Resource resource)
+	{
+		PersistenceService persistenceService = PersistenceUtil.getInstance(jasperReportsContext).getService(FileRepositoryService.class, resource.getClass());
+		if (persistenceService != null)
+		{
+			persistenceService.save(resource, uri, this);
+		}
+	}
+	
+	/**
+	 * 
+	 */
+	public <K extends Resource> K getResource(String uri, Class<K> resourceType)
+	{
+		PersistenceService persistenceService = PersistenceUtil.getInstance(jasperReportsContext).getService(FileRepositoryService.class, resourceType);
+		if (persistenceService != null)
+		{
+			return (K)persistenceService.load(uri, this);
+		}
+		return null;
 	}
 }

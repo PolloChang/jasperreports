@@ -31,14 +31,13 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.design.JRCompiler;
 import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
 
 import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
-import org.apache.tools.ant.taskdefs.MatchingTask;
 import org.apache.tools.ant.types.Path;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.resources.FileResource;
@@ -64,9 +63,9 @@ import org.apache.tools.ant.util.SourceFileScanner;
  * is older than the input file will be processed.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAntDecompileTask.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRAntDecompileTask.java 5217 2012-04-03 15:16:10Z teodord $
  */
-public class JRAntDecompileTask extends MatchingTask
+public class JRAntDecompileTask extends JRBaseAntTask
 {
 
 
@@ -150,39 +149,30 @@ public class JRAntDecompileTask extends MatchingTask
 
 		reportFilesMap = new HashMap<String, String>();
 
-		JRProperties.backupProperties();
-		
+		AntClassLoader classLoader = null;
+		if (classpath != null)
+		{
+			jasperReportsContext.setProperty(JRCompiler.COMPILER_CLASSPATH, String.valueOf(classpath));//FIXMECONTEXT is this needed? what about class loader below/
+			
+			ClassLoader parentClassLoader = getClass().getClassLoader();
+			classLoader = new AntClassLoader(parentClassLoader, getProject(), classpath, true);
+			classLoader.setThreadContextLoader();
+		}
+
 		try
 		{
-			AntClassLoader classLoader = null;
-			if (classpath != null)
-			{
-				JRProperties.setProperty(JRProperties.COMPILER_CLASSPATH, String.valueOf(classpath));
-				
-				ClassLoader parentClassLoader = getClass().getClassLoader();
-				classLoader = new AntClassLoader(parentClassLoader, getProject(), classpath, true);
-				classLoader.setThreadContextLoader();
-			}
-
-			try
-			{
-				/*   */
-				scanSrc();
-				/*   */
-				decompile();
-			}
-			finally
-			{
-				if (classLoader != null)
-				{
-					classLoader.resetThreadContextLoader();
-				}				
-			}			
+			/*   */
+			scanSrc();
+			/*   */
+			decompile();
 		}
 		finally
 		{
-			JRProperties.restoreProperties();
-		}
+			if (classLoader != null)
+			{
+				classLoader.resetThreadContextLoader();
+			}				
+		}			
 	}
 	
 	
@@ -219,7 +209,8 @@ public class JRAntDecompileTask extends MatchingTask
 	 */
 	protected void scanSrc() throws BuildException
 	{
-		for(Iterator<Resource> it = src.iterator(); it.hasNext();)
+		for(@SuppressWarnings("unchecked")
+		Iterator<Resource> it = src.iterator(); it.hasNext();)
 		{
 			Resource resource = it.next();
 			FileResource fileResource = resource instanceof FileResource ? (FileResource)resource : null;
@@ -307,7 +298,7 @@ public class JRAntDecompileTask extends MatchingTask
 
 					JasperReport jasperReport = (JasperReport)JRLoader.loadObjectFromFile(srcFileName);
 					
-					JRXmlWriter.writeReport(jasperReport, destFileName, "UTF-8");
+					new JRXmlWriter(jasperReportsContext).write(jasperReport, destFileName, "UTF-8");
 					
 					System.out.println("OK.");
 				}

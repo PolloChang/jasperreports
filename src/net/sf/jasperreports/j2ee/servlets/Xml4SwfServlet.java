@@ -23,13 +23,14 @@
  */
 package net.sf.jasperreports.j2ee.servlets;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.export.JRXml4SwfExporter;
 import net.sf.jasperreports.engine.export.JRXmlExporter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: Xml4SwfServlet.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: Xml4SwfServlet.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public class Xml4SwfServlet extends XmlServlet
 {
@@ -40,7 +41,7 @@ public class Xml4SwfServlet extends XmlServlet
 	 */
 	public JRXmlExporter getExporter()
 	{
-		return new JRXml4SwfExporter();
+		return new JRXml4SwfExporter(DefaultJasperReportsContext.getInstance());
 	}
 }
 

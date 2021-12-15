@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.type.BandTypeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROrigin.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JROrigin.java 4732 2011-10-21 09:14:15Z lucianc $
  */
 public class JROrigin implements JRCloneable, Serializable
 {
@@ -156,6 +156,16 @@ public class JROrigin implements JRCloneable, Serializable
 			throw new JRRuntimeException(e);
 		}
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "{reportName: " + reportName 
+				+ ", groupName: " + groupName 
+				+ ",bandType: " + bandTypeValue + "}";
+	}
+
+
 
 	/*
 	 * These fields are only for serialization backward compatibility.

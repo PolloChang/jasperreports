@@ -32,12 +32,13 @@ import javax.swing.JOptionPane;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRSaver;
 import net.sf.jasperreports.view.JRSaveContributor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintSaveContributor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRPrintSaveContributor.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRPrintSaveContributor extends JRSaveContributor
 {
@@ -48,11 +49,23 @@ public class JRPrintSaveContributor extends JRSaveContributor
 	private static final String EXTENSION_JRPRINT = ".jrprint"; 
 
 	/**
-	 * 
+	 * @see #JRPrintSaveContributor(JasperReportsContext, Locale, ResourceBundle)
 	 */
 	public JRPrintSaveContributor(Locale locale, ResourceBundle resBundle)
 	{
 		super(locale, resBundle);
+	}
+	
+	/**
+	 * 
+	 */
+	public JRPrintSaveContributor(
+		JasperReportsContext jasperReportsContext, 
+		Locale locale, 
+		ResourceBundle resBundle
+		)
+	{
+		super(jasperReportsContext, locale, resBundle);
 	}
 	
 	/**

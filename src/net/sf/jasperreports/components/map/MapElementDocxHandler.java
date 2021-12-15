@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.export.ooxml.JRDocxExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementDocxHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MapElementDocxHandler.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class MapElementDocxHandler implements GenericElementDocxHandler
 {
@@ -53,7 +53,7 @@ public class MapElementDocxHandler implements GenericElementDocxHandler
 		try
 		{
 			JRDocxExporter exporter = (JRDocxExporter)exporterContext.getExporter();
-			exporter.exportImage(exporterContext.getTableHelper(), getImage(element), gridCell);
+			exporter.exportImage(exporterContext.getTableHelper(), getImage(exporterContext, element), gridCell);
 		}
 		catch (Exception e)
 		{
@@ -65,9 +65,9 @@ public class MapElementDocxHandler implements GenericElementDocxHandler
 		return true;
 	}
 
-	public JRPrintImage getImage(JRGenericPrintElement element) throws JRException
+	public JRPrintImage getImage(JRDocxExporterContext exporterContext, JRGenericPrintElement element) throws JRException
 	{
-		return MapElementImageProvider.getImage(element);
+		return MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element);
 	}
 
 }

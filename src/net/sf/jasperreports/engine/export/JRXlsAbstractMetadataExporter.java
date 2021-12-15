@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.sf.jasperreports.charts.type.EdgeEnum;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPen;
@@ -49,17 +50,18 @@ import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRStyledText;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRXlsAbstractMetadataExporter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXlsAbstractMetadataExporter.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporter
 {
@@ -73,6 +75,24 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 	boolean hasDefinedColumns;
 	Map<String, Object> currentRow;	
 	Map<String, Object> repeatedValues;	
+
+	/**
+	 * @see #JRXlsAbstractMetadataExporter(JasperReportsContext)
+	 */
+	public JRXlsAbstractMetadataExporter()
+	{
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+
+	/**
+	 *
+	 */
+	public JRXlsAbstractMetadataExporter(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+
 
 	@Override
 	protected void setParameters() {
@@ -177,6 +197,8 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 						sheetIndex++;
 						sheetNamesIndex++;
 						rowIndex = 0;
+						resetAutoFilters();
+						
 						setFreezePane(gridRowFreezeIndex, gridColumnFreezeIndex);
 						
 						/*   */
@@ -191,6 +213,8 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 					// we need to count all sheets generated for all exported documents
 					sheetIndex++;
 					sheetNamesIndex++;
+					resetAutoFilters();
+					
 					setFreezePane(gridRowFreezeIndex, gridColumnFreezeIndex);
 					
 					if (filter instanceof ResetableExporterFilter)
@@ -228,6 +252,12 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 		{
 			JRPrintElement element = elements.get(i);
 			
+			String sheetName = element.getPropertiesMap().getProperty(JRXlsAbstractExporterParameter.PROPERTY_SHEET_NAME);
+			if(sheetName != null)
+			{
+				setSheetName(sheetName);
+			}
+			
 			if (element instanceof JRPrintLine)
 			{
 				exportLine((JRPrintLine)element);
@@ -259,7 +289,7 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 			
 			String currentColumnName = element.getPropertiesMap().getProperty(JRXlsAbstractMetadataExporterParameter.PROPERTY_COLUMN_NAME);
 			
-			String rowFreeze = JRProperties.getProperty(element, JRXlsAbstractExporter.PROPERTY_FREEZE_ROW_EDGE);
+			String rowFreeze = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(element, JRXlsAbstractExporter.PROPERTY_FREEZE_ROW_EDGE);
 			
 			int rowFreezeIndex = rowFreeze == null 
 				? 0 
@@ -268,7 +298,7 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 						: rowIndex
 						);
 			
-			String columnFreeze = JRProperties.getProperty(element, JRXlsAbstractExporter.PROPERTY_FREEZE_COLUMN_EDGE);
+			String columnFreeze = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(element, JRXlsAbstractExporter.PROPERTY_FREEZE_COLUMN_EDGE);
 				
 			int columnFreezeIndex = columnFreeze == null 
 				? 0 
@@ -281,6 +311,7 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 			{
 				setFreezePane(rowFreezeIndex, columnFreezeIndex, rowFreezeIndex > 0, columnFreezeIndex > 0);
 			}
+			
 		}
 		// write last row
 		if (columnNames.size() > 0)
@@ -288,6 +319,17 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 			writeCurrentRow(currentRow, repeatedValues);
 		}
 
+		if(autoFilterStart != null)
+		{
+			setAutoFilter(autoFilterStart + ":" + (autoFilterEnd != null ? autoFilterEnd : autoFilterStart));
+		}
+		else if(autoFilterEnd != null)
+		{
+			setAutoFilter(autoFilterEnd + ":" + autoFilterEnd);
+		}
+
+		setRowLevels(null, null);
+		
 		if (progressMonitor != null)
 		{
 			progressMonitor.afterPageExport();
@@ -514,7 +556,7 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 		{
 			// we make this test to avoid reaching the global default value of the property directly
 			// and thus skipping the report level one, if present
-			return JRProperties.getBooleanProperty(element, PROPERTY_WRAP_TEXT, wrapText);
+			return JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(element, PROPERTY_WRAP_TEXT, wrapText);
 		}
 		return wrapText;
 	}
@@ -532,7 +574,7 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 			{
 				// we make this test to avoid reaching the global default value of the property directly
 				// and thus skipping the report level one, if present
-				return JRProperties.getBooleanProperty(element, PROPERTY_CELL_LOCKED, cellLocked);
+				return JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(element, PROPERTY_CELL_LOCKED, cellLocked);
 			}
 			return cellLocked;
 	}
@@ -599,7 +641,7 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 			{
 				// we make this test to avoid reaching the global default value of the property directly
 				// and thus skipping the report level one, if present
-				return JRProperties.getBooleanProperty(element, PROPERTY_CELL_HIDDEN, cellHidden);
+				return JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(element, PROPERTY_CELL_HIDDEN, cellHidden);
 			}
 			return cellHidden;
 	}
@@ -668,11 +710,21 @@ public abstract class JRXlsAbstractMetadataExporter extends JRXlsAbstractExporte
 
 	protected abstract void closeWorkbook(OutputStream os) throws JRException;
 
-	protected abstract void setColumnWidth(int col, int width);
+	protected void setColumnWidth(int col, int width)
+	{
+		setColumnWidth(col, width, false);
+	}
+
+	protected abstract void setColumnWidth(int col, int width, boolean autoFit);
 
 	protected abstract void removeColumn(int col);
 
-	protected abstract void setRowHeight(int rowIndex, int lastRowHeight) throws JRException;
+	protected void setRowHeight(int rowIndex, int lastRowHeight) throws JRException
+	{
+		setRowHeight(rowIndex, lastRowHeight, null, null);
+	}
+
+	protected abstract void setRowHeight(int rowIndex, int lastRowHeight, Cut yCut, XlsRowLevelInfo levelInfo) throws JRException;
 
 	protected abstract void exportText(JRPrintText textElement) throws JRException;
 

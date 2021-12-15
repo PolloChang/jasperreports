@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.data.cache.DataCacheHandler;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDatasetParameter;
 import net.sf.jasperreports.engine.JRException;
@@ -44,6 +45,7 @@ import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRewindableDataSource;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRScriptlet;
@@ -55,6 +57,7 @@ import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.ReportContext;
+import net.sf.jasperreports.engine.base.JRVirtualPrintPage;
 import net.sf.jasperreports.engine.design.JRDesignSubreportReturnValue;
 import net.sf.jasperreports.engine.design.JRValidationException;
 import net.sf.jasperreports.engine.design.JRValidationFault;
@@ -62,7 +65,6 @@ import net.sf.jasperreports.engine.design.JRVerifier;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRSingletonCache;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.repo.RepositoryUtil;
@@ -73,7 +75,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillSubreport.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillSubreport.java 5340 2012-05-04 10:41:48Z lucianc $
  */
 public class JRFillSubreport extends JRFillElement implements JRSubreport
 {
@@ -88,6 +90,8 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	 */
 	private Map<String, Object> parameterValues;
 	private JRSubreportParameter[] parameters;
+	private FillDatasetPosition datasetPosition;
+	private boolean cacheIncluded;
 	private Connection connection;
 	private JRDataSource dataSource;
 	private JasperReport jasperReport;
@@ -251,9 +255,18 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		if (printPage != null)
 		{
 			printElements = printPage.getElements();
+			//FIXME lucianc immediately dispose the page if virtualized
 		}
 		
 		return printElements;
+	}
+
+	public void subreportPageFilled()
+	{
+		if (printPage != null)
+		{
+			subreportFiller.subreportPageFilled(printPage);
+		}
 	}
 
 
@@ -313,7 +326,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 				}
 				else if (source instanceof java.lang.String)
 				{
-					report = RepositoryUtil.getReport((String)source);
+					report = RepositoryUtil.getInstance(filler.getJasperReportsContext()).getReport(filler.getFillContext().getReportContext(), (String)source);
 //						(JasperReport)JRLoader.loadObjectFromLocation(
 //							(String)source, 
 //							filler.reportClassLoader,
@@ -347,13 +360,28 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		
 		if (jasperReport != null)
 		{
+			JRFillDataset parentDataset = expressionEvaluator.getFillDataset();
+			datasetPosition = new FillDatasetPosition(parentDataset.fillPosition);
+			datasetPosition.addAttribute("subreportUUID", getUUID());
+			parentDataset.setCacheRecordIndex(datasetPosition, evaluation);
+			
 			/*   */
 			connection = (Connection) evaluateExpression(
 					getConnectionExpression(), evaluation);
 	
-			/*   */
-			dataSource = (JRDataSource) evaluateExpression(
-					getDataSourceExpression(), evaluation);
+			String cacheIncludedProp = JRPropertiesUtil.getOwnProperty(this, DataCacheHandler.PROPERTY_INCLUDED); 
+			cacheIncluded = JRPropertiesUtil.asBoolean(cacheIncludedProp, true);// default to true
+
+			if (filler.fillContext.hasDataSnapshot() && cacheIncluded)
+			{
+				// TODO lucianc put something here so that data adapters know not to create a data source
+				dataSource = null;
+			}
+			else
+			{
+				dataSource = (JRDataSource) evaluateExpression(
+						getDataSourceExpression(), evaluation);
+			}
 			
 			parameterValues = 
 				evaluateParameterValues(evaluation);
@@ -407,7 +435,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 
 	protected DatasetExpressionEvaluator createEvaluator() throws JRException
 	{
-		return JasperCompileManager.loadEvaluator(jasperReport);
+		return JasperCompileManager.getInstance(filler.getJasperReportsContext()).getEvaluator(jasperReport);
 	}
 
 
@@ -422,12 +450,12 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		{
 			case HORIZONTAL :
 			{
-				subreportFiller = new JRHorizontalFiller(jasperReport, evaluator, this);
+				subreportFiller = new JRHorizontalFiller(filler.getJasperReportsContext(), jasperReport, evaluator, this);
 				break;
 			}
 			case VERTICAL :
 			{
-				subreportFiller = new JRVerticalFiller(jasperReport, evaluator, this);
+				subreportFiller = new JRVerticalFiller(filler.getJasperReportsContext(), jasperReport, evaluator, this);
 				break;
 			}
 			default :
@@ -438,6 +466,9 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		
 		runner = getRunnerFactory().createSubreportRunner(this, subreportFiller);
 		subreportFiller.setSubreportRunner(runner);
+		
+		subreportFiller.mainDataset.setFillPosition(datasetPosition);
+		subreportFiller.mainDataset.setCacheSkipped(!cacheIncluded);
 	}
 
 
@@ -601,28 +632,10 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			parameterValues.put(JRParameter.REPORT_FORMAT_FACTORY, filler.getFormatFactory());
 		}
 
-		if (!parameterValues.containsKey(JRParameter.REPORT_CLASS_LOADER) &&
-				filler.reportClassLoader != null)
-		{
-			parameterValues.put(JRParameter.REPORT_CLASS_LOADER, filler.reportClassLoader);
-		}
-
-		if (!parameterValues.containsKey(JRParameter.REPORT_URL_HANDLER_FACTORY) &&
-				filler.urlHandlerFactory != null)
-		{
-			parameterValues.put(JRParameter.REPORT_URL_HANDLER_FACTORY, filler.urlHandlerFactory);
-		}
-		
-		if (!parameterValues.containsKey(JRParameter.REPORT_FILE_RESOLVER) &&
-				filler.fileResolver != null)
-		{
-			parameterValues.put(JRParameter.REPORT_FILE_RESOLVER, filler.fileResolver);
-		}
-		
 		if (!parameterValues.containsKey(JRParameter.REPORT_CONTEXT))
 		{
 			ReportContext context = (ReportContext) filler.getMainDataset().getParameterValue(
-					JRParameter.REPORT_CONTEXT);
+					JRParameter.REPORT_CONTEXT, true);
 			if (context != null)
 			{
 				parameterValues.put(JRParameter.REPORT_CONTEXT, context);
@@ -688,6 +701,14 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		if (!filling && toPrint && reprinted)
 		{
 			rewind();
+		}
+		
+		if (printPage instanceof JRVirtualPrintPage)
+		{
+			// if the previous page was virtualized, dispose it as soon as possible.
+			// this normally already happened when we added the elements to the master page,
+			// but there are cases (e.g. overflow) when a page is not added to the master.
+			((JRVirtualPrintPage) printPage).dispose();
 		}
 		
 		subreportFiller.setPageHeight(availableHeight - getRelativeY());
@@ -841,7 +862,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	 */
 	protected JRPrintElement fill()
 	{
-		JRPrintRectangle printRectangle = new JRTemplatePrintRectangle(getJRTemplateRectangle());
+		JRPrintRectangle printRectangle = new JRTemplatePrintRectangle(getJRTemplateRectangle(), elementId);
 
 		printRectangle.setX(getX());
 		printRectangle.setY(getRelativeY());
@@ -1131,9 +1152,9 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		return null;
 	}
 	
-	protected static JRSubreportRunnerFactory getRunnerFactory() throws JRException
+	protected JRSubreportRunnerFactory getRunnerFactory() throws JRException
 	{
-		String factoryClassName = JRProperties.getProperty(JRSubreportRunnerFactory.SUBREPORT_RUNNER_FACTORY);
+		String factoryClassName = filler.getPropertiesUtil().getProperty(JRSubreportRunnerFactory.SUBREPORT_RUNNER_FACTORY);
 		if (factoryClassName == null)
 		{
 			throw new JRException("Property \"" + JRSubreportRunnerFactory.SUBREPORT_RUNNER_FACTORY + "\" must be set");

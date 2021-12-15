@@ -35,7 +35,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRChartPlotFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRChartPlotFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRChartPlotFactory extends JRBaseFactory
 {
@@ -43,6 +43,7 @@ public class JRChartPlotFactory extends JRBaseFactory
 	/**
 	 *
 	 */
+	@SuppressWarnings("deprecation")
 	public Object createObject(Attributes atts)
 	{
 		JRChartPlot plot = (JRChartPlot) digester.peek();
@@ -56,7 +57,7 @@ public class JRChartPlotFactory extends JRBaseFactory
 		PlotOrientationEnum orientation = PlotOrientationEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_orientation));
 		if (orientation != null)
 		{
-			plot.setOrientation(orientation.getOrientation());
+			plot.setOrientation(orientation);
 		}
 		String foregroundAlpha = atts.getValue(JRXmlConstants.ATTRIBUTE_foregroundAlpha);
 		if (foregroundAlpha != null && foregroundAlpha.length() > 0)

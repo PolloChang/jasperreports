@@ -47,8 +47,9 @@ import antlr.collections.impl.BitSet;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: MappingLexer.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: MappingLexer.java 5180 2012-03-29 13:23:12Z teodord $
  */
+@SuppressWarnings({"unused", "cast", "unchecked"})
 public class MappingLexer extends antlr.CharScanner implements MappingParserTokenTypes, TokenStream
  {
 public MappingLexer(InputStream in) {

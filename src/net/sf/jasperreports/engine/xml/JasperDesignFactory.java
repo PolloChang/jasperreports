@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.engine.xml;
 
+import java.util.UUID;
+
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.type.OrientationEnum;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
@@ -35,7 +37,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperDesignFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JasperDesignFactory.java 5306 2012-04-26 15:22:28Z lucianc $
  */
 public class JasperDesignFactory extends JRBaseFactory
 {
@@ -168,6 +170,12 @@ public class JasperDesignFactory extends JRBaseFactory
 		if (isIgnorePagination != null && isIgnorePagination.length() > 0)
 		{
 			jasperDesign.setIgnorePagination(Boolean.valueOf(isIgnorePagination).booleanValue());
+		}
+		
+		String uuid = atts.getValue(JRXmlConstants.ATTRIBUTE_uuid);
+		if (uuid != null)
+		{
+			jasperDesign.setUUID(UUID.fromString(uuid));
 		}
 
 		return jasperDesign;

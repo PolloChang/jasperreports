@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.base.JRBaseReport;
  * The actual representation of a compiled report. The main difference between a report and a report design is that
  * reports are already compiled and validated, so many characteristics are read only.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperReport.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JasperReport.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JasperReport extends JRBaseReport
 {

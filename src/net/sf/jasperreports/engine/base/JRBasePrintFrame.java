@@ -43,7 +43,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * Base implementation of {@link net.sf.jasperreports.engine.JRPrintFrame JRPrintFrame}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBasePrintFrame.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBasePrintFrame.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRBasePrintFrame extends JRBasePrintElement implements JRPrintFrame
 {

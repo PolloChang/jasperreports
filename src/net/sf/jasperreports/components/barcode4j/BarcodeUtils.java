@@ -23,30 +23,60 @@
  */
 package net.sf.jasperreports.components.barcode4j;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.util.JRProperties;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRSingletonCache;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeUtils.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BarcodeUtils.java 5050 2012-03-12 10:11:26Z teodord $
  */
 public final class BarcodeUtils
 {
-
 	protected static JRSingletonCache<BarcodeImageProducer> imageProducerCache = 
 		new JRSingletonCache<BarcodeImageProducer>(BarcodeImageProducer.class);
-	
-	public static BarcodeImageProducer getImageProducer(
-			JRPropertiesHolder propertiesHolder)
+
+	private JasperReportsContext jasperReportsContext;
+
+
+	/**
+	 *
+	 */
+	private BarcodeUtils(JasperReportsContext jasperReportsContext)
 	{
-		String producerProperty = JRProperties.getProperty(propertiesHolder, 
+		this.jasperReportsContext = jasperReportsContext;
+	}
+	
+	
+	/**
+	 *
+	 */
+	private static BarcodeUtils getDefaultInstance()
+	{
+		return new BarcodeUtils(DefaultJasperReportsContext.getInstance());
+	}
+	
+	
+	/**
+	 *
+	 */
+	public static BarcodeUtils getInstance(JasperReportsContext jasperReportsContext)
+	{
+		return new BarcodeUtils(jasperReportsContext);
+	}
+	
+	
+	public BarcodeImageProducer getProducer(JRPropertiesHolder propertiesHolder)
+	{
+		String producerProperty = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(propertiesHolder, 
 				BarcodeImageProducer.PROPERTY_IMAGE_PRODUCER);
 		
-		String producerClass = JRProperties.getProperty(propertiesHolder, 
+		String producerClass = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(propertiesHolder, 
 				BarcodeImageProducer.PROPERTY_PREFIX_IMAGE_PRODUCER + producerProperty);
 		if (producerClass == null)
 		{
@@ -63,14 +93,18 @@ public final class BarcodeUtils
 		}
 	}
 
+	/**
+	 * @deprecated Replaced by {@link #getProducer(JRPropertiesHolder)}.
+	 */
+	public static BarcodeImageProducer getImageProducer(JRPropertiesHolder propertiesHolder)
+	{
+		return getDefaultInstance().getProducer(propertiesHolder);
+	}
+
 	public static boolean isVertical(BarcodeComponent barcode)
 	{
 		int orientation = barcode.getOrientation();
 		return orientation == BarcodeComponent.ORIENTATION_LEFT
 				|| orientation == BarcodeComponent.ORIENTATION_RIGHT;
-	}
-	
-	private BarcodeUtils()
-	{
 	}
 }

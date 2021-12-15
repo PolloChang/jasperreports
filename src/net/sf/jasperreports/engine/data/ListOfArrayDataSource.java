@@ -25,8 +25,8 @@ package net.sf.jasperreports.engine.data;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRField;
@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ListOfArrayDataSource.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ListOfArrayDataSource.java 5221 2012-04-04 14:08:30Z lucianc $
  */
 public class ListOfArrayDataSource implements JRRewindableDataSource
 {
@@ -46,8 +46,8 @@ public class ListOfArrayDataSource implements JRRewindableDataSource
 	 *
 	 */
 	private List<Object[]> records = new ArrayList<Object[]>();
-	private Iterator<Object[]> iterator;
-	private Object[] currentRecord;
+	private ListIterator<Object[]> iterator;
+	protected Object[] currentRecord;
 	private Map<String, Integer> columnNamesMap = new HashMap<String, Integer>();
 
 
@@ -66,7 +66,7 @@ public class ListOfArrayDataSource implements JRRewindableDataSource
 			}
 		}
 
-		iterator = records.iterator();
+		iterator = records.listIterator();
 	}
 
 
@@ -112,8 +112,13 @@ public class ListOfArrayDataSource implements JRRewindableDataSource
 	 */
 	public void moveFirst()
 	{
-		iterator = records.iterator();
+		iterator = records.listIterator();
 	}
 
 
+	public int size()
+	{
+		return records.size();
+	}
+	
 }

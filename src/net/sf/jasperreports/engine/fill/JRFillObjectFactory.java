@@ -138,7 +138,7 @@ import org.apache.commons.collections.SequencedHashMap;
  * A factory used to instantiate fill objects based on compiled report objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillObjectFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRFillObjectFactory.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRFillObjectFactory extends JRAbstractObjectFactory
 {
@@ -299,16 +299,20 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		}
 	}
 	
-	public JRStyle getStyle(JRStyle style)
+	public JRBaseStyle getStyle(JRStyle style)
 	{
 		JRBaseStyle fillStyle = null;
 
 		if (style != null)
 		{
-			fillStyle = (JRBaseStyle)get(style);
+			fillStyle = (JRBaseStyle) get(style);
 			if (fillStyle == null)
 			{
 				fillStyle = new JRBaseStyle(style, this);
+				
+				// deduplicate to previously created identical instances
+				fillStyle = filler.fillContext.deduplicate(fillStyle);
+				
 				put(style, fillStyle);
 				
 				if (originalStyleList != null && originalStyleList.contains(style))

@@ -29,20 +29,23 @@ import java.util.ResourceBundle;
 
 import javax.swing.filechooser.FileFilter;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRSaveContributor.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRSaveContributor.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public abstract class JRSaveContributor extends FileFilter
 {
+	private JasperReportsContext jasperReportsContext;
 	private Locale locale;
 	private ResourceBundle resourceBundle;
 	
 	/**
-	 * 
+	 * @see #JRSaveContributor(JasperReportsContext, Locale, ResourceBundle)
 	 */
 	public JRSaveContributor()
 	{
@@ -50,10 +53,24 @@ public abstract class JRSaveContributor extends FileFilter
 	}
 	
 	/**
-	 * 
+	 * @see #JRSaveContributor(JasperReportsContext, Locale, ResourceBundle)
 	 */
 	public JRSaveContributor(Locale locale, ResourceBundle resBundle)
 	{
+		this(DefaultJasperReportsContext.getInstance(), locale, resBundle);
+	}
+	
+	/**
+	 * 
+	 */
+	public JRSaveContributor(
+		JasperReportsContext jasperReportsContext,
+		Locale locale, 
+		ResourceBundle resBundle
+		)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+		
 		if (locale != null)
 		{
 			this.locale = locale;
@@ -73,6 +90,15 @@ public abstract class JRSaveContributor extends FileFilter
 		}
 	}
 	
+	
+	/**
+	 * 
+	 */
+	protected JasperReportsContext getJasperReportsContext()
+	{
+		return jasperReportsContext;
+	}
+
 	
 	/**
 	 * 

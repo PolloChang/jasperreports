@@ -23,7 +23,10 @@
  */
 package net.sf.jasperreports.repo;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.extensions.DefaultExtensionsRegistry;
 import net.sf.jasperreports.extensions.ExtensionsRegistry;
 import net.sf.jasperreports.extensions.ExtensionsRegistryFactory;
 import net.sf.jasperreports.extensions.SingletonExtensionRegistry;
@@ -31,16 +34,35 @@ import net.sf.jasperreports.extensions.SingletonExtensionRegistry;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FileRepositoryServiceExtensionsRegistryFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FileRepositoryServiceExtensionsRegistryFactory.java 5118 2012-03-22 15:08:56Z shertage $
  */
 public class FileRepositoryServiceExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
-	private static final ExtensionsRegistry repositoryServiceExtensionsRegistry = 
-			new SingletonExtensionRegistry<RepositoryServiceFactory>(
-					RepositoryServiceFactory.class, FileRepositoryServiceFactory.getInstance());
+
+	/**
+	 * 
+	 */
+	public final static String FILE_REPOSITORY_PROPERTY_PREFIX = 
+		DefaultExtensionsRegistry.PROPERTY_REGISTRY_PREFIX + "file.repository.";
 	
+	/**
+	 * Specifies the file repository root location.
+	 */
+	public final static String PROPERTY_FILE_REPOSITORY_ROOT = FILE_REPOSITORY_PROPERTY_PREFIX + "root";
+	
+	/**
+	 * Flag property that indicates whether the absolute path to be used instead, when resources are not found in the file repository.
+	 */
+	public final static String PROPERTY_FILE_REPOSITORY_RESOLVE_ABSOLUTE_PATH = FILE_REPOSITORY_PROPERTY_PREFIX + "resolve.absolute.path";
+	
+	/**
+	 * 
+	 */
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties) 
 	{
-		return repositoryServiceExtensionsRegistry;
+		String root = JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getProperty(properties, PROPERTY_FILE_REPOSITORY_ROOT);
+		boolean resolveAbsolutePath = JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(properties, PROPERTY_FILE_REPOSITORY_RESOLVE_ABSOLUTE_PATH, false);
+
+		return new SingletonExtensionRegistry<RepositoryService>(RepositoryService.class, new FileRepositoryService(DefaultJasperReportsContext.getInstance(), root, resolveAbsolutePath));
 	}
 }

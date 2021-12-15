@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintLine.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRTemplatePrintLine.java 5180 2012-03-29 13:23:12Z teodord $
  */
 public class JRTemplatePrintLine extends JRTemplatePrintGraphicElement implements JRPrintLine
 {
@@ -51,10 +51,22 @@ public class JRTemplatePrintLine extends JRTemplatePrintGraphicElement implement
 	 * Creates a print line element.
 	 * 
 	 * @param line the template line that the element will use
+	 * @deprecated provide a source Id via {@link #JRTemplatePrintLine(JRTemplateLine, int)}
 	 */
 	public JRTemplatePrintLine(JRTemplateLine line)
 	{
 		super(line);
+	}
+
+	/**
+	 * Creates a print line element.
+	 * 
+	 * @param line the template line that the element will use
+	 * @param sourceElementId the Id of the source element
+	 */
+	public JRTemplatePrintLine(JRTemplateLine line, int sourceElementId)
+	{
+		super(line, sourceElementId);
 	}
 	
 	/**
