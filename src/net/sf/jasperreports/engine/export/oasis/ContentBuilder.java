@@ -57,6 +57,7 @@ public class ContentBuilder
 	private ExportZipEntry contentEntry;
 	private ExportZipEntry styleEntry;
 	private ExportZipEntry bodyEntry;
+	private ExportZipEntry settingsEntry;
 	
 	private Collection<String> fontFaces;
 	
@@ -69,6 +70,7 @@ public class ContentBuilder
 		ExportZipEntry contentEntry,
 		ExportZipEntry styleEntry,
 		ExportZipEntry bodyEntry,
+		ExportZipEntry settingsEntry,
 		Collection<String> fontFaces
 		)
 	{
@@ -76,6 +78,7 @@ public class ContentBuilder
 			contentEntry,
 			styleEntry,
 			bodyEntry,
+			settingsEntry,
 			fontFaces,
 			JROpenDocumentExporterNature.ODT_NATURE
 			);
@@ -88,6 +91,7 @@ public class ContentBuilder
 		ExportZipEntry contentEntry,
 		ExportZipEntry styleEntry,
 		ExportZipEntry bodyEntry,
+		ExportZipEntry settingsEntry,
 		Collection<String> fontFaces,
 		byte openDocumentNature
 		)
@@ -96,6 +100,7 @@ public class ContentBuilder
 		this.styleEntry = styleEntry;
 		this.bodyEntry = bodyEntry;
 		this.fontFaces = fontFaces;
+		this.settingsEntry = settingsEntry;
 		this.openDocumentNature = openDocumentNature;
 	}
 	

@@ -108,6 +108,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 	 */
 	protected Writer tempBodyWriter;
 	protected Writer tempStyleWriter;
+	protected Writer tempSettingsWriter;
 
 	protected JRExportProgressMonitor progressMonitor;
 	protected Map<String, String> rendererToImagePathMap;
@@ -290,6 +291,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 
 		ExportZipEntry tempBodyEntry = new FileBufferedZipEntry(null);
 		ExportZipEntry tempStyleEntry = new FileBufferedZipEntry(null);
+		ExportZipEntry tempSettingsEntry = new FileBufferedZipEntry(null);
 
 		tempBodyWriter = tempBodyEntry.getWriter();
 		tempStyleWriter = tempStyleEntry.getWriter();
@@ -302,6 +304,13 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 		styleBuilder.build();
 
 		stylesWriter.close();
+
+
+		Writer settingsWriter = oasisZip.getSettingsEntry().getWriter();
+		SettingsBuilder settingsBuilder  = new SettingsBuilder(jasperPrintList, settingsWriter);
+		settingsBuilder.build();
+
+		settingsWriter.close();
 
 		for(reportIndex = 0; reportIndex < jasperPrintList.size(); reportIndex++)
 		{
@@ -346,11 +355,13 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 				oasisZip.getContentEntry(),
 				tempStyleEntry,
 				tempBodyEntry,
+				tempSettingsEntry,
 				styleCache.getFontFaces(),
 				((JROpenDocumentExporterNature)nature).getOpenDocumentNature()
 				);
 		contentBuilder.build();
 
+		tempSettingsEntry.dispose();
 		tempStyleEntry.dispose();
 		tempBodyEntry.dispose();
 
@@ -456,25 +467,15 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 				{
 					if (emptyCellColSpan > 0)
 					{
-						//writeEmptyCell(gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
-						//emptyCellWidth = 0;
 					}
-
-					//writeOccupiedCells(1);
 					exportOccupiedCells(1);
-//					OccupiedGridCell occupiedGridCell = (OccupiedGridCell)gridCell;
-//					ElementGridCell elementGridCell = (ElementGridCell)grid[occupiedGridCell.getRow()][occupiedGridCell.getCol()];
-//					exportOccupiedCells(elementGridCell);
-//					col += elementGridCell.getColSpan() - 1;
 				}
 				else if(gridCell.getWrapper() != null)
 				{
 					if (emptyCellColSpan > 0)
 					{
-						//writeEmptyCell(gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
-						//emptyCellWidth = 0;
 					}
 
 					element = gridCell.getWrapper().getElement();
@@ -508,21 +509,14 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 						exportGenericElement(tableBuilder, (JRGenericPrintElement)element, gridCell);
 					}
 
-					// //x += gridCell.colSpan - 1;
-					//col += gridCell.getColSpan() - 1;
 				}
 				else
 				{
 					emptyCellColSpan++;
-					//emptyCellWidth += gridCell.getWidth();
 					exportEmptyCell(gridCell, 1);
 				}
 			}
 
-//			if (emptyCellColSpan > 0)
-//			{
-//				//writeEmptyCell(null, emptyCellColSpan, emptyCellWidth, rowHeight);
-//			}
 
 			tableBuilder.buildRowFooter();
 		}
@@ -531,39 +525,12 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 	}
 
 
-//	private void writeEmptyCell(JRExporterGridCell gridCell, int emptyCellColSpan, int emptyCellWidth, int rowHeight) throws IOException
-//	{
-//		tempBodyWriter.write("<table:table-cell");
-//		//tempBodyWriter.write(" office:value-type=\"string\"");
-//		tempBodyWriter.write(" table:style-name=\"empty-cell\"");
-//		if (emptyCellColSpan > 1)
-//		{
-//			tempBodyWriter.write(" table:number-columns-spanned=\"" + emptyCellColSpan + "\"");
-//		}
-//		tempBodyWriter.write("/>\n");
-//
-//		writeOccupiedCells(emptyCellColSpan - 1);
-//	}
-//
-//
-//	private void writeOccupiedCells(int count) throws IOException
-//	{
-//		for(int i = 0; i < count; i++)
-//		{
-//			tempBodyWriter.write("<table:covered-table-cell/>\n");
-//		}
-//	}
-
 
 	private void exportEmptyCell(JRExporterGridCell gridCell, int emptyCellColSpan) throws IOException
 	{
 		tempBodyWriter.write("<table:table-cell");
-		//tempBodyWriter.write(" office:value-type=\"string\"");
-//		if (gridCell == null)
-//		{
-//			tempBodyWriter.write(" table:style-name=\"empty-cell\"");
-//		}
-//		else
+
+
 		{
 			tempBodyWriter.write(" table:style-name=\"" + styleCache.getCellStyle(gridCell) + "\"");
 		}
@@ -575,27 +542,6 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 
 		exportOccupiedCells(emptyCellColSpan - 1);
 	}
-
-
-//	private void exportOccupiedCells(JRExporterGridCell gridCell) throws IOException
-//	{
-//		tempBodyWriter.write("<table:table-cell");
-//		//tempBodyWriter.write(" office:value-type=\"string\"");
-//		tempBodyWriter.write(" table:style-name=\"" + styleCache.getCellStyle(gridCell.getElement(), gridCell) + "\"");
-//		if (gridCell.getColSpan() > 1)
-//		{
-//			tempBodyWriter.write(" table:number-columns-spanned=\"" + gridCell.getColSpan() + "\"");
-//		}
-//		tempBodyWriter.write("/>\n");
-//
-//		exportOccupiedCells(gridCell.getColSpan() - 1);
-//	}
-
-
-//	private void exportOccupiedCells(JRExporterGridCell gridCell) throws IOException
-//	{
-//		exportOccupiedCells(gridCell.getColSpan());
-//	}
 
 
 	private void exportOccupiedCells(int count) throws IOException
@@ -800,81 +746,6 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 	}
 
 
-	/**
-	 *
-	 *
-	protected void writeImageMap(String imageMapName, JRPrintHyperlink mainHyperlink, List imageMapAreas) throws IOException
-	{
-		writer.write("<map name=\"" + imageMapName + "\">\n");
-
-		for (Iterator it = imageMapAreas.iterator(); it.hasNext();)
-		{
-			JRPrintImageAreaHyperlink areaHyperlink = (JRPrintImageAreaHyperlink) it.next();
-			JRPrintImageArea area = areaHyperlink.getArea();
-
-			writer.write("  <area shape=\"" + JRPrintImageArea.getHtmlShape(area.getShape()) + "\"");
-			writeImageAreaCoordinates(area);
-			writeImageAreaHyperlink(areaHyperlink.getHyperlink());
-			writer.write("/>\n");
-		}
-
-		if (mainHyperlink.getHyperlinkTypeValue() != NONE)
-		{
-			writer.write("  <area shape=\"default\"");
-			writeImageAreaHyperlink(mainHyperlink);
-			writer.write("/>\n");
-		}
-
-		writer.write("</map>\n");
-	}
-
-
-	protected void writeImageAreaCoordinates(JRPrintImageArea area) throws IOException
-	{
-		int[] coords = area.getCoordinates();
-		if (coords != null && coords.length > 0)
-		{
-			StringBuffer coordsEnum = new StringBuffer(coords.length * 4);
-			coordsEnum.append(coords[0]);
-			for (int i = 1; i < coords.length; i++)
-			{
-				coordsEnum.append(',');
-				coordsEnum.append(coords[i]);
-			}
-
-			writer.write(" coords=\"" + coordsEnum + "\"");
-		}
-	}
-
-
-	protected void writeImageAreaHyperlink(JRPrintHyperlink hyperlink) throws IOException
-	{
-		String href = getHyperlinkURL(hyperlink);
-		if (href == null)
-		{
-			writer.write(" nohref=\"nohref\"");
-		}
-		else
-		{
-			writer.write(" href=\"" + href + "\"");
-
-			String target = getHyperlinkTarget(hyperlink);
-			if (target != null)
-			{
-				writer.write(" target=\"");
-				writer.write(target);
-				writer.write("\"");
-			}
-		}
-
-		if (hyperlink.getHyperlinkTooltip() != null)
-		{
-			writer.write(" title=\"");
-			writer.write(JRStringUtil.xmlEncode(hyperlink.getHyperlinkTooltip()));
-			writer.write("\"");
-		}
-	}
-
 
 	/**
 	 *
@@ -1041,16 +912,7 @@ public abstract class JROpenDocumentExporter extends JRAbstractExporter
 					tempBodyWriter.write(" xlink:show=\"new\"");
 				}
 			}
-/*
- * tooltips are unavailable for the moment
- *
-			if (link.getHyperlinkTooltip() != null)
-			{
-				tempBodyWriter.write(" xlink:title=\"");
-				tempBodyWriter.write(JRStringUtil.xmlEncode(link.getHyperlinkTooltip()));
-				tempBodyWriter.write("\"");
-			}
-*/
+
 			tempBodyWriter.write(">");
 		}
 

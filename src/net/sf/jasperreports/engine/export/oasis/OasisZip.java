@@ -44,6 +44,7 @@ public abstract class OasisZip extends AbstractZip
 	 */
 	private ExportZipEntry contentEntry;
 	private ExportZipEntry stylesEntry;
+	private ExportZipEntry settingsEntry;
 	
 	/**
 	 * 
@@ -64,7 +65,8 @@ public abstract class OasisZip extends AbstractZip
 		exportZipEntries.add(contentEntry);
 		
 		createMetaEntry();
-		exportZipEntries.add(new EmptyZipEntry("settings.xml"));
+		settingsEntry = createEntry("settings.xml");
+		exportZipEntries.add(settingsEntry);
 
 		stylesEntry = createEntry("styles.xml");
 		exportZipEntries.add(stylesEntry);
@@ -100,6 +102,14 @@ public abstract class OasisZip extends AbstractZip
 	public ExportZipEntry getStylesEntry()
 	{
 		return stylesEntry;
+	}
+
+	/**
+	 *
+	 */
+	public ExportZipEntry getSettingsEntry()
+	{
+		return settingsEntry;
 	}
 	
 	/**
@@ -183,6 +193,11 @@ public abstract class OasisZip extends AbstractZip
 		{
 			metaWriter = metaEntry.getWriter();
 			metaWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+			metaWriter.write("<office:document-meta");
+			metaWriter.write(" xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\"");
+			metaWriter.write(" office:version=\"");
+			metaWriter.write(ContentBuilder.VERSION);
+			metaWriter.write("\"/>");
 			metaWriter.flush();
 			exportZipEntries.add(metaEntry);
 		}
