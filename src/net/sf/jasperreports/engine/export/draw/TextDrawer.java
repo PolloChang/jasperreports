@@ -124,14 +124,6 @@ public class TextDrawer extends ElementDrawer<JRPrintText>
 			grx.setColor(text.getBackcolor());
 			grx.fillRect(textRenderer.getX(), textRenderer.getY(), textRenderer.getWidth(), textRenderer.getHeight()); 
 		}
-//		else
-//		{
-//			/*
-//			grx.setColor(text.getForecolor());
-//			grx.setStroke(new BasicStroke(1));
-//			grx.drawRect(x, y, width, height);
-//			*/
-//		}
 
 		String allText = textRenderer.getPlainText();
 		if (allText.length() > 0)

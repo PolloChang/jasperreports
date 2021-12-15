@@ -263,15 +263,11 @@ public abstract class AbstractTextRenderer
 			}
 		}
 
-//		formatWidth = width - leftPadding - rightPadding;
-//		formatWidth = formatWidth < 0 ? 0 : formatWidth;
-
 		drawPosY = 0;
 		drawPosX = 0;
 	
 		isMaxHeightReached = false;
-		
-		//maxFontSizeFinder = MaxFontSizeFinder.getInstance(!JRCommonText.MARKUP_NONE.equals(text.getMarkup()));
+
 	}
 	
 
@@ -386,8 +382,6 @@ public abstract class AbstractTextRenderer
 				float startX = (lineMeasurer.getPosition() == 0 ? text.getParagraph().getFirstLineIndent() : 0) + leftPadding;
 				endX = width - text.getParagraph().getRightIndent() - rightPadding;
 				endX = endX < startX ? startX : endX;
-				//formatWidth = endX - startX;
-				//formatWidth = endX;
 				
 				int startIndex = lineMeasurer.getPosition();
 
@@ -396,7 +390,6 @@ public abstract class AbstractTextRenderer
 				if (segments.size() == 0)
 				{
 					rightX = startX;
-					//nextTabStop = nextTabStop;
 				}
 				else
 				{
@@ -492,10 +485,6 @@ public abstract class AbstractTextRenderer
 							// next line should should start at first tab stop indent
 							nextTabStop = ParagraphUtil.getFirstTabStop(text.getParagraph(), endX);
 						}
-//						else
-//						{
-//							//nothing; this leaves lineComplete=false
-//						}
 					}
 					else
 					{
@@ -543,7 +532,6 @@ public abstract class AbstractTextRenderer
 			lineHeight = getLineHeight(lastParagraphStart == 0 && lines == 0, text.getParagraph(), maxLeading, maxAscent);// + maxDescent;
 			
 			if (lastParagraphStart == 0 && lines == 0)
-			//if (lines == 0) //FIXMEPARA
 			{
 				lineHeight +=  text.getParagraph().getSpacingBefore().intValue();
 			}
@@ -599,11 +587,6 @@ public abstract class AbstractTextRenderer
 				}
 				
 				drawPosY += maxDescent;
-				
-//				if (lineMeasurer.getPosition() == paragraph.getEndIndex()) //FIXMEPARA
-//				{
-//					drawPosY += text.getParagraph().getSpacingAfter().intValue();
-//				}
 			}
 			else
 			{
@@ -696,47 +679,6 @@ public abstract class AbstractTextRenderer
 		
 		return lineHeight;
 	}
-
-	/**
-	 * 
-	 *
-	public static float getLineHeight(JRParagraph paragraph, float lineSpacingFactor, int maxFontSize)
-	{
-		float lineHeight = 0;
-
-		switch(paragraph.getLineSpacing())
-		{
-			case SINGLE:
-			case ONE_AND_HALF:
-			case DOUBLE:
-			case PROPORTIONAL:
-			{
-				lineHeight = lineSpacingFactor * maxFontSize;
-				break;
-			}
-			case AT_LEAST:
-			{
-				lineHeight = Math.max(lineSpacingFactor * maxFontSize, paragraph.getLineSpacingSize().floatValue());
-				break;
-			}
-			case FIXED:
-			{
-				lineHeight = paragraph.getLineSpacingSize().floatValue();
-				break;
-			}
-			default :
-			{
-				throw new JRRuntimeException("Invalid line space type: " + paragraph.getLineSpacing());
-			}
-		}
-		
-		return lineHeight;
-	}
-
-
-	/**
-	 * 
-	 */
 	public FontRenderContext getFontRenderContext()
 	{
 		return LINE_BREAK_FONT_RENDER_CONTEXT;

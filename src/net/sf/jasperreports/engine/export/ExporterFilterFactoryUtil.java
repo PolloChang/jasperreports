@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.util.JRClassLoader;
 public final class ExporterFilterFactoryUtil
 {
 	//FIXME this would add commons collections to applet jar
-	//private static final JRSingletonCache cache = new JRSingletonCache(ExporterFilterFactory.class);
 
 	/**
 	 * Returns an exporter filter factory based on a factory class name.
@@ -46,7 +45,6 @@ public final class ExporterFilterFactoryUtil
 	 */
 	public static ExporterFilterFactory getFilterFactory(String factoryClassName) throws JRException
 	{
-		//return (ExporterFilterFactory) cache.getCachedInstance(factoryClassName);
 		try
 		{
 			Class<?> clazz = JRClassLoader.loadClassForName(factoryClassName);

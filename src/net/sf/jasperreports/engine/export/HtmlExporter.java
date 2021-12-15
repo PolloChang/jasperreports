@@ -427,8 +427,7 @@ public class HtmlExporter extends AbstractHtmlExporter<HtmlReportConfiguration, 
 		if (hyperlinksData.size() > 0) {
 			reportContext.setParameterValue("net.sf.jasperreports.html.hyperlinks", hyperlinksData);
 		}
-		
-//		if (!isOutputResourcesToDir)
+
 		if (reportContext == null) // generate script tag on static export only
 		{
 			writer.write("<![if IE]>\n");
@@ -738,7 +737,6 @@ public class HtmlExporter extends AbstractHtmlExporter<HtmlReportConfiguration, 
 		if (textLength > 0)
 		{
 			//only use text tooltip when no hyperlink present
-//			String textTooltip = hyperlinkStarted ? null : text.getHyperlinkTooltip();
 			exportStyledText(text, styledText, text.getHyperlinkTooltip(), hyperlinkStarted);
 		}
 

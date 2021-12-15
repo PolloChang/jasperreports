@@ -42,12 +42,8 @@ import net.sf.jasperreports.engine.util.SortedIntList;
  */
 public class CutsInfo
 {
-//	public static final int USAGE_NOT_EMPTY = 1;
-//	public static final int USAGE_SPANNED = 2;
-//	public static final int USAGE_BREAK = 4;
 	
 	private final SortedIntList cutOffsets = new SortedIntList();
-//	private int[] cutUsage;
 	private Cut[] cuts;
 	
 	private Map<String, Object> propertiesMap;
