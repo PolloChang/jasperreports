@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,7 @@ import net.sf.jasperreports.engine.query.JRClauseFunction;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRQueryChunk.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRQueryChunk.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRQueryChunk extends JRCloneable
 {
@@ -93,4 +93,12 @@ public interface JRQueryChunk extends JRCloneable
 	 * @return the chunk tokens
 	 */
 	public String[] getTokens();
+		
+	
+	/**
+	 * Returns the chunk tokens separator character for {@link #TYPE_CLAUSE_TOKENS clause} chunks.
+	 * 
+	 * @return the chunk tokens separator character
+	 */
+	public Character getTokenSeparator();
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,8 @@ import java.awt.Color;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRLineBox;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.base.JRBaseElementGroup;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
@@ -37,7 +39,7 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CompiledCell.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: CompiledCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CompiledCell extends JRBaseElementGroup implements Cell
 {
@@ -50,6 +52,8 @@ public class CompiledCell extends JRBaseElementGroup implements Cell
 	private JRLineBox box;
 	private Integer rowSpan;
 	private Integer height;
+	
+	private JRPropertiesMap propertiesMap;
 	
 	public CompiledCell()
 	{
@@ -68,6 +72,8 @@ public class CompiledCell extends JRBaseElementGroup implements Cell
 		this.box = cell.getLineBox().clone(this);
 		this.rowSpan = cell.getRowSpan();
 		this.height = cell.getHeight();
+		
+		this.propertiesMap = JRPropertiesMap.getPropertiesClone(cell);
 	}
 
 	public Integer getHeight()
@@ -103,6 +109,32 @@ public class CompiledCell extends JRBaseElementGroup implements Cell
 	public Integer getRowSpan()
 	{
 		return rowSpan;
+	}
+
+	public boolean hasProperties()
+	{
+		return propertiesMap != null && propertiesMap.hasProperties();
+	}
+
+	public JRPropertiesMap getPropertiesMap()
+	{
+		if (propertiesMap == null)
+		{
+			propertiesMap = new JRPropertiesMap();
+		}
+		return propertiesMap;
+	}
+
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
+	}
+	
+	public Object clone() 
+	{
+		CompiledCell clone = (CompiledCell) super.clone();
+		clone.propertiesMap = JRPropertiesMap.getPropertiesClone(this);
+		return clone;
 	}
 
 }

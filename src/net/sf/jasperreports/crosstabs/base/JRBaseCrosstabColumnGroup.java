@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,16 +26,18 @@ package net.sf.jasperreports.crosstabs.base;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.JRCrosstabColumnGroup;
 import net.sf.jasperreports.crosstabs.type.CrosstabColumnPositionEnum;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
+import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * Base read-only implementation of crosstab column groups.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstabColumnGroup.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseCrosstabColumnGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCrosstabColumnGroup extends JRBaseCrosstabGroup implements JRCrosstabColumnGroup
 {
@@ -43,6 +45,7 @@ public class JRBaseCrosstabColumnGroup extends JRBaseCrosstabGroup implements JR
 
 	protected int height;
 	protected CrosstabColumnPositionEnum positionValue = CrosstabColumnPositionEnum.LEFT;
+	protected JRCellContents crosstabHeader;
 
 	public JRBaseCrosstabColumnGroup(JRCrosstabColumnGroup group, JRBaseObjectFactory factory)
 	{
@@ -50,6 +53,7 @@ public class JRBaseCrosstabColumnGroup extends JRBaseCrosstabGroup implements JR
 		
 		height = group.getHeight();
 		positionValue = group.getPositionValue();
+		crosstabHeader = factory.getCell(group.getCrosstabHeader());
 	}
 
 	public CrosstabColumnPositionEnum getPositionValue()
@@ -60,6 +64,20 @@ public class JRBaseCrosstabColumnGroup extends JRBaseCrosstabGroup implements JR
 	public int getHeight()
 	{
 		return height;
+	}
+
+	@Override
+	public JRCellContents getCrosstabHeader()
+	{
+		return crosstabHeader;
+	}
+
+	@Override
+	public Object clone()
+	{
+		JRBaseCrosstabColumnGroup clone = (JRBaseCrosstabColumnGroup) super.clone();
+		clone.crosstabHeader = JRCloneUtils.nullSafeClone(crosstabHeader);
+		return clone;
 	}
 
 	

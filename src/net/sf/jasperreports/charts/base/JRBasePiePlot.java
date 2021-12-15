@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,24 +34,23 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpressionCollector;
 import net.sf.jasperreports.engine.base.JRBaseChartPlot;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
-import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePiePlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBasePiePlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	public static final String PROPERTY_CIRCULAR = "circular";
+	public static final String PROPERTY_CIRCULAR = "isCircular";
 
 	public static final String PROPERTY_LABEL_FORMAT = "labelFormat";
 	public static final String PROPERTY_LEGEND_LABEL_FORMAT = "legendLabelFormat";
 	public static final String PROPERTY_ITEM_LABEL = "itemLabel";
 
-	public static final String PROPERTY_SHOW_LABELS = "showLabels";
+	public static final String PROPERTY_SHOW_LABELS = "isShowLabels";
 	/*
 	 * README
 	 * 
@@ -195,7 +194,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 	public Object clone(JRChart parentChart) 
 	{
 		JRBasePiePlot clone = (JRBasePiePlot)super.clone(parentChart);
-		clone.itemLabel = JRCloneUtils.nullSafeClone(itemLabel);
+		clone.itemLabel = itemLabel == null ? null : itemLabel.clone(parentChart);
 		return clone;
 	}
 
@@ -218,6 +217,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 		labelFormat = (String) fields.get("labelFormat", null);
 		legendLabelFormat = (String) fields.get("legendLabelFormat", null);
 		itemLabel = (JRItemLabel) fields.get("itemLabel", null);
+		showLabels = (Boolean) fields.get("showLabels", null);
 		
 		PSEUDO_SERIAL_VERSION_UID = fields.get("PSEUDO_SERIAL_VERSION_UID", 0);
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_1_3)

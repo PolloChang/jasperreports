@@ -12,6 +12,7 @@
     <element ref="jrp:origin" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jrp:reportFont" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jrp:style" minOccurs="0" maxOccurs="unbounded"/>
+    <element ref="jrp:bookmark" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jrp:page" minOccurs="0" maxOccurs="unbounded"/>
    </sequence>
    <attribute name="name" type="string" use="required"/>
@@ -414,6 +415,17 @@
   </complexType>
  </element>
 
+ <element name="bookmark">
+  <complexType>
+   <sequence>
+    <element ref="jrp:bookmark" minOccurs="0" maxOccurs="unbounded"/>
+   </sequence>
+   <attribute name="label" type="string" use="required"/>
+   <attribute name="pageIndex" type="integer" use="required"/>
+   <attribute name="elementAddress" type="string" use="required"/>
+  </complexType>
+ </element>
+
  <element name="page">
   <complexType>
    <choice minOccurs="0" maxOccurs="unbounded">
@@ -450,6 +462,11 @@
    <sequence>
     <element ref="jrp:property" minOccurs="0" maxOccurs="unbounded"/>
    </sequence>
+   <attribute name="uuid" type="string" use="optional">
+	<annotation>
+	 <documentation>This attribute is auto-generated and is used to uniquely identify elements across multiple report templates.</documentation>
+	</annotation>
+   </attribute>  
    <attribute name="key" type="string" use="optional"/>
    <attribute name="style" type="string" use="optional"/>
    <attribute name="mode" use="optional">
@@ -468,6 +485,7 @@
    <attribute name="backcolor" type="string" use="optional"/>
    <attribute name="origin" type="NMTOKEN" use="optional"/>
    <attribute name="srcId" type="integer" use="optional"/>
+   <attribute name="printId" type="integer" use="optional"/>
   </complexType>
  </element>
 

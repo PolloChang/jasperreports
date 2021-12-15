@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,10 +32,19 @@ import net.sf.jasperreports.engine.util.JRLoader;
 
 
 /**
- * Fa�ade class for the JasperReports engine.
+ * Facade class for the printing functionality exposed by the JasperReports library.
+ * <p>
+ * After having filled a report, you have the option of viewing it, exporting it to a different
+ * format, or (most commonly) printing it.
+ * <p>
+ * In JasperReports, you can print reports using this manager class. It contains various methods that
+ * can send entire documents or portions of them to the printer. It also allows people to choose
+ * whether to display the print dialog. one can display the content of a page from a
+ * JasperReports document by generating a <code>java.awt.Image</code> object for it using this
+ * manager class.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperPrintManager.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JasperPrintManager.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JasperPrintManager
 {

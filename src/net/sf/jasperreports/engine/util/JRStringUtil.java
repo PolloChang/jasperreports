@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,16 +28,17 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-
+import com.fasterxml.jackson.core.io.JsonStringEncoder;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStringUtil.java 5397 2012-05-21 01:10:02Z teodord $
+ * @version $Id: JRStringUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRStringUtil
 {
@@ -88,6 +89,15 @@ public final class JRStringUtil
 	 */
 	public static String xmlEncode(String text)
 	{
+		return xmlEncode(text, null);
+	}
+
+
+	/**
+	 *
+	 */
+	public static String xmlEncode(String text, String invalidCharReplacement)
+	{
 		if (text == null || text.length() == 0)
 		{
 			return text;
@@ -95,74 +105,136 @@ public final class JRStringUtil
 		
 		int length = text.length();
 		StringBuffer ret = new StringBuffer(length * 12 / 10);
-
 		int last = 0;
-		for (int i = 0; i < length; i ++)
+		
+		for (int i = 0; i < length; i++)
+		{
+			char c = text.charAt(i);
+			if(Character.isISOControl(c) && c!='\t' && c!='\r' && c!='\n')
+			{
+				last = appendText(text, ret, i, last);
+				if(invalidCharReplacement == null)
+				{
+					//the invalid character is preserved
+					ret.append(c);
+				}
+				else if("".equals(invalidCharReplacement))
+				{
+					//the invalid character is removed
+					continue;
+				}
+				else
+				{
+					//the invalid character is replaced
+					ret.append(invalidCharReplacement);
+				}
+			}
+			else
+			{
+				switch (c)
+				{
+					case '&' :
+						last = appendText(text, ret, i, last);
+						ret.append("&amp;");
+						break;
+					case '>' :
+						last = appendText(text, ret, i, last);
+						ret.append("&gt;");
+						break;
+					case '<' :
+						last = appendText(text, ret, i, last);
+						ret.append("&lt;");
+						break;
+					case '\"' :
+						last = appendText(text, ret, i, last);
+						ret.append("&quot;");
+						break;
+					case '\'' :
+						last = appendText(text, ret, i, last);
+						ret.append("&apos;");
+						break;
+					default :
+						break;
+				}
+			}
+		}
+		appendText(text, ret, length, last);
+		return ret.toString();
+	}
+	
+	public static String encodeXmlAttribute(String text)
+	{
+		if (text == null || text.length() == 0)
+		{
+			return text;
+		}
+		
+		int length = text.length();
+		StringBuffer ret = new StringBuffer(length * 12 / 10);//FIXME avoid creating this when not necessary
+		int last = 0;
+		for (int i = 0; i < length; i++)
 		{
 			char c = text.charAt(i);
 			switch (c)
 			{
-//			case ' ' : ret.append("&nbsp;"); break;
 				case '&' :
-					if (last < i)
-					{
-						ret.append(text.substring(last, i));
-					}
-					last = i + 1;
-					
+					last = appendText(text, ret, i, last);
 					ret.append("&amp;");
 					break;
 				case '>' :
-					if (last < i)
-					{
-						ret.append(text.substring(last, i));
-					}
-					last = i + 1;
-					
+					last = appendText(text, ret, i, last);
 					ret.append("&gt;");
 					break;
 				case '<' :
-					if (last < i)
-					{
-						ret.append(text.substring(last, i));
-					}
-					last = i + 1;
-					
+					last = appendText(text, ret, i, last);
 					ret.append("&lt;");
 					break;
 				case '\"' :
-					if (last < i)
-					{
-						ret.append(text.substring(last, i));
-					}
-					last = i + 1;
-					
+					last = appendText(text, ret, i, last);
 					ret.append("&quot;");
 					break;
 				case '\'' :
-					if (last < i)
-					{
-						ret.append(text.substring(last, i));
-					}
-					last = i + 1;
-					
+					last = appendText(text, ret, i, last);
 					ret.append("&apos;");
 					break;
-
+				// encoding tabs and newlines because otherwise they get replaced by spaces on parsing
+				case '\t' :
+					last = appendText(text, ret, i, last);
+					ret.append("&#x9;");
+					break;
+				case '\r' :
+					last = appendText(text, ret, i, last);
+					ret.append("&#xD;");
+					break;
+				case '\n' :
+					last = appendText(text, ret, i, last);
+					ret.append("&#xA;");
+					break;
 				default :
+					// not checking for invalid characters, preserving them as per xmlEncode() with invalidCharReplacement = null
 					break;
 			}
 		}
-
-		if (last < length)
+		
+		if (last == 0)
 		{
-			ret.append(text.substring(last));
+			// no changes made to the string
+			return text;
 		}
 		
+		appendText(text, ret, length, last);
 		return ret.toString();
 	}
-
-
+	
+	private static int appendText(String text, StringBuffer ret, int current, int old)
+	{
+		if(old < current)
+		{
+			ret.append(text.substring(old, current));
+		}
+		return current+1;
+	}
+	
 	/**
 	 *
 	 */
@@ -443,6 +515,53 @@ public final class JRStringUtil
 		}
 		return filtered.toString();
 	}
+
+	/**
+	 * Escapes a Java String so that it can be used as a JavaScript String literal.
+	 * 
+	 * @param input
+	 */
+	public static String escapeString4JavaScript(String input) {
+		if (input == null) {
+			return input;
+		}
+		
+		StringBuilder filtered = new StringBuilder(input.length());
+		char prevChar = '\u0000';
+		char c;
+		for (int i = 0; i < input.length(); i++) {
+			c = input.charAt(i);
+			if (c == '"') {
+				filtered.append("\\\"");
+			}
+			else if (c == '\\') {
+				filtered.append("\\\\");
+			}
+			else if (c == '/') {
+				filtered.append("\\/");
+			}
+			else if (c == '\t') {
+				filtered.append("\\t");
+			}
+			else if (c == '\n') {
+				if (prevChar != '\r') {
+					filtered.append("\\n");
+				}
+			}
+			else if (c == '\r') {
+				filtered.append("\\n");
+			}
+			else if (c == '\f') {
+				filtered.append("\\f");
+			}
+			else {
+				filtered.append(c);
+			}
+			prevChar = c;
+			
+		}
+		return filtered.toString();
+	}
 	
 	
 	/**
@@ -454,14 +573,17 @@ public final class JRStringUtil
 		
 		if (text != null)
 		{
-			tabIndexes = new ArrayList<Integer>();
-			
-			for (int i = 0; i < text.length(); i++)
+			int index = text.indexOf('\t');
+			// returning null if no tabs
+			if (index >= 0)
 			{
-				if (text.charAt(i) == '\t') 
+				tabIndexes = new ArrayList<Integer>();
+				do
 				{
-					tabIndexes.add(Integer.valueOf(i));
+					tabIndexes.add(index);
+					index = text.indexOf('\t', index + 1);
 				}
+				while (index >= 0);
 			}
 		}
 		
@@ -472,9 +594,62 @@ public final class JRStringUtil
 	/**
 	 * 
 	 */
+	public static List<String> split(String[] srcArray, String delimiterRegExp)
+	{
+		List<String> tokens = null;
+		if (srcArray != null)
+		{
+			tokens = new ArrayList<String>();
+			for(int i = 0; i < srcArray.length; i++)
+			{
+				if (srcArray[i] == null)
+				{
+					tokens.add(null);
+				}
+				else
+				{
+					String[] currentTokensArray = srcArray[i].split(delimiterRegExp);
+					for(int j = 0; j < currentTokensArray.length; j++)
+					{
+						tokens.add(currentTokensArray[j].trim());
+					}
+				}
+			}
+		}
+		return tokens;
+	}
+
+	
+	/**
+	 * 
+	 */
 	public static String getString(Object value)
 	{
 		return value == null ? null : value.toString();
+	}
+	
+	/**
+	 * Escapes a text to be used for a JSON string value.
+	 * 
+	 * @param text the text to escape for JSON
+	 * @return the escaped text if not null
+	 */
+	public static String escapeJSONString(String text)
+	{
+		if (text == null)
+		{
+			return null;
+		}
+		
+		// using Jackson's string quote method
+		char[] escapedChars = JsonStringEncoder.getInstance().quoteAsString(text);
+		if (text.contentEquals(CharBuffer.wrap(escapedChars)))
+		{
+			// nothing changed
+			return text;
+		}
+		
+		return String.valueOf(escapedChars);
 	}
 	
 

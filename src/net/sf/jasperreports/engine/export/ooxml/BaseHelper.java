@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,24 +27,27 @@ import java.io.IOException;
 import java.io.Writer;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: BaseHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: BaseHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BaseHelper
 {
 	/**
 	 *
 	 */
-	protected Writer writer;
+	protected final JasperReportsContext jasperReportsContext;
+	protected final Writer writer;
 
 	/**
 	 *
 	 */
-	public BaseHelper(Writer writer)
+	public BaseHelper(JasperReportsContext jasperReportsContext, Writer writer)
 	{
+		this.jasperReportsContext = jasperReportsContext;
 		this.writer = writer;
 	}
 	

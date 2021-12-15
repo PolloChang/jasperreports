@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,6 +29,8 @@
  */
 package net.sf.jasperreports.engine.design;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,16 +48,20 @@ import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionChunk;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.util.JRStringUtil;
+import net.sf.jasperreports.functions.FunctionSupport;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRClassGenerator.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRClassGenerator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRClassGenerator
 {
+	
+	public static final String PROPERTY_MAX_METHOD_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "compiler.max.java.method.size";
 	
 	
 	/**
@@ -90,6 +96,8 @@ public class JRClassGenerator
 	}
 
 	protected final JRSourceCompileTask sourceTask;
+
+	private final int maxMethodSize;
 	
 	protected Map<String, ? extends JRParameter> parametersMap;
 	protected Map<String,JRField> fieldsMap;
@@ -104,6 +112,9 @@ public class JRClassGenerator
 		fieldsMap = sourceTask.getFieldsMap();
 		variablesMap = sourceTask.getVariablesMap();
 		variables = sourceTask.getVariables();
+		
+		JRPropertiesUtil properties = JRPropertiesUtil.getInstance(sourceTask.getJasperReportsContext());
+		maxMethodSize = properties.getIntegerProperty(PROPERTY_MAX_METHOD_SIZE, Integer.MAX_VALUE);
 	}
 
 	
@@ -118,6 +129,16 @@ public class JRClassGenerator
 	{
 		JRClassGenerator generator = new JRClassGenerator(sourceTask);
 		return generator.generateClass();
+	}
+
+	
+	/**
+	 *
+	 */
+	public static JRCompilationSourceCode modifySource(JRSourceCompileTask sourceTask, Set<Method> missingMethods, String sourceCode)
+	{
+		JRClassGenerator generator = new JRClassGenerator(sourceTask);
+		return generator.modifySource(missingMethods, sourceCode);
 	}
 	
 
@@ -154,8 +175,8 @@ public class JRClassGenerator
 		sb.append("}\n");
 
 		String code = sb.toString();
-		JRExpression[] lineExpressions = parseSourceLines(code);
-		return new JRDefaultCompilationSourceCode(code, lineExpressions);
+		
+		return parseSourceLines(code);
 	}
 
 
@@ -444,7 +465,7 @@ public class JRClassGenerator
 
 		if (expressionsList.size() > 0)
 		{
-			sb.append(generateMethod(expressionsList.listIterator(), 0, evaluationType));
+			sb.append(generateMethod(expressionsList.listIterator(), evaluationType));
 		}
 		else
 		{
@@ -469,19 +490,55 @@ public class JRClassGenerator
 	/**
 	 *
 	 */
-	private String generateMethod(Iterator<JRExpression> it, int index, byte evaluationType) throws JRException
+	private String generateMethod(Iterator<JRExpression> it, byte evaluationType) throws JRException
 	{
+		int methodIndex = 0;
 		StringBuffer sb = new StringBuffer();
 
-		/*   */
+		writeMethodStart(sb, evaluationType, methodIndex);
+		++methodIndex;
+
+		StringBuffer expressionBuffer = new StringBuffer();
+		int methodExpressionIndex = 0;
+		int methodBufferStartPosition = sb.length();
+		while (it.hasNext())
+		{
+			JRExpression expression = it.next();
+			
+			expressionBuffer.setLength(0);
+			writeExpression(expressionBuffer, expression, evaluationType);
+			if (methodExpressionIndex >= EXPR_MAX_COUNT_PER_METHOD
+					|| (methodExpressionIndex > 0 && sb.length() - methodBufferStartPosition > maxMethodSize))
+			{
+				// end the current method
+				writeMethodEnd(sb, evaluationType, it.hasNext() ? methodIndex : null);
+				
+				// start a new method
+				writeMethodStart(sb, evaluationType, methodIndex);
+				++methodIndex;
+				methodExpressionIndex = 0;
+				methodBufferStartPosition = sb.length();
+			}
+			
+			sb.append(expressionBuffer);
+			++methodExpressionIndex;
+		}
+		
+		writeMethodEnd(sb, evaluationType, null);
+		
+		return sb.toString();
+	}
+
+	protected void writeMethodStart(StringBuffer sb, byte evaluationType, int methodIndex)
+	{
 		sb.append("    /**\n");
 		sb.append("     *\n");
 		sb.append("     */\n");
-		if (index > 0)
+		if (methodIndex > 0)
 		{
 			sb.append("    private Object evaluate");
 			sb.append(methodSuffixMap.get(new Byte(evaluationType)));
-			sb.append(index);
+			sb.append(methodIndex);
 		}
 		else
 		{
@@ -494,32 +551,32 @@ public class JRClassGenerator
 		sb.append("\n");
 		sb.append("        switch (id)\n");
 		sb.append("        {\n");
+	}
 
-		for (int i = 0; it.hasNext() && i < EXPR_MAX_COUNT_PER_METHOD; i++)
-		{
-			JRExpression expression = it.next();
-			
-			sb.append("            case "); 
-			sb.append(sourceTask.getExpressionId(expression)); 
-			sb.append(" : \n");
-			sb.append("            {\n");
-			sb.append("                value = ");
-			sb.append(this.generateExpression(expression, evaluationType));
-			sb.append(";");
-			appendExpressionComment(sb, expression);
-			sb.append("\n");
-			sb.append("                break;\n");
-			sb.append("            }\n");
-		}
-
-		/*   */
+	protected void writeExpression(StringBuffer sb, JRExpression expression, byte evaluationType)
+	{
+		sb.append("            case "); 
+		sb.append(sourceTask.getExpressionId(expression)); 
+		sb.append(" : \n");
+		sb.append("            {\n");
+		sb.append("                value = ");
+		sb.append(this.generateExpression(expression, evaluationType));
+		sb.append(";");
+		appendExpressionComment(sb, expression);
+		sb.append("\n");
+		sb.append("                break;\n");
+		sb.append("            }\n");
+	}
+	
+	protected void writeMethodEnd(StringBuffer sb, byte evaluationType, Integer nextMethodIndex)
+	{
 		sb.append("           default :\n");
 		sb.append("           {\n");
-		if (it.hasNext())
+		if (nextMethodIndex != null)
 		{
 			sb.append("               value = evaluate");
 			sb.append(methodSuffixMap.get(new Byte(evaluationType)));
-			sb.append(index + 1);
+			sb.append(nextMethodIndex);
 			sb.append("(id);\n");
 		}
 		sb.append("           }\n");
@@ -529,14 +586,8 @@ public class JRClassGenerator
 		sb.append("    }\n");
 		sb.append("\n");
 		sb.append("\n");
-		
-		if (it.hasNext())
-		{
-			sb.append(generateMethod(it, index + 1, evaluationType));
-		}
-		
-		return sb.toString();
 	}
+
 
 
 	/**
@@ -658,7 +709,7 @@ public class JRClassGenerator
 		sb.append(SOURCE_EXPRESSION_ID_END);
 	}
 	
-	protected JRExpression[] parseSourceLines(String sourceCode)
+	protected JRDefaultCompilationSourceCode parseSourceLines(String sourceCode)
 	{
 		List<JRExpression> expressions = new ArrayList<JRExpression>();
 		int start = 0;
@@ -676,7 +727,10 @@ public class JRClassGenerator
 			start = end + 1;
 			end = sourceCode.indexOf('\n', start);
 		}
-		return expressions.toArray(new JRExpression[expressions.size()]);
+		
+		JRExpression[] lineExpressions = expressions.toArray(new JRExpression[expressions.size()]);
+
+		return new JRDefaultCompilationSourceCode(sourceCode, lineExpressions);
 	}
 
 
@@ -703,5 +757,92 @@ public class JRClassGenerator
 		}
 		return expression;
 	}
+	
+
+	/**
+	 * 
+	 */
+	protected JRCompilationSourceCode modifySource(Set<Method> missingMethods, String sourceCode)
+	{
+		int firstImportIndex = sourceCode.indexOf("\nimport ");
+		int lastBracketIndex = sourceCode.lastIndexOf("}");
+		StringBuffer importBuffer = new StringBuffer();
+		StringBuffer methodBuffer = new StringBuffer();
+
+		for (Method method : missingMethods)
+		{
+			Class<?> methodClass = method.getDeclaringClass();
+			if (FunctionSupport.class.isAssignableFrom(methodClass))
+			{
+				// we need to add all methods with the same name because otherwise 
+				// calls with different signatures will be listed as errors.
+				for (Method classMethod : methodClass.getMethods())
+				{
+					if (classMethod.getName().equals(method.getName()) 
+							&& Modifier.isPublic(classMethod.getModifiers()))
+					{
+						addMethod(methodBuffer, classMethod);
+					}
+				}
+			}
+			else if (Modifier.isStatic(method.getModifiers()))
+			{
+				importBuffer.append("\nimport static " + methodClass.getName() + "." + method.getName() + ";");
+			}
+		}
+
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(sourceCode.substring(0,  firstImportIndex));
+		buffer.append(importBuffer);
+		buffer.append(sourceCode.substring(firstImportIndex, lastBracketIndex));
+		buffer.append(methodBuffer);
+		buffer.append(sourceCode.substring(lastBracketIndex));
+
+		sourceCode = buffer.toString();
+		
+		return parseSourceLines(sourceCode);
+	}
+
+
+	protected void addMethod(StringBuffer methodBuffer, Method method)
+	{
+		Class<?>[] paramTypes = method.getParameterTypes();
+		StringBuffer methodSignature = new StringBuffer();
+		StringBuffer methodCall = new StringBuffer();
+
+		for (int j = 0; j < paramTypes.length; j++)
+		{
+			if (j > 0)
+			{
+				methodCall.append(", ");
+				methodSignature.append(", ");
+			}
+			methodCall.append("arg" + j);
+			
+			Class<?> paramType = paramTypes[j];
+			if (j == paramTypes.length - 1 && paramType.isArray() && method.isVarArgs())
+			{
+				// use varargs
+				methodSignature.append(paramType.getComponentType().getName()).append("... ");
+			}
+			else
+			{
+				methodSignature.append(paramType.getName());//FIXME use paramType.getCanonicalName() for arrays 
+			}
+			
+			methodSignature.append(" arg" + j);
+		}
+
+		methodBuffer.append("    /**\n");
+		methodBuffer.append("     *\n"); 
+		methodBuffer.append("     */\n");
+		methodBuffer.append("    public " + method.getReturnType().getName() + " " + method.getName() + "(" + methodSignature.toString() + ")" + "\n");
+		methodBuffer.append("    {\n");
+		methodBuffer.append("        return getFunctionSupport(" + method.getDeclaringClass().getName() + ".class)." + method.getName() + "(" + methodCall + ");\n");
+		methodBuffer.append("    }\n");
+		methodBuffer.append("\n");
+		methodBuffer.append("\n");
+	}
+
 	
 }

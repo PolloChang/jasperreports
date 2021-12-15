@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,15 +26,37 @@ package net.sf.jasperreports.charts;
 import net.sf.jasperreports.engine.JRChartDataset;
 
 /**
+ * This dataset wraps one or multiple time series. A time series consists of 
+ * (time period, numeric value) pairs. The Time Series dataset can be used with 
+ * Times Series and XY Bar charts. 
+ * 
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRTimeSeriesDataset.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTimeSeriesDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRTimeSeriesDataset extends JRChartDataset {
 	
+	/**
+	 * @return an array of {@link JRTimeSeries} objects representing the 
+	 * series for the Time Series chart
+	 * @see JRTimeSeries
+	 */
 	public JRTimeSeries[] getSeries();
 	
+	/**
+	 * 
+	 * @return the time period. Specifies the type of the data series inside 
+	 * the dataset. Time series can contain numeric values associated with 
+	 * days, months, years, or other predefined time periods.
+	 * @see net.sf.jasperreports.charts.type.TimePeriodEnum
+	 */
 	public Class<?> getTimePeriod();
 
+	/**
+	 * 
+	 * @param timePeriod the time period associated with 
+	 * days, months, years, or other predefined time periods.
+	 * @see net.sf.jasperreports.charts.type.TimePeriodEnum
+	 */
 	public void setTimePeriod(Class<?> timePeriod);
 
 }

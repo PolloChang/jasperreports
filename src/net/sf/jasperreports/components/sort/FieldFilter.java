@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.fill.JRFillDataset;
  * A dataset filter that matches String values based on substrings.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FieldFilter.java 5257 2012-04-10 16:14:03Z narcism $
+ * @version $Id: FieldFilter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FieldFilter implements DatasetFilter {
 
@@ -48,10 +48,13 @@ public class FieldFilter implements DatasetFilter {
 	private String filterType;
 	private String filterTypeOperator;
 	private String filterPattern;
+	private String localeCode;
+	private String timeZoneId;
 
 	private DatasetFillContext context;
 	
 	private Boolean isValid;
+	private Boolean isField;
 
 	private FilterTypesEnum filterTypeEnum;
 	
@@ -88,12 +91,18 @@ public class FieldFilter implements DatasetFilter {
 	}
 
 	public boolean matches(EvaluationType evaluation) {
-		Object value = context.getFieldValue(field, evaluation);
+		Object value;
+		if (isField == null || Boolean.TRUE.equals(isField)) {
+			value = context.getFieldValue(field, evaluation);
+			fieldComparator.setCompareToClass(((JRFillDataset)context).getFillField(field).getValueClass());
+		} else {
+			value = context.getVariableValue(field, evaluation);
+			fieldComparator.setCompareToClass(((JRFillDataset)context).getFillVariable(field).getValueClass());
+		}
 
 		fieldComparator.setValueStart(filterValueStart);
 		fieldComparator.setValueEnd(filterValueEnd);
 		fieldComparator.setCompareTo(value);
-		fieldComparator.setCompareToClass(((JRFillDataset)context).getFillField(field).getValueClass());
 		
 		
 		if (isValid == null) {
@@ -148,6 +157,14 @@ public class FieldFilter implements DatasetFilter {
 	public void setIsValid(Boolean isValid) {
 		this.isValid = isValid;
 	}
+
+	public Boolean getIsField() {
+		return isField;
+	}
+	
+	public void setIsField(Boolean isField) {
+		this.isField = isField;
+	}
 	
 	public String getFilterPattern() {
 		return filterPattern;
@@ -157,4 +174,20 @@ public class FieldFilter implements DatasetFilter {
 		this.filterPattern = filterPattern;
 	}
 	
+	public String getLocaleCode() {
+		return localeCode;
+	}
+
+	public void setLocaleCode(String localeCode) {
+		this.localeCode = localeCode;
+	}
+
+	public String getTimeZoneId() {
+		return timeZoneId;
+	}
+
+	public void setTimeZoneId(String timeZoneId) {
+		this.timeZoneId = timeZoneId;
+	}
+
 }

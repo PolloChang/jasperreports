@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,8 +28,32 @@ import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 
 /**
+ * Provides support for in-memory field-based data source sorting.
+ * <p/>
+ * JasperReports supports in-memory field-based data source sorting. This functionality can
+ * be used, for instance, when data sorting is required and the data source implementation
+ * does not support it (as in the case of the CSV data source).
+ * <p/>
+ * The sorting is activated by the presence of one or more <code>&lt;sortField&gt;</code> elements in the
+ * report template. When at least one sort field is specified for the report, the original report
+ * data source (either passed directly or provided by a query executer) is passed to a sorted 
+ * {@link net.sf.jasperreports.engine.data.IndexedDataSource} instance that fetches all the records 
+ * from it, performs an in-memory
+ * sort according to the specified fields, and replaces the original data source in the
+ * report-filling process.
+ * <p/>
+ * The sort field name should coincide with a report field name. Fields used for sorting
+ * should have types that implement <code>java.util.Comparable</code>. Sorting will be performed
+ * using the natural order for all fields except those of type <code>java.lang.String</code>, for which
+ * a collator corresponding to the report fill locale is used.
+ * <p/>
+ * When several sort fields are specified, the sorting will be performed using the fields as
+ * sort keys in the order in which they appear in the report template.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRSortField.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRSortField.java 7199 2014-08-27 13:58:10Z teodord $
+ * @see net.sf.jasperreports.engine.data.IndexedDataSource
+ * @see net.sf.jasperreports.engine.fill.DatasetSortUtil
+ * @see net.sf.jasperreports.engine.fill.SortedDataSource
  */
 public interface JRSortField extends JRCloneable
 {

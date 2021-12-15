@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2005 - 2011 Works, Inc. All rights reserved.
+ * Copyright (C) 2005 - 2014 Works, Inc. All rights reserved.
  * http://www.works.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,26 +29,22 @@ package net.sf.jasperreports.engine.fill;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamClass;
 import java.io.OutputStream;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRVirtualizable;
 import net.sf.jasperreports.engine.JRVirtualizer;
+import net.sf.jasperreports.engine.util.VirtualizationSerializer;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -57,7 +53,7 @@ import org.apache.commons.logging.LogFactory;
  * Abstract base for LRU and serialization based virtualizer
  *
  * @author John Bindel
- * @version $Id: JRAbstractLRUVirtualizer.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRAbstractLRUVirtualizer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 {
@@ -224,101 +220,13 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		}
 	}
 
-	protected static final int CLASSLOADER_IDX_NOT_SET = -1;
-
-	protected static boolean isAncestorClassLoader(ClassLoader loader)
-	{
-		for (
-				ClassLoader ancestor = JRAbstractLRUVirtualizer.class.getClassLoader();
-				ancestor != null;
-				ancestor = ancestor.getParent())
-		{
-			if (ancestor.equals(loader))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	protected final Map<ClassLoader,Integer> classLoadersIndexes = new HashMap<ClassLoader,Integer>();
-	protected final List<ClassLoader> classLoadersList = new ArrayList<ClassLoader>();
-
-	protected class ClassLoaderAnnotationObjectOutputStream extends VirtualizationObjectOutputStream
-	{
-		public ClassLoaderAnnotationObjectOutputStream(OutputStream out, 
-				JRVirtualizationContext virtualizationContext) throws IOException
-		{
-			super(out, virtualizationContext);
-		}
-
-		protected void annotateClass(Class<?> clazz) throws IOException
-		{
-			super.annotateClass(clazz);
-
-			ClassLoader classLoader = clazz.getClassLoader();
-			int loaderIdx;
-			if (clazz.isPrimitive()
-					|| classLoader == null
-					|| isAncestorClassLoader(classLoader))
-			{
-				loaderIdx = CLASSLOADER_IDX_NOT_SET;
-			}
-			else
-			{
-				Integer idx = classLoadersIndexes.get(classLoader);
-				if (idx == null)
-				{
-					idx = Integer.valueOf(classLoadersList.size());
-					classLoadersIndexes.put(classLoader, idx);
-					classLoadersList.add(classLoader);
-				}
-				loaderIdx = idx.intValue();
-			}
-
-			writeShort(loaderIdx);
-		}
-	}
-
-	protected class ClassLoaderAnnotationObjectInputStream extends VirtualizationObjectInputStream
-	{
-		public ClassLoaderAnnotationObjectInputStream(InputStream in, 
-				JRVirtualizationContext virtualizationContext) throws IOException
-		{
-			super(in, virtualizationContext);
-		}
-
-		protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException
-		{
-			Class<?> clazz;
-			try
-			{
-				clazz = super.resolveClass(desc);
-				readShort();
-			}
-			catch (ClassNotFoundException e)
-			{
-				int loaderIdx = readShort();
-				if (loaderIdx == CLASSLOADER_IDX_NOT_SET)
-				{
-					throw e;
-				}
-
-				ClassLoader loader = classLoadersList.get(loaderIdx);
-				clazz = Class.forName(desc.getName(), false, loader);
-			}
-
-			return clazz;
-		}
-
-
-	}
-
+	protected final VirtualizationSerializer serializer = new VirtualizationSerializer();
+	
 	private final Cache pagedIn;
 
 	private final ReferenceMap pagedOut;
 
-	protected volatile JRVirtualizable lastObject;
+	protected volatile WeakReference<JRVirtualizable> lastObjectRef;
 	protected ReferenceMap lastObjectMap;
 	protected ReferenceMap lastObjectSet;
 
@@ -333,7 +241,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 	{
 		this.pagedIn = new Cache(maxSize);
 		this.pagedOut = new ReferenceMap(ReferenceMap.HARD, ReferenceMap.WEAK);
-		this.lastObject = null;
+		this.lastObjectRef = null;
 
 		this.lastObjectMap = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.WEAK);
 		this.lastObjectSet = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.HARD);
@@ -354,12 +262,20 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		return virtualized;
 	}
 
+	protected JRVirtualizable lastObject()
+	{
+		WeakReference<JRVirtualizable> ref = lastObjectRef;
+		JRVirtualizable object = ref == null ? null : ref.get();
+		return object;
+	}
+	
 	protected final void setLastObject(JRVirtualizable o)
 	{
-		if (o != null && lastObject != o)
+		JRVirtualizable currentLast = lastObject();
+		if (o != null && currentLast != o)
 		{
 			// lastObject is mostly an optimization, we don't care if we don't have atomic operations here
-			this.lastObject = o;
+			this.lastObjectRef = new WeakReference<JRVirtualizable>(o);
 			
 			synchronized (this)
 			{
@@ -481,8 +397,10 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 							log.debug("evicting " + uid);
 						}
 						
-						//FIXME lucianc if the context is disposed, this is not needed
-						virtualizeData(o);
+						if (!o.getContext().isDisposed())
+						{
+							virtualizeData(o);
+						}
 					}
 					else
 					{
@@ -519,7 +437,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		//try to remove virtual data
 		try
 		{
-			dispose(o.getUID());
+			dispose(o);
 		}
 		catch (Exception e)
 		{
@@ -568,7 +486,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 	public void touch(JRVirtualizable o)
 	{
 		// If we just touched this object, don't touch it again.
-		if (this.lastObject != o)
+		if (lastObject() != o)
 		{
 			//FIXME lucianc this doesn't scale well with concurrency
 			// get the object from the map to update LRU order
@@ -700,9 +618,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 	{
 		try
 		{
-			ObjectOutputStream oos = new ClassLoaderAnnotationObjectOutputStream(out, o.getContext());
-			oos.writeObject(o.getVirtualData());
-			oos.flush();
+			serializer.writeData(o, out);
 		}
 		catch (IOException e)
 		{
@@ -725,15 +641,9 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 	{
 		try
 		{
-			ObjectInputStream ois = new ClassLoaderAnnotationObjectInputStream(in, o.getContext());
-			o.setVirtualData(ois.readObject());
+			serializer.readData(o, in);
 		}
 		catch (IOException e)
-		{
-			log.error("Error devirtualizing object", e);
-			throw new JRRuntimeException(e);
-		}
-		catch (ClassNotFoundException e)
 		{
 			log.error("Error devirtualizing object", e);
 			throw new JRRuntimeException(e);
@@ -796,7 +706,11 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 	 */
 	protected abstract void pageIn(JRVirtualizable o) throws IOException;
 
-
+	protected void dispose(JRVirtualizable o)
+	{
+		dispose(o.getUID());
+	}
+	
 	/**
 	 * Removes the external data associated with a virtualizable object.
 	 *

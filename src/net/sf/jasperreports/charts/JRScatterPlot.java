@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,39 +27,44 @@ import net.sf.jasperreports.engine.JRChartPlot;
 import net.sf.jasperreports.engine.JRExpression;
 
 /**
+ * Scatter plots are used only with Scatter charts. They render items as points on a two-axis 
+ * plot area. This plot closely resembles the Line plot, in that it lets users 
+ * configure the labels for both axes, the rendering of lines to unite the item points, and the 
+ * rendering of the small shapes that mark each item point on the target plot area. 
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRScatterPlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRScatterPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRScatterPlot extends JRChartPlot, JRXAxisFormat, JRYAxisFormat, JRCommonLinePlot
 {
 	
 	/**
-	 * 
+	 * @return the x axis label expression
 	 */
 	public JRExpression getXAxisLabelExpression();
 
 	/**
-	 * 
+	 * @return the y axis label expression
 	 */
 	public JRExpression getYAxisLabelExpression();
 
 	/**
-	 * 
+	 * @return the minimum value expression for the domain axis
 	 */
 	public JRExpression getDomainAxisMinValueExpression();
 
 	/**
-	 * 
+	 * @return the maximum value expression for the domain axis
 	 */
 	public JRExpression getDomainAxisMaxValueExpression();
 
 	/**
-	 * 
+	 * @return the minimum value expression for the range axis
 	 */
 	public JRExpression getRangeAxisMinValueExpression();
 
 	/**
-	 * 
+	 * @return the maximum value expression for the range axis
 	 */
 	public JRExpression getRangeAxisMaxValueExpression();
 

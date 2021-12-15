@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,13 +26,17 @@ package net.sf.jasperreports.engine.xml;
 import java.io.IOException;
 
 import net.sf.jasperreports.engine.JRConditionalStyle;
+import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRParagraph;
 import net.sf.jasperreports.engine.JRPen;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRStyleContainer;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
+import net.sf.jasperreports.engine.util.VersionComparator;
 import net.sf.jasperreports.engine.util.XmlNamespace;
 
 
@@ -40,21 +44,33 @@ import net.sf.jasperreports.engine.util.XmlNamespace;
  * Base XML writer.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlBaseWriter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRXmlBaseWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRXmlBaseWriter
 {
 	
+	/**
+	 * Property that specifies the JasperReports version associated with this report. Report elements/attributes newer than 
+	 * this version are neglected by the JRXML writers when a report template is generated. If not set, all elements/attributes 
+	 * will be printed out. 
+	 * 
+	 * @see JRXmlWriter
+	 */
+	public static final String PROPERTY_REPORT_VERSION = JRPropertiesUtil.PROPERTY_PREFIX + "report.version";
+
 	protected JRXmlWriteHelper writer;
+	protected String version;
+	protected VersionComparator versionComparator = new VersionComparator();
 	
 	/**
 	 * Sets the XML write helper.
 	 * 
-	 * @param aWriter the XML write helper
+	 * @param writer the XML write helper
 	 */
-	protected void useWriter(JRXmlWriteHelper aWriter)
+	protected void useWriter(JRXmlWriteHelper writer, String version)
 	{
-		this.writer = aWriter;
+		this.writer = writer;
+		this.version = version;
 	}
 	
 	/**
@@ -78,12 +94,16 @@ public abstract class JRXmlBaseWriter
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, style.getOwnHorizontalAlignmentValue());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, style.getOwnVerticalAlignmentValue());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_rotation, style.getOwnRotationValue());
+		if (isOlderVersionThan(JRConstants.VERSION_4_0_2))
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_lineSpacing, style.getParagraph().getLineSpacing());
+		}
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_markup, style.getOwnMarkup());
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_pattern, style.getOwnPattern());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isBlankWhenNull, style.isOwnBlankWhenNull());
 		
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_fontName, style.getOwnFontName());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_fontSize, style.getOwnFontSize());
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_fontSize, style.getOwnFontsize(), true);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isBold, style.isOwnBold());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isItalic, style.isOwnItalic());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isUnderline, style.isOwnUnderline());
@@ -142,7 +162,7 @@ public abstract class JRXmlBaseWriter
 	protected void writeConditionalStyle(JRConditionalStyle style) throws IOException
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_conditionalStyle);
-		writer.writeExpression(JRXmlConstants.ELEMENT_conditionExpression, style.getConditionExpression());
+		writeExpression(JRXmlConstants.ELEMENT_conditionExpression, style.getConditionExpression(), false);
 		writeStyle(style);
 		writer.closeElement();
 	}
@@ -207,7 +227,7 @@ public abstract class JRXmlBaseWriter
 	 */
 	public void writeParagraph(JRParagraph paragraph, XmlNamespace namespace) throws IOException
 	{
-		if (paragraph != null)
+		if (paragraph != null && isNewerVersionOrEqual(JRConstants.VERSION_4_0_2))
 		{
 			writer.startElement(JRXmlConstants.ELEMENT_paragraph, namespace);
 			
@@ -248,6 +268,36 @@ public abstract class JRXmlBaseWriter
 			writer.addAttribute(JRXmlConstants.ATTRIBUTE_alignment, tabStop.getAlignment());
 
 			writer.closeElement(true);
+		}
+	}
+
+
+	/**
+	 *
+	 */
+	protected boolean isNewerVersionOrEqual(String oldVersion)
+	{
+		return versionComparator.compare(version, oldVersion) >= 0;
+	}
+	
+	/**
+	 *
+	 */
+	protected boolean isOlderVersionThan(String version)
+	{
+		return versionComparator.compare(this.version, version) < 0;
+	}
+	
+	@SuppressWarnings("deprecation")
+	protected void writeExpression(String name, JRExpression expression, boolean writeClass)  throws IOException
+	{
+		if(isNewerVersionOrEqual(JRConstants.VERSION_4_1_1))
+		{
+			writer.writeExpression(name, expression);
+		}
+		else
+		{
+			writer.writeExpression(name, expression, writeClass);
 		}
 	}
 

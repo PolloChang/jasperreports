@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,6 +27,7 @@ import java.awt.Color;
 
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRElementGroup;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRStyleContainer;
 import net.sf.jasperreports.engine.type.ModeEnum;
@@ -44,9 +45,9 @@ import net.sf.jasperreports.engine.type.ModeEnum;
  * </ul>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCellContents.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCellContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRCellContents extends JRElementGroup, JRStyleContainer, JRBoxContainer
+public interface JRCellContents extends JRElementGroup, JRStyleContainer, JRBoxContainer, JRPropertiesHolder
 {
 
 	/**
@@ -86,6 +87,13 @@ public interface JRCellContents extends JRElementGroup, JRStyleContainer, JRBoxC
 	 * A property that provides the crosstab column span of a print frame.
 	 */
 	public static final String PROPERTY_COLUMN_SPAN = PROPERTIES_PREFIX + "column.span";
+	
+	/**
+	 * Type used by the {@link JRCrosstab#getTitleCell() crosstab title cell}.
+	 * 
+	 * @see #PROPERTY_TYPE
+	 */
+	public static final String TYPE_CROSSTAB_TITLE = "CrosstabTitle";
 	
 	/**
 	 * Type used by the {@link JRCrosstab#getHeaderCell() crosstab header cell}.

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,14 +27,15 @@ import java.util.List;
 
 import net.sf.jasperreports.engine.JRCloneable;
 import net.sf.jasperreports.engine.JRDatasetRun;
+import net.sf.jasperreports.engine.JRVisitable;
 import net.sf.jasperreports.engine.component.Component;
 
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableComponent.java 5421 2012-05-29 10:46:56Z teodord $
+ * @version $Id: TableComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface TableComponent extends Component, JRCloneable
+public interface TableComponent extends Component, JRCloneable, JRVisitable
 {
 
 	JRDatasetRun getDatasetRun();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,17 +26,18 @@ package net.sf.jasperreports.crosstabs.design;
 import net.sf.jasperreports.crosstabs.base.JRBaseCrosstabBucket;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.analytics.dataset.BucketOrder;
 import net.sf.jasperreports.engine.design.JRDesignExpression;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
- * Implementation of {@link net.sf.jasperreports.crosstabs.JRCrosstabBucket corsstab group bucket}
+ * Implementation of {@link net.sf.jasperreports.crosstabs.JRCrosstabBucket crosstab group bucket}
  * to be used for report designing.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstabBucket.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignCrosstabBucket.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCrosstabBucket extends JRBaseCrosstabBucket implements JRChangeEventsSupport
 {
@@ -117,12 +118,32 @@ public class JRDesignCrosstabBucket extends JRBaseCrosstabBucket implements JRCh
 	 * 	<li>{@link SortOrderEnum#DESCENDING SortOrderEnum.DESCENDING}</li>
 	 * </ul>
 	 * @see net.sf.jasperreports.crosstabs.JRCrosstabBucket#getOrderValue()
+	 * 
+	 * @deprecated replaced by {@link #setOrder(BucketOrder)}
 	 */
+	@Deprecated
 	public void setOrder(SortOrderEnum orderValue)
 	{
-		Object old = this.orderValue;
-		this.orderValue = orderValue;
-		getEventSupport().firePropertyChange(PROPERTY_ORDER, old, this.orderValue);
+		BucketOrder order = BucketOrder.fromSortOrderEnum(orderValue);
+		setOrder(order);
+	}
+	
+	/**
+	 * Sets the sorting type.
+	 * 
+	 * @param bucketOrder one of
+	 * <ul>
+	 * 	<li>{@link BucketOrder#ASCENDING BucketOrder.ASCENDING}</li>
+	 * 	<li>{@link BucketOrder#DESCENDING BucketOrder.DESCENDING}</li>
+	 * 	<li>{@link BucketOrder#NONE BucketOrder.NONE}</li>
+	 * </ul>
+	 * @see net.sf.jasperreports.crosstabs.JRCrosstabBucket#getOrder()
+	 */
+	public void setOrder(BucketOrder bucketOrder)
+	{
+		Object old = this.bucketOrder;
+		this.bucketOrder = bucketOrder;
+		getEventSupport().firePropertyChange(PROPERTY_ORDER, old, this.bucketOrder);
 	}
 	
 

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRBaseAreaPlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseAreaPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseAreaPlot extends JRBaseChartPlot implements JRAreaPlot 
 {
@@ -94,9 +94,9 @@ public class JRBaseAreaPlot extends JRBaseChartPlot implements JRAreaPlot
 		super( areaPlot, factory );
 		
 		categoryAxisLabelExpression = factory.getExpression( areaPlot.getCategoryAxisLabelExpression() );
-		categoryAxisLabelFont = factory.getFont(areaPlot.getChart(), areaPlot.getCategoryAxisLabelFont()); 
+		categoryAxisLabelFont = factory.getFont(chart, areaPlot.getCategoryAxisLabelFont()); 
 		categoryAxisLabelColor = areaPlot.getOwnCategoryAxisLabelColor();
-		categoryAxisTickLabelFont = factory.getFont(areaPlot.getChart(), areaPlot.getCategoryAxisTickLabelFont());
+		categoryAxisTickLabelFont = factory.getFont(chart, areaPlot.getCategoryAxisTickLabelFont());
 		categoryAxisTickLabelColor = areaPlot.getOwnCategoryAxisTickLabelColor();
 		categoryAxisTickLabelMask = areaPlot.getCategoryAxisTickLabelMask();
 		categoryAxisVerticalTickLabels = areaPlot.getCategoryAxisVerticalTickLabels();
@@ -108,9 +108,9 @@ public class JRBaseAreaPlot extends JRBaseChartPlot implements JRAreaPlot
 		domainAxisMaxValueExpression = factory.getExpression( areaPlot.getDomainAxisMaxValueExpression() );
 		rangeAxisMinValueExpression = factory.getExpression( areaPlot.getRangeAxisMinValueExpression() );
 		rangeAxisMaxValueExpression = factory.getExpression( areaPlot.getRangeAxisMaxValueExpression() );
-		valueAxisLabelFont = factory.getFont(areaPlot.getChart(), areaPlot.getValueAxisLabelFont());
+		valueAxisLabelFont = factory.getFont(chart, areaPlot.getValueAxisLabelFont());
 		valueAxisLabelColor = areaPlot.getOwnValueAxisLabelColor();
-		valueAxisTickLabelFont = factory.getFont(areaPlot.getChart(), areaPlot.getValueAxisTickLabelFont());
+		valueAxisTickLabelFont = factory.getFont(chart, areaPlot.getValueAxisTickLabelFont());
 		valueAxisTickLabelColor = areaPlot.getOwnValueAxisTickLabelColor();
 		valueAxisTickLabelMask = areaPlot.getValueAxisTickLabelMask();
 		valueAxisVerticalTickLabels = areaPlot.getValueAxisVerticalTickLabels();

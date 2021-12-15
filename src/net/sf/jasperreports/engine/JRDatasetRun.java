@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,36 @@
  */
 package net.sf.jasperreports.engine;
 
+import java.util.List;
+
 /**
  * Interface of an sub dataset instantiation.
+ * <p/>
+ * Once a dataset is declared inside a report template, it can be used only if it's actually
+ * referenced by a chart, crosstab or other component. Simply declaring a dataset at the report 
+ * level does not have any effect.
+ * <p/>
+ * When a dataset is referenced by a report component, a <i>dataset run</i> is instantiated. The
+ * dataset runs through the supplied data source performing all the variable calculations and
+ * the required data grouping.
+ * <p/>
+ * A dataset run declaration supplies the values for the dataset parameters as well as the
+ * data source through which the dataset will iterate. Optionally, a <code>java.sql.Connection</code>
+ * can be passed to the dataset instead of a {@link net.sf.jasperreports.engine.JRDataSource} instance, 
+ * when there is a SQL query associated with the dataset. This query is executed by the engine using the
+ * JDBC connection and the <code>java.sql.ResultSet</code> object obtained is iterated through.
+ * <p/>
+ * Dataset runs resemble subreports in the way parameters and the data source/connection
+ * are passed in.
+ * <p/>
+ * Charts, crosstabs and other report components can reference datasets by instantiating and configuring dataset
+ * runs. If no dataset run is specified for a component, the main dataset of the report is
+ * used.
  * 
- * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDatasetRun.java 5340 2012-05-04 10:41:48Z lucianc $
  * @see net.sf.jasperreports.engine.JRDataset
  * @see net.sf.jasperreports.engine.JRChartDataset#getDatasetRun()
+ * @author Lucian Chirita (lucianc@users.sourceforge.net)
+ * @version $Id: JRDatasetRun.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRDatasetRun extends JRCloneable, JRIdentifiable, JRPropertiesHolder
 {
@@ -77,5 +100,12 @@ public interface JRDatasetRun extends JRCloneable, JRIdentifiable, JRPropertiesH
 	 * @return the data source expression
 	 */
 	public JRExpression getDataSourceExpression();
+	
+	/**
+	 * Returns the list of values to be copied from the subdataset.
+	 *
+	 * @return the list of copied values.
+	 */
+	public List<ReturnValue> getReturnValues();
 
 }

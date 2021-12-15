@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -67,13 +67,13 @@ import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
 import net.sf.jasperreports.engine.xml.JRXmlTemplateLoader;
 
-import org.apache.commons.collections.SequencedHashMap;
+import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ReportConverter.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: ReportConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ReportConverter 
 {
@@ -224,7 +224,7 @@ public class ReportConverter
 	protected void setStyles(JRReport report)
 	{
 		//styleFactory = new StyleFactory();
-		stylesMap = new SequencedHashMap();
+		stylesMap = new LinkedMap();
 		
 		loadReportStyles(report);
 		
@@ -549,6 +549,7 @@ public class ReportConverter
 	
 	public void copyBaseAttributes(JRElement source, JRPrintElement converted)
 	{
+		converted.setUUID(source.getUUID());
 		converted.setX(source.getX());
 		converted.setY(source.getY());
 		converted.setWidth(source.getWidth());			

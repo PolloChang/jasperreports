@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,7 @@ import net.sf.jasperreports.components.headertoolbar.actions.BaseColumnData;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: FilterData.java 5333 2012-05-03 12:43:19Z narcism $
+ * @version $Id: FilterData.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FilterData extends BaseColumnData {
 	
@@ -37,7 +37,9 @@ public class FilterData extends BaseColumnData {
 	private String filterType;
 	private String filterTypeOperator;
 	private String filterPattern;
-	private String calendarPattern;
+	private String localeCode;
+	private String timeZoneId;
+	private boolean isField;
 	private boolean clearFilter;
 	
 	public FilterData() {
@@ -91,12 +93,20 @@ public class FilterData extends BaseColumnData {
 		this.filterPattern = filterPattern;
 	}
 
-	public String getCalendarPattern() {
-		return calendarPattern;
+	public String getLocaleCode() {
+		return localeCode;
 	}
 
-	public void setCalendarPattern(String calendarPattern) {
-		this.calendarPattern = calendarPattern;
+	public void setLocaleCode(String localeCode) {
+		this.localeCode = localeCode;
+	}
+
+	public String getTimeZoneId() {
+		return timeZoneId;
+	}
+
+	public void setTimeZoneId(String timeZoneId) {
+		this.timeZoneId = timeZoneId;
 	}
 
 	public boolean isClearFilter() {
@@ -105,6 +115,14 @@ public class FilterData extends BaseColumnData {
 
 	public void setClearFilter(boolean clearFilter) {
 		this.clearFilter = clearFilter;
+	}
+
+	public boolean getIsField() {
+		return isField;
+	}
+
+	public void setIsField(boolean isField) {
+		this.isField = isField;
 	}
 
 }

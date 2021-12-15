@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -59,6 +59,7 @@ import net.sf.jasperreports.engine.JRSortField;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.JRVirtualizer;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.engine.base.JRBaseDataset;
 import net.sf.jasperreports.engine.query.QueryExecuterFactory;
@@ -66,6 +67,7 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 import net.sf.jasperreports.engine.type.SortOrderEnum;
+import net.sf.jasperreports.engine.util.ContextClassLoaderObjectInputStream;
 import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.FormatFactory;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
@@ -75,7 +77,7 @@ import net.sf.jasperreports.engine.util.JRQueryExecuterUtils;
  * Implementation of {@link net.sf.jasperreports.engine.JRDataset JRDataset} to be used for report desing.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignDataset.java 5337 2012-05-04 09:15:58Z lucianc $
+ * @version $Id: JRDesignDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignDataset extends JRBaseDataset
 {
@@ -103,6 +105,8 @@ public class JRDesignDataset extends JRBaseDataset
 	
 	public static final String PROPERTY_VARIABLES = "variables";
 	
+	private transient JasperReportsContext jasperReportsContext;
+
 	private boolean ownUUID;
 
 	/**
@@ -164,6 +168,7 @@ public class JRDesignDataset extends JRBaseDataset
 	private static final Object[] BUILT_IN_PARAMETERS = new Object[] { 
 		JRParameter.REPORT_CONTEXT, ReportContext.class, 
 		JRParameter.REPORT_PARAMETERS_MAP, java.util.Map.class, 
+		JRParameter.JASPER_REPORTS_CONTEXT, JasperReportsContext.class, 
 		JRParameter.JASPER_REPORT, JasperReport.class, 
 		JRParameter.REPORT_CONNECTION, Connection.class,
 		JRParameter.REPORT_MAX_COUNT, Integer.class, 
@@ -199,7 +204,20 @@ public class JRDesignDataset extends JRBaseDataset
 	 */
 	public JRDesignDataset(boolean isMain)
 	{
+		this(DefaultJasperReportsContext.getInstance(), isMain);
+	}
+
+	/**
+	 * Create a dataset.
+	 * 
+	 * @param isMain whether this is the main dataset of the report or a sub dataset
+	 * @see net.sf.jasperreports.engine.JRDataset#isMainDataset()
+	 */
+	public JRDesignDataset(JasperReportsContext jasperReportsContext, boolean isMain)
+	{
 		super(isMain);
+		
+		this.jasperReportsContext = jasperReportsContext;
 		
 		addBuiltinParameters(BUILT_IN_PARAMETERS);
 		
@@ -779,6 +797,17 @@ public class JRDesignDataset extends JRBaseDataset
 
 	
 	/**
+	 * Returns the map of sort fields indexed by name and type.
+	 * 
+	 * @return {@link JRField JRField} objects indexed by name
+	 */
+	public Map<String, JRSortField> getSortFieldsMap()
+	{
+		return sortFieldsMap;
+	}
+
+	
+	/**
 	 * Adds a sort field to the dataset.
 	 * @param sortField the sort field to add
 	 * @throws JRException
@@ -1139,7 +1168,7 @@ public class JRDesignDataset extends JRBaseDataset
 		{
 			if (oldLanguage != null)
 			{
-				QueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getInstance(DefaultJasperReportsContext.getInstance()).getExecuterFactory(oldLanguage);//FIXMECONTEXT use some thread local
+				QueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getInstance(jasperReportsContext).getExecuterFactory(oldLanguage);//FIXMECONTEXT use some thread local
 				Object[] builtinParameters = queryExecuterFactory.getBuiltinParameters();
 				if (builtinParameters != null)
 				{
@@ -1149,7 +1178,7 @@ public class JRDesignDataset extends JRBaseDataset
 
 			if (newLanguage != null)
 			{
-				QueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getInstance(DefaultJasperReportsContext.getInstance()).getExecuterFactory(newLanguage);
+				QueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getInstance(jasperReportsContext).getExecuterFactory(newLanguage);
 				Object[] builtinParameters = queryExecuterFactory.getBuiltinParameters();
 				if (builtinParameters != null)
 				{
@@ -1248,6 +1277,18 @@ public class JRDesignDataset extends JRBaseDataset
 		if (sortFieldsList == null)
 		{
 			sortFieldsList = new ArrayList<JRSortField>();
+		}
+		
+		@SuppressWarnings("resource")
+		ContextClassLoaderObjectInputStream cclois = 
+			in instanceof ContextClassLoaderObjectInputStream ? (ContextClassLoaderObjectInputStream)in : null;
+		if (cclois == null)
+		{
+			jasperReportsContext = DefaultJasperReportsContext.getInstance();
+		}
+		else
+		{
+			jasperReportsContext = cclois.getJasperReportsContext();
 		}
 	}
 

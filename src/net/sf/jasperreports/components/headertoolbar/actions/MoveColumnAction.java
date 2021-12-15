@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,7 @@ import net.sf.jasperreports.web.commands.ResetInCacheCommand;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: MoveColumnAction.java 5331 2012-05-03 11:53:20Z teodord $
+ * @version $Id: MoveColumnAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MoveColumnAction extends AbstractVerifiableTableAction {
 
@@ -70,7 +70,7 @@ public class MoveColumnAction extends AbstractVerifiableTableAction {
 	public void verify() throws ActionException {
 		MoveColumnData colData = getMoveColumnData();
 		if (colData.getColumnToMoveNewIndex() > TableUtil.getAllColumns(table).size() - 1) {
-			errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.move.column.invalid.position", new Object[] {colData.getColumnToMoveNewIndex()});
+			errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.move.column.invalid.position", colData.getColumnToMoveNewIndex());
 		}
 	}
 

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.xml;
 
 import java.util.Map;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
@@ -37,7 +38,7 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintElementFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPrintElementFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrintElementFactory extends JRBaseFactory
 {
@@ -63,6 +64,12 @@ public class JRPrintElementFactory extends JRBaseFactory
 			element.setMode(mode);
 		}
 		
+		String uuid = atts.getValue(JRXmlConstants.ATTRIBUTE_uuid);
+		if (uuid != null)
+		{
+			element.setUUID(UUID.fromString(uuid));
+		}
+
 		String x = atts.getValue(JRXmlConstants.ATTRIBUTE_x);
 		if (x != null && x.length() > 0)
 		{
@@ -122,6 +129,12 @@ public class JRPrintElementFactory extends JRBaseFactory
 		if (elementId != null && elementId.length() > 0)
 		{
 			element.setSourceElementId(Integer.parseInt(elementId));
+		}
+		
+		String printId = atts.getValue(JRXmlConstants.ATTRIBUTE_printId);
+		if (printId != null && printId.length() > 0)
+		{
+			element.setPrintElementId(Integer.parseInt(printId));
 		}
 
 		return element;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,16 +42,16 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base read-only crosstab measure implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstabMeasure.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseCrosstabMeasure.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable
+public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, CrosstabBaseCloneable
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	protected String name;
 	protected String valueClassName;
 	protected String valueClassRealName;
-	protected Class<?> valueClass;
+	protected Class<?> valueClass;//FIXME transient
 	protected JRExpression expression;
 	protected CalculationEnum calculationValue = CalculationEnum.COUNT;
 	protected String incrementerFactoryClassName;
@@ -240,6 +240,14 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable
 		}
 		clone.expression = JRCloneUtils.nullSafeClone(expression);
 		clone.variable = JRCloneUtils.nullSafeClone(variable);
+		return clone;
+	}
+
+	@Override
+	public Object clone(CrosstabBaseCloneFactory cloneFactory)
+	{
+		JRBaseCrosstabMeasure clone = (JRBaseCrosstabMeasure) clone();
+		clone.variable = cloneFactory.clone(variable);
 		return clone;
 	}
 

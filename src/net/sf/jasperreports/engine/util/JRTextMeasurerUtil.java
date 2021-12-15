@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,13 +38,15 @@ import net.sf.jasperreports.engine.fill.JRTextMeasurer;
  * Text measurer utility class.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTextMeasurerUtil.java 5089 2012-03-15 12:46:09Z teodord $
+ * @version $Id: JRTextMeasurerUtil.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRTextMeasurer
  * @see JRTextMeasurerFactory
  */
 public final class JRTextMeasurerUtil
 {
-	private JasperReportsContext jasperReportsContext;
+	private final JasperReportsContext jasperReportsContext;
+	private final JRStyledTextAttributeSelector noBackcolorSelector;//FIXMECONTEXT make this a context object everywhere and retrieve using a constant key
+	private final JRStyledTextUtil styledTextUtil;
 
 
 	/**
@@ -53,6 +55,8 @@ public final class JRTextMeasurerUtil
 	private JRTextMeasurerUtil(JasperReportsContext jasperReportsContext)
 	{
 		this.jasperReportsContext = jasperReportsContext;
+		this.noBackcolorSelector = JRStyledTextAttributeSelector.getNoBackcolorSelector(jasperReportsContext);
+		this.styledTextUtil = JRStyledTextUtil.getInstance(jasperReportsContext);
 	}
 	
 	
@@ -178,7 +182,7 @@ public final class JRTextMeasurerUtil
 	 */
 	public void measureTextElement(JRPrintText printText)
 	{
-		String text = printText.getText();
+		String text = styledTextUtil.getTruncatedText(printText);
 		
 		JRTextMeasurer textMeasurer = createTextMeasurer(printText);//FIXME use element properties?
 		
@@ -188,7 +192,7 @@ public final class JRTextMeasurerUtil
 		}
 		JRStyledText styledText = 
 			JRStyledTextParser.getInstance().getStyledText(
-				JRStyledTextAttributeSelector.NO_BACKCOLOR.getStyledTextAttributes(printText), 
+				noBackcolorSelector.getStyledTextAttributes(printText), 
 				text, 
 				JRCommonText.MARKUP_STYLED_TEXT.equals(printText.getMarkup()),//FIXMEMARKUP only static styled text appears on preview. no other markup
 				JRStyledTextAttributeSelector.getTextLocale(printText)

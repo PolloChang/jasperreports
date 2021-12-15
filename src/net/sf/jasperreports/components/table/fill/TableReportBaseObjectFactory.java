@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.components.table.fill;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionCollector;
 import net.sf.jasperreports.engine.JRGroup;
@@ -36,7 +37,7 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableReportBaseObjectFactory.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TableReportBaseObjectFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableReportBaseObjectFactory extends JRBaseObjectFactory
 {
@@ -81,5 +82,11 @@ public class TableReportBaseObjectFactory extends JRBaseObjectFactory
 		
 		return super.getGroup(origGroup);
 	}
-	
+
+	@Override
+	protected int resolveCrosstabId(JRCrosstab crosstab)
+	{
+		// crosstab Ids are already assigned
+		return crosstab.getId();
+	}
 }

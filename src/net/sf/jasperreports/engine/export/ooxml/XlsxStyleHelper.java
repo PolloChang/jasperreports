@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,13 +30,15 @@ import java.util.Locale;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.util.FileBufferedWriter;
+import net.sf.jasperreports.export.XlsReportConfiguration;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxStyleHelper.java 4800 2011-11-17 08:53:25Z teodord $
+ * @version $Id: XlsxStyleHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxStyleHelper extends BaseHelper
 {
@@ -55,31 +57,35 @@ public class XlsxStyleHelper extends BaseHelper
 	private XlsxFontHelper fontHelper;
 	private XlsxBorderHelper borderHelper;
 	
-	private boolean isWhitePageBackground;
-	private boolean isIgnoreCellBackground;
+	private XlsReportConfiguration configuration;
 	
 	/**
 	 * 
 	 */
 	public XlsxStyleHelper(
+		JasperReportsContext jasperReportsContext,
 		Writer writer, 
-		Map<String,String> fontMap, 
-		String exporterKey,
-		boolean isWhitePageBackground,
-		boolean isIgnoreCellBorder,
-		boolean isIgnoreCellBackground,
-		boolean isFontSizeFixEnabled		
+		String exporterKey
 		)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 		
-		this.isWhitePageBackground = isWhitePageBackground;
-		this.isIgnoreCellBackground = isIgnoreCellBackground;
-		
-		formatHelper = new XlsxFormatHelper(formatsWriter);
-		fontHelper = new XlsxFontHelper(fontsWriter, fontMap, exporterKey, isFontSizeFixEnabled);
-		borderHelper = new XlsxBorderHelper(bordersWriter, isIgnoreCellBorder);
+		formatHelper = new XlsxFormatHelper(jasperReportsContext, formatsWriter);
+		fontHelper = new XlsxFontHelper(jasperReportsContext, fontsWriter, exporterKey);
+		borderHelper = new XlsxBorderHelper(jasperReportsContext ,bordersWriter);
 	}
+	
+	
+	/**
+	 * 
+	 */
+	public void setConfiguration(XlsReportConfiguration configuration)
+	{
+		this.configuration = configuration;
+		fontHelper.setConfiguration(configuration);
+		borderHelper.setConfiguration(configuration);
+	}
+	
 
 	/**
 	 * 
@@ -120,9 +126,9 @@ public class XlsxStyleHelper extends BaseHelper
 	{
 		try
 		{
-			if (isIgnoreCellBackground || styleInfo.backcolor == null)
+			if (configuration.isIgnoreCellBackground() || styleInfo.backcolor == null)
 			{
-				if (isWhitePageBackground)
+				if (configuration.isWhitePageBackground())
 				{
 					fillsWriter.write("<fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFFF\"/></patternFill></fill>\n");
 				}

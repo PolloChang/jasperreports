@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,7 @@ import net.sf.jasperreports.engine.type.JREnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FilterTypesEnum.java 5247 2012-04-10 09:17:01Z narcism $
+ * @version $Id: FilterTypesEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public enum FilterTypesEnum implements JREnum
 {
@@ -40,7 +40,9 @@ public enum FilterTypesEnum implements JREnum
 
 	DATE((byte)3, "Date"),
 	
-	BOOLEAN((byte)4, "Boolean");
+	BOOLEAN((byte)4, "Boolean"),
+	
+	TIME((byte)5, "Time");
 
 	/**
 	 *

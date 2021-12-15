@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,10 +30,22 @@ import net.sf.jasperreports.engine.base.JRBaseReport;
 
 
 /**
- * The actual representation of a compiled report. The main difference between a report and a report design is that
+ * Instances of this class represent compiled report template objects. They are obtained only 
+ * through the JasperReports report compilation process and are ready to use for filling with 
+ * data and report generation. 
+ * <p>
+ * Through compilation, along with various consistency checks and rearrangements of the 
+ * report elements for more rapid performance in the application, the library creates an 
+ * on-the-fly class file (or a script, depending on the type of the report compiler used) 
+ * containing all the report expressions (such as report variables expressions, text field and 
+ * image expressions, and group expressions). This class or script is used to evaluate report 
+ * expressions during the report-filling process at runtime. 
+ * </p><p>
+ * The main difference between a compiled report and a report design is that
  * reports are already compiled and validated, so many characteristics are read only.
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperReport.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JasperReport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JasperReport extends JRBaseReport
 {

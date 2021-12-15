@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,11 +24,13 @@
 package net.sf.jasperreports.engine.export;
 
 import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.export.PrintServiceExporterConfiguration;
 
 
 /**
+ * @deprecated Replaced by {@link PrintServiceExporterConfiguration}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintServiceExporterParameter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPrintServiceExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrintServiceExporterParameter extends JRExporterParameter
 {
@@ -44,39 +46,39 @@ public class JRPrintServiceExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * An instance of <tt>javax.print.attribute.PrintRequestAttributeSet</tt>.
+	 * @deprecated Replaced by {@link PrintServiceExporterConfiguration#getPrintRequestAttributeSet()}.
 	 */
 	public static final JRPrintServiceExporterParameter PRINT_REQUEST_ATTRIBUTE_SET = new JRPrintServiceExporterParameter("PrintRequestAttributeSet Object");
 
 
 	/**
-	 * An instance of <tt>javax.print.attribute.PrintServiceAttributeSet</tt>.
+	 * @deprecated Replaced by {@link PrintServiceExporterConfiguration#getPrintServiceAttributeSet()}.
 	 */
 	public static final JRPrintServiceExporterParameter PRINT_SERVICE_ATTRIBUTE_SET = new JRPrintServiceExporterParameter("PrintServiceAttributeSet Object");
 
 
 	/**
-	 * A boolean value specifying whether a page setup dialog should be opened before printing.
+	 * @deprecated Replaced by {@link PrintServiceExporterConfiguration#isDisplayPageDialog()}.
 	 */
 	public static final JRPrintServiceExporterParameter DISPLAY_PAGE_DIALOG = new JRPrintServiceExporterParameter("Display Page Dialog");
 
 	/**
-	 * A boolean value specifying whether a page setup dialog should be opened only once before printing in a batch export job.
+	 * @deprecated Replaced by {@link PrintServiceExporterConfiguration#isDisplayPageDialogOnlyOnce()}.
 	 */
 	public static final JRPrintServiceExporterParameter DISPLAY_PAGE_DIALOG_ONLY_ONCE = new JRPrintServiceExporterParameter("Display Page Dialog Only Once");
 
 	/**
-	 * A boolean value specifying whether a print setup dialog should be opened before printing.
+	 * @deprecated Replaced by {@link PrintServiceExporterConfiguration#isDisplayPrintDialog()}.
 	 */
 	public static final JRPrintServiceExporterParameter DISPLAY_PRINT_DIALOG = new JRPrintServiceExporterParameter("Display Print Dialog");
 
 	/**
-	 * A boolean value specifying whether a print setup dialog should be opened only once in a batch export job.
+	 * @deprecated Replaced by {@link PrintServiceExporterConfiguration#isDisplayPrintDialogOnlyOnce()}.
 	 */
 	public static final JRPrintServiceExporterParameter DISPLAY_PRINT_DIALOG_ONLY_ONCE = new JRPrintServiceExporterParameter("Display Print Dialog Only Once");
 
 	/**
-	 * An instance of <tt>javax.print.PrintService</tt>, useful if users do not want JPS to lookup for an available print service.
+	 * @deprecated Replaced by {@link PrintServiceExporterConfiguration#getPrintService()}.
 	 */
 	public static final JRPrintServiceExporterParameter PRINT_SERVICE = new JRPrintServiceExporterParameter("Print Service");
 }

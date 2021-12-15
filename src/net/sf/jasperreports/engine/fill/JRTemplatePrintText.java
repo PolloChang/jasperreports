@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.engine.fill;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRConstants;
@@ -45,6 +46,9 @@ import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRStyledTextParser;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
+import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
 
 
 /**
@@ -53,7 +57,7 @@ import net.sf.jasperreports.engine.util.JRStyledTextParser;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintText.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTemplatePrintText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPrintText
 {
@@ -64,6 +68,14 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+	private static final int SERIALIZATION_FLAG_ANCHOR = 1;
+	private static final int SERIALIZATION_FLAG_HYPERLINK = 1 << 1;
+	private static final int SERIALIZATION_FLAG_RTL = 1 << 2;
+	private static final int SERIALIZATION_FLAG_TRUNCATION = 1 << 3;
+	private static final int SERIALIZATION_FLAG_LINE_BREAK_OFFSETS = 1 << 4;
+	private static final int SERIALIZATION_FLAG_ZERO_LINE_BREAK_OFFSETS = 1 << 5;
+	private static final int SERIALIZATION_FLAG_HAS_VALUE = 1 << 6;
+
 	/**
 	 *
 	 */
@@ -71,13 +83,17 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	private Integer textTruncateIndex;
 	private String textTruncateSuffix;
 	private short[] lineBreakOffsets;
-	private transient String truncatedText;
+	//private transient String truncatedText;
 	private Object value;
 	private float lineSpacingFactor;
 	private float leadingOffset;
 	private RunDirectionEnum runDirectionValue;
 	private float textHeight;
+	
+	// we're no longer setting this at fill time, all format attributes are in the template.
+	// keeping the field for old serialized JasperPrints.
 	private TextFormat textFormat;
+	
 	private String anchorName;
 	private String hyperlinkReference;
 	private String hyperlinkAnchor;
@@ -90,6 +106,11 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	 * @see JRAnchor#getBookmarkLevel()
 	 */
 	protected int bookmarkLevel = JRAnchor.NO_BOOKMARK;
+	
+	public JRTemplatePrintText()
+	{
+		
+	}
 	
 	/**
 	 * Creates a print text element.
@@ -107,43 +128,30 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	 * 
 	 * @param text the template text that the element will use
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRTemplatePrintText(JRTemplateText, PrintElementOriginator)}
 	 */
 	public JRTemplatePrintText(JRTemplateText text, int sourceElementId)
 	{
 		super(text, sourceElementId);
 	}
+	
+	/**
+	 * Creates a print text element.
+	 * 
+	 * @param text the template text that the element will use
+	 * @param originator
+	 */
+	public JRTemplatePrintText(JRTemplateText text, PrintElementOriginator originator)
+	{
+		super(text, originator);
+	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link JRStyledTextUtil#getTruncatedText(JRPrintText)}.
 	 */
 	public String getText()
 	{
-		if (truncatedText == null && text != null)
-		{
-			if (getTextTruncateIndex() == null)
-			{
-				truncatedText = text;
-			}
-			else
-			{
-				if (!JRCommonText.MARKUP_NONE.equals(getMarkup()))
-				{
-					truncatedText = JRStyledTextParser.getInstance().write(
-							getFullStyledText(JRStyledTextAttributeSelector.ALL), 
-							0, getTextTruncateIndex().intValue());
-				}
-				else
-				{
-					truncatedText = text.substring(0, getTextTruncateIndex().intValue());
-				}
-			}
-			
-			if (textTruncateSuffix != null)
-			{
-				truncatedText += textTruncateSuffix;
-			}
-		}
-		return truncatedText;
+		return JRStyledTextUtil.getInstance(DefaultJasperReportsContext.getInstance()).getTruncatedText(this);
 	}
 		
 	/**
@@ -152,7 +160,7 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	public void setText(String text)
 	{
 		this.text = text;
-		this.truncatedText = null;
+		//this.truncatedText = null;
 	}
 
 	public Integer getTextTruncateIndex()
@@ -163,7 +171,7 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	public void setTextTruncateIndex(Integer textTruncateIndex)
 	{
 		this.textTruncateIndex = textTruncateIndex;
-		this.truncatedText = null;
+		//this.truncatedText = null;
 	}
 
 	public String getTextTruncateSuffix()
@@ -174,7 +182,7 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	public void setTextTruncateSuffix(String textTruncateSuffix)
 	{
 		this.textTruncateSuffix = textTruncateSuffix;
-		this.truncatedText = null;
+		//this.truncatedText = null;
 	}
 
 	public short[] getLineBreakOffsets()
@@ -202,20 +210,12 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 		return text;
 	}
 	
+	/**
+	 * @deprecated Replaced by {@link JRStyledTextUtil#getStyledText(JRPrintText, JRStyledTextAttributeSelector)}.
+	 */
 	public JRStyledText getStyledText(JRStyledTextAttributeSelector attributeSelector)
 	{
-		if (getText() == null)
-		{
-			return null;
-		}
-		
-		return 
-			JRStyledTextParser.getInstance().getStyledText(
-				attributeSelector.getStyledTextAttributes(this), 
-				getText(), 
-				!JRCommonText.MARKUP_NONE.equals(getMarkup()),
-				JRStyledTextAttributeSelector.getTextLocale(this)
-				);
+		return JRStyledTextUtil.getInstance(DefaultJasperReportsContext.getInstance()).getStyledText(this, attributeSelector);
 	}
 
 	public JRStyledText getFullStyledText(JRStyledTextAttributeSelector attributeSelector)
@@ -752,32 +752,57 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	/**
 	 *
 	 */
-	public int getFontSize()
+	public float getFontsize()
 	{
-		return ((JRTemplateText)template).getFontSize();
+		return ((JRTemplateText)template).getFontsize();
 	}
 
 	/**
 	 *
+	 */
+	public Float getOwnFontsize()
+	{
+		return ((JRTemplateText)template).getOwnFontsize();
+	}
+
+	/**
+	 * Method which allows also to reset the "own" size property.
+	 */
+	public void setFontSize(Float fontSize)
+	{
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getFontsize()}.
+	 */
+	public int getFontSize()
+	{
+		return (int)getFontsize();
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getOwnFontsize()}.
 	 */
 	public Integer getOwnFontSize()
 	{
-		return ((JRTemplateText)template).getOwnFontSize();
+		Float fontSize = getOwnFontsize();
+		return fontSize == null ? null : fontSize.intValue();
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(int fontSize)
 	{
+		setFontSize((float)fontSize);
 	}
 
 	/**
-	 * Alternative setSize method which allows also to reset
-	 * the "own" size property.
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(Integer fontSize)
 	{
+		setFontSize(fontSize == null ? null : fontSize.floatValue());
 	}
 
 	/**
@@ -940,6 +965,161 @@ public class JRTemplatePrintText extends JRTemplatePrintElement implements JRPri
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);
+	}
+	
+	@Override
+	public void writeVirtualized(VirtualizationOutput out) throws IOException
+	{
+		super.writeVirtualized(out);
+		
+		int flags = 0;
+		boolean hasAnchor = anchorName != null || bookmarkLevel != JRAnchor.NO_BOOKMARK;
+		boolean hasHyperlink = hyperlinkReference != null || hyperlinkAnchor != null
+				|| hyperlinkPage != null || hyperlinkTooltip != null || hyperlinkParameters != null;
+		boolean hasTrunc = textTruncateIndex != null || textTruncateSuffix != null;
+		boolean hasLineBreakOffsets = lineBreakOffsets != null;
+		boolean zeroLineBreakOffsets = lineBreakOffsets != null && lineBreakOffsets.length == 0;
+		boolean hasValue = !(text == null ? value == null : (value instanceof String && text.equals(value)));
+		
+		if (hasAnchor)
+		{
+			flags |= SERIALIZATION_FLAG_ANCHOR;
+		}
+		if (hasHyperlink)
+		{
+			flags |= SERIALIZATION_FLAG_HYPERLINK;
+		}
+		if (hasTrunc)
+		{
+			flags |= SERIALIZATION_FLAG_TRUNCATION;
+		}
+		if (hasLineBreakOffsets)
+		{
+			flags |= SERIALIZATION_FLAG_LINE_BREAK_OFFSETS;
+		}
+		if (zeroLineBreakOffsets)
+		{
+			flags |= SERIALIZATION_FLAG_ZERO_LINE_BREAK_OFFSETS;
+		}
+		if (hasValue)
+		{
+			flags |= SERIALIZATION_FLAG_HAS_VALUE;
+		}
+		if (runDirectionValue == RunDirectionEnum.RTL)
+		{
+			flags |= SERIALIZATION_FLAG_RTL;
+		}
+		
+		out.writeByte(flags);
+		
+		out.writeJRObject(text);
+		if (hasValue)
+		{
+			out.writeJRObject(value);
+		}
+		
+		//FIXME these usually repeat, keep in memory?
+		out.writeFloat(lineSpacingFactor);
+		out.writeFloat(leadingOffset);
+		out.writeFloat(textHeight);
+
+		if (hasTrunc)
+		{
+			out.writeJRObject(textTruncateIndex);
+			out.writeJRObject(textTruncateSuffix);
+		}
+		
+		if (hasLineBreakOffsets && !zeroLineBreakOffsets)
+		{
+			out.writeIntCompressed(lineBreakOffsets.length);
+			for (short offset : lineBreakOffsets)
+			{
+				out.writeIntCompressed(offset);
+			}
+		}
+		
+		if (hasAnchor)
+		{
+			out.writeJRObject(anchorName);
+			out.writeIntCompressed(bookmarkLevel);
+		}
+
+		if (hasHyperlink)
+		{
+			out.writeJRObject(hyperlinkReference);
+			out.writeJRObject(hyperlinkAnchor);
+			out.writeJRObject(hyperlinkPage);
+			out.writeJRObject(hyperlinkTooltip);
+			out.writeJRObject(hyperlinkParameters);
+		}
+	}
+
+	@Override
+	public void readVirtualized(VirtualizationInput in) throws IOException
+	{
+		super.readVirtualized(in);
+		
+		int flags = in.readUnsignedByte();
+		text = (String) in.readJRObject();
+		
+		if ((flags & SERIALIZATION_FLAG_HAS_VALUE) != 0)
+		{
+			value = in.readJRObject();
+		}
+		else
+		{
+			value = text;
+		}
+		
+		lineSpacingFactor = in.readFloat();
+		leadingOffset = in.readFloat();
+		textHeight = in.readFloat();
+		
+		if ((flags & SERIALIZATION_FLAG_TRUNCATION) != 0)
+		{
+			textTruncateIndex = (Integer) in.readJRObject();
+			textTruncateSuffix = (String) in.readJRObject();
+		}
+		
+		if ((flags & SERIALIZATION_FLAG_LINE_BREAK_OFFSETS) != 0)
+		{
+			if ((flags & SERIALIZATION_FLAG_ZERO_LINE_BREAK_OFFSETS) != 0)
+			{
+				lineBreakOffsets = JRPrintText.ZERO_LINE_BREAK_OFFSETS;
+			}
+			else
+			{
+				int offsetCount = in.readIntCompressed();
+				lineBreakOffsets = new short[offsetCount];
+				for (int i = 0; i < offsetCount; i++)
+				{
+					lineBreakOffsets[i] = (short) in.readIntCompressed();
+				}
+			}
+		}
+		
+		if ((flags & SERIALIZATION_FLAG_ANCHOR) != 0)
+		{
+			anchorName = (String) in.readJRObject();
+			bookmarkLevel = in.readIntCompressed();
+		}
+		else
+		{
+			bookmarkLevel = JRAnchor.NO_BOOKMARK;
+		}
+
+		if ((flags & SERIALIZATION_FLAG_HYPERLINK) != 0)
+		{
+			hyperlinkReference = (String) in.readJRObject();
+			hyperlinkAnchor = (String) in.readJRObject();
+			hyperlinkPage = (Integer) in.readJRObject();
+			hyperlinkTooltip = (String) in.readJRObject();
+			hyperlinkParameters = (JRPrintHyperlinkParameters) in.readJRObject();
+		}
+		
+		runDirectionValue = (flags & SERIALIZATION_FLAG_RTL) != 0 ? RunDirectionEnum.RTL : RunDirectionEnum.LTR;
+		
+		PSEUDO_SERIAL_VERSION_UID = JRConstants.PSEUDO_SERIAL_VERSION_UID;
 	}
 	
 }

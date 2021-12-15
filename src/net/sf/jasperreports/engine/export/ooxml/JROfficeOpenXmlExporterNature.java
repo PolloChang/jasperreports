@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,18 +29,15 @@
 
 package net.sf.jasperreports.engine.export.ooxml;
 
-import java.util.Map;
-
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.AbstractExporterNature;
-import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.ExporterFilter;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JROfficeOpenXmlExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
+ * @version $Id: JROfficeOpenXmlExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JROfficeOpenXmlExporterNature extends AbstractExporterNature
 {
@@ -66,14 +63,6 @@ public abstract class JROfficeOpenXmlExporterNature extends AbstractExporterNatu
 	public boolean isToExport(JRPrintElement element)
 	{
 		return (filter == null || filter.isToExport(element));
-	}
-	
-	/**
-	 * 
-	 */
-	public boolean isSplitSharedRowSpan()
-	{
-		return false;
 	}
 
 	/**

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -103,13 +103,15 @@ import org.apache.commons.logging.LogFactory;
  * When using a query hints map, any <code>Object</code> can be set as value.
  * 
  * @author Marcel Overdijk (marceloverdijk@hotmail.com)
- * @version $Id: JRJpaQueryExecuter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRJpaQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory
  */
 public class JRJpaQueryExecuter extends JRAbstractQueryExecuter 
 {
 
 	private static final Log log = LogFactory.getLog(JRJpaQueryExecuter.class);
+
+	protected static final String CANONICAL_LANGUAGE = "EJBQL";
 	
 	private final Integer reportMaxCount;
 	
@@ -143,6 +145,12 @@ public class JRJpaQueryExecuter extends JRAbstractQueryExecuter
 	public JRJpaQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parameters) 
 	{
 		this(DefaultJasperReportsContext.getInstance(), dataset, parameters);
+	}
+
+	@Override
+	protected String getCanonicalQueryLanguage()
+	{
+		return CANONICAL_LANGUAGE;
 	}
 	
 	public JRDataSource createDatasource() throws JRException {

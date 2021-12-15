@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,14 @@
  */
 package net.sf.jasperreports.components.map;
 
-import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.export.ooxml.GenericElementPptxHandler;
 import net.sf.jasperreports.engine.export.ooxml.JRPptxExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRPptxExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementPptxHandler.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: MapElementPptxHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MapElementPptxHandler implements GenericElementPptxHandler
 {
@@ -50,8 +48,8 @@ public class MapElementPptxHandler implements GenericElementPptxHandler
 	{
 		try
 		{
-			JRPptxExporter exporter = (JRPptxExporter)exporterContext.getExporter();
-			exporter.exportImage(getImage(exporterContext, element));
+			JRPptxExporter exporter = (JRPptxExporter)exporterContext.getExporterRef();
+			exporter.exportImage(MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element));
 		}
 		catch (Exception e)
 		{
@@ -61,10 +59,5 @@ public class MapElementPptxHandler implements GenericElementPptxHandler
 
 	public boolean toExport(JRGenericPrintElement element) {
 		return true;
-	}
-	
-	public JRPrintImage getImage(JRPptxExporterContext exporterContext, JRGenericPrintElement element) throws JRException
-	{
-		return MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element);
 	}
 }

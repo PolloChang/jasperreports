@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,10 +26,12 @@ package net.sf.jasperreports.engine.fill;
 import java.awt.Color;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -51,6 +53,10 @@ import net.sf.jasperreports.engine.JRPropertyExpression;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRStyleSetter;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.base.JRBaseStyle;
+import net.sf.jasperreports.engine.design.JRDesignPropertyExpression;
+import net.sf.jasperreports.engine.style.StyleProvider;
+import net.sf.jasperreports.engine.style.StyleProviderFactory;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
@@ -61,9 +67,9 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillElement.java 5404 2012-05-22 09:22:00Z lucianc $
+ * @version $Id: JRFillElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public abstract class JRFillElement implements JRElement, JRFillCloneable, JRStyleSetter
+public abstract class JRFillElement implements JRElement, JRFillCloneable, JRStyleSetter, DynamicPropertiesHolder
 {
 
 
@@ -71,7 +77,11 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	 *
 	 */
 	protected JRElement parent;
+	protected List<JRPropertyExpression> propertyExpressions;
+	protected List<String> dynamicTransferProperties;
+	protected JRStyle providerStyle;
 	protected Map<JRStyle,JRTemplateElement> templates = new HashMap<JRStyle,JRTemplateElement>();
+	protected List<StyleProvider> styleProviders;
 
 	/**
 	 *
@@ -94,7 +104,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	
 	protected JROriginProvider originProvider;
 	
-	protected int elementId;
+	protected PrintElementOriginator printElementOriginator;
 
 	/**
 	 *
@@ -121,6 +131,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	protected Map<JREvaluationTime,DelayedEvaluations> delayedEvaluationsMap;
 
 	protected JRFillElementContainer conditionalStylesContainer;
+	protected FillContainerContext fillContainerContext;
 	
 	protected JRStyle initStyle;
 	
@@ -147,36 +158,44 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	 *
 	 */
 	protected JRFillElement(
-			JRBaseFiller filler,
-			JRElement element,
-			JRFillObjectFactory factory
-			)
-		{
-			factory.put(element, this);
+		JRBaseFiller filler,
+		JRElement element,
+		JRFillObjectFactory factory
+		)
+	{
+		factory.put(element, this);
 
-			this.parent = element;
-			this.filler = filler;
-			this.expressionEvaluator = factory.getExpressionEvaluator();
-			this.defaultStyleProvider = factory.getDefaultStyleProvider();
-			
-			elementId = filler.assignElementId(this);
+		this.parent = element;
+		this.filler = filler;
+		this.expressionEvaluator = factory.getExpressionEvaluator();
+		this.defaultStyleProvider = factory.getDefaultStyleProvider();
+		
+		printElementOriginator = filler.assignElementId(this);
 
-			/*   */
-			printWhenGroupChanges = factory.getGroup(element.getPrintWhenGroupChanges());
-			elementGroup = (JRFillElementGroup)factory.getVisitResult(element.getElementGroup());
-			
-			x = element.getX();
-			y = element.getY();
-			width = element.getWidth();
-			height = element.getHeight();
-			
-			staticProperties = element.hasProperties() ? element.getPropertiesMap().cloneProperties() : null;
-			mergedProperties = staticProperties;
-			
-			factory.registerDelayedStyleSetter(this, parent);
-		}
+		/*   */
+		printWhenGroupChanges = factory.getGroup(element.getPrintWhenGroupChanges());
+		elementGroup = (JRFillElementGroup)factory.getVisitResult(element.getElementGroup());
+		
+		x = element.getX();
+		y = element.getY();
+		width = element.getWidth();
+		height = element.getHeight();
+		
+		staticProperties = element.hasProperties() ? element.getPropertiesMap().cloneProperties() : null;
+		mergedProperties = staticProperties;
+		
+		JRPropertyExpression[] elementPropertyExpressions = element.getPropertyExpressions();
+		propertyExpressions = elementPropertyExpressions == null ? new ArrayList<JRPropertyExpression>(0)
+				: new ArrayList<JRPropertyExpression>(Arrays.asList(elementPropertyExpressions));
+		
+		dynamicTransferProperties = findDynamicTransferProperties();
+		
+		factory.registerDelayedStyleSetter(this, parent);
+		
+		initStyleProviders();
+	}
 
-	
+
 	protected JRFillElement(JRFillElement element, JRFillCloneFactory factory)
 	{
 		factory.put(element, this);
@@ -187,7 +206,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		this.defaultStyleProvider = element.defaultStyleProvider;
 		this.originProvider = element.originProvider;
 		
-		elementId = element.elementId;
+		printElementOriginator = element.printElementOriginator;
 
 		/*   */
 		printWhenGroupChanges = element.printWhenGroupChanges;
@@ -206,6 +225,34 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		
 		staticProperties = element.staticProperties == null ? null : element.staticProperties.cloneProperties();
 		mergedProperties = staticProperties;
+		this.propertyExpressions = new ArrayList<JRPropertyExpression>(element.propertyExpressions);
+		this.dynamicTransferProperties = element.dynamicTransferProperties;
+		
+		styleProviders = element.styleProviders;
+	}
+	
+	private List<String> findDynamicTransferProperties()
+	{
+		if (propertyExpressions.isEmpty())
+		{
+			return null;
+		}
+		
+		List<String> prefixes = filler.getPrintTransferPropertyPrefixes();
+		List<String> transferProperties = new ArrayList<String>(propertyExpressions.size());
+		for (JRPropertyExpression propertyExpression : propertyExpressions)
+		{
+			String propertyName = propertyExpression.getName();
+			for (String prefix : prefixes)
+			{
+				if (propertyName.startsWith(prefix))
+				{
+					transferProperties.add(propertyName);
+					break;
+				}
+			}
+		}
+		return transferProperties;
 	}
 
 
@@ -294,7 +341,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	 */
 	public ModeEnum getOwnModeValue()
 	{
-		return parent.getOwnModeValue();
+		return providerStyle == null || providerStyle.getOwnModeValue() == null ? parent.getOwnModeValue() : providerStyle.getOwnModeValue();
 	}
 
 	/**
@@ -423,7 +470,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 
 	public Color getOwnForecolor()
 	{
-		return parent.getOwnForecolor();
+		return providerStyle == null || providerStyle.getOwnForecolor() == null ? parent.getOwnForecolor() : providerStyle.getOwnForecolor();
 	}
 
 	/**
@@ -446,7 +493,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	 */
 	public Color getOwnBackcolor()
 	{
-		return parent.getOwnBackcolor();
+		return providerStyle == null || providerStyle.getOwnBackcolor() == null ? parent.getOwnBackcolor() : providerStyle.getOwnBackcolor();
 	}
 
 	/**
@@ -610,7 +657,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
-	protected int getStretchHeight()
+	public int getStretchHeight()
 	{
 		return stretchHeight;
 	}
@@ -655,6 +702,31 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
+	protected void initStyleProviders()
+	{
+		List<StyleProviderFactory> styleProviderFactories = filler.getJasperReportsContext().getExtensions(StyleProviderFactory.class);
+		if (styleProviderFactories != null && styleProviderFactories.size() > 0)
+		{
+			FillStyleProviderContext styleProviderContext = new FillStyleProviderContext(this);
+			for (StyleProviderFactory styleProviderFactory : styleProviderFactories)
+			{
+				StyleProvider styleProvider = styleProviderFactory.getStyleProvider(styleProviderContext, filler.getJasperReportsContext());
+				if (styleProvider != null)
+				{
+					if (styleProviders == null)
+					{
+						styleProviders = new ArrayList<StyleProvider>();
+					}
+					styleProviders.add(styleProvider);
+				}
+			}
+		}
+	}
+
+	
+	/**
+	 *
+	 */
 	protected void reset()
 	{
 		relativeY = y;
@@ -677,6 +749,33 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	protected abstract void evaluate(
 		byte evaluation
 		) throws JRException;
+
+
+	/**
+	 *
+	 */
+	protected void evaluateStyle(
+		byte evaluation
+		) throws JRException
+	{
+		providerStyle = null;
+
+		if (styleProviders != null && styleProviders.size() > 0)
+		{
+			for (StyleProvider styleProvider : styleProviders)
+			{
+				JRStyle style = styleProvider.getStyle(evaluation);
+				if (style != null)
+				{
+					if (providerStyle == null)
+					{
+						providerStyle = new JRBaseStyle();
+					}
+					JRStyleResolver.appendStyle(providerStyle, style);
+				}
+			}
+		}
+	}
 
 
 	/**
@@ -722,8 +821,16 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 
 	protected JRTemplateElement getElementTemplate()
 	{
-		JRStyle style = getStyle();
-		JRTemplateElement template = getTemplate(style);
+		JRTemplateElement template = null;
+		JRStyle style = null;
+		
+		if (providerStyle == null)
+		{
+			// no style provider has been used so we can use cache template per style below
+			style = getStyle();
+			template = getTemplate(style);
+		}
+		
 		if (template == null)
 		{
 			template = createElementTemplate();
@@ -732,7 +839,10 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 			// deduplicate to previously created identical objects
 			template = filler.fillContext.deduplicate(template);
 			
-			registerTemplate(style, template);
+			if (providerStyle == null)
+			{
+				registerTemplate(style, template);
+			}
 		}
 		return template;
 	}
@@ -776,7 +886,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		{
 			case RELATIVE_TO_BAND_HEIGHT :
 			{
-				setStretchHeight(getHeight() + bandStretch);
+				stretchElementToHeight(getHeight() + bandStretch);
 				break;
 			}
 			case RELATIVE_TO_TALLEST_OBJECT :
@@ -784,7 +894,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 				if (elementGroup != null)
 				{
 					//setStretchHeight(getHeight() + getStretchHeightDiff());
-					setStretchHeight(getHeight() + elementGroup.getStretchHeightDiff());
+					stretchElementToHeight(getHeight() + elementGroup.getStretchHeightDiff());
 				}
 
 				break;
@@ -794,6 +904,14 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 			{
 				break;
 			}
+		}
+	}
+	
+	protected void stretchElementToHeight(int stretchHeight)
+	{
+		if (stretchHeight > getStretchHeight())
+		{
+			setStretchHeight(stretchHeight);
 		}
 	}
 
@@ -837,6 +955,8 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	protected void performDelayedEvaluation(JRPrintElement element, byte evaluation) 
 			throws JRException
 	{
+		boolean updateTemplate = false;
+		
 		if (isDelayedStyleEvaluation())
 		{
 			JRStyle elementStyle = initStyle;
@@ -855,19 +975,31 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 					// set the evaluated style as current style
 					this.currentStyle = evaluatedStyle;
 					
-					// get/create an element template that corresponds to the
-					// current style
-					JRTemplateElement newTemplate = getElementTemplate();
-					((JRTemplatePrintElement) element).updateElementTemplate(
-							newTemplate);
+					updateTemplate = true;
 				}
 			}
 		}
 		
 		resolveElement(element, evaluation);
 		
+		if (updateTemplate || providerStyle != null
+				|| delayedEvaluationUpdatesTemplate())
+		{
+			// get/create an element template that corresponds to the
+			// current style
+			JRTemplateElement newTemplate = getElementTemplate();
+			((JRTemplatePrintElement) element).updateElementTemplate(
+					newTemplate);
+		}
+		
 		// reset the current style
 		this.currentStyle = null;
+		//this.providerStyle = null;
+	}
+
+	protected boolean delayedEvaluationUpdatesTemplate()
+	{
+		return false;
 	}
 
 
@@ -983,6 +1115,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		if (isDelayedStyleEvaluation())
 		{
 			collectStyleDelayedEvaluations();
+			collectStyleProviderDelayedEvaluations();
 		}
 	}
 
@@ -1053,6 +1186,36 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		}
 	}
 
+	
+	protected void collectStyleProviderDelayedEvaluations()
+	{
+		if (styleProviders != null && styleProviders.size() > 0)
+		{
+			for (StyleProvider styleProvider : styleProviders)
+			{
+				String[] fields = styleProvider.getFields();
+				if (fields != null && fields.length > 0)
+				{
+					DelayedEvaluations delayedEvaluations = getDelayedEvaluations(JREvaluationTime.EVALUATION_TIME_NOW);
+					for (String field : fields)
+					{
+						delayedEvaluations.fields.add(field);
+					}
+				}
+				String[] variables = styleProvider.getVariables();
+				if (variables != null && variables.length > 0)
+				{
+					for (String variable : variables)
+					{
+						JREvaluationTime time = autogetVariableEvaluationTime(variable);
+						DelayedEvaluations delayedEvaluations = getDelayedEvaluations(time);
+						delayedEvaluations.variables.add(variable);
+					}
+				}
+			}
+		}
+	}
+
 
 	private DelayedEvaluations getDelayedEvaluations(JREvaluationTime time)
 	{
@@ -1097,7 +1260,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		
 		if (variable.getCalculationValue() == CalculationEnum.SYSTEM &&
 				evaluationTime.equals(JREvaluationTime.EVALUATION_TIME_NOW) &&
-				band.isVariableUsedInSubreportReturns(variableName))
+				band.isVariableUsedInReturns(variableName))
 		{
 			evaluationTime = JREvaluationTime.getBandEvaluationTime(band);
 		}
@@ -1214,13 +1377,24 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		}
 	}
 
+	/**
+	 * 
+	 */
+	public void setConditionalStylesContainer(JRFillElementContainer conditionalStylesContainer)
+	{
+		this.conditionalStylesContainer = conditionalStylesContainer;
+		if (fillContainerContext == null)
+		{
+			fillContainerContext = conditionalStylesContainer;
+		}
+	}
 
 	/**
 	 * 
 	 */
-	protected void setConditionalStylesContainer(JRFillElementContainer conditionalStylesContainer)
+	public JRFillElementContainer getConditionalStylesContainer()
 	{
-		this.conditionalStylesContainer = conditionalStylesContainer;
+		return conditionalStylesContainer;
 	}
 
 	/**
@@ -1340,7 +1514,10 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	public void setStyle(JRStyle style)
 	{
 		initStyle = style;
-		conditionalStylesContainer.collectConditionalStyle(style);
+		if (conditionalStylesContainer != null)
+		{
+			conditionalStylesContainer.collectConditionalStyle(style);
+		}
 	}
 
 	public void setStyleNameReference(String name)
@@ -1389,7 +1566,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 
 	public JRPropertyExpression[] getPropertyExpressions()
 	{
-		return parent.getPropertyExpressions();
+		return propertyExpressions.toArray(new JRPropertyExpression[propertyExpressions.size()]);
 	}
 	
 	protected void transferProperties(JRTemplateElement template)
@@ -1401,7 +1578,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	protected void transferProperties(JRPrintElement element)
 	{
 		filler.getPropertiesUtil().transferProperties(dynamicProperties, element, 
-				JasperPrint.PROPERTIES_PRINT_TRANSFER_PREFIX);
+				dynamicTransferProperties);
 	}
 	
 	protected JRPropertiesMap getEvaluatedProperties()
@@ -1411,8 +1588,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	
 	protected void evaluateProperties(byte evaluation) throws JRException
 	{
-		JRPropertyExpression[] propExprs = getPropertyExpressions();
-		if (propExprs == null || propExprs.length == 0)
+		if (propertyExpressions.isEmpty())
 		{
 			dynamicProperties = null;
 			mergedProperties = staticProperties;
@@ -1421,9 +1597,8 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		{
 			dynamicProperties = new JRPropertiesMap();
 			
-			for (int i = 0; i < propExprs.length; i++)
+			for (JRPropertyExpression prop : propertyExpressions)
 			{
-				JRPropertyExpression prop = propExprs[i];
 				String value = (String) evaluateExpression(prop.getValueExpression(), evaluation);
 				if (value != null)
 				{
@@ -1455,5 +1630,63 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	{
 		return filler.getPropertiesUtil().getBooleanProperty(this, 
 				JRStyle.PROPERTY_EVALUATION_TIME_ENABLED, false);
+	}
+	
+	public JRBaseFiller getFiller()
+	{
+		return filler;
+	}
+
+
+	@Override
+	public boolean hasDynamicProperties()
+	{
+		return !propertyExpressions.isEmpty();
+	}
+
+	@Override
+	public boolean hasDynamicProperty(String name)
+	{
+		// not called very often for now so doing linear search in array
+		for (JRPropertyExpression prop : propertyExpressions)
+		{
+			if (prop.getName().equals(name))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public JRPropertiesMap getDynamicProperties()
+	{
+		return dynamicProperties;
+	}
+
+	protected JRStyle getInitStyle()
+	{
+		return initStyle;
+	}
+
+	protected JRElement getParent()
+	{
+		return parent;
+	}
+	
+	protected void addDynamicProperty(String name, JRExpression expression)
+	{
+		JRDesignPropertyExpression prop = new JRDesignPropertyExpression();
+		prop.setName(name);
+		prop.setValueExpression(expression);
+		
+		propertyExpressions.add(prop);
+		// recomputing
+		dynamicTransferProperties = findDynamicTransferProperties();
+	}
+	
+	protected void setExpressionEvaluator(JRFillExpressionEvaluator expressionEvaluator)
+	{
+		this.expressionEvaluator = expressionEvaluator;
 	}
 }

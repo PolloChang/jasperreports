@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,9 @@ package net.sf.jasperreports.engine.export;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +39,7 @@ import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.base.JRBaseGenericPrintElement;
+import net.sf.jasperreports.engine.util.HyperlinkData;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
 
 import org.apache.commons.logging.Log;
@@ -51,7 +54,7 @@ import org.apache.commons.logging.LogFactory;
  * </p>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FlashPrintElement.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: FlashPrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  * @see FlashHtmlHandler
  */
 public final class FlashPrintElement
@@ -107,7 +110,7 @@ public final class FlashPrintElement
 				String exporterKey)
 		{
 			if (FLASH_ELEMENT_NAME.equals(elementName) 
-					&& JRHtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey))
+					&& HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey))
 			{
 				return FlashHtmlHandler.getInstance();
 			}
@@ -143,6 +146,7 @@ public final class FlashPrintElement
 		JRBaseGenericPrintElement flashEl = new JRBaseGenericPrintElement(
 				template.getDefaultStyleProvider());
 		// copy all attribute from the template element
+		flashEl.setUUID(template.getUUID());
 		flashEl.setX(template.getX());
 		flashEl.setY(template.getY());
 		flashEl.setWidth(template.getWidth());
@@ -182,7 +186,7 @@ public final class FlashPrintElement
 	/**
 	 * Returns the name of the parameter to be used for a hyperlink, as used
 	 * by {@link #makeLinkPlaceholder(JRPrintHyperlink)} and
-	 * {@link #resolveLinks(String, JRGenericPrintElement, JRHyperlinkProducer)}.
+	 * {@link #resolveLinks(String, JRGenericPrintElement, JRHyperlinkProducer, boolean)}.
 	 * 
 	 * @param hyperlink the hyperlink
 	 * @return the hyperlink parameter name
@@ -215,7 +219,7 @@ public final class FlashPrintElement
 	 * 
 	 * <p>
 	 * The placeholders will be resolved to links at export time by
-	 * {@link #resolveLinks(String, JRGenericPrintElement, JRHyperlinkProducer)}.
+	 * {@link #resolveLinks(String, JRGenericPrintElement, JRHyperlinkProducer, boolean)}.
 	 * </p>
 	 * 
 	 * @param linkId the Id of the link, which needs to be used as hyperlink
@@ -244,10 +248,13 @@ public final class FlashPrintElement
 	 */
 	public static String resolveLinks(String text,
 			JRGenericPrintElement element,
-			JRHyperlinkProducer linkProducer)
+			JRHyperlinkProducer linkProducer,
+			boolean prepareForSerialization)
 	{
 		Matcher matcher = LINK_PATTERN.matcher(text);
 		StringBuffer xml = new StringBuffer();
+		List<HyperlinkData> hyperlinksData = new ArrayList<HyperlinkData>();
+
 		while (matcher.find())
 		{
 			String paramName = matcher.group(LINK_PARAM_NAME_GROUP);
@@ -268,6 +275,18 @@ public final class FlashPrintElement
 			else
 			{
 				replacement = linkProducer.getHyperlink(hyperlink);
+				if (prepareForSerialization) {
+					String id = String.valueOf(hyperlink.hashCode() & 0x7FFFFFFF);
+
+					HyperlinkData hyperlinkData = new HyperlinkData();
+					hyperlinkData.setId(id);
+					hyperlinkData.setHref(replacement);
+					hyperlinkData.setHyperlink(hyperlink);
+					hyperlinkData.setSelector("._jrHyperLink." + hyperlink.getLinkType());
+					replacement = "jrhl-" + id + ";" + hyperlink.getLinkType();
+
+					hyperlinksData.add(hyperlinkData);
+				}
 			}
 			
 			if (replacement == null)
@@ -278,7 +297,9 @@ public final class FlashPrintElement
 			{
 				try
 				{
-					replacement = URLEncoder.encode(replacement, "UTF-8");
+					if (!prepareForSerialization) {
+						replacement = URLEncoder.encode(replacement, "UTF-8");
+					}
 				}
 				catch (UnsupportedEncodingException e)
 				{
@@ -289,6 +310,10 @@ public final class FlashPrintElement
 			matcher.appendReplacement(xml, replacement);
 		}
 		matcher.appendTail(xml);
+
+		if (hyperlinksData.size() > 0) {
+			element.setParameterValue("hyperlinksData", hyperlinksData);
+		}
 		
 		return xml.toString();
 

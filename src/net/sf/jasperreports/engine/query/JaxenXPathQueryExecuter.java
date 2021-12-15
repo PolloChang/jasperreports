@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -56,7 +56,7 @@ import org.w3c.dom.Document;
  * on the parameter value.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JaxenXPathQueryExecuter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JaxenXPathQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JaxenXPathQueryExecuter extends JRAbstractQueryExecuter
 {
@@ -80,8 +80,10 @@ public class JaxenXPathQueryExecuter extends JRAbstractQueryExecuter
 		super(jasperReportsContext, dataset, parametersMap);
 				
 		document = (Document) getParameterValue(JaxenXPathQueryExecuterFactory.PARAMETER_XML_DATA_DOCUMENT);
-		documentBuilderFactory = (DocumentBuilderFactory) getParameterValue(JaxenXPathQueryExecuterFactory.PARAMETER_DOCUMENT_BUILDER_FACTORY);
-		namespacesMap = (Map<String, String>) getParameterValue(JaxenXPathQueryExecuterFactory.PARAMETER_XML_NAMESPACE_MAP);
+		documentBuilderFactory = (DocumentBuilderFactory) getParameterValue(
+				JaxenXPathQueryExecuterFactory.PARAMETER_DOCUMENT_BUILDER_FACTORY, true);
+		namespacesMap = (Map<String, String>) getParameterValue(
+				JaxenXPathQueryExecuterFactory.PARAMETER_XML_NAMESPACE_MAP, true);
 		
 		if (document == null)
 		{
@@ -97,6 +99,12 @@ public class JaxenXPathQueryExecuter extends JRAbstractQueryExecuter
 	public JaxenXPathQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap)
 	{
 		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
+	}
+
+	@Override
+	protected String getCanonicalQueryLanguage()
+	{
+		return JRXPathQueryExecuter.CANONICAL_LANGUAGE;
 	}
 
 	protected String getParameterReplacement(String parameterName)
@@ -129,8 +137,8 @@ public class JaxenXPathQueryExecuter extends JRAbstractQueryExecuter
 			datasource.setDocumentBuilderFactory(documentBuilderFactory);
 			
 			datasource.setLocale((Locale)getParameterValue(JaxenXPathQueryExecuterFactory.XML_LOCALE, true));
-			datasource.setDatePattern((String)getParameterValue(JaxenXPathQueryExecuterFactory.XML_DATE_PATTERN, true));
-			datasource.setNumberPattern((String)getParameterValue(JaxenXPathQueryExecuterFactory.XML_NUMBER_PATTERN, true));
+			datasource.setDatePattern(getStringParameter(JaxenXPathQueryExecuterFactory.XML_DATE_PATTERN, JaxenXPathQueryExecuterFactory.PROPERTY_XML_DATE_PATTERN));
+			datasource.setNumberPattern(getStringParameter(JaxenXPathQueryExecuterFactory.XML_NUMBER_PATTERN, JaxenXPathQueryExecuterFactory.PROPERTY_XML_NUMBER_PATTERN));
 			datasource.setTimeZone((TimeZone)getParameterValue(JaxenXPathQueryExecuterFactory.XML_TIME_ZONE, true));
 		}
 		

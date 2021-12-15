@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,9 +23,6 @@
  */
 package net.sf.jasperreports.engine.export.oasis;
 
-import java.io.IOException;
-import java.io.Writer;
-
 import net.sf.jasperreports.engine.JRPrintGraphicElement;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.export.LengthUtil;
@@ -37,7 +34,7 @@ import net.sf.jasperreports.engine.util.JRColorUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: GraphicStyle.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: GraphicStyle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class GraphicStyle extends Style
 {
@@ -55,7 +52,7 @@ public class GraphicStyle extends Style
 	/**
 	 *
 	 */
-	public GraphicStyle(Writer styleWriter, JRPrintGraphicElement element)
+	public GraphicStyle(WriterHelper styleWriter, JRPrintGraphicElement element)
 	{
 		super(styleWriter);
 
@@ -177,7 +174,7 @@ public class GraphicStyle extends Style
 	/**
 	 *
 	 */
-	public void write(String lineStyleName) throws IOException
+	public void write(String lineStyleName)
 	{
 		styleWriter.write(" <style:style style:name=\"" + lineStyleName + "\"");
 		styleWriter.write(" style:family=\"graphic\" style:parent-style-name=\"Graphics\">\n");

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,29 +25,38 @@ package net.sf.jasperreports.charts;
 
 
 /**
+ * Type of the plot used to render Line, XY Line and Scatter charts.
+ * <br/>
+ * It exposes the following specific settings:
+ * <ul>
+ * <li>the show lines flag</li>
+ * <li>the show shapes flag</li>
+ * </ul>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCommonLinePlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCommonLinePlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCommonLinePlot
 {
 	
 	/**
-	 * 
+	 * @return the show lines flag
 	 */
 	public Boolean getShowLines();
 	
 	/**
-	 * 
+	 * Sets the show lines flag
+	 * @param isShowLines the show lines flag
 	 */
 	public void setShowLines(Boolean isShowLines);
 	
 	/**
-	 * 
+	 * @return the show shapes flag
 	 */
 	public Boolean getShowShapes();
 
 	/**
-	 * 
+	 * Sets the show shapes flag
+	 * @param isShowShapes the show shapes flag
 	 */
 	public void setShowShapes(Boolean isShowShapes);
 	

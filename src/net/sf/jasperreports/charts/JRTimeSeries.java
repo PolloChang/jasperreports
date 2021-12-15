@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,29 +29,39 @@ import net.sf.jasperreports.engine.JRHyperlink;
 
 
 /**
+ * Represents the series for the Time Series dataset.
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTimeSeries.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTimeSeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRTimeSeries extends JRCloneable
 {
 	
 	/**
-	 * 
+	 * @return a <code>java.lang.Comparable</code> object representing 
+	 * the expression of the series name. Specifies the series to which 
+	 * to add the current value pair when incrementing the dataset.
 	 */
 	public JRExpression getSeriesExpression();
 
 	/**
-	 * 
+	 * @return a <code>java.util.Date</code> expression from which the engine 
+	 * will extract the corresponding time period depending on the value set 
+	 * for the <code>timePeriod</code> attribute.
+	 * @see JRTimeSeriesDataset#getTimePeriod()
 	 */
 	public JRExpression getTimePeriodExpression();
 
 	/**
-	 * 
+	 * @return a numeric expression representing the 
+	 * value to associate with the corresponding time period value when 
+	 * incrementing the current series of the dataset.
 	 */
 	public JRExpression getValueExpression();
 
 	/**
-	 * 
+	 * @return the label expression. If present, it helps 
+	 * customize the item labels inside charts.
 	 */
 	public JRExpression getLabelExpression();
 

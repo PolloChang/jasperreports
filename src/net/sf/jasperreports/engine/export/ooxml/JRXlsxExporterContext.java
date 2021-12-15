@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,15 +24,15 @@
 package net.sf.jasperreports.engine.export.ooxml;
 
 import net.sf.jasperreports.engine.export.JRExporterContext;
-import net.sf.jasperreports.engine.export.oasis.JROdtExporter;
 
 
 /**
  * A context that represents information about an XLSX export process.
  * 
+ * @see JRXlsxExporter
+ * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsxExporterContext.java 4595 2011-09-08 15:55:10Z teodord $
- * @see JROdtExporter
+ * @version $Id: JRXlsxExporterContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRXlsxExporterContext extends JRExporterContext
 {

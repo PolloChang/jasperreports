@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,14 +30,18 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.type.BreakTypeEnum;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillBreak.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillBreak.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillBreak extends JRFillElement implements JRBreak
 {
 
+	private static final Log log = LogFactory.getLog(JRFillBreak.class);
 
 	/**
 	 *
@@ -101,6 +105,7 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 		
 		this.evaluatePrintWhenExpression(evaluation);
 		evaluateProperties(evaluation);
+		evaluateStyle(evaluation);
 		
 		setValueRepeating(true);
 	}
@@ -206,10 +211,19 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 		
 		if (isToPrint)
 		{
+			boolean paginationIgnored = filler.getFillContext().isIgnorePagination();
 			if (getTypeValue() == BreakTypeEnum.COLUMN)
 			{
 				//column break
-				if (!filler.isFirstColumnBand || band.firstYElement != null)
+				if (paginationIgnored)
+				{
+					// unpaginated report, column breaks not honoured
+					if (log.isTraceEnabled())
+					{
+						log.trace("unpaginated report, column break not triggered");
+					}
+				}
+				else if (!filler.isFirstColumnBand || band.firstYElement != null)
 				{
 					setStretchHeight(availableHeight - getRelativeY());
 				}
@@ -219,8 +233,22 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 				//page break
 				if (!band.isPageBreakInhibited())
 				{
-					setStretchHeight(availableHeight - getRelativeY());
-					filler.columnIndex = filler.columnCount - 1;
+					boolean apply = true;
+					if (paginationIgnored)
+					{
+						String propValue = filler.getPropertiesUtil().getProperty(this, PROPERTY_PAGE_BREAK_NO_PAGINATION);
+						apply = propValue != null && propValue.equals(PAGE_BREAK_NO_PAGINATION_APPLY);
+						if (log.isTraceEnabled())
+						{
+							log.trace("unpaginated report, page break appied " + apply);
+						}
+					}
+					
+					if (apply)
+					{
+						setStretchHeight(availableHeight - getRelativeY());
+						filler.columnIndex = filler.columnCount - 1;
+					}
 				}
 			}
 		}

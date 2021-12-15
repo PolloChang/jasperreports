@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,7 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
  * item labels in a category plot.
  *
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRBaseItemLabel.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseItemLabel.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseItemLabel implements JRItemLabel, Serializable
 {
@@ -109,7 +109,7 @@ public class JRBaseItemLabel implements JRItemLabel, Serializable
 		color = itemLabel.getColor();
 		backgroundColor = itemLabel.getBackgroundColor();
 //		mask = itemLabel.getMask();
-		font = factory.getFont(itemLabel.getChart(), itemLabel.getFont());
+		font = factory.getFont(chart, itemLabel.getFont());
 	}
 
 
@@ -175,5 +175,13 @@ public class JRBaseItemLabel implements JRItemLabel, Serializable
 		{
 			throw new JRRuntimeException(e);
 		}
+	}
+
+	@Override
+	public JRItemLabel clone(JRChart parentChart)
+	{
+		JRBaseItemLabel clone = (JRBaseItemLabel) clone();
+		clone.chart = parentChart;
+		return clone;
 	}
 }

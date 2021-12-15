@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,19 +26,24 @@ package net.sf.jasperreports.crosstabs.fill;
 import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.JRCrosstabColumnGroup;
 import net.sf.jasperreports.crosstabs.type.CrosstabColumnPositionEnum;
+import net.sf.jasperreports.engine.fill.JRFillCellContents;
 
 /**
  * Crosstab column group implementation used at fill time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillCrosstabColumnGroup.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillCrosstabColumnGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillCrosstabColumnGroup extends JRFillCrosstabGroup implements JRCrosstabColumnGroup
 {
+
+	protected JRFillCellContents crosstabHeader;
 	
 	public JRFillCrosstabColumnGroup(JRCrosstabColumnGroup group, JRFillCrosstabObjectFactory factory)
 	{
 		super(group, JRCellContents.TYPE_COLUMN_HEADER, factory);
+		
+		crosstabHeader = factory.getCell(group.getCrosstabHeader(), JRCellContents.TYPE_CROSSTAB_HEADER);//FIXME
 	}
 
 
@@ -51,6 +56,17 @@ public class JRFillCrosstabColumnGroup extends JRFillCrosstabGroup implements JR
 	public int getHeight()
 	{
 		return ((JRCrosstabColumnGroup) parentGroup).getHeight();
+	}
+
+	@Override
+	public JRCellContents getCrosstabHeader()
+	{
+		return crosstabHeader;
+	}
+	
+	public JRFillCellContents getFillCrosstabHeader()
+	{
+		return crosstabHeader;
 	}
 
 }

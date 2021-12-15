@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -46,7 +46,7 @@ import org.apache.commons.beanutils.locale.LocaleConvertUtilsBean;
  * data into numerical or date values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRAbstractTextDataSource.java 4709 2011-10-18 08:59:12Z narcism $
+ * @version $Id: JRAbstractTextDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractTextDataSource implements JRDataSource
 {

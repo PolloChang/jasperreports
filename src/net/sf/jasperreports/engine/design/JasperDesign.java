@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstab;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDataset;
@@ -61,16 +62,56 @@ import net.sf.jasperreports.engine.util.JRVisitorSupport;
 
 
 /**
- * JasperDesign is used for in-memory representation of a report design. Instances of this class can be easily
- * created from an XML template and viceversa. It contains all report properties and report elements in their design time
- * state.
+ * JasperDesign is used for in-memory representation of a report design. 
  * <p>
- * The main reason for using this class is for modifying report templates at run time. Although using compiled reports
- * is usually recommended, sometimes people need to dinamically change a report design.
+ * The class contains all report properties and report elements inherited from the 
+ * {@link net.sf.jasperreports.engine.JRReport} interface
+ * in their design time state. 
+ * </p><p>
+ * All its instances are subject to compilation before being used for filling and report 
+ * generation. These instances are the raw material that the JasperReports library uses to generate 
+ * reports. Such instances are usually obtained:</p>
+ * <ul>
+ * <li>by parsing the JRXML report template files 
+ * using the library's internal XML-parsing utility classes.</li>
+ * <li>by applications that use JasperReports through API calls if 
+ * working with JRXML files is not an option.</li>
+ * </ul>
+ * <p>
+ * The first option for creating report designs relies on editing the JRXML files and using them 
+ * with the {@link net.sf.jasperreports.engine.JasperCompileManager} in order to prepare them
+ * for filling with data. Because they are well structured and are validated against a public
+ * XSD when parsed, these files can be easily edited using simple editors or specialized
+ * XML editors.
+ * </p><p>
+ * The second option is recommended only in case the parent application that uses
+ * JasperReports inside the reporting module needs to create report templates at runtime. In
+ * most cases this is not needed because the report templates do not need to change with
+ * every report execution, and hence static report templates could be used. Only the data
+ * used to fill these static report templates is dynamic.
+ * </p><p>
+ * However, there are cases when the actual report template is the result of some user input.
+ * The parent application might supply its users with a set of options when launching the
+ * reports that might take the form of some simplified report designer or wizard. In such
+ * cases, the actual report layout is not known or is not complete at design time, and can
+ * only be put together after the user's input is received.
+ * </p><p>
+ * The most common use case scenario that requires dynamically built or ad hoc report
+ * templates (as we call them) is one in which the columns that are going to be present in a
+ * table-like report layout are not known at design time. Instead, the user will give the
+ * number of columns and their order inside the desired report at runtime.
+ * </p><p>
+ * Developers have to make sure that the applications they create really need ad hoc reports
+ * and cannot rely solely on static report templates. Since dynamically built report
+ * templates have to be compiled on the fly at runtime, they can result in a certain loss of
+ * performance.
+ * </p>
  *
+ * @see net.sf.jasperreports.engine.JRReport
+ * @see net.sf.jasperreports.engine.base.JRBaseReport
  * @see net.sf.jasperreports.engine.xml.JRXmlLoader
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperDesign.java 5337 2012-05-04 09:15:58Z lucianc $
+ * @version $Id: JasperDesign.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JasperDesign extends JRBaseReport
 {
@@ -101,13 +142,13 @@ public class JasperDesign extends JRBaseReport
 
 	public static final String PROPERTY_DETAIL = "detail";
 
-	public static final String PROPERTY_FLOAT_COLUMN_FOOTER = "floatColumnFooter";
+	public static final String PROPERTY_FLOAT_COLUMN_FOOTER = "isFloatColumnFooter";
 
 	public static final String PROPERTY_FONTS = "fonts";
 
 	public static final String PROPERTY_FORMAT_FACTORY_CLASS = "formatFactoryClass";
 
-	public static final String PROPERTY_IGNORE_PAGINATION = "ignorePagination";
+	public static final String PROPERTY_IGNORE_PAGINATION = "isIgnorePagination";
 
 	public static final String PROPERTY_IMPORTS = "imports";
 
@@ -143,15 +184,15 @@ public class JasperDesign extends JRBaseReport
 
 	public static final String PROPERTY_SUMMARY = "summary";
 
-	public static final String PROPERTY_SUMMARY_NEW_PAGE = "summaryNewPage";
+	public static final String PROPERTY_SUMMARY_NEW_PAGE = "isSummaryNewPage";
 
-	public static final String PROPERTY_SUMMARY_WITH_PAGE_HEADER_AND_FOOTER = "summaryWithPageHeaderAndFooter";
+	public static final String PROPERTY_SUMMARY_WITH_PAGE_HEADER_AND_FOOTER = "isSummaryWithPageHeaderAndFooter";
 
 	public static final String PROPERTY_TEMPLATES = "templates";
 
 	public static final String PROPERTY_TITLE = "title";
 
-	public static final String PROPERTY_TITLE_NEW_PAGE = "titleNewPage";
+	public static final String PROPERTY_TITLE_NEW_PAGE = "isTitleNewPage";
 
 	public static final String PROPERTY_TOP_MARGIN = "topMargin";
 	
@@ -177,6 +218,7 @@ public class JasperDesign extends JRBaseReport
 	/**
 	 * Constructs a JasperDesign object and fills it with the default variables and parameters.
 	 */
+	@SuppressWarnings("deprecation")
 	public JasperDesign()
 	{
 		setMainDataset(new JRDesignDataset(true));
@@ -967,7 +1009,7 @@ public class JasperDesign extends JRBaseReport
 	 */
 	public Collection<JRExpression> getExpressions()
 	{
-		return JRExpressionCollector.collectExpressions(this);
+		return JRExpressionCollector.collectExpressions(DefaultJasperReportsContext.getInstance(), this);
 	}
 
 

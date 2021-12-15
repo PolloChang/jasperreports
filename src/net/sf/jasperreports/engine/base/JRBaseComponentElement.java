@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,9 +23,11 @@
  */
 package net.sf.jasperreports.engine.base;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpressionCollector;
+import net.sf.jasperreports.engine.JRVisitable;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.component.Component;
 import net.sf.jasperreports.engine.component.ComponentKey;
@@ -37,7 +39,7 @@ import net.sf.jasperreports.engine.component.ComponentsEnvironment;
  * in compiled reports.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseComponentElement.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRBaseComponentElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseComponentElement extends JRBaseElement implements
 		JRComponentElement
@@ -54,8 +56,8 @@ public class JRBaseComponentElement extends JRBaseElement implements
 		
 		componentKey = element.getComponentKey();
 		
-		ComponentManager manager = ComponentsEnvironment.getComponentManager(componentKey);
-		component = manager.getComponentCompiler().toCompiledComponent(
+		ComponentManager manager = ComponentsEnvironment.getInstance(DefaultJasperReportsContext.getInstance()).getManager(componentKey);
+		component = manager.getComponentCompiler(DefaultJasperReportsContext.getInstance()).toCompiledComponent(
 				element.getComponent(), factory);
 	}
 
@@ -71,13 +73,18 @@ public class JRBaseComponentElement extends JRBaseElement implements
 
 	public void collectExpressions(JRExpressionCollector collector)
 	{
-		ComponentManager manager = ComponentsEnvironment.getComponentManager(componentKey);
-		manager.getComponentCompiler().collectExpressions(component, collector);
+		ComponentManager manager = ComponentsEnvironment.getInstance(DefaultJasperReportsContext.getInstance()).getManager(componentKey);
+		manager.getComponentCompiler(DefaultJasperReportsContext.getInstance()).collectExpressions(component, collector);
 	}
 
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitComponentElement(this);
+		
+		if (component instanceof JRVisitable)
+		{
+			((JRVisitable) component).visit(visitor);
+		}
 	}
 
 }

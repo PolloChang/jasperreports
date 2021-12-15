@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,43 +27,45 @@ import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRHyperlink;
 
 /**
+ * Represents the series for the Gantt dataset.
+ * 
  * @author Peter Risko (peter@risko.hu)
- * @version $Id: JRGanttSeries.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRGanttSeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRGanttSeries {
 
 	/**
-	 *
+	 * @return the expression of the series name
 	 */
 	public JRExpression getSeriesExpression();
 
 	/**
-	 *
+	 * @return the expression of the task name
 	 */
 	public JRExpression getTaskExpression();
 
 	/**
-	 *
+	 * @return the expression of the subtask name
 	 */
 	public JRExpression getSubtaskExpression();
 
 	/**
-	 *
+	 * @return the start date expression
 	 */
 	public JRExpression getStartDateExpression();
 
 	/**
-	 *
+	 * @return the end date expression
 	 */
 	public JRExpression getEndDateExpression();
 
 	/**
-	 *
+	 * @return the task percent expression
 	 */
 	public JRExpression getPercentExpression();
 
 	/**
-	 *
+	 * @return the label expression
 	 */
 	public JRExpression getLabelExpression();
 

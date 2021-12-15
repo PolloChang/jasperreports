@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.web.actions;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -30,26 +32,35 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import net.sf.jasperreports.engine.JRElement;
+import net.sf.jasperreports.engine.JRElementGroup;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReportContext;
+import net.sf.jasperreports.engine.design.JRDesignComponentElement;
+import net.sf.jasperreports.engine.design.JRDesignElement;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.util.JRElementsVisitor;
 import net.sf.jasperreports.engine.util.MessageProvider;
 import net.sf.jasperreports.engine.util.MessageUtil;
+import net.sf.jasperreports.engine.util.UniformElementVisitor;
 import net.sf.jasperreports.repo.JasperDesignCache;
 import net.sf.jasperreports.repo.JasperDesignReportResource;
 import net.sf.jasperreports.web.commands.CommandStack;
 import net.sf.jasperreports.web.commands.CommandTarget;
 
-import org.codehaus.jackson.annotate.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: AbstractAction.java 5331 2012-05-03 11:53:20Z teodord $
+ * @version $Id: AbstractAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="actionName")
 public abstract class AbstractAction implements Action {
 	
 	public static final String PARAM_COMMAND_STACK = "net.sf.jasperreports.command.stack";
+	public static final String ERR_CONCAT_STRING = "<#_#>";
 	
 	private JasperReportsContext jasperReportsContext;
 	private ReportContext reportContext;
@@ -114,22 +125,21 @@ public abstract class AbstractAction implements Action {
 			this.errorMessages = new ArrayList<String>();
 		}
 		
-		public void add(String messageKey, Object[] args) {
+		public void add(String messageKey, Object... args) {
 			errorMessages.add(messageProvider.getMessage(messageKey, args, locale));
 		}
 
 		public void add(String messageKey) {
-			add(messageKey, null);
+			add(messageKey, (Object[])null);
 		}
 
-		public void addAndThrow(String messageKey, Object[] args) throws ActionException {
+		public void addAndThrow(String messageKey, Object... args) throws ActionException {
 			errorMessages.add(messageProvider.getMessage(messageKey, args, locale));
 			throwAll();
 		}
 		
 		public void addAndThrow(String messageKey) throws ActionException {
-			addAndThrow(messageKey, null);
-			throwAll();
+			addAndThrow(messageKey, (Object[])null);
 		}
 		
 		public boolean isEmpty() {
@@ -139,8 +149,12 @@ public abstract class AbstractAction implements Action {
 		public void throwAll() throws ActionException {
 			if (!errorMessages.isEmpty()) {
 				StringBuffer errBuff = new StringBuffer();
-				for (String errMsg: errorMessages) {
-					errBuff.append(errMsg).append("\n");
+				for (int i = 0, ln = errorMessages.size(); i < ln; i++) {
+					String errMsg = errorMessages.get(i);
+					errBuff.append(errMsg);
+					if (i < ln -1) {
+						errBuff.append(ERR_CONCAT_STRING);
+					}
 				}
 				throw new ActionException(errBuff.toString());
 			}	
@@ -153,17 +167,82 @@ public abstract class AbstractAction implements Action {
 	 */
 	public CommandTarget getCommandTarget(UUID uuid)
 	{
+		return getCommandTarget(uuid, JRDesignComponentElement.class);
+	}
+
+	public CommandTarget getCommandTarget(final UUID uuid, final Class<? extends JRDesignElement> elementType)
+	{
 		JasperDesignCache cache = JasperDesignCache.getInstance(getJasperReportsContext(), getReportContext());
 
 		Map<String, JasperDesignReportResource> cachedResources = cache.getCachedResources();
 		Set<String> uris = cachedResources.keySet();
 		for (String uri : uris)
 		{
-			CommandTarget target = new CommandTarget();
+			final CommandTarget target = new CommandTarget();
 			target.setUri(uri);
-			return target;
+			
+			JasperDesign jasperDesign = cache.getJasperDesign(uri);
+			JRElementsVisitor.visitReport(jasperDesign, new UniformElementVisitor()
+			{
+				private boolean found = false;
+				
+				@Override
+				public void visitElementGroup(JRElementGroup elementGroup)
+				{
+					//NOP
+				}
+				
+				@Override
+				protected void visitElement(JRElement element)
+				{
+					if (!found && elementType.isInstance(element) && uuid.equals(element.getUUID()))
+					{
+						target.setIdentifiable(element);
+						
+						// there's no way to stop the graph visit
+						found = true;
+					}
+				}
+			});
+			
+			if (target.getIdentifiable() != null)
+			{
+				return target;
+			}
 		}
 		return null;
 	}
 
+
+	/**
+	 * 
+	 */
+	public NumberFormat createNumberFormat(String pattern, Locale locale)
+	{
+		NumberFormat format = null;
+
+		if (locale == null)
+		{
+			format = NumberFormat.getNumberInstance();
+		}
+		else
+		{
+			format = NumberFormat.getNumberInstance(locale);
+		}
+			
+		if (pattern != null && pattern.trim().length() > 0)
+		{
+			if (format instanceof DecimalFormat)
+			{
+				((DecimalFormat) format).applyPattern(pattern);
+			}
+		}
+		return format;
+	}
+
+
+	@Override
+	public boolean requiresRefill() {
+		return true;
+	}
 }

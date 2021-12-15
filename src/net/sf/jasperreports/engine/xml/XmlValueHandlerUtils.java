@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,7 @@ import net.sf.jasperreports.engine.export.JRXmlExporter;
 import net.sf.jasperreports.extensions.ExtensionsEnvironment;
 import net.sf.jasperreports.extensions.ExtensionsRegistry;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -38,7 +38,7 @@ import org.apache.commons.logging.LogFactory;
  * Class the provides access to {@link XmlValueHandler XML value handlers}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: XmlValueHandlerUtils.java 4808 2011-11-21 13:44:22Z lucianc $
+ * @version $Id: XmlValueHandlerUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XmlValueHandlerUtils
 {

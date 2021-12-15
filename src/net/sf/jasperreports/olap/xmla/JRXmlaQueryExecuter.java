@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.olap.xmla;
 
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -44,6 +45,12 @@ import javax.xml.soap.SOAPFactory;
 import javax.xml.soap.SOAPFault;
 import javax.xml.soap.SOAPMessage;
 import javax.xml.soap.SOAPPart;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataSource;
@@ -53,15 +60,19 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.query.JRAbstractQueryExecuter;
+import net.sf.jasperreports.olap.JRMdxQueryExecuterFactory;
 import net.sf.jasperreports.olap.JROlapDataSource;
+import net.sf.jasperreports.olap.result.JROlapResult;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 
 /**
- * @author Michael G�nther (m.guenther at users.sourceforge.net)
- * @version $Id: JRXmlaQueryExecuter.java 5050 2012-03-12 10:11:26Z teodord $
+ * @author Michael Gunther (m.guenther at users.sourceforge.net)
+ * @author Lucian Chirita (lucianc@users.sourceforge.net)
+ * @author swood
+ * @version $Id: JRXmlaQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 {
@@ -72,8 +83,13 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 	private static final String MDD_URI = "urn:schemas-microsoft-com:xml-analysis:mddataset";
 	private static final String XMLA_URI = "urn:schemas-microsoft-com:xml-analysis";
 	
-	private static final Pattern LEVEL_UNIQUE_NAME_PATTERN = Pattern.compile("\\[[^\\]]+\\]\\.\\[([^\\]]+)\\]");
+	private static final String LEVEL_UNIQUE_NAME_PATTERN_DEFINITION = "\\[[^\\]]+\\]\\.\\[([^\\]]+)\\]";
+	private static final Pattern LEVEL_UNIQUE_NAME_PATTERN = Pattern.compile(LEVEL_UNIQUE_NAME_PATTERN_DEFINITION);
 	private static final int LEVEL_UNIQUE_NAME_PATTERN_NAME_GROUP = 1;
+	
+	private static final String HIERARCHY_LEVEL_UNIQUE_NAME_PATTERN_DEFINITION = LEVEL_UNIQUE_NAME_PATTERN_DEFINITION + "\\.\\[([^\\]]+)\\]";
+	private static final Pattern HIERARCHY_LEVEL_UNIQUE_NAME_PATTERN = Pattern.compile(HIERARCHY_LEVEL_UNIQUE_NAME_PATTERN_DEFINITION);
+	private static final int HIERARCHY_LEVEL_UNIQUE_NAME_PATTERN_NAME_GROUP = 2;
 
 	private SOAPFactory sf;
 	private SOAPConnection connection;
@@ -102,13 +118,18 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
 	}
 
+	@Override
+	protected String getCanonicalQueryLanguage()
+	{
+		return JRMdxQueryExecuterFactory.CANONICAL_LANGUAGE;
+	}
+
 	protected String getParameterReplacement(String parameterName)
 	{
 		return String.valueOf(getParameterValue(parameterName));
 	}
 
-	
-	public JRDataSource createDatasource() throws JRException
+	public JROlapResult getResult()
 	{
 		try
 		{
@@ -130,6 +151,13 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 		{
 			throw new JRRuntimeException(e);
 		}
+
+		return xmlaResult;
+	}
+	
+	public JRDataSource createDatasource() throws JRException
+	{
+		getResult();
 		
 		return new JROlapDataSource(dataset, xmlaResult);
 	}
@@ -154,7 +182,12 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 				soapUrl += ":" + password;
 			}
 
-			soapUrl += "@" + url.getHost() + ":" + url.getPort() + url.getPath();
+			soapUrl += "@" + url.getHost();
+			if (url.getPort() != -1)
+			{
+				soapUrl += ":" + url.getPort();
+			}
+			soapUrl += url.getPath();
 		}
 		return soapUrl;
 	}
@@ -253,7 +286,7 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 
 			if (log.isDebugEnabled())
 			{
-				log.debug("XML/A query message: " + message.toString());
+				log.debug("XML/A query message: \n" + prettyPrintSOAP(message.getSOAPPart().getEnvelope()));
 			}
 
 			return message;
@@ -319,7 +352,7 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 
 		if (log.isDebugEnabled())
 		{
-			log.debug("XML/A result envelope: " + soapEnvelope.toString());
+			log.debug("XML/A result envelope: " + prettyPrintSOAP(soapEnvelope));
 		}
 		
 		SOAPFault fault = soapBody.getFault();
@@ -531,7 +564,12 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 
 			JRXmlaResultAxis axis = new JRXmlaResultAxis(axisName);
 			xmlaResult.addAxis(axis);
-
+			
+			if (log.isDebugEnabled())
+			{
+				log.debug("adding axis: " + axis.getAxisName());
+			}
+			
 			// retrieve the hierarchies by <HierarchyInfo>
 			name = sf.createName("HierarchyInfo", "", MDD_URI);
 			Iterator<?> itHierInfo = axisElement.getChildElements(name);
@@ -670,6 +708,11 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 		Name name = sf.createName("name");
 		String dimName = hierInfoElement.getAttributeValue(name); // Get the Dimension Name
 
+		if (log.isDebugEnabled())
+		{
+			log.debug("Adding hierarchy: " + dimName);
+		}
+
 		JRXmlaHierarchy hier = new JRXmlaHierarchy(dimName);
 		axis.addHierarchy(hier);
 	}
@@ -720,6 +763,18 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 				{
 					lName = matcher.group(LEVEL_UNIQUE_NAME_PATTERN_NAME_GROUP);
 				}
+				else
+				{
+					matcher = HIERARCHY_LEVEL_UNIQUE_NAME_PATTERN.matcher(levelUniqueName);
+					if (matcher.matches())
+					{
+						lName = matcher.group(HIERARCHY_LEVEL_UNIQUE_NAME_PATTERN_NAME_GROUP);
+					}
+					else
+					{
+						throw new JRRuntimeException("No level name for: " + levelUniqueName);
+					}
+				}
 			}
 			
 			int lNum = 0;
@@ -729,9 +784,36 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 				lNum = Integer.parseInt(((SOAPElement) lNumElements.next()).getValue());
 			}
 			JRXmlaMember member = new JRXmlaMember(caption, uName, hierName, lName, lNum);
+			
+			if (log.isDebugEnabled())
+			{
+				log.debug("Adding member: axis - " + axis.getAxisName() + " hierName - " + hierName  + " lName - " + lName + " uName - " + uName);
+			}
 			tuple.setMember(memNum++, member);
 		}
 
 		axis.addTuple(tuple);
+	}
+	
+	protected String prettyPrintSOAP(SOAPElement element)
+	{
+		final StringWriter sw = new StringWriter();
+
+		try
+		{
+			Transformer transformer = TransformerFactory.newInstance().newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			transformer.transform(
+				new DOMSource(element),
+				new StreamResult(sw));
+		}
+		catch (TransformerException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+
+
+		return sw.toString();
 	}
 }

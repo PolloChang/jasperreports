@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2009 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -17,7 +17,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with JasperReports. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -27,7 +27,7 @@ header
 {
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2009 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,7 @@ header
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with JasperReports. If not, see <http://www.gnu.org/licenses/>.
  */
@@ -60,7 +60,7 @@ import net.sf.jasperreports.olap.mapping.*;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: mapping.g 3740 2010-04-16 15:03:17Z lucianc $
+ * @version $Id: mapping.g 7199 2014-08-27 13:58:10Z teodord $
  */
 class MappingParser extends Parser;
 options
@@ -248,7 +248,7 @@ name returns [String name = null]
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: mapping.g 3740 2010-04-16 15:03:17Z lucianc $
+ * @version $Id: mapping.g 7199 2014-08-27 13:58:10Z teodord $
  */
 class MappingLexer extends Lexer;
 options

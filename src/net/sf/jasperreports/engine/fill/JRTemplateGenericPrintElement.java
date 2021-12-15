@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,14 +23,18 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.PrintElementVisitor;
+import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
 
 /**
  * Implementation of {@link JRGenericPrintElement} that uses
@@ -38,7 +42,7 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * store common attributes. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTemplateGenericPrintElement.java 5407 2012-05-22 13:27:32Z lucianc $
+ * @version $Id: JRTemplateGenericPrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRTemplateGenericPrintElement
  */
 public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
@@ -48,6 +52,11 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	private Map<String,Object> parameters;
+	
+	public JRTemplateGenericPrintElement()
+	{
+		
+	}
 	
 	/**
 	 * Creates a generic print element.
@@ -67,6 +76,7 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 	 * 
 	 * @param template the template to use for the element
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRTemplateGenericPrintElement(JRTemplateGenericElement, PrintElementOriginator)}
 	 */
 	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, int sourceElementId)
 	{
@@ -79,13 +89,42 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 	 * Creates a generic print element.
 	 * 
 	 * @param template the template to use for the element
+	 * @param originator
+	 */
+	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, PrintElementOriginator originator)
+	{
+		super(template, originator);
+		
+		parameters = new LinkedHashMap<String,Object>();
+	}
+	
+	/**
+	 * Creates a generic print element.
+	 * 
+	 * @param template the template to use for the element
 	 * @param sourceElementId the Id of the source element
 	 * @param parameterCount the number of parameters that the element will have
+	 * @deprecated replaced by {@link #JRTemplateGenericPrintElement(JRTemplateGenericElement, PrintElementOriginator, int)}
 	 */
 	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, int sourceElementId,
 			int parameterCount)
 	{
 		super(template, sourceElementId);
+		
+		parameters = new LinkedHashMap<String,Object>(parameterCount * 4 / 3, 0.75f);
+	}
+	
+	/**
+	 * Creates a generic print element.
+	 * 
+	 * @param template the template to use for the element
+	 * @param originator
+	 * @param parameterCount the number of parameters that the element will have
+	 */
+	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, PrintElementOriginator originator,
+			int parameterCount)
+	{
+		super(template, originator);
 		
 		parameters = new LinkedHashMap<String,Object>(parameterCount * 4 / 3, 0.75f);
 	}
@@ -123,6 +162,34 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);
+	}
+
+	@Override
+	public void writeVirtualized(VirtualizationOutput out) throws IOException
+	{
+		super.writeVirtualized(out);
+		
+		out.writeIntCompressed(parameters.size());
+		for (Entry<String, Object> entry : parameters.entrySet())
+		{
+			out.writeJRObject(entry.getKey());
+			out.writeJRObject(entry.getValue());
+		}
+	}
+
+	@Override
+	public void readVirtualized(VirtualizationInput in) throws IOException
+	{
+		super.readVirtualized(in);
+		
+		int paramsCount = in.readIntCompressed();
+		parameters = new LinkedHashMap<String,Object>(paramsCount * 4 / 3, 0.75f);
+		for (int i = 0; i < paramsCount; i++)
+		{
+			String key = (String) in.readJRObject();
+			Object value = in.readJRObject();
+			parameters.put(key, value);
+		}
 	}
 
 }

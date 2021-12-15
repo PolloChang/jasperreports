@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,11 +33,23 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRRuntimeException;
 
 
 /**
+ * Utility class that can be used when serializable objects must be saved on disk 
+ * or sent over the network through an output stream.
+ * <p>
+ * Both the {@link net.sf.jasperreports.engine.design.JasperDesign} and
+ * {@link net.sf.jasperreports.engine.JasperReport} classes implement the
+ * <code>java.io.Serializable</code> interface. This allows users to store their report templates as
+ * serialized objects either in their fully modifiable state 
+ * ({@link net.sf.jasperreports.engine.design.JasperDesign} objects) or in their
+ * compiled form ({@link net.sf.jasperreports.engine.JasperReport} objects), using 
+ * various methods exposed by this class. 
+ * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRSaver.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRSaver.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRSaver
 {
@@ -168,6 +180,42 @@ public final class JRSaver
 	}
 
 
+	/**
+	 * 
+	 */
+	public static void saveResource(String resource, File file)
+	{
+		FileOutputStream fos = null;
+
+		try
+		{
+			fos = new FileOutputStream(file);
+			fos.write(JRLoader.loadBytesFromResource(resource));
+		}
+		catch (JRException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+		catch (IOException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+		finally
+		{
+			if (fos != null)
+			{
+				try
+				{
+					fos.close();
+				}
+				catch(IOException e)
+				{
+				}
+			}
+		}
+	}
+	
+	
 	private JRSaver()
 	{
 	}

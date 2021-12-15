@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,7 @@ import net.sf.jasperreports.engine.export.JRXmlExporter;
  * to {@link JasperPrint} objects.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: XmlValueHandler.java 4808 2011-11-21 13:44:22Z lucianc $
+ * @version $Id: XmlValueHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface XmlValueHandler
 {

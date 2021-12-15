@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,11 +43,13 @@ import org.apache.commons.logging.LogFactory;
  * JSON query executer implementation.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JsonQueryExecuter.java 5101 2012-03-16 21:03:51Z teodord $
+ * @version $Id: JsonQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JsonQueryExecuter extends JRAbstractQueryExecuter
 {
 	private static final Log log = LogFactory.getLog(JsonQueryExecuter.class);
+
+	protected static final String CANONICAL_LANGUAGE = "JSON";
 	
 	private JsonDataSource datasource;
 	
@@ -70,6 +72,12 @@ public class JsonQueryExecuter extends JRAbstractQueryExecuter
 	public JsonQueryExecuter(JRDataset dataset, Map<String, ? extends JRValueParameter> parametersMap)
 	{
 		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
+	}
+
+	@Override
+	protected String getCanonicalQueryLanguage()
+	{
+		return CANONICAL_LANGUAGE;
 	}
 
 	protected String getParameterReplacement(String parameterName)

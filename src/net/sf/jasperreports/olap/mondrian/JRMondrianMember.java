@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,7 @@ import net.sf.jasperreports.olap.result.JROlapMember;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMondrianMember.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRMondrianMember.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRMondrianMember implements JROlapMember
 {
@@ -42,7 +42,7 @@ public class JRMondrianMember implements JROlapMember
 		this.member = member;
 		this.parent = factory.createMember(member.getParentMember());
 	}
-
+	
 	public int getDepth()
 	{
 		return member.getDepth();
@@ -68,7 +68,7 @@ public class JRMondrianMember implements JROlapMember
 		return member.getUniqueName();
 	}
 
-	public Member getMondrianMember()
+	public Object getMember()
 	{
 		return member;
 	}

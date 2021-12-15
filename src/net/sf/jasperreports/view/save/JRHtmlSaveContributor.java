@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,15 +31,16 @@ import java.util.ResourceBundle;
 import javax.swing.JOptionPane;
 
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.export.JRHtmlExporter;
+import net.sf.jasperreports.engine.export.HtmlExporter;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleHtmlExporterOutput;
 import net.sf.jasperreports.view.JRSaveContributor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRHtmlSaveContributor.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRHtmlSaveContributor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRHtmlSaveContributor extends JRSaveContributor
 {
@@ -118,9 +119,9 @@ public class JRHtmlSaveContributor extends JRSaveContributor
 					)
 			)
 		{
-			JRHtmlExporter exporter = new JRHtmlExporter(getJasperReportsContext());
-			exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint); 
-			exporter.setParameter(JRExporterParameter.OUTPUT_FILE, file);
+			HtmlExporter exporter = new HtmlExporter(getJasperReportsContext());
+			exporter.setExporterInput(new SimpleExporterInput(jasperPrint)); 
+			exporter.setExporterOutput(new SimpleHtmlExporterOutput(file));
 			exporter.exportReport(); 
 		}
 	}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,47 +23,67 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.base.JRBasePrintElement;
+import net.sf.jasperreports.engine.JRPrintElement;
 
 	
 	
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: OccupiedGridCell.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: OccupiedGridCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class OccupiedGridCell extends JRExporterGridCell
 {
 
+	private static final GridCellSize SIZE = new GridCellSize(0, 0, 1, 1);
 
 	/**
 	 *
 	 */
 	private JRExporterGridCell occupier;
 
-
 	/**
 	 *
 	 */
 	public OccupiedGridCell(JRExporterGridCell occupier)
 	{
-		super(
-			new ElementWrapper(null, new JRBasePrintElement(null), null), //FIXMEDOCX optimize memory with static fields
-			0, 0, 1, 1
-			);
+		//FIXME do we need GridCellStyle for occupied cells?
+		super();
 		
 		this.occupier = occupier;
 	}
 
+	@Override
+	public GridCellSize getSize()
+	{
+		return SIZE;
+	}
 
 	public JRExporterGridCell getOccupier()
 	{
 		return occupier;
 	}
 
-
 	public byte getType()
 	{
 		return TYPE_OCCUPIED_CELL;
+	}
+
+	@Override
+	public JRPrintElement getElement()
+	{
+		return null;
+	}
+
+	@Override
+	public String getElementAddress()
+	{
+		return null;
+	}
+
+	@Override
+	public String getProperty(String propName)
+	{
+		return occupier.getProperty(propName);
 	}
 
 }

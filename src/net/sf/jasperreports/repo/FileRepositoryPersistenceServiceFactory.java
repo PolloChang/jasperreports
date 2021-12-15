@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,12 @@
  */
 package net.sf.jasperreports.repo;
 
-import net.sf.jasperreports.data.DataAdapter;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JasperReportsContext;
-
-
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FileRepositoryPersistenceServiceFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: FileRepositoryPersistenceServiceFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FileRepositoryPersistenceServiceFactory implements PersistenceServiceFactory
 {
@@ -49,7 +45,7 @@ public class FileRepositoryPersistenceServiceFactory implements PersistenceServi
 	/**
 	 * 
 	 */
-	public <K extends RepositoryService, L extends Resource, M extends PersistenceService> M getPersistenceService(
+	public <K extends RepositoryService, L extends Resource> PersistenceService getPersistenceService(
 		JasperReportsContext jasperReportsContext,
 		Class<K> repositoryServiceType, 
 		Class<L> resourceType
@@ -59,33 +55,33 @@ public class FileRepositoryPersistenceServiceFactory implements PersistenceServi
 		{
 			if (InputStreamResource.class.getName().equals(resourceType.getName()))
 			{
-				return (M)new InputStreamPersistenceService();
+				return new InputStreamPersistenceService();
 			}
 			else if (OutputStreamResource.class.getName().equals(resourceType.getName()))
 			{
-				return (M)new OutputStreamPersistenceService();
+				return new OutputStreamPersistenceService();
 			}
 			else if (ReportResource.class.getName().equals(resourceType.getName()))
 			{
-				return (M)new SerializedReportPersistenceService();
+				return new SerializedReportPersistenceService();
 			}
-//			else if (ReportResource.class.getName().equals(resourceType.getName()))
-//			{
-//				return (M)new ReportPersistenceService();
-//			}
-			else if (DataAdapter.class.isAssignableFrom(resourceType))
+			else if (ResourceBundleResource.class.getName().equals(resourceType.getName()))
 			{
-				return (M)new CastorDataAdapterPersistenceService(jasperReportsContext);
+				return new ResourceBundlePersistenceService(jasperReportsContext);
+			}
+			else if (DataAdapterResource.class.isAssignableFrom(resourceType))
+			{
+				return new CastorDataAdapterPersistenceService(jasperReportsContext);
+			}
+			else if (CastorResource.class.isAssignableFrom(resourceType))
+			{
+				return new CastorObjectPersistenceService(jasperReportsContext);
+			}
+			else if (SerializableResource.class.isAssignableFrom(resourceType))
+			{
+				return new SerializedObjectPersistenceService();
 			}
 		}
 		return null;
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #getPersistenceService(JasperReportsContext, Class, Class)}.
-	 */
-	public <K extends RepositoryService, L extends Resource, M extends PersistenceService> M getPersistenceService(Class<K> repositoryServiceType, Class<L> resourceType) 
-	{
-		return getPersistenceService(DefaultJasperReportsContext.getInstance(), repositoryServiceType, resourceType);
 	}
 }

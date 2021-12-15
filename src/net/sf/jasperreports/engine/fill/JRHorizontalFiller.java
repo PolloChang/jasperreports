@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRHorizontalFiller.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRHorizontalFiller.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRHorizontalFiller extends JRBaseFiller
 {
@@ -134,6 +134,13 @@ public class JRHorizontalFiller extends JRBaseFiller
 		if (columnFooter != null)
 		{
 			lastPageColumnFooterOffsetY -= columnFooter.getHeight();
+		}
+		
+		if (log.isDebugEnabled())
+		{
+			log.debug("Filler " + fillerId + " - pageHeight: " + pageHeight
+					+ ", columnFooterOffsetY: " + columnFooterOffsetY
+					+ ", lastPageColumnFooterOffsetY: " + lastPageColumnFooterOffsetY);
 		}
 	}
 
@@ -252,10 +259,19 @@ public class JRHorizontalFiller extends JRBaseFiller
 				printPageStretchHeight = offsetY + bottomMargin;
 			//}
 		}
+		else
+		{
+			addLastPageBookmarks();
+		}
 
 		if (fillContext.isIgnorePagination())
 		{
 			jasperPrint.setPageHeight(offsetY + bottomMargin);
+		}
+		
+		if (bookmarkHelper != null)
+		{
+			jasperPrint.setBookmarks(bookmarkHelper.getRootBookmarks());
 		}
 	}
 
@@ -333,7 +349,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	 {
 		if (log.isDebugEnabled() && !title.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": title");
+			log.debug("Fill " + fillerId + ": title at " + offsetY);
 		}
 
 		title.evaluatePrintWhenExpression(JRExpression.EVALUATION_DEFAULT);
@@ -409,7 +425,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !pageHeader.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": page header");
+			log.debug("Fill " + fillerId + ": page header at " + offsetY);
 		}
 
 		setNewPageColumnInBands();
@@ -488,7 +504,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !columnHeader.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": column headers");
+			log.debug("Fill " + fillerId + ": column headers at " + offsetY);
 		}
 
 		setNewPageColumnInBands();
@@ -584,7 +600,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 
 		if (log.isDebugEnabled() && !groupHeaderSection.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": " + group.getName() + " header");
+			log.debug("Fill " + fillerId + ": " + group.getName() + " header at " + offsetY);
 		}
 
 		byte evalPrevPage = (group.isTopLevelChange()?JRExpression.EVALUATION_OLD:JRExpression.EVALUATION_DEFAULT);
@@ -730,7 +746,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !detailSection.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": detail");
+			log.debug("Fill " + fillerId + ": detail at " + offsetY);
 		}
 
 		if (!detailSection.areAllPrintWhenExpressionsNull())
@@ -978,7 +994,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 
 		if (log.isDebugEnabled() && !groupFooterSection.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": " + group.getName() + " footer");
+			log.debug("Fill " + fillerId + ": " + group.getName() + " footer at " + offsetY);
 		}
 
 		JRFillBand[] groupFooterBands = groupFooterSection.getFillBands();
@@ -1026,7 +1042,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	 {
 		if (log.isDebugEnabled() && !columnFooter.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": column footers");
+			log.debug("Fill " + fillerId + ": column footers at " + offsetY);
 		}
 
 		/*
@@ -1074,7 +1090,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 
 		if (log.isDebugEnabled() && !crtPageFooter.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": " + (isLastPageFooter ? "last " : "") + "page footer");
+			log.debug("Fill " + fillerId + ": " + (isLastPageFooter ? "last " : "") + "page footer at " + offsetY);
 		}
 
 		offsetX = leftMargin;
@@ -1100,7 +1116,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !summary.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": summary");
+			log.debug("Fill " + fillerId + ": summary at " + offsetY);
 		}
 
 		offsetX = leftMargin;
@@ -1109,7 +1125,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 		{
 			if (
 				!isSummaryNewPage
-				&& columnIndex == 0
+				//&& columnIndex == 0
 				&& summary.getBreakHeight() <= columnFooterOffsetY - offsetY
 				)
 			{
@@ -1176,6 +1192,11 @@ public class JRHorizontalFiller extends JRBaseFiller
 
 				fillBand(printBand);
 				offsetY += printBand.getHeight();
+
+				/*   */
+				fillSummaryOverflow();
+				
+				//DONE
 			}
 			else
 			{
@@ -1206,13 +1227,19 @@ public class JRHorizontalFiller extends JRBaseFiller
 
 					fillBand(printBand);
 					offsetY += printBand.getHeight();
+
+					/*   */
+					fillSummaryOverflow();
+					
+					//DONE
+				}
+				else
+				{
+					resolveBandBoundElements(summary, JRExpression.EVALUATION_DEFAULT);
+
+					//DONE
 				}
 			}
-
-			/*   */
-			fillSummaryOverflow();
-			
-			//DONE
 		}
 		else
 		{
@@ -1298,7 +1325,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	{
 		if (
 			!isSummaryNewPage
-			&& columnIndex == 0
+			//&& columnIndex == 0
 			&& summary.getBreakHeight() <= columnFooterOffsetY - offsetY
 			)
 		{
@@ -1361,7 +1388,9 @@ public class JRHorizontalFiller extends JRBaseFiller
 				//DONE
 			}
 		}
-		else if (columnIndex == 0 && offsetY <= lastPageColumnFooterOffsetY)
+		else if (
+				//columnIndex == 0 && 
+				offsetY <= lastPageColumnFooterOffsetY)
 		{
 			summary.evaluatePrintWhenExpression(JRExpression.EVALUATION_DEFAULT);
 
@@ -1480,7 +1509,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	{
 		if (
 			!isSummaryNewPage
-			&& columnIndex == 0
+			//&& columnIndex == 0
 			&& summary.getBreakHeight() <= lastPageColumnFooterOffsetY - offsetY
 			)
 		{
@@ -1540,7 +1569,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 		}
 		else if (
 			!isSummaryNewPage
-			&& columnIndex == 0
+			//&& columnIndex == 0
 			&& summary.getBreakHeight() <= columnFooterOffsetY - offsetY
 			)
 		{
@@ -1635,7 +1664,9 @@ public class JRHorizontalFiller extends JRBaseFiller
 				//DONE
 			}
 		}
-		else if (columnIndex == 0 && offsetY <= lastPageColumnFooterOffsetY)
+		else if (
+				//columnIndex == 0 && 
+				offsetY <= lastPageColumnFooterOffsetY)
 		{
 			setLastPageFooter(true);
 
@@ -1867,7 +1898,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !background.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": background");
+			log.debug("Fill " + fillerId + ": background at " + offsetY);
 		}
 		
 		//offsetX = leftMargin;
@@ -2266,7 +2297,7 @@ public class JRHorizontalFiller extends JRBaseFiller
 	{
 		if (log.isDebugEnabled() && !noData.isEmpty())
 		{
-			log.debug("Fill " + fillerId + ": noData");
+			log.debug("Fill " + fillerId + ": noData at " + offsetY);
 		}
 
 		noData.evaluatePrintWhenExpression(JRExpression.EVALUATION_DEFAULT);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -49,7 +49,7 @@ import org.jfree.data.time.SimpleTimePeriod;
 
 /**
  * @author Peter Risko (peter@risko.hu)
- * @version $Id: JRFillGanttDataset.java 5091 2012-03-15 15:00:37Z teodord $
+ * @version $Id: JRFillGanttDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDataset {
 

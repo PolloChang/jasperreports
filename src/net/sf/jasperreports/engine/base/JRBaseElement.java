@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -54,7 +54,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * the most common element properties, and their getter/setter methods. It also has a constructor for initializing
  * these properties.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseElement.java 5404 2012-05-22 09:22:00Z lucianc $
+ * @version $Id: JRBaseElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRBaseElement implements JRElement, Serializable, JRChangeEventsSupport
 {
@@ -556,7 +556,9 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 
 	public boolean hasProperties()
 	{
-		return propertiesMap != null && propertiesMap.hasProperties();
+		// checking for empty properties here instead of hasProperties because
+		// table components create elements with dynamic base properties
+		return propertiesMap != null && !propertiesMap.isEmpty();
 	}
 
 	public JRPropertiesMap getPropertiesMap()

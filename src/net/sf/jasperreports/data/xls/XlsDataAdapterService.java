@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,29 +23,22 @@
  */
 package net.sf.jasperreports.data.xls;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.Map;
 
-import jxl.Workbook;
-import jxl.read.biff.BiffException;
-import net.sf.jasperreports.data.AbstractDataAdapterService;
+import net.sf.jasperreports.data.excel.ExcelFormatEnum;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.data.JRXlsDataSource;
-import net.sf.jasperreports.engine.query.JRXlsQueryExecuterFactory;
+import net.sf.jasperreports.engine.data.AbstractXlsDataSource;
+import net.sf.jasperreports.engine.data.XlsDataSource;
+import net.sf.jasperreports.engine.query.ExcelQueryExecuterFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsDataAdapterService.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: XlsDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class XlsDataAdapterService extends AbstractDataAdapterService 
+public class XlsDataAdapterService extends AbstractXlsDataAdapterService 
 {
 	
 	/**
@@ -64,89 +57,36 @@ public class XlsDataAdapterService extends AbstractDataAdapterService
 		this(DefaultJasperReportsContext.getInstance(), xlsDataAdapter);
 	}
 	
-	public XlsDataAdapter getXlsDataAdapter()
-	{
-		return (XlsDataAdapter)getDataAdapter();
-	}
-	
 	@Override
 	public void contributeParameters(Map<String, Object> parameters) throws JRException
 	{
+		super.contributeParameters(parameters);
+
 		XlsDataAdapter xlsDataAdapter = getXlsDataAdapter();
 		if (xlsDataAdapter != null)
 		{
-			try
-			{
-				String datePattern = xlsDataAdapter.getDatePattern();
-				String numberPattern = xlsDataAdapter.getNumberPattern();
-				if (xlsDataAdapter.isQueryExecuterMode())
-				{	
-					parameters.put(JRXlsQueryExecuterFactory.XLS_WORKBOOK, Workbook.getWorkbook(new FileInputStream(new File(xlsDataAdapter.getFileName()))));//FIXMENOW check this
-					if (datePattern != null && datePattern.length() > 0)
-					{
-						parameters.put( JRXlsQueryExecuterFactory.XLS_DATE_FORMAT, new SimpleDateFormat(datePattern) );
-					}
-					if (numberPattern != null && numberPattern.length() > 0)
-					{
-						parameters.put( JRXlsQueryExecuterFactory.XLS_NUMBER_FORMAT, new DecimalFormat(numberPattern) );
-					}
-					parameters.put( JRXlsQueryExecuterFactory.XLS_USE_FIRST_ROW_AS_HEADER, new Boolean(xlsDataAdapter.isUseFirstRowAsHeader()));
-	
-					if (!xlsDataAdapter.isUseFirstRowAsHeader())
-					{ 
-						String[] names = new String[xlsDataAdapter.getColumnNames().size()];
-						int[] indexes = new int[xlsDataAdapter.getColumnNames().size()];
-						setupColumns(xlsDataAdapter, names, indexes);
-	
-						parameters.put( JRXlsQueryExecuterFactory.XLS_COLUMN_NAMES_ARRAY, names);
-						parameters.put( JRXlsQueryExecuterFactory.XLS_COLUMN_INDEXES_ARRAY, indexes);
-					}
-				}else{				
-						JRXlsDataSource ds = new JRXlsDataSource(new File(xlsDataAdapter.getFileName()));
-						if (datePattern != null && datePattern.length() > 0)
-						{
-							ds.setDateFormat(new SimpleDateFormat(datePattern));
-						}
-						if (numberPattern != null && numberPattern.length() > 0)
-						{
-							ds.setNumberFormat(new DecimalFormat(numberPattern));
-						}
-			
-						ds.setUseFirstRowAsHeader(xlsDataAdapter.isUseFirstRowAsHeader());
-			
-						if (!xlsDataAdapter.isUseFirstRowAsHeader())
-						{
-							String[] names = new String[xlsDataAdapter.getColumnNames().size()];
-							int[] indexes = new int[xlsDataAdapter.getColumnNames().size()];
-							setupColumns(xlsDataAdapter, names, indexes);
-							ds.setColumnNames( names, indexes);
-						}
-			
-						parameters.put(JRParameter.REPORT_DATA_SOURCE, ds);
-					
-				}
-			}
-			catch (FileNotFoundException e)
-			{
-				throw new JRException(e);
-			}
-			catch (IOException e)
-			{
-				throw new JRException(e);
-			} catch (BiffException e) {
-				throw new JRException(e);
+			if (xlsDataAdapter.isQueryExecuterMode())
+			{	
+				parameters.put( ExcelQueryExecuterFactory.XLS_FORMAT, ExcelFormatEnum.XLS);//add this just for the sake of ExcelQueryExecuter, which is called when queryMode=true
 			}
 		}
 	}
 
-	private void setupColumns(XlsDataAdapter xlsDataAdapter, String[] names,
-			int[] indexes) {
-		for (int i=0; i< names.length; ++i )
+	@Override
+	protected AbstractXlsDataSource getXlsDataSource() throws JRException
+	{
+		XlsDataAdapter xlsDataAdapter = getXlsDataAdapter();
+		
+		AbstractXlsDataSource dataSource = null;
+		try
 		{
-			names[i] = "" + xlsDataAdapter.getColumnNames().get(i);
-			indexes[i] = (xlsDataAdapter.getColumnIndexes().size() > i) ? xlsDataAdapter.getColumnIndexes().get(i) : i;
+			dataSource = new XlsDataSource(getJasperReportsContext(), xlsDataAdapter.getFileName());
 		}
+		catch (IOException e)
+		{
+			throw new JRException(e);
+		}
+		return dataSource;
 	}
-	
 	
 }

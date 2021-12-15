@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,6 +44,7 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.PrintBookmark;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.util.CompositeClassloader;
 import net.sf.jasperreports.engine.util.JRSingletonCache;
@@ -58,8 +59,16 @@ import org.xml.sax.SAXParseException;
 
 
 /**
+ * Utility class that helps reconverting XML documents into 
+ * {@link net.sf.jasperreports.engine.JasperPrint} objects. 
+ * <p>
+ * Generated documents can be stored in XML format if they are exported using the
+ * {@link net.sf.jasperreports.engine.export.JRXmlExporter}. After they're exported,
+ * one can parse them back into {@link net.sf.jasperreports.engine.JasperPrint} objects
+ * by using this class.
+ * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintXmlLoader.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPrintXmlLoader.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrintXmlLoader implements ErrorHandler
 {
@@ -72,7 +81,7 @@ public class JRPrintXmlLoader implements ErrorHandler
 	/**
 	 *
 	 */
-	private JasperReportsContext jasperReportsContext;
+	private final JasperReportsContext jasperReportsContext;
 	private JasperPrint jasperPrint;
 	private List<Exception> errors = new ArrayList<Exception>();
 
@@ -82,6 +91,7 @@ public class JRPrintXmlLoader implements ErrorHandler
 	 */
 	protected JRPrintXmlLoader()
 	{
+		this(DefaultJasperReportsContext.getInstance());
 	}
 	
 
@@ -92,7 +102,16 @@ public class JRPrintXmlLoader implements ErrorHandler
 	{
 		this.jasperReportsContext = jasperReportsContext;
 	}
-	
+
+
+	/**
+	 *
+	 */
+	public JasperReportsContext getJasperReportsContext()
+	{
+		return jasperReportsContext;
+	}
+
 
 	/**
 	 *
@@ -262,6 +281,10 @@ public class JRPrintXmlLoader implements ErrorHandler
 		
 		/*   */
 		digester.addFactoryCreate("*/style/pen", JRPenFactory.Style.class.getName());
+
+		/*   */
+		digester.addFactoryCreate("*/bookmark", PrintBookmarkFactory.class.getName());
+		digester.addSetNext("*/bookmark", "addBookmark", PrintBookmark.class.getName());
 
 		/*   */
 		digester.addFactoryCreate("jasperPrint/page", JRPrintPageFactory.class.getName());

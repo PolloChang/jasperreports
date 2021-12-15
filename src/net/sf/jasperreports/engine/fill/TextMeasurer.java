@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,23 +23,10 @@
  */
 package net.sf.jasperreports.engine.fill;
 
-import java.awt.Font;
 import java.awt.font.FontRenderContext;
-import java.awt.font.LineBreakMeasurer;
-import java.awt.font.TextAttribute;
-import java.awt.font.TextLayout;
-import java.awt.geom.Rectangle2D;
-import java.text.AttributedCharacterIterator;
-import java.text.AttributedCharacterIterator.Attribute;
-import java.text.AttributedString;
-import java.text.Bidi;
 import java.text.BreakIterator;
-import java.text.CharacterIterator;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
@@ -55,11 +42,8 @@ import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.export.AbstractTextRenderer;
 import net.sf.jasperreports.engine.export.AwtTextRenderer;
 import net.sf.jasperreports.engine.util.DelegatePropertiesHolder;
-import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
-import net.sf.jasperreports.engine.util.JRStyledText.Run;
-import net.sf.jasperreports.engine.util.MaxFontSizeFinder;
 import net.sf.jasperreports.engine.util.ParagraphUtil;
 
 import org.apache.commons.logging.Log;
@@ -68,9 +52,135 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * Default text measurer implementation.
+ * <h3>Text Measuring</h3>
+ * When a the contents of a text element do not fit
+ * into the area given by the element width and height, the engine will either truncate the
+ * text contents or, in the case of a text field that is allowed to stretch, increase the height of
+ * the element to accommodate the contents. To do so, the JasperReports engine needs to
+ * measure the text and calculate how much of it fits in the element area, or how much the
+ * element needs to stretch in order to fit the entire text.
+ * <p/>
+ * JasperReports does this, by default, by using standard Java AWT classes to layout and
+ * measure the text with its style information given by the text font and by other style
+ * attributes. This ensures that the result of the text layout calculation is exact according to
+ * the JasperReports principle of pixel perfectness.
+ * <p/>
+ * However, this comes at a price - the AWT text layout calls contribute to the overall
+ * report fill performance. For this reason and possibly others, it might be desired in some
+ * cases to implement a different text measuring mechanism. JasperReports allows users to
+ * employ custom text measurer implementations by setting a value for the
+ * <code>net.sf.jasperreports.text.measurer.factory</code> property.
+ * The property can be set globally (in <code>jasperreports.properties</code> or via the
+ * {@link net.sf.jasperreports.engine.JRPropertiesUtil#setProperty(String, String)} method), at
+ * report level or at element level (as an element property). The property value should be
+ * either the name of a class that implements the
+ * {@link net.sf.jasperreports.engine.util.JRTextMeasurerFactory} interface, or an
+ * alias defined for such a text measurer factory class. To define an alias, one needs to
+ * define a property having
+ * <code>net.sf.jasperreports.text.measurer.factory.&lt;alias&gt;</code> as key and the factory
+ * class name as value. Take the following examples of text measurer factory properties:
+ * <ul>
+ * <li>in jasperreports.properties set a custom default text measurer factory:
+ * <br/>
+ * <code>net.sf.jasperreports.text.measurer.factory=com.jasperreports.MyTextMeasurerFactory</code></li>
+ * <li>define an alias for a different text measurer factory:
+ * <br/>
+ * <code>net.sf.jasperreports.text.measurer.factory.fast=com.jasperreports.MyFastTextMeasurerFactory</code></li>
+ * <li>in a JRXML, use the fast text measurer for a static text:</li>
+ * </ul>
+ * <pre>
+ * &lt;staticText&gt;
+ *   &lt;reportElement ...&gt;
+ *     &lt;property name="net.sf.jasperreports.text.measurer.factory" value="fast"/&gt;
+ *   &lt;/reportElement&gt;
+ *   &lt;text&gt;...&lt;/text&gt;
+ * &lt;/staticText&gt;
+ * </pre>
+ * The default text measurer factory used by JasperReports is
+ * {@link net.sf.jasperreports.engine.fill.TextMeasurerFactory}; the factory is also
+ * registered under an alias named <code>default</code>.
+ * <h3>Text Truncation</h3>
+ * The built-in text measurer supports a series of text truncation customizations. As a
+ * reminder, text truncation occurs when a the contents of a static text element or of a text
+ * field that is not set as stretchable do not fit the area reserved for the element in the report
+ * template. Note that text truncation only refers to the truncation of the last line of a text
+ * element, and not to the word wrapping of a text element that spans across multiple lines.
+ * <p/>
+ * The default behavior is to use the standard AWT line break logic (as returned by the
+ * <code>java.text.BreakIterator.getLineInstance()</code> method) to determine where to
+ * truncate the text. This means that the last line of text will be truncated after the last word
+ * that fits on the line, or after the last character when the first word on the line does not
+ * entirely fit.
+ * <p/>
+ * This behavior can be changed by forcing the text to always get truncated at the last
+ * character that fits the element area, and by appending one or more characters to the
+ * truncated text to notify a report reader that the text has been truncated.
+ * To force the text to be wrapped at the last character, the
+ * {@link net.sf.jasperreports.engine.JRTextElement#PROPERTY_TRUNCATE_AT_CHAR net.sf.jasperreports.text.truncate.at.char}
+ * property needs to be set to true
+ * globally, at report level or at text element level. The levels at which the property can be
+ * set are listed in a decreasing order of precedence, therefore an element level property
+ * overrides the report level property, which in its turn overrides the global property. The
+ * property can also be set to false at report or element level to override the true value of the
+ * property set at a higher level.
+ * <p/>
+ * To append a suffix to the truncated text, one needs to set the desired suffix as the value
+ * of the {@link net.sf.jasperreports.engine.JRTextElement#PROPERTY_TRUNCATE_SUFFIX net.sf.jasperreports.text.truncate.suffix} 
+ * property globally, at report level or at element level. For instance, to use a Unicode 
+ * horizontal ellipsis character (code point U+2026) as text truncation suffix, one would set 
+ * the property globally or at report level as following:
+ * <ul>
+ * <li>globally in <code>jasperreports.properties</code>:
+ * <br/>
+ * <code>net.sf.jasperreports.text.truncate.suffix=&#92;u2026</code></li>
+ * <li>at report level:</li>
+ * </ul>
+ * <pre>
+ * &lt;jasperReport ...&gt;
+ *   &lt;property name="net.sf.jasperreports.text.truncate.suffix" value="&amp;#x2026;"/&gt;
+ *   ...
+ * &lt;/jasperReport&gt;
+ * </pre>
+ * Note that in the JRXML the ellipsis character was introduced via an XML numerical
+ * character entity. If the JRXML file uses a Unicode XML encoding, the Unicode
+ * character can also be directly written in the JRXML.
+ * <p/>
+ * When using a truncation suffix, the truncate at character property is taken into
+ * consideration in order to determine where to append the truncation suffix. If the
+ * truncation at character property is set to false, the suffix is appended after the last word
+ * that fits; if the property is set to true, the suffix is appended after the last text character
+ * that fits.
+ * <p/>
+ * When used for a text element that produces styled text, the truncation suffix is placed
+ * outside the styled text, that is, the truncation suffix will be displayed using the style
+ * defined at element level.
+ * <p/>
+ * Text truncation is desirable when producing reports for that are displayed on a screen or
+ * printed on paper - in such scenarios the layout of the report is important. On the other
+ * hand, some JasperReports exporters, such as the Excel or CSV ones, produce output
+ * which in many cases is intended as data-centric. In such cases, it could be useful not to
+ * truncate any text generated by the report, even if some texts would not fit when rendered
+ * on a layout-sensitive media.
+ * <p/>
+ * To inhibit the unconditional truncation of report texts, one would need to set the
+ * {@link net.sf.jasperreports.engine.JRTextElement#PROPERTY_PRINT_KEEP_FULL_TEXT net.sf.jasperreports.print.keep.full.text}
+ * property to true globally, at report level or at text element level. When the 
+ * property is set to true, the text is not truncated at fill time and the generated 
+ * report preserves the full text as produced by the text element.
+ * <p/>
+ * Visual report exporters (such as the exporters used for PDF, HTML, RTF, printing or the
+ * Java report viewer) would still truncate the rendered text, but the Excel and CSV data-centric
+ * exporters would use the full text. Note that preserving the full text does not affect
+ * the size of the text element, therefore the Excel exporter would display the full text
+ * inside a cell that has the size of the truncated text.
  * 
+ * @see net.sf.jasperreports.engine.JRTextElement#PROPERTY_PRINT_KEEP_FULL_TEXT
+ * @see net.sf.jasperreports.engine.JRTextElement#PROPERTY_TRUNCATE_AT_CHAR
+ * @see net.sf.jasperreports.engine.JRTextElement#PROPERTY_TRUNCATE_SUFFIX
+ * @see net.sf.jasperreports.engine.fill.TextMeasurerFactory
+ * @see net.sf.jasperreports.engine.util.JRTextMeasurerUtil#PROPERTY_TEXT_MEASURER_FACTORY
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: TextMeasurer.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: TextMeasurer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TextMeasurer implements JRTextMeasurer
 {
@@ -82,14 +192,10 @@ public class TextMeasurer implements JRTextMeasurer
 	protected JasperReportsContext jasperReportsContext;
 	protected JRCommonText textElement;
 	private JRPropertiesHolder propertiesHolder;
+	private DynamicPropertiesHolder dynamicPropertiesHolder;
 	
-	private boolean measureSimpleTexts;
-	private final Map<FontKey, FontInfo> fontInfos = new HashMap<FontKey, FontInfo>();
-
-	/**
-	 * 
-	 */
-	private MaxFontSizeFinder maxFontSizeFinder;
+	private SimpleTextLineWrapper simpleLineWrapper;
+	private ComplexTextLineWrapper complextLineWrapper;
 	
 	protected int width;
 	private int height;
@@ -102,8 +208,13 @@ public class TextMeasurer implements JRTextMeasurer
 	private float formatWidth;
 	protected int maxHeight;
 	private boolean canOverflow;
-	private Map<Attribute,Object> globalAttributes;
+	
+	private boolean hasDynamicIgnoreMissingFontProp;
+	private boolean defaultIgnoreMissingFont;
 	private boolean ignoreMissingFont;
+	
+	private boolean hasDynamicSaveLineBreakOffsetsProp;
+	private boolean defaultSaveLineBreakOffsets;
 	
 	protected TextMeasuredState measuredState;
 	protected TextMeasuredState prevMeasuredState;
@@ -117,10 +228,12 @@ public class TextMeasurer implements JRTextMeasurer
 		protected int fontSizeSum;
 		protected int firstLineMaxFontSize;
 		protected int paragraphStartLine;
+		protected float textWidth;
 		protected float textHeight;
 		protected float firstLineLeading;
 		protected boolean isLeftToRight = true;
 		protected String textSuffix;
+		protected boolean isMeasured = true;
 		
 		protected int lastOffset;
 		protected ArrayList<Integer> lineBreakOffsets;
@@ -140,6 +253,11 @@ public class TextMeasurer implements JRTextMeasurer
 			return textOffset;
 		}
 		
+		public float getTextWidth()
+		{
+			return textWidth;
+		}
+		
 		public float getTextHeight()
 		{
 			return textHeight;
@@ -147,7 +265,7 @@ public class TextMeasurer implements JRTextMeasurer
 		
 		public float getLineSpacingFactor()
 		{
-			if (lines > 0 && fontSizeSum > 0)
+			if (isMeasured && lines > 0 && fontSizeSum > 0)
 			{
 				return textHeight / fontSizeSum;
 			}
@@ -156,7 +274,11 @@ public class TextMeasurer implements JRTextMeasurer
 		
 		public float getLeadingOffset()
 		{
-			return firstLineLeading - firstLineMaxFontSize * getLineSpacingFactor();
+			if (isMeasured && lines > 0 && fontSizeSum > 0)
+			{
+				return firstLineLeading - firstLineMaxFontSize * getLineSpacingFactor();
+			}
+			return 0;
 		}
 
 		public String getTextSuffix()
@@ -268,7 +390,30 @@ public class TextMeasurer implements JRTextMeasurer
 					);
 		}
 		
-		measureSimpleTexts = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(this.propertiesHolder, PROPERTY_MEASURE_SIMPLE_TEXTS, true);
+		if (textElement instanceof DynamicPropertiesHolder)
+		{
+			this.dynamicPropertiesHolder = (DynamicPropertiesHolder) textElement;
+			
+			// we can check this from the beginning
+			this.hasDynamicIgnoreMissingFontProp = this.dynamicPropertiesHolder.hasDynamicProperty(
+					JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT);
+			this.hasDynamicSaveLineBreakOffsetsProp = this.dynamicPropertiesHolder.hasDynamicProperty(
+					JRTextElement.PROPERTY_SAVE_LINE_BREAKS);
+		}
+
+		// read static property values
+		JRPropertiesUtil propertiesUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
+		defaultIgnoreMissingFont = propertiesUtil.getBooleanProperty(propertiesHolder, 
+				JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT, false);
+		defaultSaveLineBreakOffsets = propertiesUtil.getBooleanProperty(propertiesHolder, 
+				JRTextElement.PROPERTY_SAVE_LINE_BREAKS, false);
+		
+		Context measureContext = new Context();
+		simpleLineWrapper = new SimpleTextLineWrapper();
+		simpleLineWrapper.init(measureContext);
+		
+		complextLineWrapper = new ComplexTextLineWrapper();
+		complextLineWrapper.init(measureContext);
 	}
 
 	/**
@@ -338,21 +483,35 @@ public class TextMeasurer implements JRTextMeasurer
 			{
 			}
 		}
-		
-		maxFontSizeFinder = MaxFontSizeFinder.getInstance(!JRCommonText.MARKUP_NONE.equals(textElement.getMarkup()));
 
 		formatWidth = width - leftPadding - rightPadding;
 		formatWidth = formatWidth < 0 ? 0 : formatWidth;
 		maxHeight = height + availableStretchHeight - topPadding - bottomPadding;
 		maxHeight = maxHeight < 0 ? 0 : maxHeight;
 		this.canOverflow = canOverflow;
-		this.globalAttributes = styledText.getGlobalAttributes();
 		
-		ignoreMissingFont = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(propertiesHolder, 
-				JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT, false);
+		// refresh properties if required
+		ignoreMissingFont = defaultIgnoreMissingFont;
+		if (hasDynamicIgnoreMissingFontProp)
+		{
+			String dynamicIgnoreMissingFontProp = dynamicPropertiesHolder.getDynamicProperties().getProperty(
+					JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT);
+			if (dynamicIgnoreMissingFontProp != null)
+			{
+				ignoreMissingFont = JRPropertiesUtil.asBoolean(dynamicIgnoreMissingFontProp);
+			}
+		}
 		
-		boolean saveLineBreakOffsets = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(propertiesHolder, 
-				JRTextElement.PROPERTY_SAVE_LINE_BREAKS, false);
+		boolean saveLineBreakOffsets = defaultSaveLineBreakOffsets;
+		if (hasDynamicSaveLineBreakOffsetsProp)
+		{
+			String dynamicSaveLineBreakOffsetsProp = dynamicPropertiesHolder.getDynamicProperties().getProperty(
+					JRTextElement.PROPERTY_SAVE_LINE_BREAKS);
+			if (dynamicSaveLineBreakOffsetsProp != null)
+			{
+				saveLineBreakOffsets = JRPropertiesUtil.asBoolean(dynamicSaveLineBreakOffsetsProp);
+			}
+		}
 		
 		measuredState = new TextMeasuredState(saveLineBreakOffsets);
 		measuredState.lastOffset = remainingTextStart;
@@ -373,15 +532,14 @@ public class TextMeasurer implements JRTextMeasurer
 		/*   */
 		initialize(styledText, remainingTextStart, availableStretchHeight, canOverflow);
 
-		if (measureSimpleTexts && measureSimpleText(styledText, remainingTextStart))
+		TextLineWrapper lineWrapper = simpleLineWrapper;
+		// check if the simple wrapper would handle the text
+		if (!lineWrapper.start(styledText))
 		{
-			// simple text measured
-			return measuredState;
+			lineWrapper = complextLineWrapper;
+			lineWrapper.start(styledText);
 		}
-
-		AttributedCharacterIterator allParagraphs = 
-			styledText.getAwtAttributedString(ignoreMissingFont).getIterator();
-
+		
 		int tokenPosition = remainingTextStart;
 		int lastParagraphStart = remainingTextStart;
 		String lastParagraphText = null;
@@ -397,7 +555,7 @@ public class TextMeasurer implements JRTextMeasurer
 
 			if ("\n".equals(token))
 			{
-				rendered = renderParagraph(allParagraphs, lastParagraphStart, lastParagraphText);
+				rendered = renderParagraph(lineWrapper, lastParagraphStart, lastParagraphText);
 
 				lastParagraphStart = tokenPosition + (tkzer.hasMoreTokens() || tokenPosition == 0 ? 1 : 0);
 				lastParagraphText = null;
@@ -413,237 +571,10 @@ public class TextMeasurer implements JRTextMeasurer
 
 		if (rendered && lastParagraphStart < remainingTextStart + remainingText.length())
 		{
-			renderParagraph(allParagraphs, lastParagraphStart, lastParagraphText);
+			renderParagraph(lineWrapper, lastParagraphStart, lastParagraphText);
 		}
 		
 		return measuredState;
-	}
-	
-	protected static class FontKey
-	{
-		String family;
-		int size;
-		int style;
-		Number weight;
-		public FontKey(String family, int size, int style)
-		{
-			super();
-			this.family = family;
-			this.size = size;
-			this.style = style;
-		}
-		
-		@Override
-		public int hashCode()
-		{
-			int hash = 43;
-			hash = hash*29 + family.hashCode();
-			hash = hash*29 + size;
-			hash = hash*29 + style;
-			return hash;
-		}
-		
-		@Override
-		public boolean equals(Object obj)
-		{
-			FontKey info = (FontKey) obj;
-			return family.equals(info.family) && size == info.size && style == info.style;
-		}
-		
-		public String toString()
-		{
-			return "{family: " + family
-					+ ", size: " + size
-					+ ", style: " + style
-					+ "}";
-		}
-	}
-	
-	protected static class FontInfo
-	{
-		private static final int MIN_COUNT = 10;
-		private static final double FONT_SIZE_MIN_FACTOR = 0.1;
-		private static final double WIDTH_CHECK_FACTOR = 1.2;
-		
-		final Font font;
-		int measurementsCount;
-		double characterWidthSum;
-		
-		public FontInfo(Font font)
-		{
-			this.font = font;
-		}
-	}
-
-	protected boolean measureSimpleText(JRStyledText styledText, int remainingTextStart)
-	{
-		if (remainingTextStart != 0)
-		{
-			// not measuring text fragments for now
-			return false;
-		}
-		
-		List<Run> runs = styledText.getRuns();
-		if (runs.size() != 1)
-		{
-			// multiple styles
-			return false;
-		}
-		
-		String text = styledText.getText();
-		if (text.length() == 0 //this should not happen but still checking
-				|| text.indexOf('\n') >= 0 || text.indexOf('\t') >= 0)
-		{
-			// we don't handle newlines and tabs here
-			return false;
-		}
-		
-		if (hasParagraphIndents())
-		{
-			// not handling this case for now
-			return false;
-		}
-		
-		Run run = styledText.getRuns().get(0);
-		
-		if (run.attributes.get(TextAttribute.SUPERSCRIPT) != null)
-		{
-			// not handling this case, see JRStyledText.getAwtAttributedString
-			return false;
-		}
-		
-		String family = (String) run.attributes.get(TextAttribute.FAMILY);
-		Number size = (Number) run.attributes.get(TextAttribute.SIZE);
-		
-		if (family == null || size == null)
-		{
-			// this should not happen, but still checking
-			return false;
-		}
-		
-		int availableWidth = width - leftPadding - rightPadding;
-		
-		// a test to exclude cases of very large texts
-		if (text.length() * size.intValue() * FontInfo.FONT_SIZE_MIN_FACTOR > availableWidth)
-		{
-			return false;
-		}
-		
-		int style = 0;
-		Number posture = (Number) run.attributes.get(TextAttribute.POSTURE);
-		if (posture != null && !TextAttribute.POSTURE_REGULAR.equals(posture))
-		{
-			if (TextAttribute.POSTURE_OBLIQUE.equals(posture))
-			{
-				style |= Font.ITALIC;
-			}
-			else
-			{
-				// non standard posture
-				return false;
-			}
-		}
-		
-		Number weight = (Number) run.attributes.get(TextAttribute.WEIGHT);
-		if (weight != null && !TextAttribute.WEIGHT_REGULAR.equals(weight))
-		{
-			if (TextAttribute.WEIGHT_BOLD.equals(weight))
-			{
-				style |= Font.BOLD;
-			}
-			else
-			{
-				// non standard weight
-				return false;
-			}
-		}
-		
-		FontKey fontKey = new FontKey(family, size.intValue(), style);
-		FontInfo fontInfo = fontInfos.get(fontKey);
-		if (fontInfo == null)
-		{
-			// check bundled fonts
-			Font font = JRFontUtil.getAwtFontFromBundles(family, style, size.intValue(), styledText.getLocale(), false);
-			if (font == null)
-			{
-				// checking AWT font
-				JRFontUtil.checkAwtFont(family, ignoreMissingFont);
-				// creating AWT font
-				font = Font.getFont(run.attributes);
-			}
-			
-			fontInfo = new FontInfo(font);
-			fontInfos.put(fontKey, fontInfo);
-		}
-		
-		// FIXME implement more sophisticated heuristics; keep the measurements globally?
-		if (fontInfo.measurementsCount > FontInfo.MIN_COUNT)
-		{
-			// checking the current text against the avg character width
-			double avgCharWidth = fontInfo.characterWidthSum / fontInfo.measurementsCount;
-			if (avgCharWidth * text.length() > availableWidth * FontInfo.WIDTH_CHECK_FACTOR)
-			{
-				// not measuring based on the character width statistics
-				return false;
-			}
-		}
-		
-		//FIXME complex scripts still do TextLayout and Bidi here
-		Rectangle2D bounds = fontInfo.font.getStringBounds(text, getFontRenderContext());
-		
-		// adding the measurement to the font info statistics
-		++fontInfo.measurementsCount;
-		fontInfo.characterWidthSum += bounds.getWidth() / text.length();
-		
-		boolean fitsWidth = bounds.getWidth() <= availableWidth;
-		boolean fitsHeight = bounds.getHeight() <= maxHeight;
-		if (log.isTraceEnabled())
-		{
-			log.trace("simple text of length " + text.length() 
-					+ " measured to width " + bounds.getWidth()
-					+ " with font " + fontInfo
-					+ ", fits width" + fitsWidth
-					+ ", fits height" + fitsHeight);
-		}
-		
-		if (!fitsWidth)
-		{
-			// the text does not fit on one line
-			return false;
-		}
-		
-		// the whole text fits in one line
-		measuredState.isLeftToRight = isLeftToRight(text);
-		if (fitsHeight)
-		{
-			measuredState.lines = 1;
-			measuredState.textOffset = text.length();
-			measuredState.textHeight = (float) bounds.getHeight();
-		}
-		else
-		{
-			measuredState.textOffset = 0;
-			measuredState.textHeight = 0;
-		}
-
-		measuredState.firstLineLeading = - (float)bounds.getY();
-		measuredState.fontSizeSum = size.intValue();
-		measuredState.firstLineMaxFontSize = measuredState.fontSizeSum;
-		
-		return true;
-	}
-
-	protected boolean isLeftToRight(String text)
-	{
-		boolean leftToRight = true;
-		if (Bidi.requiresBidi(text.toCharArray(), 0, text.length()))
-		{
-			// determining the text direction
-			// using default LTR as there's no way to have other default in the text
-			Bidi bidi = new Bidi(text, Bidi.DIRECTION_DEFAULT_LEFT_TO_RIGHT);
-			leftToRight = bidi.baseIsLeftToRight();
-		}
-		return leftToRight;
 	}
 	
 	protected boolean hasParagraphIndents()
@@ -668,33 +599,20 @@ public class TextMeasurer implements JRTextMeasurer
 	 * 
 	 */
 	protected boolean renderParagraph(
-		AttributedCharacterIterator allParagraphs,
+		TextLineWrapper lineWrapper,
 		int lastParagraphStart,
 		String lastParagraphText
 		)
 	{
-		AttributedCharacterIterator paragraph = null;
-		
 		if (lastParagraphText == null)
 		{
-			paragraph = 
-				new AttributedString(
-					" ",
-					new AttributedString(
-						allParagraphs, 
-						lastParagraphStart, 
-						lastParagraphStart + 1
-						).getIterator().getAttributes()
-					).getIterator();
+			lineWrapper.startEmptyParagraph(lastParagraphStart);
 		}
 		else
 		{
-			paragraph = 
-				new AttributedString(
-					allParagraphs, 
-					lastParagraphStart, 
-					lastParagraphStart + lastParagraphText.length()
-					).getIterator();
+			lineWrapper.startParagraph(lastParagraphStart, 
+					lastParagraphStart + lastParagraphText.length(),
+					false);
 		}
 
 		List<Integer> tabIndexes = JRStringUtil.getTabIndexes(lastParagraphText);
@@ -702,8 +620,6 @@ public class TextMeasurer implements JRTextMeasurer
 		int[] currentTabHolder = new int[]{0};
 		TabStop[] nextTabStopHolder = new TabStop[]{null};
 		boolean[] requireNextWordHolder = new boolean[]{false};
-
-		LineBreakMeasurer lineMeasurer = new LineBreakMeasurer(paragraph, getFontRenderContext());
 		
 		measuredState.paragraphStartLine = measuredState.lines;
 		measuredState.textOffset = lastParagraphStart;
@@ -712,9 +628,9 @@ public class TextMeasurer implements JRTextMeasurer
 		boolean renderedLine = false;
 
 		// the paragraph is measured one line at a time
-		while (lineMeasurer.getPosition() < paragraph.getEndIndex() && rendered)
+		while (lineWrapper.paragraphPosition() < lineWrapper.paragraphEnd() && rendered)
 		{
-			rendered = renderNextLine(lineMeasurer, paragraph, tabIndexes, currentTabHolder, nextTabStopHolder, requireNextWordHolder);
+			rendered = renderNextLine(lineWrapper, tabIndexes, currentTabHolder, nextTabStopHolder, requireNextWordHolder);
 			renderedLine = renderedLine || rendered;
 		}
 		
@@ -723,53 +639,45 @@ public class TextMeasurer implements JRTextMeasurer
 		if (!rendered && prevMeasuredState != null && !canOverflow)
 		{
 			//handle last rendered row
-			processLastTruncatedRow(allParagraphs, lastParagraphText, lastParagraphStart, renderedLine);
+			processLastTruncatedRow(lineWrapper, lastParagraphText, lastParagraphStart, renderedLine);
 		}
 		
 		return rendered;
 	}
 	
 	protected void processLastTruncatedRow(
-		AttributedCharacterIterator allParagraphs,
+		TextLineWrapper lineWrapper,
 		String paragraphText, 
 		int paragraphOffset,
 		boolean lineTruncated
 		)
 	{
+		//FIXME move all this to TextLineWrapper?
 		if (lineTruncated && isToTruncateAtChar())
 		{
-			truncateLastLineAtChar(allParagraphs, paragraphText, paragraphOffset);
+			truncateLastLineAtChar(lineWrapper, paragraphText, paragraphOffset);
 		}
 		
-		appendTruncateSuffix(allParagraphs);
+		appendTruncateSuffix(lineWrapper);
 	}
 
 	protected void truncateLastLineAtChar(
-		AttributedCharacterIterator allParagraphs, 
+		TextLineWrapper lineWrapper, 
 		String paragraphText, 
 		int paragraphOffset
 		)
 	{
 		//truncate the original line at char
 		measuredState = prevMeasuredState.cloneState();
-		AttributedCharacterIterator lineParagraph = 
-			new AttributedString(
-				allParagraphs, 
-				measuredState.textOffset,
-				paragraphOffset + paragraphText.length()
-				).getIterator();
-		LineBreakMeasurer lineMeasurer = 
-			new LineBreakMeasurer(
-				lineParagraph, 
-				BreakIterator.getCharacterInstance(), 
-				getFontRenderContext()
-				);
+		lineWrapper.startParagraph(measuredState.textOffset, 
+				paragraphOffset + paragraphText.length(), 
+				true);
 		//render again the last line
 		//if the line does not fit now, it will remain empty
-		renderNextLine(lineMeasurer, lineParagraph, null, new int[]{0}, new TabStop[]{null}, new boolean[]{false});
+		renderNextLine(lineWrapper, null, new int[]{0}, new TabStop[]{null}, new boolean[]{false});
 	}
 
-	protected void appendTruncateSuffix(AttributedCharacterIterator allParagraphs)
+	protected void appendTruncateSuffix(TextLineWrapper lineWrapper)
 	{
 		String truncateSuffx = getTruncateSuffix();
 		if (truncateSuffx == null)
@@ -780,15 +688,8 @@ public class TextMeasurer implements JRTextMeasurer
 		int lineStart = prevMeasuredState.textOffset;
 
 		//advance from the line start until the next line start or the first newline
-		StringBuffer lineText = new StringBuffer();
-		allParagraphs.setIndex(lineStart);
-		while (allParagraphs.getIndex() < measuredState.textOffset 
-				&& allParagraphs.current() != '\n')
-		{
-			lineText.append(allParagraphs.current());
-			allParagraphs.next();
-		}
-		int linePosition = allParagraphs.getIndex() - lineStart;
+		String lineText = lineWrapper.getLineText(lineStart, measuredState.textOffset);
+		int linePosition = lineText.length();
 		
 		//iterate to the beginning of the line
 		boolean done = false;
@@ -797,41 +698,19 @@ public class TextMeasurer implements JRTextMeasurer
 			measuredState = prevMeasuredState.cloneState();
 
 			String text = lineText.substring(0, linePosition) + truncateSuffx;
-			AttributedString attributedText = new AttributedString(text);
-			
-			//set original attributes for the text part
-			AttributedCharacterIterator lineAttributes = 
-				new AttributedString(
-					allParagraphs, 
-					measuredState.textOffset,
-					measuredState.textOffset + linePosition
-					).getIterator();
-			setAttributes(attributedText, lineAttributes, 0);
-			
-			//set global attributes for the suffix part
-			setAttributes(
-				attributedText, 
-				globalAttributes, 
-				text.length() - truncateSuffx.length(), 
-				text.length()
-				);
-			
-			AttributedCharacterIterator lineParagraph = attributedText.getIterator();
+			boolean truncateAtChar = isToTruncateAtChar();
+			TextLineWrapper lastLineWrapper = lineWrapper.lastLineWrapper(text, 
+					measuredState.textOffset, linePosition, truncateAtChar);
 			
 			BreakIterator breakIterator = 
-				isToTruncateAtChar() 
+				truncateAtChar 
 				? BreakIterator.getCharacterInstance() 
 				: BreakIterator.getLineInstance();
-			LineBreakMeasurer lineMeasurer = 
-				new LineBreakMeasurer(
-					lineParagraph,
-					breakIterator,
-					getFontRenderContext()
-					);
+			breakIterator.setText(text);
 
-			if (renderNextLine(lineMeasurer, lineParagraph, null, new int[]{0}, new TabStop[]{null}, new boolean[]{false}))
+			if (renderNextLine(lastLineWrapper, null, new int[]{0}, new TabStop[]{null}, new boolean[]{false}))
 			{
-				int lastPos = lineMeasurer.getPosition();
+				int lastPos = lastLineWrapper.paragraphPosition();
 				//test if the entire suffix fit
 				if (lastPos == linePosition + truncateSuffx.length())
 				{
@@ -852,7 +731,7 @@ public class TextMeasurer implements JRTextMeasurer
 								measuredState.textOffset - prevMeasuredState.textOffset);
 						//if the last text char is not a new line
 						if (prevMeasuredState.textOffset > 0
-								&& allParagraphs.setIndex(prevMeasuredState.textOffset - 1) != '\n')
+								&& lineWrapper.charAt(prevMeasuredState.textOffset - 1) != '\n')
 						{
 							//force a new line so that the suffix is displayed on the last line
 							actualSuffix = '\n' + actualSuffix;
@@ -877,12 +756,14 @@ public class TextMeasurer implements JRTextMeasurer
 
 	protected boolean isToTruncateAtChar()
 	{
+		//FIXME do not read each time
 		return JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(propertiesHolder, 
 				JRTextElement.PROPERTY_TRUNCATE_AT_CHAR, false);
 	}
 
 	protected String getTruncateSuffix()
 	{
+		//FIXME do not read each time
 		String truncateSuffx = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(propertiesHolder,
 				JRTextElement.PROPERTY_TRUNCATE_SUFFIX);
 		if (truncateSuffx != null)
@@ -897,11 +778,11 @@ public class TextMeasurer implements JRTextMeasurer
 	}
 	
 
-	protected boolean renderNextLine(LineBreakMeasurer lineMeasurer, AttributedCharacterIterator paragraph, List<Integer> tabIndexes, int[] currentTabHolder, TabStop[] nextTabStopHolder, boolean[] requireNextWordHolder)
+	protected boolean renderNextLine(TextLineWrapper lineWrapper, List<Integer> tabIndexes, int[] currentTabHolder, TabStop[] nextTabStopHolder, boolean[] requireNextWordHolder)
 	{
 		boolean lineComplete = false;
 
-		int lineStartPosition = lineMeasurer.getPosition();
+		int lineStartPosition = lineWrapper.paragraphPosition();
 		
 		float maxAscent = 0;
 		float maxDescent = 0;
@@ -919,15 +800,15 @@ public class TextMeasurer implements JRTextMeasurer
 		while (!lineComplete)
 		{
 			// the current segment limit is either the next tab character or the paragraph end 
-			int tabIndexOrEndIndex = (tabIndexes == null || currentTabHolder[0] >= tabIndexes.size() ? paragraph.getEndIndex() : tabIndexes.get(currentTabHolder[0]) + 1);
+			int tabIndexOrEndIndex = (tabIndexes == null || currentTabHolder[0] >= tabIndexes.size() ? lineWrapper.paragraphEnd() : tabIndexes.get(currentTabHolder[0]) + 1);
 			
-			float startX = (lineMeasurer.getPosition() == 0 ? textElement.getParagraph().getFirstLineIndent() : 0) + leftPadding;
-			float endX = width - textElement.getParagraph().getRightIndent() - rightPadding;
+			float startX = (lineWrapper.paragraphPosition() == 0 ? jrParagraph.getFirstLineIndent() : 0) + leftPadding;
+			float endX = width - jrParagraph.getRightIndent() - rightPadding;
 			endX = endX < startX ? startX : endX;
 			//formatWidth = endX - startX;
 			//formatWidth = endX;
 
-			int startIndex = lineMeasurer.getPosition();
+			int startIndex = lineWrapper.paragraphPosition();
 
 			float rightX = 0;
 
@@ -943,39 +824,39 @@ public class TextMeasurer implements JRTextMeasurer
 			}
 
 			//float availableWidth = formatWidth - ParagraphUtil.getSegmentOffset(nextTabStopHolder[0], rightX); // nextTabStop can be null here; and that's OK
-			float availableWidth = endX - textElement.getParagraph().getLeftIndent() - ParagraphUtil.getSegmentOffset(nextTabStopHolder[0], rightX); // nextTabStop can be null here; and that's OK
+			float availableWidth = endX - jrParagraph.getLeftIndent() - ParagraphUtil.getSegmentOffset(nextTabStopHolder[0], rightX); // nextTabStop can be null here; and that's OK
 			
 			// creating a text layout object for each tab segment 
-			TextLayout layout = 
-				lineMeasurer.nextLayout(
+			TextLine textLine = 
+				lineWrapper.nextLine(
 					availableWidth,
 					tabIndexOrEndIndex,
 					requireNextWordHolder[0]
 					);
 			
-			if (layout != null)
+			if (textLine != null)
 			{
-				maxAscent = Math.max(maxAscent, layout.getAscent());
-				maxDescent = Math.max(maxDescent, layout.getDescent());
-				maxLeading = Math.max(maxLeading, layout.getLeading());
-				characterCount += layout.getCharacterCount();
-				isLeftToRight = isLeftToRight && layout.isLeftToRight();
+				maxAscent = Math.max(maxAscent, textLine.getAscent());
+				maxDescent = Math.max(maxDescent, textLine.getDescent());
+				maxLeading = Math.max(maxLeading, textLine.getLeading());
+				characterCount += textLine.getCharacterCount();
+				isLeftToRight = isLeftToRight && textLine.isLeftToRight();
 
 				//creating the current segment
 				crtSegment = new TabSegment();
-				crtSegment.layout = layout;
+				crtSegment.textLine = textLine;
 
-				float leftX = ParagraphUtil.getLeftX(nextTabStopHolder[0], layout.getAdvance()); // nextTabStop can be null here; and that's OK
+				float leftX = ParagraphUtil.getLeftX(nextTabStopHolder[0], textLine.getAdvance()); // nextTabStop can be null here; and that's OK
 				if (rightX > leftX)
 				{
 					crtSegment.leftX = rightX;
-					crtSegment.rightX = rightX + layout.getAdvance();
+					crtSegment.rightX = rightX + textLine.getAdvance();
 				}
 				else
 				{
 					crtSegment.leftX = leftX;
 					// we need this special tab stop based utility call because adding the advance to leftX causes rounding issues
-					crtSegment.rightX = ParagraphUtil.getRightX(nextTabStopHolder[0], layout.getAdvance()); // nextTabStop can be null here; and that's OK
+					crtSegment.rightX = ParagraphUtil.getRightX(nextTabStopHolder[0], textLine.getAdvance()); // nextTabStop can be null here; and that's OK
 				}
 
 				segments.add(crtSegment);
@@ -983,13 +864,13 @@ public class TextMeasurer implements JRTextMeasurer
 			
 			requireNextWordHolder[0] = true;
 
-			if (lineMeasurer.getPosition() == tabIndexOrEndIndex)
+			if (lineWrapper.paragraphPosition() == tabIndexOrEndIndex)
 			{
 				// the segment limit was a tab; going to the next tab
 				currentTabHolder[0] = currentTabHolder[0] + 1;
 			}
 			
-			if (lineMeasurer.getPosition() == paragraph.getEndIndex())
+			if (lineWrapper.paragraphPosition() == lineWrapper.paragraphEnd())
 			{
 				// the segment limit was the paragraph end; line completed and next line should start at normal zero x offset
 				lineComplete = true;
@@ -998,7 +879,7 @@ public class TextMeasurer implements JRTextMeasurer
 			else
 			{
 				// there is paragraph text remaining 
-				if (lineMeasurer.getPosition() == tabIndexOrEndIndex)
+				if (lineWrapper.paragraphPosition() == tabIndexOrEndIndex)
 				{
 					// the segment limit was a tab
 					if (crtSegment.rightX >= ParagraphUtil.getLastTabStop(jrParagraph, endX).getPosition())
@@ -1017,7 +898,7 @@ public class TextMeasurer implements JRTextMeasurer
 				{
 					// the segment did not fit entirely
 					lineComplete = true;
-					if (layout == null)
+					if (textLine == null)
 					{
 						// nothing fitted; next line should start at first tab stop indent
 						if (nextTabStopHolder[0].getPosition() == ParagraphUtil.getFirstTabStop(jrParagraph, endX).getPosition())//FIXMETAB check based on segments.size()
@@ -1027,17 +908,10 @@ public class TextMeasurer implements JRTextMeasurer
 							requireNextWordHolder[0] = false;
 							
 							//provide dummy maxFontSize because it is used for the line height of this empty line when attempting drawing below
-				 			AttributedString tmpText = 
-								new AttributedString(
-									paragraph, 
-									startIndex, 
-									startIndex + 1
-									);
-				 			LineBreakMeasurer lbm = new LineBreakMeasurer(tmpText.getIterator(), getFontRenderContext());
-				 			TextLayout tlyt = lbm.nextLayout(100);//FIXME what is this? why 100?
-							maxAscent = tlyt.getAscent();
-							maxDescent = tlyt.getDescent();
-							maxLeading = tlyt.getLeading();
+							TextLine baseLine = lineWrapper.baseTextLine(startIndex);
+							maxAscent = baseLine.getAscent();
+							maxDescent = baseLine.getDescent();
+							maxLeading = baseLine.getLeading();
 						}
 						else
 						{
@@ -1071,23 +945,18 @@ public class TextMeasurer implements JRTextMeasurer
 			prevMeasuredState = measuredState.cloneState();
 			
 			measuredState.isLeftToRight = isLeftToRight;//run direction is per layout; but this is the best we can do for now
+			measuredState.textWidth = Math.max(measuredState.textWidth, (crtSegment == null ? 0 : (crtSegment.rightX - leftPadding)));//FIXMENOW is RTL text actually working here?
 			measuredState.textHeight = newTextHeight;
 			measuredState.lines++;
 
 			if (
-				(tabIndexes == null || tabIndexes.size() == 0)
+				measuredState.isMeasured
+				&& (tabIndexes == null || tabIndexes.size() == 0)
 				&& !hasParagraphIndents() 
 				)
 			{
 				measuredState.fontSizeSum += 
-					maxFontSizeFinder.findMaxFontSize(
-						new AttributedString(
-							paragraph, 
-							lineStartPosition, 
-							lineStartPosition + characterCount
-							).getIterator(),
-						textElement.getFontSize()
-						);
+					lineWrapper.maxFontsize(lineStartPosition, lineStartPosition + characterCount);
 
 				if (measuredState.lines == 1)
 				{
@@ -1095,15 +964,19 @@ public class TextMeasurer implements JRTextMeasurer
 					measuredState.firstLineMaxFontSize = measuredState.fontSizeSum;
 				}
 			}
+			else
+			{
+				measuredState.isMeasured = false;
+			}
 			
 			// here is the Y offset where we would draw the line
 			//lastDrawPosY = drawPosY;
 			//
 			measuredState.textHeight += maxDescent;
 			
-			measuredState.textOffset += lineMeasurer.getPosition() - lineStartPosition;
+			measuredState.textOffset += lineWrapper.paragraphPosition() - lineStartPosition;
 			
-			if (lineMeasurer.getPosition() < paragraph.getEndIndex())
+			if (lineWrapper.paragraphPosition() < lineWrapper.paragraphEnd())
 			{
 				//if not the last line in a paragraph, save the line break position
 				measuredState.addLineBreak();
@@ -1121,48 +994,6 @@ public class TextMeasurer implements JRTextMeasurer
 	{
 		return propertiesHolder;
 	}
-	
-	protected void setAttributes(
-		AttributedString string,
-		AttributedCharacterIterator attributes, 
-		int stringOffset
-		)
-	{
-		for (char c = attributes.first(); c != CharacterIterator.DONE; c = attributes.next())
-		{
-			for (Iterator<Map.Entry<Attribute,Object>> it = attributes.getAttributes().entrySet().iterator(); it.hasNext();)
-			{
-				Map.Entry<Attribute,Object> attributeEntry = it.next();
-				AttributedCharacterIterator.Attribute attribute = attributeEntry.getKey();
-				if (attributes.getRunStart(attribute) == attributes.getIndex())
-				{
-					Object attributeValue = attributeEntry.getValue();
-					string.addAttribute(
-						attribute, 
-						attributeValue, 
-						attributes.getIndex() + stringOffset,
-						attributes.getRunLimit(attribute) + stringOffset
-						);
-				}
-			}
-		}
-	}
-	
-	protected void setAttributes(
-		AttributedString string,
-		Map<Attribute,Object> attributes, 
-		int startIndex, 
-		int endIndex
-		)
-	{
-		for (Iterator<Map.Entry<Attribute,Object>> it = attributes.entrySet().iterator(); it.hasNext();)
-		{
-			Map.Entry<Attribute,Object> entry = it.next();
-			Attribute attribute = entry.getKey();
-			Object attributeValue = entry.getValue();
-			string.addAttribute(attribute, attributeValue, startIndex, endIndex);
-		}
-	}
 
 	
 
@@ -1174,12 +1005,43 @@ public class TextMeasurer implements JRTextMeasurer
 		return AwtTextRenderer.LINE_BREAK_FONT_RENDER_CONTEXT;
 	}
 
-	
+	class Context implements TextMeasureContext
+	{
+		@Override
+		public JasperReportsContext getJasperReportsContext()
+		{
+			return jasperReportsContext;
+		}
+
+		@Override
+		public JRCommonText getElement()
+		{
+			return textElement;
+		}
+
+		@Override
+		public JRPropertiesHolder getPropertiesHolder()
+		{
+			return propertiesHolder;
+		}
+
+		@Override
+		public boolean isIgnoreMissingFont()
+		{
+			return ignoreMissingFont;
+		}
+
+		@Override
+		public FontRenderContext getFontRenderContext()
+		{
+			return TextMeasurer.this.getFontRenderContext();
+		}
+	}
 }
 
 class TabSegment
 {
-	public TextLayout layout;
+	public TextLine textLine;
 	public float leftX;
 	public float rightX;
 }

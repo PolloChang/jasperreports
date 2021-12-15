@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.engine.fill;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +36,8 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRGroup;
 import net.sf.jasperreports.engine.JROrigin;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
 
 import org.apache.commons.logging.Log;
@@ -43,7 +46,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillBand.java 5414 2012-05-25 09:51:28Z lucianc $
+ * @version $Id: JRFillBand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillBand extends JRFillElementContainer implements JRBand, JROriginProvider
 {
@@ -75,6 +78,7 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	private SplitTypeEnum splitType;
 	private int breakHeight;
 
+	private Set<FillReturnValues> returnValuesSet;
 	
 	/**
 	 *
@@ -88,6 +92,9 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 		super(filler, band, factory);
 
 		parent = band;
+		
+		// we need to do this before setBand()
+		returnValuesSet = new LinkedHashSet<FillReturnValues>();
 
 		if (deepElements.length > 0)
 		{
@@ -399,26 +406,17 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	}
 
 
-	protected boolean isVariableUsedInSubreportReturns(String variableName)
+	protected boolean isVariableUsedInReturns(String variableName)
 	{
 		boolean used = false;
-		if (deepElements != null)
+		for (FillReturnValues returnValues : returnValuesSet)
 		{
-			for (int i = 0; i < deepElements.length; i++)
+			if (returnValues.usesForReturnValue(variableName))
 			{
-				JRFillElement element = deepElements[i];
-				if (element instanceof JRFillSubreport)
-				{
-					JRFillSubreport subreport = (JRFillSubreport) element;
-					if (subreport.usesForReturnValue(variableName))
-					{
-						used = true;
-						break;
-					}
-				}
+				used = true;
+				break;
 			}
 		}
-
 		return used;
 	}
 
@@ -446,6 +444,7 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 
 	protected int getId()
 	{
+		//FIXME this is not necessarily unique
 		return System.identityHashCode(this);
 	}
 
@@ -504,6 +503,27 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 		}
 		
 		return isPageBreakInhibited;
+	}
+	
+	public boolean hasProperties()
+	{
+		return parent.hasProperties();
+	}
+
+	// not doing anything with the properties at fill time
+	public JRPropertiesMap getPropertiesMap()
+	{
+		return parent.getPropertiesMap();
+	}
+	
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
+	}
+
+	public void registerReturnValues(FillReturnValues fillReturnValues)
+	{
+		returnValuesSet.add(fillReturnValues);
 	}
 
 }

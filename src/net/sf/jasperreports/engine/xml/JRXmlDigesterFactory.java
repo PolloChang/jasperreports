@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -99,12 +99,14 @@ import net.sf.jasperreports.charts.xml.JRXySeriesFactory;
 import net.sf.jasperreports.charts.xml.JRXyzDatasetFactory;
 import net.sf.jasperreports.charts.xml.JRXyzSeriesFactory;
 import net.sf.jasperreports.crosstabs.JRCrosstabParameter;
+import net.sf.jasperreports.crosstabs.design.DesignCrosstabColumnCell;
 import net.sf.jasperreports.crosstabs.design.JRDesignCellContents;
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabBucket;
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabCell;
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabColumnGroup;
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabMeasure;
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstabRowGroup;
+import net.sf.jasperreports.crosstabs.type.CrosstabColumnPositionEnum;
 import net.sf.jasperreports.crosstabs.xml.JRCellContentsFactory;
 import net.sf.jasperreports.crosstabs.xml.JRCrosstabBucketExpressionFactory;
 import net.sf.jasperreports.crosstabs.xml.JRCrosstabBucketFactory;
@@ -139,10 +141,20 @@ import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRSubreportParameter;
 import net.sf.jasperreports.engine.JRSubreportReturnValue;
 import net.sf.jasperreports.engine.TabStop;
+import net.sf.jasperreports.engine.analytics.data.Axis;
+import net.sf.jasperreports.engine.analytics.dataset.BucketOrder;
+import net.sf.jasperreports.engine.analytics.dataset.DesignDataAxis;
+import net.sf.jasperreports.engine.analytics.dataset.DesignDataAxisLevel;
+import net.sf.jasperreports.engine.analytics.dataset.DesignDataLevelBucket;
+import net.sf.jasperreports.engine.analytics.dataset.DesignDataLevelBucketProperty;
+import net.sf.jasperreports.engine.analytics.dataset.DesignDataMeasure;
+import net.sf.jasperreports.engine.analytics.dataset.DesignMultiAxisData;
+import net.sf.jasperreports.engine.analytics.dataset.DesignMultiAxisDataset;
 import net.sf.jasperreports.engine.component.ComponentsBundle;
 import net.sf.jasperreports.engine.component.ComponentsEnvironment;
 import net.sf.jasperreports.engine.component.ComponentsXmlParser;
 import net.sf.jasperreports.engine.component.XmlDigesterConfigurer;
+import net.sf.jasperreports.engine.design.DesignReturnValue;
 import net.sf.jasperreports.engine.design.JRDesignDataset;
 import net.sf.jasperreports.engine.design.JRDesignElement;
 import net.sf.jasperreports.engine.design.JRDesignElementGroup;
@@ -152,6 +164,9 @@ import net.sf.jasperreports.engine.design.JRDesignQuery;
 import net.sf.jasperreports.engine.design.JRDesignReportTemplate;
 import net.sf.jasperreports.engine.design.JRDesignVariable;
 import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.type.CalculationEnum;
+import net.sf.jasperreports.engine.type.HorizontalPosition;
+import net.sf.jasperreports.engine.type.OverflowType;
 import net.sf.jasperreports.engine.util.CompositeClassloader;
 import net.sf.jasperreports.engine.util.JRProperties;
 import net.sf.jasperreports.engine.util.JRSingletonCache;
@@ -171,7 +186,7 @@ import org.xml.sax.SAXParseException;
  * a digester in order to prepare it for parsing JasperReports xml definition files.
  *
  * @author Peter Severin (peter_p_s@users.sourceforge.net)
- * @version $Id: JRXmlDigesterFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRXmlDigesterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 @SuppressWarnings("deprecation")
 public final class JRXmlDigesterFactory
@@ -428,6 +443,9 @@ public final class JRXmlDigesterFactory
 		digester.addFactoryCreate("*/hyperlinkReferenceExpression", JRExpressionFactory.StringExpressionFactory.class.getName());
 		digester.addSetNext("*/hyperlinkReferenceExpression", "setHyperlinkReferenceExpression", JRExpression.class.getName());
 		digester.addCallMethod("*/hyperlinkReferenceExpression", "setText", 0);
+		digester.addFactoryCreate("*/hyperlinkWhenExpression", JRExpressionFactory.BooleanExpressionFactory.class.getName());
+		digester.addSetNext("*/hyperlinkWhenExpression", "setHyperlinkWhenExpression", JRExpression.class.getName());
+		digester.addCallMethod("*/hyperlinkWhenExpression", "setText", 0);
 		digester.addFactoryCreate("*/hyperlinkAnchorExpression", JRExpressionFactory.StringExpressionFactory.class.getName());
 		digester.addSetNext("*/hyperlinkAnchorExpression", "setHyperlinkAnchorExpression", JRExpression.class.getName());
 		digester.addCallMethod("*/hyperlinkAnchorExpression", "setText", 0);
@@ -444,6 +462,7 @@ public final class JRXmlDigesterFactory
 
 		/*   */
 		digester.addFactoryCreate("*/subreport", JRSubreportFactory.class.getName());
+		digester.addRule("*/subreport", new XmlConstantPropertyRule(JRXmlConstants.ATTRIBUTE_overflowType, OverflowType.values()));
 		digester.addSetNext("*/subreport", "addElement", JRDesignElement.class.getName());
 
 		/*   */
@@ -494,6 +513,8 @@ public final class JRXmlDigesterFactory
 		addComponentRules(digester);
 		
 		addGenericElementRules(digester);
+		
+		addMultiAxisDataRules(digester);
 	}
 
 
@@ -1059,7 +1080,7 @@ public final class JRXmlDigesterFactory
 		digester.addSetNext( "*/candlestickPlot/domainAxisMinValueExpression", "setDomainAxisMinValueExpression", JRDesignExpression.class.getName() );
 		digester.addCallMethod( "*/candlestickPlot/domainAxisMinValueExpression", "setText", 0 );
 
-		digester.addFactoryCreate( "*/candlestickPlot/rangeAxisMaxValueExpression", JRExpressionFactory.ComparableExpressionFactory.class );
+		digester.addFactoryCreate( "*/candlestickPlot/domainAxisMaxValueExpression", JRExpressionFactory.ComparableExpressionFactory.class );
 		digester.addSetNext( "*/candlestickPlot/domainAxisMaxValueExpression", "setDomainAxisMaxValueExpression", JRDesignExpression.class.getName() );
 		digester.addCallMethod( "*/candlestickPlot/domainAxisMaxValueExpression", "setText", 0 );
 
@@ -1184,6 +1205,15 @@ public final class JRXmlDigesterFactory
 		digester.addFactoryCreate(datasetParamExprPattern, JRDatasetRunParameterExpressionFactory.class.getName());
 		digester.addSetNext(datasetParamExprPattern, "setExpression", JRExpression.class.getName());
 		digester.addCallMethod(datasetParamExprPattern, "setText", 0);
+
+		String returnValuePattern = datasetRunPattern + "/" + JRXmlConstants.ELEMENT_returnValue;
+		digester.addObjectCreate(returnValuePattern, DesignReturnValue.class.getName());
+		digester.addSetProperties(returnValuePattern, 
+				new String[]{JRXmlConstants.ATTRIBUTE_incrementerFactoryClass, JRXmlConstants.ATTRIBUTE_calculation}, 
+				new String[]{"incrementerFactoryClassName"});
+		digester.addRule(returnValuePattern, new XmlConstantPropertyRule(
+				JRXmlConstants.ATTRIBUTE_calculation, CalculationEnum.values()));
+		digester.addSetNext(returnValuePattern, "addReturnValue");
 	}
 
 
@@ -1191,6 +1221,7 @@ public final class JRXmlDigesterFactory
 	{
 		digester.addFactoryCreate("*/crosstab", JRCrosstabFactory.class.getName());
 		digester.addSetNext("*/crosstab", "addElement", JRDesignElement.class.getName());
+		digester.addRule("*/crosstab", new XmlConstantPropertyRule("horizontalPosition", HorizontalPosition.values()));
 
 		digester.addFactoryCreate("*/crosstab/crosstabParameter", JRCrosstabParameterFactory.class.getName());
 		digester.addSetNext("*/crosstab/crosstabParameter", "addParameter", JRCrosstabParameter.class.getName());
@@ -1210,8 +1241,13 @@ public final class JRXmlDigesterFactory
 		digester.addFactoryCreate("*/crosstab/rowGroup/crosstabTotalRowHeader/cellContents", JRCellContentsFactory.class.getName());
 		digester.addSetNext("*/crosstab/rowGroup/crosstabTotalRowHeader/cellContents", "setTotalHeader", JRDesignCellContents.class.getName());
 
-		digester.addFactoryCreate("*/crosstab/columnGroup", JRCrosstabColumnGroupFactory.class.getName());
-		digester.addSetNext("*/crosstab/columnGroup", "addColumnGroup", JRDesignCrosstabColumnGroup.class.getName());
+		String columnGroupPattern = "*/crosstab/columnGroup";
+		digester.addFactoryCreate(columnGroupPattern, JRCrosstabColumnGroupFactory.class.getName());
+		digester.addSetNext(columnGroupPattern, "addColumnGroup", JRDesignCrosstabColumnGroup.class.getName());
+
+		String columnGroupCrosstabHeaderPattern = columnGroupPattern + "/" + JRCrosstabColumnGroupFactory.ELEMENT_crosstabHeader;
+		digester.addFactoryCreate(columnGroupCrosstabHeaderPattern + "/cellContents", JRCellContentsFactory.class.getName());
+		digester.addSetNext(columnGroupCrosstabHeaderPattern + "/cellContents", "setCrosstabHeader", JRDesignCellContents.class.getName());
 
 		digester.addFactoryCreate("*/crosstab/columnGroup/crosstabColumnHeader/cellContents", JRCellContentsFactory.class.getName());
 		digester.addSetNext("*/crosstab/columnGroup/crosstabColumnHeader/cellContents", "setHeader", JRDesignCellContents.class.getName());
@@ -1255,6 +1291,19 @@ public final class JRXmlDigesterFactory
 
 		digester.addFactoryCreate("*/crosstab/crosstabHeaderCell/cellContents", JRCellContentsFactory.class.getName());
 		digester.addSetNext("*/crosstab/crosstabHeaderCell/cellContents", "setHeaderCell", JRDesignCellContents.class.getName());
+		
+		String titleCellPattern = "*/crosstab/titleCell";
+		digester.addObjectCreate(titleCellPattern, DesignCrosstabColumnCell.class);
+		digester.addSetProperties(titleCellPattern,
+				new String[]{JRXmlConstants.ATTRIBUTE_height, JRXmlConstants.ATTRIBUTE_contentsPosition},
+				new String[]{"height"});
+		digester.addRule(titleCellPattern, 
+				new XmlConstantPropertyRule(JRXmlConstants.ATTRIBUTE_contentsPosition, CrosstabColumnPositionEnum.values()));
+		digester.addSetNext(titleCellPattern, "setTitleCell", DesignCrosstabColumnCell.class.getName());
+		
+		String titleCellContentsPattern = titleCellPattern + "/cellContents";
+		digester.addFactoryCreate(titleCellContentsPattern, JRCellContentsFactory.class.getName());
+		digester.addSetNext(titleCellContentsPattern, "setCellContents", JRDesignCellContents.class.getName());
 	}
 
 
@@ -1309,6 +1358,70 @@ public final class JRXmlDigesterFactory
 				"setValueExpression", JRExpression.class.getName());
 		digester.addCallMethod(genericElementParameterExpressionPattern, "setText", 0);
 	}
+
+
+	private static void addMultiAxisDataRules(Digester digester)
+	{
+		String dataPattern = "*/" + JRXmlConstants.ELEMENT_multiAxisData;
+		digester.addObjectCreate(dataPattern, DesignMultiAxisData.class);
+		digester.addSetNext(dataPattern, "setMultiAxisData");// TODO lucianc move to containing element
+		
+		String datasetPattern = dataPattern + "/" + JRXmlConstants.ELEMENT_multiAxisDataset;
+		digester.addObjectCreate(datasetPattern, DesignMultiAxisDataset.class);
+		digester.addSetNext(datasetPattern, "setDataset");
+		
+		String dataAxisPattern = dataPattern + "/" + JRXmlConstants.ELEMENT_dataAxis;
+		digester.addObjectCreate(dataAxisPattern, DesignDataAxis.class);
+		digester.addRule(dataAxisPattern, new XmlConstantPropertyRule(JRXmlConstants.ATTRIBUTE_axis, Axis.values()));
+		digester.addSetNext(dataAxisPattern, "addDataAxis");
+		
+		String axisLevelPattern = dataAxisPattern + "/" + JRXmlConstants.ELEMENT_axisLevel;
+		digester.addObjectCreate(axisLevelPattern, DesignDataAxisLevel.class);
+		digester.addSetProperties(axisLevelPattern);
+		digester.addSetNext(axisLevelPattern, "addLevel");
+		addExpressionRules(digester, axisLevelPattern + "/" + JRXmlConstants.ELEMENT_labelExpression, 
+				"setLabelExpression");
+		
+		String bucketPattern = axisLevelPattern + "/" + JRXmlConstants.ELEMENT_axisLevelBucket;
+		digester.addObjectCreate(bucketPattern, DesignDataLevelBucket.class);
+		digester.addSetProperties(bucketPattern, 
+				new String[]{JRXmlConstants.ATTRIBUTE_class, JRXmlConstants.ATTRIBUTE_order}, 
+				new String[]{"valueClassName"});
+		digester.addRule(bucketPattern, new XmlConstantPropertyRule(JRXmlConstants.ATTRIBUTE_order, BucketOrder.values()));
+		digester.addSetNext(bucketPattern, "setBucket");
+		
+		addExpressionRules(digester, bucketPattern + "/" + JRCrosstabBucketFactory.ELEMENT_bucketExpression, "setExpression");
+		addExpressionRules(digester, bucketPattern + "/" + JRCrosstabBucketFactory.ELEMENT_comparatorExpression, "setComparatorExpression");
+		
+		String bucketExpressionPattern = bucketPattern + "/" + JRXmlConstants.ELEMENT_bucketProperty;
+		digester.addObjectCreate(bucketExpressionPattern, DesignDataLevelBucketProperty.class);
+		digester.addSetProperties(bucketExpressionPattern);
+		digester.addSetNext(bucketExpressionPattern, "addBucketProperty");		
+		addExpressionRules(digester, bucketExpressionPattern, "setExpression");
+		
+		String measurePattern = dataPattern + "/" + JRXmlConstants.ELEMENT_multiAxisMeasure;
+		digester.addObjectCreate(measurePattern, DesignDataMeasure.class);
+		digester.addSetNext(measurePattern, "addMeasure");
+		digester.addSetProperties(measurePattern, 
+				new String[]{JRXmlConstants.ATTRIBUTE_class, JRXmlConstants.ATTRIBUTE_incrementerFactoryClass, 
+						JRXmlConstants.ATTRIBUTE_calculation}, 
+				new String[]{"valueClassName", "incrementerFactoryClassName"});
+		digester.addRule(measurePattern, new XmlConstantPropertyRule(
+				JRXmlConstants.ATTRIBUTE_calculation, CalculationEnum.values()));
+		addExpressionRules(digester, measurePattern + "/" + JRXmlConstants.ELEMENT_labelExpression, 
+				"setLabelExpression");
+		addExpressionRules(digester, measurePattern + "/" + JRXmlConstants.ELEMENT_valueExpression, 
+				"setValueExpression");
+	}
+
+	protected static void addExpressionRules(Digester digester, String expressionPattern,
+			String setterMethod)
+	{
+		digester.addFactoryCreate(expressionPattern, JRExpressionFactory.class);
+		digester.addCallMethod(expressionPattern, "setText", 0);
+		digester.addSetNext(expressionPattern, setterMethod,
+				JRExpression.class.getName());
+	}
 	
 	/**
 	 * Creates a new instance of digester. The created digester is ready for
@@ -1348,7 +1461,8 @@ public final class JRXmlDigesterFactory
 		}
 	}
 	
-	protected static void setComponentsInternalEntityResources(JRXmlDigester digester)
+	public static void setComponentsInternalEntityResources(
+			JRXmlDigester digester)
 	{
 		Collection<ComponentsBundle> components = ComponentsEnvironment.getComponentBundles();
 		for (Iterator<ComponentsBundle> it = components.iterator(); it.hasNext();)

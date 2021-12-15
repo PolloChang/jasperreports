@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,14 @@
  */
 package net.sf.jasperreports.engine.export.ooxml;
 
-import java.io.IOException;
 import java.io.Writer;
+
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: DocxRelsHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: DocxRelsHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxRelsHelper extends BaseHelper
 {
@@ -37,44 +38,55 @@ public class DocxRelsHelper extends BaseHelper
 	/**
 	 * 
 	 */
-	public DocxRelsHelper(Writer writer)
+	public DocxRelsHelper(JasperReportsContext jasperReportsContext, Writer writer)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 	}
 
 	/**
 	 * 
 	 */
-	public void exportHeader() throws IOException
+	public void exportHeader()
 	{
-		writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-		writer.write("<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n");
-		writer.write(" <Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>\n");
-		writer.write(" <Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings\" Target=\"settings.xml\"/>\n");
+		write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		write("<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n");
+		write(" <Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>\n");
+		write(" <Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings\" Target=\"settings.xml\"/>\n");
 	}
 	
 	/**
 	 * 
 	 */
-	public void exportImage(String imageName, String extension) throws IOException
+	public void exportImage(String imageName)
 	{
-		writer.write(" <Relationship Id=\"" + imageName + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/" + imageName + "." + extension + "\"/>\n");
+		write(" <Relationship Id=\"" + imageName + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/" + imageName + "\"/>\n");
+	}
+	
+	/**
+	 * 
+	 */
+	public void exportImageLink(String imageId, String url, String targetMode)
+	{
+		if(url != null)
+		{
+			write(" <Relationship Id=\"" + imageId + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink\" Target=\"" + url + "\"" + targetMode + "/>\n");
+		}
 	}
 	
 //	/**
 //	 * 
 //	 */
-//	public void exportHyperlink(String id, String href) throws IOException
+//	public void exportHyperlink(String id, String href)
 //	{
-//		writer.write(" <Relationship Id=\"" + id + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink\" Target=\"" + href + "\"/>\n");
+//		write(" <Relationship Id=\"" + id + "\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink\" Target=\"" + href + "\"/>\n");
 //	}
 	
 	/**
 	 * 
 	 */
-	public void exportFooter() throws IOException
+	public void exportFooter()
 	{
-		writer.write("</Relationships>\n");
+		write("</Relationships>\n");
 	}
 	
 }

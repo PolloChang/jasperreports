@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,7 @@ import net.sf.jasperreports.engine.type.FooterPositionEnum;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableReportGroup.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: TableReportGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableReportGroup implements JRGroup
 {
@@ -65,7 +65,7 @@ public class TableReportGroup implements JRGroup
 
 	public FooterPositionEnum getFooterPositionValue()
 	{
-		return FooterPositionEnum.NORMAL;
+		return datasetGroup.getFooterPositionValue();
 	}
 
 	@Deprecated
@@ -117,7 +117,7 @@ public class TableReportGroup implements JRGroup
 
 	public int getMinHeightToStartNewPage()
 	{
-		return 0;
+		return datasetGroup.getMinHeightToStartNewPage();
 	}
 
 	public String getName()
@@ -127,27 +127,27 @@ public class TableReportGroup implements JRGroup
 
 	public boolean isKeepTogether()
 	{
-		return false;
+		return datasetGroup.isKeepTogether();
 	}
 
 	public boolean isReprintHeaderOnEachPage()
 	{
-		return false;
+		return datasetGroup.isReprintHeaderOnEachPage();
 	}
 
 	public boolean isResetPageNumber()
 	{
-		return false;
+		return datasetGroup.isResetPageNumber();
 	}
 
 	public boolean isStartNewColumn()
 	{
-		return false;
+		return datasetGroup.isStartNewColumn();
 	}
 
 	public boolean isStartNewPage()
 	{
-		return false;
+		return datasetGroup.isStartNewPage();
 	}
 
 	public void setFooterPosition(FooterPositionEnum footerPosition)

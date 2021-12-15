@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,8 @@ package net.sf.jasperreports.engine.export;
 
 import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.export.XmlExporterOutput;
+
 
 /**
  * Contains parameters useful for export in XML format. The generated XML has a custom structure whose DTD defintion can be
@@ -34,8 +36,9 @@ import net.sf.jasperreports.engine.JasperPrint;
  * The report images can be either stored internally in the resulting XML document or as separate files on disk. The internally stored
  * images are saved as BASE64 encoded byte arrays in CDATA sections.
  *
+ * @deprecated Replaced by {@link XmlExporterOutput}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlExporterParameter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRXmlExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlExporterParameter extends JRExporterParameter
 {
@@ -51,19 +54,9 @@ public class JRXmlExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * A boolean value specifying whether images should be store internally or rather as files on disk.
+	 * @deprecated Replaced by {@link XmlExporterOutput#isEmbeddingImages()}.
 	 */
 	public static final JRXmlExporterParameter IS_EMBEDDING_IMAGES = new JRXmlExporterParameter("Is Embedding Images Flag");
-
-
-	/**
-	 * A utility parameter that allows users to specify an alternate location for the DTD file. This is useful for users
-	 * who want to open the generated XML files in various editors that try to actually load the DTD for error checking.
-	 * 
-	 * @deprecated The parameter has been deprecated with the XML export transition to XML schema.
-	 * Setting a value for the parameter doesn't have any effect other than a warning log message.
-	 */
-	public static final JRXmlExporterParameter DTD_LOCATION = new JRXmlExporterParameter("DTD Location");
 
 
 }

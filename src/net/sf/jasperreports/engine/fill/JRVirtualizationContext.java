@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
@@ -51,7 +52,7 @@ import net.sf.jasperreports.engine.base.VirtualElementsData;
 import net.sf.jasperreports.engine.util.DeepPrintElementVisitor;
 import net.sf.jasperreports.engine.util.UniformPrintElementVisitor;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -59,7 +60,7 @@ import org.apache.commons.logging.LogFactory;
  * Context used to store data shared by virtualized objects resulted from a report fill process.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRVirtualizationContext.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRVirtualizationContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRVirtualizationContext implements Serializable, VirtualizationListener<VirtualElementsData>
 {
@@ -69,6 +70,7 @@ public class JRVirtualizationContext implements Serializable, VirtualizationList
 	
 	private static final ReferenceMap contexts = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.WEAK);
 
+	private transient JRVirtualizationContext parentContext;
 	private transient JRVirtualizer virtualizer;
 	private transient JasperReportsContext jasperReportsContext;
 	
@@ -103,6 +105,7 @@ public class JRVirtualizationContext implements Serializable, VirtualizationList
 
 	protected JRVirtualizationContext(JRVirtualizationContext parentContext)
 	{
+		this.parentContext = parentContext;
 		this.virtualizer = parentContext.virtualizer;
 		this.jasperReportsContext = parentContext.jasperReportsContext;
 
@@ -397,6 +400,15 @@ public class JRVirtualizationContext implements Serializable, VirtualizationList
 		{
 			jasperReportsContext = threadJasperReportsContext;
 		}
+		else if (jasperReportsContext == null)
+		{
+			if (log.isDebugEnabled())
+			{
+				log.debug("no thread JRContext, using default");
+			}
+			
+			jasperReportsContext = DefaultJasperReportsContext.getInstance();
+		}
 	}
 	
 	/**
@@ -548,5 +560,15 @@ public class JRVirtualizationContext implements Serializable, VirtualizationList
 	public boolean isDisposed()
 	{
 		return disposed;
+	}
+	
+	public JRVirtualizationContext getMasterContext()
+	{
+		JRVirtualizationContext context = this;
+		while (context.parentContext != null)
+		{
+			context = context.parentContext;
+		}
+		return context;
 	}
 }

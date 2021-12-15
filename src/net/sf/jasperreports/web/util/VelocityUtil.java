@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,12 @@ package net.sf.jasperreports.web.util;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -34,16 +39,23 @@ import org.apache.velocity.app.VelocityEngine;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: VelocityUtil.java 5213 2012-04-03 14:44:47Z teodord $
+ * @version $Id: VelocityUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class VelocityUtil
 {
+	private static final String VELOCITY_PROPERTY_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "velocity.";
 	private static final VelocityEngine velocityEngine;
 	
 	static {
 		velocityEngine = new VelocityEngine();
-		velocityEngine.setProperty("file.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
-		velocityEngine.setProperty("file.resource.loader.cache", "true");
+		
+		JRPropertiesUtil propertiesUtil = JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance());
+		List<PropertySuffix> properties = propertiesUtil.getProperties(VELOCITY_PROPERTY_PREFIX);
+		
+		for (PropertySuffix property: properties) {
+			velocityEngine.setProperty(property.getSuffix(), property.getValue());
+		}
+		
 		velocityEngine.init();
 	}
 	
@@ -52,7 +64,7 @@ public class VelocityUtil
 	}
 	
 	public static String processTemplate(String templateName, VelocityContext vContext) {
-		Template template = getVelocityEngine().getTemplate(templateName);
+		Template template = getVelocityEngine().getTemplate(templateName, "UTF-8");
 
 		StringWriter writer = new StringWriter(128);
 		template.merge(vContext, writer);

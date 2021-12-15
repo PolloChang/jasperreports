@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,7 @@ import net.sf.jasperreports.engine.export.zip.ExportZipEntry;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ContentBuilder.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: ContentBuilder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ContentBuilder
 {
@@ -60,7 +60,9 @@ public class ContentBuilder
 	
 	private Collection<String> fontFaces;
 	
-	private byte openDocumentNature;
+	private String mimeType;
+	
+	private StringBuffer namedExpressions;
 	
 	/**
 	 * 
@@ -77,9 +79,31 @@ public class ContentBuilder
 			styleEntry,
 			bodyEntry,
 			fontFaces,
-			JROpenDocumentExporterNature.ODT_NATURE
+			OasisZip.MIME_TYPE_ODT
 			);
 	}
+	
+	/**
+	 * 
+	 */
+	public ContentBuilder(
+			ExportZipEntry contentEntry,
+			ExportZipEntry styleEntry,
+			ExportZipEntry bodyEntry,
+			Collection<String> fontFaces,
+			String mimeType
+			)
+	{
+		this(
+				contentEntry,
+				styleEntry,
+				bodyEntry,
+				fontFaces,
+				mimeType,
+				null
+				);
+	}
+	
 	
 	/**
 	 * 
@@ -89,29 +113,21 @@ public class ContentBuilder
 		ExportZipEntry styleEntry,
 		ExportZipEntry bodyEntry,
 		Collection<String> fontFaces,
-		byte openDocumentNature
+		String mimeType,
+		StringBuffer namedExpressions
 		)
 	{
 		this.contentEntry = contentEntry;
 		this.styleEntry = styleEntry;
 		this.bodyEntry = bodyEntry;
 		this.fontFaces = fontFaces;
-		this.openDocumentNature = openDocumentNature;
+		this.mimeType = mimeType;
+		this.namedExpressions =  namedExpressions;
 	}
 	
 
 	public void build() throws IOException
 	{
-		String mimetype;
-		switch(openDocumentNature)
-		{
-			case JROpenDocumentExporterNature.ODS_NATURE:
-				mimetype = "spreadsheet";
-				break;
-			case JROpenDocumentExporterNature.ODT_NATURE:
-			default:
-				mimetype = "text";
-		}
 		Writer writer = contentEntry.getWriter();
 		
 		writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -171,11 +187,14 @@ public class ContentBuilder
 		writer.write(" </style:style>\n");
 		writer.write(" </office:automatic-styles>\n");
 		
-		writer.write("<office:body><office:" + mimetype + ">\n");
+		writer.write("<office:body><office:" + mimeType + ">\n");
 		writer.write("<office:forms form:automatic-focus=\"false\" form:apply-design-mode=\"false\"/>\n");
 		writer.flush();
 		bodyEntry.writeData(contentEntry.getOutputStream());
-		writer.write("</office:" + mimetype + ">\n</office:body>\n");
+		if(namedExpressions != null){
+			writer.write(namedExpressions.toString());
+		}
+		writer.write("</office:" + mimeType + ">\n</office:body>\n");
 
 		writer.write("</office:document-content>\n");
 		

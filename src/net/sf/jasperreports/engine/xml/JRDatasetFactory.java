@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,14 +32,15 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDatasetFactory.java 5337 2012-05-04 09:15:58Z lucianc $
+ * @version $Id: JRDatasetFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDatasetFactory extends JRBaseFactory
 {
 	
 	public Object createObject(Attributes attributes)
 	{
-		JRDesignDataset dataset = new JRDesignDataset(false);
+		JRXmlLoader xmlLoader = (JRXmlLoader)digester.peek(digester.getCount() - 1);
+		JRDesignDataset dataset = new JRDesignDataset(xmlLoader.getJasperReportsContext(), false);
 		
 		dataset.setName(attributes.getValue(JRXmlConstants.ATTRIBUTE_name));
 		dataset.setScriptletClass(attributes.getValue(JRXmlConstants.ATTRIBUTE_scriptletClass));

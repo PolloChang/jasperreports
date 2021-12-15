@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,7 @@ package net.sf.jasperreports.extensions;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -36,7 +36,7 @@ import org.springframework.beans.factory.ListableBeanFactory;
  * for beans of a specific extension type in a Spring beans factory.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SpringExtensionsRegistry.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: SpringExtensionsRegistry.java 7199 2014-08-27 13:58:10Z teodord $
  */
 //TODO generic element fallback handlers
 public class SpringExtensionsRegistry implements ExtensionsRegistry

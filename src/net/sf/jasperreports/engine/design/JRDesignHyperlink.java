@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,7 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
  * which should be used for report design purposes. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignHyperlink.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignHyperlink.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignHyperlink extends JRBaseHyperlink implements JRChangeEventsSupport
 {
@@ -57,13 +57,15 @@ public class JRDesignHyperlink extends JRBaseHyperlink implements JRChangeEvents
 	
 	public static final String PROPERTY_HYPERLINK_REFERENCE_EXPRESSION = "hyperlinkReferenceExpression";
 	
+	public static final String PROPERTY_HYPERLINK_WHEN_EXPRESSION = "hyperlinkWhenExpression";
+	
 	public static final String PROPERTY_HYPERLINK_TARGET = "hyperlinkTarget";
 	
 	public static final String PROPERTY_LINK_TARGET = "linkTarget";
 	
 	public static final String PROPERTY_HYPERLINK_TOOLTIP_EXPRESSION = "hyperlinkTooltipExpression";
 	
-	public static final String PROPERTY_LINK_TYPE = "linkType";
+	public static final String PROPERTY_LINK_TYPE = "hyperlinkType";
 	
 	public static final String PROPERTY_HYPERLINK_PARAMETERS = "hyperlinkParameters";
 	
@@ -122,6 +124,17 @@ public class JRDesignHyperlink extends JRBaseHyperlink implements JRChangeEvents
 		Object old = this.hyperlinkReferenceExpression;
 		this.hyperlinkReferenceExpression = hyperlinkReferenceExpression;
 		getEventSupport().firePropertyChange(PROPERTY_HYPERLINK_REFERENCE_EXPRESSION, old, this.hyperlinkReferenceExpression);
+	}
+
+
+	/**
+	 * Sets the boolean expression that will specify if the hyperlink should be displayed or not.
+	 */
+	public void setHyperlinkWhenExpression(JRExpression hyperlinkWhenExpression)
+	{
+		Object old = this.hyperlinkWhenExpression;
+		this.hyperlinkWhenExpression = hyperlinkWhenExpression;
+		getEventSupport().firePropertyChange(PROPERTY_HYPERLINK_WHEN_EXPRESSION, old, this.hyperlinkWhenExpression);
 	}
 
 

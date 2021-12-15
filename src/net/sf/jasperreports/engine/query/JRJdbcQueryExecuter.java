@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import java.sql.Types;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -61,27 +60,29 @@ import org.apache.commons.logging.LogFactory;
  * This query executer implementation offers built-in support for SQL queries.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRJdbcQueryExecuter.java 5297 2012-04-25 09:18:10Z teodord $
+ * @version $Id: JRJdbcQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 {
 	private static final Log log = LogFactory.getLog(JRJdbcQueryExecuter.class);
 
-	protected static final String CLAUSE_ID_IN = "IN";
-	protected static final String CLAUSE_ID_NOTIN = "NOTIN";
+	public static final String CANONICAL_LANGUAGE = "SQL";
 	
-	protected static final String CLAUSE_ID_EQUAL = "EQUAL";
-	protected static final String CLAUSE_ID_NOTEQUAL = "NOTEQUAL";
+	public static final String CLAUSE_ID_IN = "IN";
+	public static final String CLAUSE_ID_NOTIN = "NOTIN";
 	
-	protected static final String CLAUSE_ID_LESS = "LESS";
-	protected static final String CLAUSE_ID_GREATER = "GREATER";
-	protected static final String CLAUSE_ID_LESS_OR_EQUAL = "LESS]";
-	protected static final String CLAUSE_ID_GREATER_OR_EQUAL = "[GREATER";
+	public static final String CLAUSE_ID_EQUAL = "EQUAL";
+	public static final String CLAUSE_ID_NOTEQUAL = "NOTEQUAL";
 	
-	protected static final String CLAUSE_ID_BETWEEN = "BETWEEN";
-	protected static final String CLAUSE_ID_BETWEEN_CLOSED = "[BETWEEN]";
-	protected static final String CLAUSE_ID_BETWEEN_LEFT_CLOSED = "[BETWEEN";
-	protected static final String CLAUSE_ID_BETWEEN_RIGHT_CLOSED = "BETWEEN]";
+	public static final String CLAUSE_ID_LESS = "LESS";
+	public static final String CLAUSE_ID_GREATER = "GREATER";
+	public static final String CLAUSE_ID_LESS_OR_EQUAL = "LESS]";
+	public static final String CLAUSE_ID_GREATER_OR_EQUAL = "[GREATER";
+	
+	public static final String CLAUSE_ID_BETWEEN = "BETWEEN";
+	public static final String CLAUSE_ID_BETWEEN_CLOSED = "[BETWEEN]";
+	public static final String CLAUSE_ID_BETWEEN_LEFT_CLOSED = "[BETWEEN";
+	public static final String CLAUSE_ID_BETWEEN_RIGHT_CLOSED = "BETWEEN]";
 	
 	protected static final String TYPE_FORWARD_ONLY = "forwardOnly";
 	protected static final String TYPE_SCROLL_INSENSITIVE = "scrollInsensitive";
@@ -154,21 +155,14 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 	 */
 	protected void registerFunctions()
 	{
-		registerClauseFunction(CLAUSE_ID_IN, JRSqlInClause.instance());
-		registerClauseFunction(CLAUSE_ID_NOTIN, JRSqlNotInClause.instance());	
-		
-		registerClauseFunction(CLAUSE_ID_EQUAL, JRSqlEqualClause.instance());		
-		registerClauseFunction(CLAUSE_ID_NOTEQUAL, JRSqlNotEqualClause.instance());		
-		
-		registerClauseFunction(CLAUSE_ID_LESS, JRSqlLessOrGreaterClause.instance());		
-		registerClauseFunction(CLAUSE_ID_GREATER, JRSqlLessOrGreaterClause.instance());		
-		registerClauseFunction(CLAUSE_ID_LESS_OR_EQUAL, JRSqlLessOrGreaterClause.instance());		
-		registerClauseFunction(CLAUSE_ID_GREATER_OR_EQUAL, JRSqlLessOrGreaterClause.instance());
-		
-		registerClauseFunction(CLAUSE_ID_BETWEEN, JRSqlBetweenClause.instance());	
-		registerClauseFunction(CLAUSE_ID_BETWEEN_CLOSED, JRSqlBetweenClause.instance());	
-		registerClauseFunction(CLAUSE_ID_BETWEEN_LEFT_CLOSED, JRSqlBetweenClause.instance());	
-		registerClauseFunction(CLAUSE_ID_BETWEEN_RIGHT_CLOSED, JRSqlBetweenClause.instance());	
+		// keeping empty for backwards compatibility, the functions are now regustered
+		// as extensions by JDBCQueryClauseFunctionsExtensions
+	}
+
+	@Override
+	protected String getCanonicalQueryLanguage()
+	{
+		return CANONICAL_LANGUAGE;
 	}
 
 	protected void setTimeZone()
@@ -320,23 +314,63 @@ public class JRJdbcQueryExecuter extends JRAbstractQueryExecuter
 					statement.setMaxRows(reportMaxCount.intValue());
 				}
 
-				List<QueryParameter> parameterNames = getCollectedParameters();
-				if (!parameterNames.isEmpty())
+				visitQueryParameters(new QueryParameterVisitor()
 				{
-					for(int i = 0, paramIdx = 1; i < parameterNames.size(); i++)
+					int paramIdx = 1;
+					
+					@Override
+					public void visit(QueryParameter queryParameter)
 					{
-						QueryParameter queryParameter = parameterNames.get(i);
-						if (queryParameter.isMulti())
+						try
 						{
-							paramIdx += setStatementMultiParameters(paramIdx, queryParameter.getName(), queryParameter.isIgnoreNulls());
+							if (queryParameter.isMulti())
+							{
+								paramIdx += setStatementMultiParameters(paramIdx, queryParameter.getName(), queryParameter.isIgnoreNulls());
+							}
+							else
+							{
+								setStatementParameter(paramIdx, queryParameter.getName());
+								++paramIdx;
+							}
 						}
-						else
+						catch (SQLException e)
 						{
-							setStatementParameter(paramIdx, queryParameter.getName());
-							++paramIdx;
+							throw new VisitExceptionWrapper(e);
 						}
 					}
-				}
+					
+					@Override
+					public void visit(ValuedQueryParameter valuedQueryParameter)
+					{
+						// assuming a single value for now
+						Class<?> type = valuedQueryParameter.getType();
+						Object value = valuedQueryParameter.getValue();
+						if (type == null)
+						{
+							type = value == null ? Object.class : value.getClass();
+						}
+						
+						if (log.isDebugEnabled())
+						{
+							log.debug("Parameter #" + paramIdx + " (of type " + type.getName() + "): " + value);
+						}
+						
+						try
+						{
+							setStatementParameter(paramIdx, type, value, dataset);// using only dataset properties for now
+							++paramIdx;
+						}
+						catch (SQLException e)
+						{
+							throw new VisitExceptionWrapper(e);
+						}
+					}
+				});
+			}
+			catch (VisitExceptionWrapper e)
+			{
+				throw new JRException("Error preparing statement for executing the report query : " + "\n\n" + queryString + "\n\n", 
+						e.getCause());
 			}
 			catch (SQLException e)
 			{

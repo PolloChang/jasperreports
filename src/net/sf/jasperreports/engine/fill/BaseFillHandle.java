@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,7 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * The main benefit of this method is that the filling process can be cancelled.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseFillHandle.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: BaseFillHandle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BaseFillHandle implements FillHandle
 {	
@@ -122,7 +122,7 @@ public abstract class BaseFillHandle implements FillHandle
 				
 				notifyFinish(print);
 			}
-			catch (Exception e)
+			catch (Throwable e) //NOPMD
 			{
 				synchronized (lock)
 				{

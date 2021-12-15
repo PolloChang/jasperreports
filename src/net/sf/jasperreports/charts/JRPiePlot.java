@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,33 +27,44 @@ import net.sf.jasperreports.engine.JRChartPlot;
 
 
 /**
+ * Type of plot used for rendering Pie charts. 
+ * <br/>
+ * Special settings that the Pie plot exposes are: 
+ * <ul>
+ * <li>the <code>circular</code> flag</li>
+ * <li>the label format</li>
+ * <li>the legend label format</li>
+ * <li>the item label</li>
+ * <li>the <code>showLabels</code> flag</li>
+ * </ul>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPiePlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPiePlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRPiePlot extends JRChartPlot
 {
 	/**
-	 * 
+	 * @return a flag that specifies a circular form for the pie
 	 */
 	public Boolean getCircular();
 	
 	/**
-	 * 
+	 * @return the format pattern for labels
 	 */
 	public String getLabelFormat();
 	
 	/**
-	 * 
+	 * @return the format pattern for legend labels
 	 */
 	public String getLegendLabelFormat();
 
 	/**
-	 * 
+	 * @return a {@link net.sf.jasperreports.charts.JRItemLabel JRItemLabel} object 
+	 * representing the item label
 	 */
 	public JRItemLabel getItemLabel();
 	
 	/**
-	 * 
+	 * @return a flag that specifies whether labels are to be shown or not
 	 */
 	public Boolean getShowLabels();
 	

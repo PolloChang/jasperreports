@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,7 @@ import org.exolab.castor.mapping.GeneralizedFieldHandler;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ClassNameFieldHandler.java 4853 2011-12-13 11:15:20Z chicuslavic $
+ * @version $Id: ClassNameFieldHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ClassNameFieldHandler extends GeneralizedFieldHandler
 {

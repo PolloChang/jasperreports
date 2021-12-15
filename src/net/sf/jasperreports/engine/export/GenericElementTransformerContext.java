@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,7 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * A context in which an element tranformation takes place.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: GenericElementTransformerContext.java 5390 2012-05-18 06:58:47Z lucianc $
+ * @version $Id: GenericElementTransformerContext.java 7199 2014-08-27 13:58:10Z teodord $
  * @see GenericElementTransformer
  */
 public interface GenericElementTransformerContext

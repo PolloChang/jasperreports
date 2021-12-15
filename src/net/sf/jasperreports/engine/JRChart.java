@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.engine;
 import java.awt.Color;
 
 import net.sf.jasperreports.charts.type.EdgeEnum;
-import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 
 
 /**
@@ -34,9 +33,9 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * datasource can be also displayed in a chart, embedded in the report. There are a lot of chart types, each with
  * its own dataset and characteristics. This interface only defines the common properties.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRChart.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRChart.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRChart extends JRElement, JRAnchor, JRHyperlink, JRBoxContainer
+public interface JRChart extends JRElement, JREvaluation, JRAnchor, JRHyperlink, JRBoxContainer
 {
 
 	/**
@@ -95,16 +94,6 @@ public interface JRChart extends JRElement, JRAnchor, JRHyperlink, JRBoxContaine
 	 *
 	 */
 	public void setShowLegend(Boolean isShowLegend);
-
-	/**
-	 * Returns the evaluation time for this chart.
-	 */
-	public EvaluationTimeEnum getEvaluationTimeValue();
-		
-	/**
-	 * Gets the evaluation group for this chart (only applies when evaluation time is group).
-	 */
-	public JRGroup getEvaluationGroup();
 
 	/**
 	 * Gets the expression whose evaluation will form the title.

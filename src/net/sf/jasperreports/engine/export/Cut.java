@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,7 @@ import java.util.Map;
  * Utility class used by grid exporters to create a grid for page layout.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: Cut.java 5359 2012-05-09 16:07:51Z shertage $
+ * @version $Id: Cut.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Cut
 {
@@ -45,24 +45,13 @@ public class Cut
 	public static final int USAGE_SPANNED = 2;
 	public static final int USAGE_BREAK = 4;
 	
-	private int position;
+	//FIXME byte?
 	private int usage;
 	
 	private Map<String, Object> propertiesMap;
 	
 	public Cut()
 	{
-		propertiesMap =  new HashMap<String, Object>();
-	}
-	
-	public int getPosition()
-	{
-		return position;
-	}
-	
-	public void setPosition(int position)
-	{
-		this.position = position;
 	}
 	
 	public int getUsage()
@@ -95,9 +84,23 @@ public class Cut
 		return ((getUsage() & Cut.USAGE_SPANNED) > 0);
 	}
 
-	public Map<String, Object> getPropertiesMap() 
+	public boolean hasProperty(String name) 
 	{
-		return propertiesMap;
+		return propertiesMap == null ? false : propertiesMap.containsKey(name);
+	}
+
+	public Object getProperty(String name) 
+	{
+		return propertiesMap == null ? null : propertiesMap.get(name);
+	}
+
+	public void setProperty(String name, Object value) 
+	{
+		if (propertiesMap == null)
+		{
+			propertiesMap = new HashMap<String, Object>();
+		}
+		propertiesMap.put(name, value);
 	}
 
 }

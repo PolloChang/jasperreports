@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,12 @@
 package net.sf.jasperreports.engine;
 
 import java.util.Map;
+
+import net.sf.jasperreports.export.Exporter;
+import net.sf.jasperreports.export.ExporterConfiguration;
+import net.sf.jasperreports.export.ExporterInput;
+import net.sf.jasperreports.export.ReportExportConfiguration;
+import net.sf.jasperreports.export.ExporterOutput;
 
 
 /**
@@ -53,10 +59,11 @@ import java.util.Map;
  * HTML, XLS and CSV exporters.
  * </ul>
  *
+ * @deprecated Replaced by {@link Exporter}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRExporter.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRExporter
+public interface JRExporter<I extends ExporterInput, IC extends ReportExportConfiguration, C extends ExporterConfiguration, O extends ExporterOutput> extends Exporter<I, IC, C, O>
 {
 
 
@@ -66,12 +73,15 @@ public interface JRExporter
 	 * @param parameter the parameter, selected from the static parameters defined by JasperReports
 	 * @param value the parameter value
 	 * @see JRExporterParameter
+	 * @deprecated Replaced by  {@link #setExporterInput(net.sf.jasperreports.export.ExporterInput)}, 
+	 * {@link #setConfiguration(ExporterConfiguration)} and {@link #setExporterOutput(net.sf.jasperreports.export.ExporterOutput)}
 	 */
 	public void setParameter(JRExporterParameter parameter, Object value);
 
 
 	/**
 	 * Gets an export parameter.
+	 * @deprecated Replaced by {@link ExporterInput}, {@link ExporterConfiguration} and {@link ExporterOutput}.
 	 */
 	public Object getParameter(JRExporterParameter parameter);
 
@@ -79,32 +89,17 @@ public interface JRExporter
 	/**
 	 * Sets export parameters from a specified map.
 	 * @see JRExporter#setParameter(JRExporterParameter, Object)
+	 * @deprecated Replaced by  {@link #setExporterInput(net.sf.jasperreports.export.ExporterInput)}, 
+	 * {@link #setConfiguration(ExporterConfiguration)} and {@link #setExporterOutput(net.sf.jasperreports.export.ExporterOutput)}
 	 */
 	public void setParameters(Map<JRExporterParameter,Object> parameters);
 	
 
 	/**
 	 * Gets a map containing all export parameters.
+	 * @deprecated Replaced by {@link ExporterInput}, {@link ExporterConfiguration} and {@link ExporterOutput}.
 	 */
 	public Map<JRExporterParameter, Object> getParameters();
 
 	
-	/**
-	 *
-	 */
-	public void setReportContext(ReportContext reportContext);
-
-	
-	/**
-	 *
-	 */
-	public ReportContext getReportContext();
-
-	
-	/**
-	 * Actually starts the export process.
-	 */
-	public void exportReport() throws JRException;
-	
-
 }

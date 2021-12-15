@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -45,7 +45,7 @@ import net.sf.jasperreports.engine.type.BandTypeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROriginExporterFilter.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: JROriginExporterFilter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JROriginExporterFilter implements ResetableExporterFilter
 {
@@ -62,6 +62,7 @@ public class JROriginExporterFilter implements ResetableExporterFilter
 	
 	private Map<JROrigin,Boolean> originsToExclude = new HashMap<JROrigin,Boolean>();
 	private Map<Integer,JRPrintElement> firstOccurrences = new HashMap<Integer,JRPrintElement>();
+	private Map<JROrigin,Boolean> matchedOrigins = new HashMap<JROrigin,Boolean>();
 	
 	public void addOrigin(JROrigin origin)
 	{
@@ -87,13 +88,45 @@ public class JROriginExporterFilter implements ResetableExporterFilter
 	{
 		JROrigin origin = element.getOrigin();
 
-		Boolean keepFirst = (origin == null ? null : (Boolean)originsToExclude.get(origin));
+		Boolean keepFirst = null;
+		
+		if (origin != null)
+		{
+			keepFirst = matchedOrigins.get(origin);
+			
+			if (keepFirst == null)
+			{
+				for (JROrigin originToExclude : originsToExclude.keySet())
+				{
+					if (match(originToExclude, origin))
+					{
+						keepFirst = originsToExclude.get(originToExclude);
+						matchedOrigins.put(origin, keepFirst);
+						break;
+					}
+				}
+			}
+		}
+		
 		boolean originMatched = keepFirst != null;
 
 		return
 			!originMatched 
 			|| (keepFirst.booleanValue() 
 				&& isFirst(element));
+	}
+	
+	public boolean match(JROrigin originToExclude, JROrigin origin)
+	{
+		String groupName1 = originToExclude.getGroupName();
+		String reportName1 = originToExclude.getReportName();
+		String groupName2 = origin.getGroupName();
+		String reportName2 = origin.getReportName();
+		return (
+			originToExclude.getBandTypeValue() == origin.getBandTypeValue()
+			&& (("*".equals(groupName1) && groupName2 != null) || (groupName1 == null ? groupName2 == null : groupName2 != null && groupName1.equals(groupName2)))
+			&& (("*".equals(reportName1) && reportName2 != null) || (reportName1 == null ? reportName2 == null : reportName2 != null && reportName1.equals(reportName2)))
+			);
 	}
 	
 	private boolean isFirst(JRPrintElement element)
@@ -113,6 +146,14 @@ public class JROriginExporterFilter implements ResetableExporterFilter
 			firstOccurrences.put(elementId, element);
 			return true;
 		}
+		
+		// == does not work for virtualized elements, checking print Ids
+		if (firstElement.getPrintElementId() != JRPrintElement.UNSET_PRINT_ELEMENT_ID
+				&& firstElement.getPrintElementId() == element.getPrintElementId())
+		{
+			return true;
+		}
+		
 		return false;
 	}
 	
@@ -158,10 +199,8 @@ public class JROriginExporterFilter implements ResetableExporterFilter
 			{
 				PropertySuffix propertySuffix = it.next();
 				String suffix = propertySuffix.getSuffix();
-				BandTypeEnum bandType = 
-					BandTypeEnum.getByName(
-						propUtil.getProperty(propertiesMap, propertySuffix.getKey())
-						);
+				String propValue = propUtil.getProperty(propertiesMap, propertySuffix.getKey());
+				BandTypeEnum bandType = BandTypeEnum.getByName(propValue == null ? null : propValue.trim());
 				if (bandType != null)
 				{
 					filter.addOrigin(

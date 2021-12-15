@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,11 +24,11 @@
 package net.sf.jasperreports.components.headertoolbar.actions;
 
 import java.text.DateFormat;
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
 
+import net.sf.jasperreports.components.sort.FilterTypeDateOperatorsEnum;
 import net.sf.jasperreports.components.sort.FilterTypesEnum;
 import net.sf.jasperreports.components.sort.actions.FilterCommand;
 import net.sf.jasperreports.components.sort.actions.FilterData;
@@ -43,7 +43,7 @@ import net.sf.jasperreports.web.commands.ResetInCacheCommand;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: FilterAction.java 5349 2012-05-08 14:25:05Z teodord $
+ * @version $Id: FilterAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FilterAction extends AbstractVerifiableTableAction {
 	
@@ -101,25 +101,49 @@ public class FilterAction extends AbstractVerifiableTableAction {
 			locale = Locale.getDefault();
 		}
 		
-		if (filterType == FilterTypesEnum.DATE) {
-			if (fd.getFieldValueStart() == null || fd.getFieldValueStart().length() == 0) {
-				errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.filter.empty.date");
-			}
+		if (FilterTypesEnum.DATE.equals(filterType) || FilterTypesEnum.TIME.equals(filterType)) {
+			FilterTypeDateOperatorsEnum dateEnum = FilterTypeDateOperatorsEnum.getByEnumConstantName(fd.getFilterTypeOperator());
+			boolean containsBetween = FilterTypeDateOperatorsEnum.IS_BETWEEN.equals(dateEnum) || FilterTypeDateOperatorsEnum.IS_NOT_BETWEEN.equals(dateEnum);
+
 			try {
 				DateFormat df = formatFactory.createDateFormat(fd.getFilterPattern(), locale, null);
-				df.parse(fd.getFieldValueStart());
-				if (fd.getFieldValueEnd() != null && fd.getFieldValueEnd().length() > 0) {
+				df.setLenient(false);
+			
+				if (containsBetween) {
+					if (fd.getFieldValueStart() == null || fd.getFieldValueStart().length() == 0) {
+						errors.add("net.sf.jasperreports.components.headertoolbar.actions.filter.empty.start.date");
+					} else {
+						try {
+							df.parse(fd.getFieldValueStart());
+						} catch (ParseException e) {
+							errors.add("net.sf.jasperreports.components.headertoolbar.actions.filter.invalid.start.date", fd.getFieldValueStart());
+						}
+					}
+
+					if (fd.getFieldValueEnd() != null && fd.getFieldValueEnd().length() > 0) {
+						try {
+							df.parse(fd.getFieldValueEnd());
+						} catch (ParseException e) {
+							errors.add("net.sf.jasperreports.components.headertoolbar.actions.filter.invalid.end.date", fd.getFieldValueEnd());
+						}
+					} else {
+						errors.add("net.sf.jasperreports.components.headertoolbar.actions.filter.empty.end.date");
+					}
+					
+				} else {
+					if (fd.getFieldValueStart() == null || fd.getFieldValueStart().length() == 0) {
+						errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.filter.empty.date");
+					}
 					try {
-						df.parse(fd.getFieldValueEnd());
+						df.parse(fd.getFieldValueStart());
 					} catch (ParseException e) {
-						errors.add("net.sf.jasperreports.components.headertoolbar.actions.filter.invalid.date", new Object[]{fd.getFieldValueEnd()});
+						errors.add("net.sf.jasperreports.components.headertoolbar.actions.filter.invalid.date", fd.getFieldValueStart());
 					}
 				}
-			} catch (ParseException e) {
-				errors.add("net.sf.jasperreports.components.headertoolbar.actions.filter.invalid.date", new Object[]{fd.getFieldValueStart()});
-			} catch (IllegalArgumentException e){
+			} catch (IllegalArgumentException e) {
 				errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.filter.invalid.pattern");
 			}
+					
 		} else if (filterType == FilterTypesEnum.NUMERIC) {
 			if (fd.getFieldValueStart() == null || fd.getFieldValueStart().trim().length() == 0) {
 				errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.filter.empty.number");
@@ -140,29 +164,6 @@ public class FilterAction extends AbstractVerifiableTableAction {
 				errors.addAndThrow("net.sf.jasperreports.components.headertoolbar.actions.filter.invalid.pattern");
 			}
 		}
-	}
-	
-	private NumberFormat createNumberFormat(String pattern, Locale locale)
-	{
-		NumberFormat format = null;
-
-		if (locale == null)
-		{
-			format = NumberFormat.getNumberInstance();
-		}
-		else
-		{
-			format = NumberFormat.getNumberInstance(locale);
-		}
-			
-		if (pattern != null && pattern.trim().length() > 0)
-		{
-			if (format instanceof DecimalFormat)
-			{
-				((DecimalFormat) format).applyPattern(pattern);
-			}
-		}
-		return format;
 	}
 
 }

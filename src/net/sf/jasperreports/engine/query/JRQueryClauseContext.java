@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,13 +24,14 @@
 package net.sf.jasperreports.engine.query;
 
 import net.sf.jasperreports.engine.JRValueParameter;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * A query clause handling context, as seen from a {@link JRClauseFunction clause function}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRQueryClauseContext.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRQueryClauseContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRQueryClauseContext
 {
@@ -74,4 +75,29 @@ public interface JRQueryClauseContext
 	 */
 	void addQueryMultiParameters(String parameterName, int count, boolean ignoreNulls);
 
+	/**
+	 * Records a query parameter based on a provided value.
+	 * 
+	 * @param type the parameter type if specified
+	 * @param value the parameter value
+	 */
+	void addQueryParameter(Class<?> type, Object value);
+	
+	/**
+	 * Returns the JasperReportsContext associated with the current query execution.
+	 * 
+	 * @return the current JasperReportsContext
+	 */
+	JasperReportsContext getJasperReportsContext();
+
+	/**
+	 * Returns a canonical query language for this query execution.
+	 * 
+	 * <p>
+	 * The canonical language is used to retrieve extensions for the query executer.
+	 * </p>
+	 * 
+	 * @return the canonical query language
+	 */
+	String getCanonicalQueryLanguage();
 }

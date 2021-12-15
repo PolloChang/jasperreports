@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -51,7 +51,7 @@ import org.w3c.dom.NodeList;
  * XPath executer implementation that uses <a href="http://xml.apache.org/xalan-j/" target="_blank">Apache Xalan</a>.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: XalanNsAwareXPathExecuter.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XalanNsAwareXPathExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XalanNsAwareXPathExecuter extends XalanXPathExecuter {
 
@@ -97,7 +97,7 @@ public class XalanNsAwareXPathExecuter extends XalanXPathExecuter {
 		if (xmlNamespaceMap != null && xmlNamespaceMap.size() > 0) {
 			if (namespaceElement == null) {
 				DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-				factory.setNamespaceAware(true);   
+				factory.setNamespaceAware(true);
 				DocumentBuilder builder = null;
 				try {
 					builder = factory.newDocumentBuilder();

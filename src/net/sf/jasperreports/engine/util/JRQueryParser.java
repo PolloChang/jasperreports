@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * Report query parser.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRQueryParser.java 5088 2012-03-15 11:55:32Z teodord $
+ * @version $Id: JRQueryParser.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRQueryParser
 {
@@ -136,8 +136,7 @@ public class JRQueryParser
 								chunkHandler.handleTextChunk(textChunk.toString());					
 							}
 							String clauseChunk = token.substring(2, end);
-							String[] tokens = parseClause(clauseChunk);
-							chunkHandler.handleClauseChunk(tokens);					
+							parseClause(chunkHandler, clauseChunk);
 							textChunk = new StringBuffer(token.substring(end + 1));
 						}
 						else
@@ -173,17 +172,18 @@ public class JRQueryParser
 	}
 	
 	
-	protected String[] parseClause(String clauseChunk)
+	protected void parseClause(JRQueryChunkHandler chunkHandler, String clauseChunk)
 	{
 		List<String> tokens = new ArrayList<String>();
 		
 		boolean wasClauseToken = false;
-		String separator = determineClauseTokenSeparator(clauseChunk);
-		StringTokenizer tokenizer = new StringTokenizer(clauseChunk, separator, true);
+		char separator = determineClauseTokenSeparator(clauseChunk);
+		String separatorString = String.valueOf(separator);
+		StringTokenizer tokenizer = new StringTokenizer(clauseChunk, separatorString, true);
 		while (tokenizer.hasMoreTokens())
 		{
 			String token = tokenizer.nextToken();
-			if (token.equals(separator))
+			if (token.equals(separatorString))
 			{
 				if (!wasClauseToken)
 				{
@@ -202,10 +202,11 @@ public class JRQueryParser
 			tokens.add("");
 		}
 		
-		return tokens.toArray(new String[tokens.size()]);
+		String[] tokensArray = tokens.toArray(new String[tokens.size()]);
+		chunkHandler.handleClauseChunk(tokensArray, separator);
 	}
 
-	protected String determineClauseTokenSeparator(String clauseChunk)
+	protected char determineClauseTokenSeparator(String clauseChunk)
 	{
 		String allSeparators = getTokenSeparators();
 		if (allSeparators == null || allSeparators.length() == 0)
@@ -225,7 +226,7 @@ public class JRQueryParser
 			}
 		}
 		
-		return String.valueOf(allSeparators.charAt(firstSepIdx));
+		return allSeparators.charAt(firstSepIdx);
 	}
 
 
@@ -296,9 +297,28 @@ public class JRQueryParser
 	 * @param tokens the chunk tokens
 	 * @return the reconstructed query clause chunk
 	 * @see JRQueryChunk#TYPE_CLAUSE_TOKENS
+	 * @deprecated Replaced by {@link #asClauseText(String[], Character)}.
 	 */
 	public String asClauseText(String[] tokens)
 	{
+		return asClauseText(tokens, null);
+	}
+	
+	/**
+	 * (Re)constructs a query clause chunk from the chunk tokens.
+	 * 
+	 * @param tokens the chunk tokens
+	 * @param separator the chunk tokens separator character
+	 * @return the reconstructed query clause chunk
+	 * @see JRQueryChunk#TYPE_CLAUSE_TOKENS
+	 */
+	public String asClauseText(String[] tokens, Character separator)
+	{
+		if (separator == null)
+		{
+			separator = defaultTokenSeparator();
+		}
+		
 		StringBuffer sb = new StringBuffer();
 		if (tokens != null && tokens.length > 0)
 		{
@@ -306,7 +326,7 @@ public class JRQueryParser
 			{
 				if (i > 0)
 				{
-					sb.append(',');
+					sb.append(separator);
 				}
 				String token = tokens[i];
 				if (token != null)
@@ -316,6 +336,14 @@ public class JRQueryParser
 			}
 		}
 		return sb.toString();
+	}
+	
+	protected char defaultTokenSeparator()
+	{
+		String tokenSeparators = getTokenSeparators();
+		return tokenSeparators == null || tokenSeparators.isEmpty() 
+				? ',' // would not normally happen, determineClauseTokenSeparator throws exception
+				: tokenSeparators.charAt(0);
 	}
 	
 }

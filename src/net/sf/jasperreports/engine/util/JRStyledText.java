@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,6 +30,7 @@ import java.text.AttributedCharacterIterator;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.text.AttributedString;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,13 +39,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.fonts.FontUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStyledText.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRStyledText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRStyledText implements Cloneable
 {
@@ -73,8 +77,10 @@ public class JRStyledText implements Cloneable
 	/**
 	 *
 	 */
-	private StringBuffer sbuffer = new StringBuffer();
-	private List<Run> runs = new ArrayList<Run>();
+	private StringBuilder sbuffer;
+	private String text;
+	
+	private List<Run> runs = Collections.emptyList();
 	private AttributedString attributedString;
 	private AttributedString awtAttributedString;
 	private Map<Attribute,Object> globalAttributes;
@@ -98,12 +104,39 @@ public class JRStyledText implements Cloneable
 		this.locale = locale;
 	}
 
+	public JRStyledText(Locale locale, String text, Map<Attribute,Object> globalAttributes)
+	{
+		this.locale = locale;
+		this.text = text;
+		this.globalAttributes = globalAttributes;
+		this.runs = Collections.singletonList(new Run(globalAttributes, 0, text.length()));
+	}
+	
+	private void ensureBuffer()
+	{
+		if (sbuffer == null)
+		{
+			sbuffer = text == null ? new StringBuilder() : new StringBuilder(text);
+		}
+		text = null;
+	}
+	
+	private void ensureText()
+	{
+		if (text == null)
+		{
+			text = sbuffer == null ? "" : sbuffer.toString();
+		}
+		sbuffer = null;
+	}
+
 
 	/**
 	 *
 	 */
 	public void append(String text)
 	{
+		ensureBuffer();
 		sbuffer.append(text);
 		attributedString = null;
 		awtAttributedString = null;
@@ -114,7 +147,23 @@ public class JRStyledText implements Cloneable
 	 */
 	public void addRun(Run run)
 	{
-		runs.add(run);
+		int currentSize = runs.size();
+		if (currentSize == 0)
+		{
+			runs = Collections.singletonList(run);
+		}
+		else
+		{
+			if (currentSize == 1 && !(runs instanceof ArrayList))
+			{
+				List<Run> newRuns = new ArrayList<Run>();
+				newRuns.add(runs.get(0));
+				runs = newRuns;
+			}
+
+			runs.add(run);
+		}
+
 		attributedString = null;
 		awtAttributedString = null;
 	}
@@ -124,7 +173,7 @@ public class JRStyledText implements Cloneable
 	 */
 	public int length()
 	{
-		return sbuffer.length();
+		return text == null ? (sbuffer == null ? 0 : sbuffer.length()) : text.length();
 	}
 
 	/**
@@ -132,7 +181,8 @@ public class JRStyledText implements Cloneable
 	 */
 	public String getText()
 	{
-		return sbuffer.toString();
+		ensureText();
+		return text;
 	}
 
 	/**
@@ -150,7 +200,8 @@ public class JRStyledText implements Cloneable
 	{
 		if (attributedString == null)
 		{
-			attributedString = new AttributedString(sbuffer.toString());
+			ensureText();
+			attributedString = new AttributedString(text);
 
 			for(int i = runs.size() - 1; i >= 0; i--)
 			{
@@ -166,13 +217,22 @@ public class JRStyledText implements Cloneable
 	}
 
 	/**
-	 * Returns an attributed string that contains the AWT font attribute, as the font is actually loaded.
+	 * @deprecated Replaced by {@link #getAwtAttributedString(JasperReportsContext, boolean)}.
 	 */
 	public AttributedString getAwtAttributedString(boolean ignoreMissingFont)
 	{
+		return getAwtAttributedString(DefaultJasperReportsContext.getInstance(), ignoreMissingFont);
+	}
+
+	/**
+	 * Returns an attributed string that contains the AWT font attribute, as the font is actually loaded.
+	 */
+	public AttributedString getAwtAttributedString(JasperReportsContext jasperReportsContext, boolean ignoreMissingFont)
+	{
 		if (awtAttributedString == null)
 		{
-			awtAttributedString = new AttributedString(sbuffer.toString());
+			ensureText();
+			awtAttributedString = new AttributedString(text);
 
 			for(int i = runs.size() - 1; i >= 0; i--)
 			{
@@ -213,11 +273,11 @@ public class JRStyledText implements Cloneable
 				String familyName = (String)attrs.get(TextAttribute.FAMILY); 
 				
 				Font awtFont = 
-					JRFontUtil.getAwtFontFromBundles(
+					FontUtil.getInstance(jasperReportsContext).getAwtFontFromBundles(
 						familyName, 
 						((TextAttribute.WEIGHT_BOLD.equals(attrs.get(TextAttribute.WEIGHT))?Font.BOLD:Font.PLAIN)
 							|(TextAttribute.POSTURE_OBLIQUE.equals(attrs.get(TextAttribute.POSTURE))?Font.ITALIC:Font.PLAIN)), 
-						((Float)attrs.get(TextAttribute.SIZE)).intValue(),
+						(Float)attrs.get(TextAttribute.SIZE),
 						locale,
 						ignoreMissingFont
 						);
@@ -225,7 +285,7 @@ public class JRStyledText implements Cloneable
 				{
 					// The font was not found in any of the font extensions, so it is expected that the TextAttribute.FAMILY attribute
 					// will be used by AWT. In that case, we want make sure the font family name is available to the JVM.
-					JRFontUtil.checkAwtFont(familyName, ignoreMissingFont);
+					FontUtil.getInstance(jasperReportsContext).checkAwtFont(familyName, ignoreMissingFont);
 				}
 				else
 				{
@@ -356,12 +416,24 @@ public class JRStyledText implements Cloneable
 			JRStyledText clone = (JRStyledText) super.clone();
 			clone.globalAttributes = cloneAttributesMap(globalAttributes);
 			
-			clone.runs = new ArrayList<Run>(runs.size());
-			for (Iterator<Run> it = runs.iterator(); it.hasNext();)
+			int runsCount = runs.size();
+			if (runsCount == 0)
 			{
-				Run run = it.next();
-				Run runClone = run.cloneRun();
-				clone.runs.add(runClone);
+				clone.runs = Collections.emptyList();
+			}
+			else if (runsCount == 1)
+			{
+				clone.runs = Collections.singletonList(runs.get(0).cloneRun());
+			}
+			else
+			{
+				clone.runs = new ArrayList<Run>(runsCount);
+				for (Iterator<Run> it = runs.iterator(); it.hasNext();)
+				{
+					Run run = it.next();
+					Run runClone = run.cloneRun();
+					clone.runs.add(runClone);
+				}
 			}
 			
 			return clone;
@@ -390,8 +462,9 @@ public class JRStyledText implements Cloneable
 	{
 		int insertLength = str.length();
 		
+		int currentLength = length();
 		//new buffer to do the insertion
-		StringBuffer newText = new StringBuffer(sbuffer.length() + insertLength * offsets.length); //NOPMD
+		StringBuilder newText = new StringBuilder(currentLength + insertLength * offsets.length); //NOPMD
 		char[] buffer = null;
 		int offset = 0;
 		for (int i = 0; i < offsets.length; i++)
@@ -405,7 +478,7 @@ public class JRStyledText implements Cloneable
 			{
 				buffer = new char[charCount];
 			}
-			sbuffer.getChars(prevOffset, offset, buffer, 0);
+			getChars(prevOffset, offset, buffer, 0);
 			newText.append(buffer, 0, charCount);
 			
 			//append inserted text
@@ -432,18 +505,36 @@ public class JRStyledText implements Cloneable
 		}
 		
 		//append remaining text
-		int charCount = sbuffer.length() - offset;
+		int charCount = currentLength - offset;
 		if (buffer == null || buffer.length < charCount)
 		{
 			buffer = new char[charCount];
 		}
-		sbuffer.getChars(offset, sbuffer.length(), buffer, 0);
+		getChars(offset, currentLength, buffer, 0);
 		newText.append(buffer, 0, charCount);
 		
 		//overwrite with the inserted buffer
 		sbuffer = newText;
+		text = null;
 		
 		attributedString = null;
 		awtAttributedString = null;
+	}
+	
+	private void getChars(int srcBegin, int srcEnd, char[] dst, int dstBegin)
+	{
+		if (text != null)
+		{
+			text.getChars(srcBegin, srcEnd, dst, dstBegin);
+		}
+		else if (sbuffer != null)
+		{
+			sbuffer.getChars(srcBegin, srcEnd, dst, dstBegin);
+		}
+		else if (srcBegin < srcEnd)
+		{
+			// should not happen
+			throw new JRRuntimeException("Cannot copy characters " + srcBegin + " to " + srcEnd);
+		}
 	}
 }

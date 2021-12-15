@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,8 @@ import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRLineBox;
+import net.sf.jasperreports.engine.JRPropertiesHolder;
+import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.base.JRBaseStyle;
@@ -43,7 +45,7 @@ import net.sf.jasperreports.engine.util.JRBoxUtil;
  * report design.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCellContents.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignCellContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCellContents extends JRDesignElementGroup implements JRCellContents
 {
@@ -66,6 +68,8 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 	private int height = JRCellContents.NOT_CALCULATED;
 
 	private JRCrosstabOrigin origin;
+	
+	private JRPropertiesMap propertiesMap;
 	
 	/**
 	 * Creates an empty cell contents.
@@ -111,10 +115,14 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 	/**
 	 * Sets the computed cell height.
 	 * 
+	 * <p>
+	 * The method should NOT be called by external code.
+	 * </p>
+	 * 
 	 * @param height the cell height
 	 * @see JRCellContents#getHeight()
 	 */
-	protected void setHeight(int height)
+	public void setHeight(int height)
 	{
 		this.height = height;
 	}
@@ -228,6 +236,7 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 	{
 		JRDesignCellContents clone = (JRDesignCellContents) super.clone();
 		clone.lineBox = lineBox == null ? null : (JRLineBox) lineBox.clone(clone);
+		clone.propertiesMap = JRPropertiesMap.getPropertiesClone(this);
 		return clone;
 	}
 
@@ -265,5 +274,24 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 				);
 			box = null;
 		}
+	}
+
+	public boolean hasProperties()
+	{
+		return propertiesMap != null && propertiesMap.hasProperties();
+	}
+
+	public JRPropertiesMap getPropertiesMap()
+	{
+		if (propertiesMap == null)
+		{
+			propertiesMap = new JRPropertiesMap();
+		}
+		return propertiesMap;
+	}
+
+	public JRPropertiesHolder getParentProperties()
+	{
+		return null;
 	}
 }

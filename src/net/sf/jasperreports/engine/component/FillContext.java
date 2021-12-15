@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,8 +34,10 @@ import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRStyle;
+import net.sf.jasperreports.engine.fill.FillContainerContext;
 import net.sf.jasperreports.engine.fill.JRBaseFiller;
 import net.sf.jasperreports.engine.fill.JRFillExpressionEvaluator;
+import net.sf.jasperreports.engine.fill.PrintElementOriginator;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 
 /**
@@ -43,7 +45,7 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * report component fill.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillContext.java 4808 2011-11-21 13:44:22Z lucianc $
+ * @version $Id: FillContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface FillContext extends JRFillExpressionEvaluator
 {
@@ -60,8 +62,18 @@ public interface FillContext extends JRFillExpressionEvaluator
 	 * 
 	 * @return the Id of the component fill element
 	 * @see JRPrintElement#getSourceElementId()
+	 * @see #getPrintElementOriginator()
 	 */
 	int getElementSourceId();
+
+	/**
+	 * Returns a generator for print Ids for the component element.
+	 * 
+	 * @return a generator for print Ids
+	 * @see JRPrintElement#getSourceElementId()
+	 * @see JRPrintElement#getPrintElementId()
+	 */
+	PrintElementOriginator getPrintElementOriginator();
 	
 	/**
 	 * Evaluates an expression in the main report dataset.
@@ -153,6 +165,8 @@ public interface FillContext extends JRFillExpressionEvaluator
 	 * @return the filler object
 	 */
 	JRBaseFiller getFiller();
+	
+	FillContainerContext getFillContainerContext();
 	
 	//TODO access to params/fields/vars?
 }

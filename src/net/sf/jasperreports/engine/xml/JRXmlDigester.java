@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,6 +35,10 @@ import java.util.Map;
 
 import javax.xml.parsers.SAXParser;
 
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.util.JRLoader;
+
 import org.apache.commons.digester.Digester;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -43,7 +47,7 @@ import org.xml.sax.XMLReader;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlDigester.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRXmlDigester.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlDigester extends Digester
 {
@@ -170,7 +174,16 @@ public class JRXmlDigester extends Digester
 			
 			if (is != null)
 			{
-				inputSource = new InputSource(is);
+				try
+				{
+					// load the data into the memory so that we don't leave the stream open
+					InputStream memoryStream = JRLoader.loadToMemoryInputStream(is);
+					inputSource = new InputSource(memoryStream);
+				}
+				catch (JRException e)
+				{
+					throw new JRRuntimeException("Failed to load entity " + systemId, e);
+				}
 			}
 		}
 

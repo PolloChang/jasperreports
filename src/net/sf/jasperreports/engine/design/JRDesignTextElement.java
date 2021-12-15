@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -51,7 +51,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * in <tt>JRTextElement</tt> and setters for text element attributes that can only be modified at design time.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignTextElement.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignTextElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRDesignTextElement extends JRDesignElement implements JRTextElement
 {
@@ -82,7 +82,7 @@ public abstract class JRDesignTextElement extends JRDesignElement implements JRT
 	protected Boolean isItalic;
 	protected Boolean isUnderline;
 	protected Boolean isStrikeThrough;
-	protected Integer fontSize;
+	protected Float fontsize;
 	protected String pdfFontName;
 	protected String pdfEncoding;
 	protected Boolean isPdfEmbedded;
@@ -260,7 +260,7 @@ public abstract class JRDesignTextElement extends JRDesignElement implements JRT
 		setItalic(font.isOwnItalic());
 		setUnderline(font.isOwnUnderline());
 		setStrikeThrough(font.isOwnStrikeThrough());
-		setFontSize(font.getOwnFontSize());
+		setFontSize(font.getOwnFontsize());
 		setPdfFontName(font.getOwnPdfFontName());
 		setPdfEncoding(font.getOwnPdfEncoding());
 		setPdfEmbedded(font.isOwnPdfEmbedded());
@@ -437,36 +437,59 @@ public abstract class JRDesignTextElement extends JRDesignElement implements JRT
 	/**
 	 *
 	 */
-	public int getFontSize()
+	public float getFontsize()
 	{
-		return JRStyleResolver.getFontSize(this);
+		return JRStyleResolver.getFontsize(this);
 	}
 
 	/**
 	 *
+	 */
+	public Float getOwnFontsize()
+	{
+		return fontsize;
+	}
+
+	/**
+	 * Method which allows also to reset the "own" size property.
+	 */
+	public void setFontSize(Float fontSize)
+	{
+		Object old = this.fontsize;
+		this.fontsize = fontSize;
+		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_FONT_SIZE, old, this.fontsize);
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getFontsize()}.
+	 */
+	public int getFontSize()
+	{
+		return (int)getFontsize();
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #getOwnFontsize()}.
 	 */
 	public Integer getOwnFontSize()
 	{
-		return fontSize;
+		return fontsize == null ? null : fontsize.intValue();
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(int fontSize)
 	{
-		setFontSize(Integer.valueOf(fontSize));
+		setFontSize((float)fontSize);
 	}
 
 	/**
-	 * Alternative setFontSize method which allows also to reset
-	 * the "own" size property.
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(Integer fontSize)
 	{
-		Object old = this.fontSize;
-		this.fontSize = fontSize;
-		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_FONT_SIZE, old, this.fontSize);
+		setFontSize(fontSize == null ? null : fontSize.floatValue());
 	}
 
 	/**
@@ -668,6 +691,10 @@ public abstract class JRDesignTextElement extends JRDesignElement implements JRT
 	 * @deprecated
 	 */
 	private Boolean isStyledText;
+	/**
+	 * @deprecated
+	 */
+	private Integer fontSize;
 	
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
@@ -735,6 +762,13 @@ public abstract class JRDesignTextElement extends JRDesignElement implements JRT
 			paragraph = new JRBaseParagraph(this);
 			paragraph.setLineSpacing(lineSpacingValue);
 			lineSpacingValue = null;
+		}
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_5_5_2)
+		{
+			fontsize = fontSize == null ? null : fontSize.floatValue();
+
+			fontSize = null;
 		}
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -50,7 +50,7 @@ import net.sf.jasperreports.engine.util.JRStringUtil;
  * Base class for report compilers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRAbstractCompiler.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRAbstractCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractCompiler implements JRCompiler
 {
@@ -147,7 +147,7 @@ public abstract class JRAbstractCompiler implements JRCompiler
 		checkLanguage(jasperDesign.getLanguage());
 		
 		// collect all report expressions
-		JRExpressionCollector expressionCollector = JRExpressionCollector.collector(jasperDesign);
+		JRExpressionCollector expressionCollector = JRExpressionCollector.collector(jasperReportsContext, jasperDesign);
 		
 		// verify the report design
 		verifyDesign(jasperDesign, expressionCollector);
@@ -299,7 +299,7 @@ public abstract class JRAbstractCompiler implements JRCompiler
 	}
 
 
-	private File getSourceFile(File saveSourceDir, String unitName, JRCompilationSourceCode sourceCode) throws JRException
+	protected File getSourceFile(File saveSourceDir, String unitName, JRCompilationSourceCode sourceCode)
 	{
 		File sourceFile = null;
 		if (saveSourceDir != null && sourceCode != null && sourceCode.getCode() != null)
@@ -307,7 +307,14 @@ public abstract class JRAbstractCompiler implements JRCompiler
 			String fileName = getSourceFileName(unitName);
 			sourceFile = new File(saveSourceDir,  fileName);
 
-			JRSaver.saveClassSource(sourceCode.getCode(), sourceFile);
+			try
+			{
+				JRSaver.saveClassSource(sourceCode.getCode(), sourceFile);
+			}
+			catch (JRException e)
+			{
+				throw new JRRuntimeException(e);
+			}
 		}
 		return sourceFile;
 	}

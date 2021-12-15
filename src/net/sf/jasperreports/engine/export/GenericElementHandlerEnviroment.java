@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,7 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.extensions.ExtensionsEnvironment;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -48,7 +48,7 @@ import org.apache.commons.logging.LogFactory;
  * framework (see {@link ExtensionsEnvironment}). 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: GenericElementHandlerEnviroment.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: GenericElementHandlerEnviroment.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class GenericElementHandlerEnviroment
 {
@@ -60,7 +60,6 @@ public final class GenericElementHandlerEnviroment
 			ReferenceMap.WEAK, ReferenceMap.HARD);
 	
 	private JasperReportsContext jasperReportsContext;
-	private static GenericElementHandlerEnviroment defaultInstance;
 
 
 	/**
@@ -77,11 +76,7 @@ public final class GenericElementHandlerEnviroment
 	 */
 	private static GenericElementHandlerEnviroment getDefaultInstance()
 	{
-		if (defaultInstance == null)
-		{
-			defaultInstance = new GenericElementHandlerEnviroment(DefaultJasperReportsContext.getInstance());
-		}
-		return defaultInstance;
+		return new GenericElementHandlerEnviroment(DefaultJasperReportsContext.getInstance());
 	}
 	
 	

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -50,7 +50,7 @@ import net.sf.jasperreports.engine.util.JRLoader;
  * </p> 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPropertiesUtil.java 5396 2012-05-21 01:06:15Z teodord $
+ * @version $Id: JRPropertiesUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRPropertiesUtil
 {
@@ -171,6 +171,18 @@ public final class JRPropertiesUtil
 	}
 	
 	/**
+	 * Returns a property as a boolean value.
+	 * 
+	 * @param key the key
+	 * @param defaultValue the default value
+	 * @return the property value as a boolean
+	 */
+	public boolean getBooleanProperty(String key, boolean defaultValue)
+	{
+		return asBoolean(getProperty(key), defaultValue);
+	}
+	
+	/**
 	 * Returns a property as an integer value.
 	 * 
 	 * @param key the key
@@ -200,12 +212,12 @@ public final class JRPropertiesUtil
 	 */
 	public static boolean asBoolean(String value)
 	{
-		return Boolean.valueOf(value).booleanValue();
+		return Boolean.valueOf(value == null ? value : value.trim()).booleanValue();
 	}
 
 	public static boolean asBoolean(String value, boolean defaultValue)
 	{
-		return value == null ? defaultValue : Boolean.valueOf(value).booleanValue();
+		return value == null ? defaultValue : Boolean.valueOf(value.trim()).booleanValue();
 	}
 
 	/**
@@ -216,7 +228,7 @@ public final class JRPropertiesUtil
 	 */
 	public static int asInteger(String value)
 	{
-		return Integer.parseInt(value);
+		return Integer.parseInt(value == null ? value : value.trim());
 	}
 	
 	/**
@@ -227,7 +239,7 @@ public final class JRPropertiesUtil
 	 */
 	public static float asFloat(String value)
 	{
-		return Float.parseFloat(value);
+		return Float.parseFloat(value == null ? value : value.trim());
 	}
 	
 	/**
@@ -500,6 +512,22 @@ public final class JRPropertiesUtil
 	}
 
 	/**
+	 * Returns the value of a property as a boolean, looking first in several properties holders
+	 * and then in the system properties.
+	 * 
+	 * @param key the key
+	 * @param defaultValue the default value used if the property is not found
+	 * @param propertiesHolders the properties holders
+	 * @return the property value
+	 */
+	public boolean getBooleanProperty(String key, boolean defaultValue, JRPropertiesHolder ... propertiesHolders)
+	{
+		String value = getProperty(key, propertiesHolders);
+		
+		return value == null ? defaultValue : asBoolean(value);
+	}
+
+	/**
 	 * Returns the value of a property as a boolean, looking first in the supplied properties map
 	 * and then in the system properties.
 	 * 
@@ -515,6 +543,36 @@ public final class JRPropertiesUtil
 		return value == null ? defaultValue : asBoolean(value);
 	}
 
+	/**
+	 * Returns the value of a property as a boolean, looking first in the supplied properties map
+	 * and then in the system properties.
+	 * 
+	 * @param propertiesMap the properties map
+	 * @param key the key
+	 * @return the property value
+	 */
+	public Boolean getBooleanProperty(JRPropertiesMap propertiesMap, String key)
+	{
+		String value = getProperty(propertiesMap, key);
+		
+		return value == null ? null : asBoolean(value);
+	}
+
+	/**
+	 * Returns the value of a property as an Integer, looking first in the supplied properties holder
+	 * and then in the system properties.
+	 * 
+	 * @param propertiesHolder the properties holder
+	 * @param key the key
+	 * @return the property value
+	 */
+	public Integer getIntegerProperty(JRPropertiesHolder propertiesHolder, String key)
+	{
+		String value = getProperty(propertiesHolder, key);
+		
+		return value == null ? null : asInteger(value);
+	}
+	
 	/**
 	 * Returns the value of a property as an integer, looking first in the supplied properties holder
 	 * and then in the system properties.
@@ -561,6 +619,21 @@ public final class JRPropertiesUtil
 		return value == null ? defaultValue : asInteger(value);
 	}
 
+	/**
+	 * Returns the value of a property as a Float, looking first in the supplied properties holder
+	 * and then in the system properties.
+	 * 
+	 * @param propertiesHolder the properties holder
+	 * @param key the key
+	 * @return the property value
+	 */
+	public Float getFloatProperty(JRPropertiesHolder propertiesHolder, String key)
+	{
+		String value = getProperty(propertiesHolder, key);
+		
+		return value == null ? null : asFloat(value);
+	}
+	
 	/**
 	 * Returns the value of a property as a float, looking first in the supplied properties holder
 	 * and then in the system properties.
@@ -615,7 +688,7 @@ public final class JRPropertiesUtil
 	 */
 	public static long asLong(String value)
 	{
-		return Long.parseLong(value);
+		return Long.parseLong(value == null ? value : value.trim());
 	}
 	
 	/**
@@ -630,6 +703,22 @@ public final class JRPropertiesUtil
 	}
 
 	/**
+	 * @deprecated Replaced by {@link #getLongProperty(JRPropertiesMap, String, long)}.
+	 */
+	public long getLongProperty(JRPropertiesMap propertiesMap, String key, int defaultValue)
+	{
+		return getLongProperty(propertiesMap, key, (long)defaultValue);
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #getLongProperty(JRPropertiesHolder, String, long)}.
+	 */
+	public long getLongProperty(JRPropertiesHolder propertiesHolder, String key, int defaultValue)
+	{
+		return getLongProperty(propertiesHolder, key, (long)defaultValue);
+	}
+
+	/**
 	 * Returns the value of a property as a long, looking first in the supplied properties map
 	 * and then in the system properties.
 	 * 
@@ -638,7 +727,7 @@ public final class JRPropertiesUtil
 	 * @param defaultValue the default value used if the property is not found
 	 * @return the property value
 	 */
-	public long getLongProperty(JRPropertiesMap propertiesMap, String key, int defaultValue)
+	public long getLongProperty(JRPropertiesMap propertiesMap, String key, long defaultValue)
 	{
 		String value = getProperty(propertiesMap, key);
 		
@@ -654,7 +743,7 @@ public final class JRPropertiesUtil
 	 * @param defaultValue the default value used if the property is not found
 	 * @return the property value
 	 */
-	public long getLongProperty(JRPropertiesHolder propertiesHolder, String key, int defaultValue)
+	public long getLongProperty(JRPropertiesHolder propertiesHolder, String key, long defaultValue)
 	{
 		String value = getProperty(propertiesHolder, key);
 		
@@ -710,6 +799,23 @@ public final class JRPropertiesUtil
 
 		transfer(source, destination, tranferPropertiesPrefix);
 	}
+	
+	public void transferProperties(JRPropertiesMap source,
+			JRPropertiesHolder destination, List<String> propertyNames)
+	{
+		if (source == null || !source.hasProperties()
+				|| propertyNames == null || propertyNames.isEmpty())
+		{
+			return;
+		}
+		
+		JRPropertiesMap destinationProperties = destination.getPropertiesMap();
+		for (String property : propertyNames)
+		{
+			String value = source.getProperty(property);
+			destinationProperties.setProperty(property, value);
+		}
+	}
 
 	protected void transfer(JRPropertiesMap source,
 			JRPropertiesHolder destination, String tranferPropertiesPrefix)
@@ -748,6 +854,21 @@ public final class JRPropertiesUtil
 	 * Returns the value of a property as a <code>Character</code> value, 
 	 * looking first in the supplied properties holder and then in the
 	 * system properties.
+	 * 
+	 * @param propertiesHolder the properties holder
+	 * @param key the key
+	 * @return the property value as a <code>Character</code>
+	 */
+	public Character getCharacterProperty(JRPropertiesHolder propertiesHolder, String key)
+	{
+		String value = getProperty(propertiesHolder, key);
+		return asCharacter(value);
+	}
+	
+	/**
+	 * Returns the value of a property as a <code>Character</code> value, 
+	 * looking first in the supplied properties map
+	 * and then in the system properties.
 	 * 
 	 * @param propertiesMap the properties map
 	 * @param key the key

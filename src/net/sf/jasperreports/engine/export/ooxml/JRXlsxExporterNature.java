@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,12 +29,11 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.ExporterFilter;
 import net.sf.jasperreports.engine.export.GenericElementHandler;
-import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
 import net.sf.jasperreports.engine.export.JRXlsAbstractExporterNature;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXlsxExporterNature.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: JRXlsxExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXlsxExporterNature extends JRXlsAbstractExporterNature
 {
@@ -66,7 +65,7 @@ public class JRXlsxExporterNature extends JRXlsAbstractExporterNature
 		if (element instanceof JRGenericPrintElement)
 		{
 			JRGenericPrintElement genericElement = (JRGenericPrintElement) element;
-			GenericElementHandler handler = GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
+			GenericElementHandler handler = handlerEnvironment.getElementHandler(
 					genericElement.getGenericType(), JRXlsxExporter.XLSX_EXPORTER_KEY);
 			if (handler == null || !handler.toExport(genericElement))
 			{

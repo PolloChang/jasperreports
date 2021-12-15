@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,39 +29,45 @@ import java.util.Locale;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRFont;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.engine.fonts.FontInfo;
-import net.sf.jasperreports.engine.util.JRFontUtil;
+import net.sf.jasperreports.engine.fonts.FontUtil;
+import net.sf.jasperreports.export.XlsReportConfiguration;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxFontHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: XlsxFontHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxFontHelper extends BaseHelper
 {
 	private Map<String,Integer> fontCache = new HashMap<String,Integer>();//FIXMEXLSX use soft cache? check other exporter caches as well
 	
-	private Map<String,String> fontMap;
 	private String exporterKey;
-	private boolean isFontSizeFixEnabled;
+	private XlsReportConfiguration configuration;
 
 	/**
 	 *
 	 */
 	public XlsxFontHelper(
+		JasperReportsContext jasperReportsContext,
 		Writer writer,
-		Map<String,String> fontMap,
-		String exporterKey,
-		boolean isFontSizeFixEnabled		
+		String exporterKey
 		)
 	{
-		super(writer);
+		super(jasperReportsContext, writer);
 
-		this.fontMap = fontMap;
 		this.exporterKey = exporterKey;
-		this.isFontSizeFixEnabled = isFontSizeFixEnabled;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setConfiguration(XlsReportConfiguration configuration)
+	{
+		this.configuration = configuration;
 	}
 	
 	/**
@@ -76,32 +82,26 @@ public class XlsxFontHelper extends BaseHelper
 		}
 
 		String fontName = font.getFontName();
-		if (fontMap != null && fontMap.containsKey(fontName))
+
+		FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontName, locale);
+		if (fontInfo != null)
 		{
-			fontName = fontMap.get(fontName);
-		}
-		else
-		{
-			FontInfo fontInfo = JRFontUtil.getFontInfo(fontName, locale);
-			if (fontInfo != null)
+			//fontName found in font extensions
+			FontFamily family = fontInfo.getFontFamily();
+			String exportFont = family.getExportFont(exporterKey);
+			if (exportFont != null)
 			{
-				//fontName found in font extensions
-				FontFamily family = fontInfo.getFontFamily();
-				String exportFont = family.getExportFont(exporterKey);
-				if (exportFont != null)
-				{
-					fontName = exportFont;
-				}
+				fontName = exportFont;
 			}
 		}
 		
-		XlsxFontInfo fontInfo = new XlsxFontInfo(gridCell, fontName);
-		Integer fontIndex = fontCache.get(fontInfo.getId());
+		XlsxFontInfo xlsxFontInfo = new XlsxFontInfo(gridCell, fontName, configuration.isFontSizeFixEnabled());
+		Integer fontIndex = fontCache.get(xlsxFontInfo.getId());
 		if (fontIndex == null)
 		{
 			fontIndex = Integer.valueOf(fontCache.size());
-			export(fontInfo);
-			fontCache.put(fontInfo.getId(), fontIndex);
+			export(xlsxFontInfo);
+			fontCache.put(xlsxFontInfo.getId(), fontIndex);
 		}
 		return fontIndex.intValue();
 	}
@@ -112,7 +112,7 @@ public class XlsxFontHelper extends BaseHelper
 	private void export(XlsxFontInfo fontInfo)
 	{
 		write(
-			"<font><sz val=\"" + (isFontSizeFixEnabled ? fontInfo.fontSize - 1 : fontInfo.fontSize) + "\"/>" 
+			"<font><sz val=\"" + fontInfo.fontSize + "\"/>" 
 			+ "<color rgb=\"" + fontInfo.color + "\"/>"
 			+ "<name val=\"" + fontInfo.fontName + "\"/>"
 			+ "<b val=\"" + fontInfo.isBold + "\"/>"

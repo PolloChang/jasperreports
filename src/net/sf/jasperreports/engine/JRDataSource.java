@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,9 +28,11 @@ package net.sf.jasperreports.engine;
  * This interface represents the abstract representation of a JasperReports data source. All data source types must
  * implement this interface.
  * <p>
+ * Every time a report is filled, an instance of this interface is supplied or created behind the scenes by the reporting engine.
+ * </p><p>
  * JasperReports provides default implementations of result set, bean collections and bean arrays data sources.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDataSource.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRDataSource
 {

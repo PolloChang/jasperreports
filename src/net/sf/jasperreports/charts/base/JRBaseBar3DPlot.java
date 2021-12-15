@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,14 +44,14 @@ import org.jfree.chart.renderer.category.BarRenderer3D;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRBaseBar3DPlot.java 5180 2012-03-29 13:23:12Z teodord $ 
+ * @version $Id: JRBaseBar3DPlot.java 7199 2014-08-27 13:58:10Z teodord $ 
  */
 public class JRBaseBar3DPlot extends JRBaseChartPlot implements JRBar3DPlot 
 {
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	public static final String PROPERTY_SHOW_LABELS = "showLabels";
+	public static final String PROPERTY_SHOW_LABELS = "isShowLabels";
 	
 	public static final String PROPERTY_X_OFFSET = "xOffset";
 	
@@ -120,9 +120,9 @@ public class JRBaseBar3DPlot extends JRBaseChartPlot implements JRBar3DPlot
 		showLabels = barPlot.getShowLabels();
 		
 		categoryAxisLabelExpression = factory.getExpression( barPlot.getCategoryAxisLabelExpression() );
-		categoryAxisLabelFont = factory.getFont(barPlot.getChart(), barPlot.getCategoryAxisLabelFont());
+		categoryAxisLabelFont = factory.getFont(chart, barPlot.getCategoryAxisLabelFont());
 		categoryAxisLabelColor = barPlot.getOwnCategoryAxisLabelColor();
-		categoryAxisTickLabelFont = factory.getFont(barPlot.getChart(), barPlot.getCategoryAxisTickLabelFont());
+		categoryAxisTickLabelFont = factory.getFont(chart, barPlot.getCategoryAxisTickLabelFont());
 		categoryAxisTickLabelColor = barPlot.getOwnCategoryAxisTickLabelColor();
 		categoryAxisTickLabelMask = barPlot.getCategoryAxisTickLabelMask();
 		categoryAxisVerticalTickLabels = barPlot.getCategoryAxisVerticalTickLabels();
@@ -134,9 +134,9 @@ public class JRBaseBar3DPlot extends JRBaseChartPlot implements JRBar3DPlot
 		domainAxisMaxValueExpression = factory.getExpression( barPlot.getDomainAxisMaxValueExpression() );
 		rangeAxisMinValueExpression = factory.getExpression( barPlot.getRangeAxisMinValueExpression() );
 		rangeAxisMaxValueExpression = factory.getExpression( barPlot.getRangeAxisMaxValueExpression() );
-		valueAxisLabelFont = factory.getFont(barPlot.getChart(), barPlot.getValueAxisLabelFont());
+		valueAxisLabelFont = factory.getFont(chart, barPlot.getValueAxisLabelFont());
 		valueAxisLabelColor = barPlot.getOwnValueAxisLabelColor();
-		valueAxisTickLabelFont = factory.getFont(barPlot.getChart(), barPlot.getValueAxisTickLabelFont());
+		valueAxisTickLabelFont = factory.getFont(chart, barPlot.getValueAxisTickLabelFont());
 		valueAxisTickLabelColor = barPlot.getOwnValueAxisTickLabelColor();
 		valueAxisTickLabelMask = barPlot.getValueAxisTickLabelMask();
 		valueAxisVerticalTickLabels = barPlot.getValueAxisVerticalTickLabels();
@@ -440,7 +440,7 @@ public class JRBaseBar3DPlot extends JRBaseChartPlot implements JRBar3DPlot
 		clone.domainAxisMaxValueExpression = JRCloneUtils.nullSafeClone(domainAxisMaxValueExpression);
 		clone.rangeAxisMinValueExpression = JRCloneUtils.nullSafeClone(rangeAxisMinValueExpression);
 		clone.rangeAxisMaxValueExpression = JRCloneUtils.nullSafeClone(rangeAxisMaxValueExpression);
-		clone.itemLabel = JRCloneUtils.nullSafeClone(itemLabel);
+		clone.itemLabel = itemLabel == null ? null : itemLabel.clone(parentChart);
 		return clone;
 	}
 

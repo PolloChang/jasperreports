@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,15 +41,15 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRBaseLinePlot.java 5180 2012-03-29 13:23:12Z teodord $ 
+ * @version $Id: JRBaseLinePlot.java 7199 2014-08-27 13:58:10Z teodord $ 
  */
 public class JRBaseLinePlot extends JRBaseChartPlot implements JRLinePlot {
 	
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	public static final String PROPERTY_SHOW_LINES = "showLines";
+	public static final String PROPERTY_SHOW_LINES = "isShowLines";
 	
-	public static final String PROPERTY_SHOW_SHAPES = "showShapes";
+	public static final String PROPERTY_SHOW_SHAPES = "isShowShapes";
 	
 	protected JRExpression categoryAxisLabelExpression;
 	protected JRFont categoryAxisLabelFont;
@@ -105,9 +105,9 @@ public class JRBaseLinePlot extends JRBaseChartPlot implements JRLinePlot {
 		showLines = linePlot.getShowLines();
 		
 		categoryAxisLabelExpression = factory.getExpression( linePlot.getCategoryAxisLabelExpression() );
-		categoryAxisLabelFont = factory.getFont(linePlot.getChart(), linePlot.getCategoryAxisLabelFont());
+		categoryAxisLabelFont = factory.getFont(chart, linePlot.getCategoryAxisLabelFont());
 		categoryAxisLabelColor = linePlot.getOwnCategoryAxisLabelColor();
-		categoryAxisTickLabelFont = factory.getFont(linePlot.getChart(), linePlot.getCategoryAxisTickLabelFont());
+		categoryAxisTickLabelFont = factory.getFont(chart, linePlot.getCategoryAxisTickLabelFont());
 		categoryAxisTickLabelColor = linePlot.getOwnCategoryAxisTickLabelColor();
 		categoryAxisTickLabelMask = linePlot.getCategoryAxisTickLabelMask();
 		categoryAxisVerticalTickLabels = linePlot.getCategoryAxisVerticalTickLabels();
@@ -119,9 +119,9 @@ public class JRBaseLinePlot extends JRBaseChartPlot implements JRLinePlot {
 		domainAxisMaxValueExpression = factory.getExpression( linePlot.getDomainAxisMaxValueExpression() );
 		rangeAxisMinValueExpression = factory.getExpression( linePlot.getRangeAxisMinValueExpression() );
 		rangeAxisMaxValueExpression = factory.getExpression( linePlot.getRangeAxisMaxValueExpression() );
-		valueAxisLabelFont = factory.getFont(linePlot.getChart(), linePlot.getValueAxisLabelFont());
+		valueAxisLabelFont = factory.getFont(chart, linePlot.getValueAxisLabelFont());
 		valueAxisLabelColor = linePlot.getOwnValueAxisLabelColor();
-		valueAxisTickLabelFont = factory.getFont(linePlot.getChart(), linePlot.getValueAxisTickLabelFont());
+		valueAxisTickLabelFont = factory.getFont(chart, linePlot.getValueAxisTickLabelFont());
 		valueAxisTickLabelColor = linePlot.getOwnValueAxisTickLabelColor();
 		valueAxisTickLabelMask = linePlot.getValueAxisTickLabelMask();
 		valueAxisVerticalTickLabels = linePlot.getValueAxisVerticalTickLabels();

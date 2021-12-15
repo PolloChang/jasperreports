@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,27 +23,39 @@
  */
 package net.sf.jasperreports.engine.export;
 
+import net.sf.jasperreports.engine.JRAbstractExporter;
+import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JasperReportsContext;
+
 
 /**
  * Factory of {@link JROriginExporterFilter} instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JROriginExporterFilterFactory.java 5050 2012-03-12 10:11:26Z teodord $
- * @see JROriginExporterFilter#getFilter(net.sf.jasperreports.engine.JRPropertiesMap, String)
+ * @version $Id: JROriginExporterFilterFactory.java 7199 2014-08-27 13:58:10Z teodord $
+ * @see JROriginExporterFilter#getFilter(JasperReportsContext, JRPropertiesMap, String)
  */
 public class JROriginExporterFilterFactory implements ExporterFilterFactory
 {
 
 	public ExporterFilter getFilter(JRExporterContext exporterContext)
 	{
-		String originFilterPrefix = exporterContext.getExportPropertiesPrefix() 
-				+ JROriginExporterFilter.PROPERTY_EXCLUDE_ORIGIN_PREFIX;
-		return 
-			JROriginExporterFilter.getFilter(
-				exporterContext.getJasperReportsContext(),
-				exporterContext.getExportedReport().getPropertiesMap(), 
-				originFilterPrefix
-				);
+		JRAbstractExporter<?, ?, ?, ?> exporter = 
+			exporterContext.getExporterRef() instanceof JRAbstractExporter<?, ?, ?, ?> 
+			? (JRAbstractExporter<?, ?, ?, ?>)exporterContext.getExporterRef() 
+			: null;
+		if (exporter != null)
+		{
+			String originFilterPrefix = exporter.getExporterPropertiesPrefix() 
+					+ JROriginExporterFilter.PROPERTY_EXCLUDE_ORIGIN_PREFIX;
+			return 
+				JROriginExporterFilter.getFilter(
+					exporterContext.getJasperReportsContext(),
+					exporterContext.getExportedReport().getPropertiesMap(), 
+					originFilterPrefix
+					);
+		}
+		return null;
 	}
 
 }

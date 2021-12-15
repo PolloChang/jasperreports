@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.JRVisitor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillEllipse.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillEllipse.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillEllipse extends JRFillGraphicElement implements JREllipse
 {
@@ -85,6 +85,7 @@ public class JRFillEllipse extends JRFillGraphicElement implements JREllipse
 		
 		this.evaluatePrintWhenExpression(evaluation);
 		evaluateProperties(evaluation);
+		evaluateStyle(evaluation);
 		
 		setValueRepeating(true);
 	}
@@ -95,7 +96,8 @@ public class JRFillEllipse extends JRFillGraphicElement implements JREllipse
 	 */
 	protected JRPrintElement fill()
 	{
-		JRTemplatePrintEllipse printEllipse = new JRTemplatePrintEllipse(this.getJRTemplateEllipse(), elementId);
+		JRTemplatePrintEllipse printEllipse = new JRTemplatePrintEllipse(this.getJRTemplateEllipse(), printElementOriginator);
+		printEllipse.setUUID(this.getUUID());
 		printEllipse.setX(this.getX());
 		printEllipse.setY(this.getRelativeY());
 		printEllipse.setWidth(getWidth());

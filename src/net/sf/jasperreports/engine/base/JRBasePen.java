@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -45,7 +45,7 @@ import net.sf.jasperreports.engine.util.ObjectUtils;
  * This is useful for drawing borders around text elements and images. Boxes can have borders and paddings, which can
  * have different width and colour on each side of the element.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePen.java 4647 2011-10-06 10:19:07Z lucianc $
+ * @version $Id: JRBasePen.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEventsSupport, Deduplicable
 {

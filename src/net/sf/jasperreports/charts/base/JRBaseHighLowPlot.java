@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRBaseHighLowPlot.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseHighLowPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseHighLowPlot extends JRBaseChartPlot implements JRHighLowPlot
 {
@@ -52,9 +52,9 @@ public class JRBaseHighLowPlot extends JRBaseChartPlot implements JRHighLowPlot
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	public static final String PROPERTY_SHOW_CLOSE_TICKS = "showCloseTicks";
+	public static final String PROPERTY_SHOW_CLOSE_TICKS = "isShowCloseTicks";
 	
-	public static final String PROPERTY_SHOW_OPEN_TICKS = "showOpenTicks";
+	public static final String PROPERTY_SHOW_OPEN_TICKS = "isShowOpenTicks";
 
 	protected JRExpression timeAxisLabelExpression;
 	protected JRFont timeAxisLabelFont;
@@ -111,9 +111,9 @@ public class JRBaseHighLowPlot extends JRBaseChartPlot implements JRHighLowPlot
 		showCloseTicks = highLowPlot.getShowCloseTicks();
 
 		timeAxisLabelExpression = factory.getExpression( highLowPlot.getTimeAxisLabelExpression() );
-		timeAxisLabelFont = factory.getFont(highLowPlot.getChart(), highLowPlot.getTimeAxisLabelFont());
+		timeAxisLabelFont = factory.getFont(chart, highLowPlot.getTimeAxisLabelFont());
 		timeAxisLabelColor = highLowPlot.getOwnTimeAxisLabelColor();
-		timeAxisTickLabelFont = factory.getFont(highLowPlot.getChart(), highLowPlot.getTimeAxisTickLabelFont());
+		timeAxisTickLabelFont = factory.getFont(chart, highLowPlot.getTimeAxisTickLabelFont());
 		timeAxisTickLabelColor = highLowPlot.getOwnTimeAxisTickLabelColor();
 		timeAxisTickLabelMask = highLowPlot.getTimeAxisTickLabelMask();
 		timeAxisVerticalTickLabels = highLowPlot.getTimeAxisVerticalTickLabels();
@@ -124,9 +124,9 @@ public class JRBaseHighLowPlot extends JRBaseChartPlot implements JRHighLowPlot
 		domainAxisMaxValueExpression = factory.getExpression( highLowPlot.getDomainAxisMaxValueExpression() );
 		rangeAxisMinValueExpression = factory.getExpression( highLowPlot.getRangeAxisMinValueExpression() );
 		rangeAxisMaxValueExpression = factory.getExpression( highLowPlot.getRangeAxisMaxValueExpression() );
-		valueAxisLabelFont = factory.getFont(highLowPlot.getChart(), highLowPlot.getValueAxisLabelFont());
+		valueAxisLabelFont = factory.getFont(chart, highLowPlot.getValueAxisLabelFont());
 		valueAxisLabelColor = highLowPlot.getOwnValueAxisLabelColor();
-		valueAxisTickLabelFont = factory.getFont(highLowPlot.getChart(), highLowPlot.getValueAxisTickLabelFont());
+		valueAxisTickLabelFont = factory.getFont(chart, highLowPlot.getValueAxisTickLabelFont());
 		valueAxisTickLabelColor = highLowPlot.getOwnValueAxisTickLabelColor();
 		valueAxisTickLabelMask = highLowPlot.getValueAxisTickLabelMask();
 		valueAxisVerticalTickLabels = highLowPlot.getValueAxisVerticalTickLabels();

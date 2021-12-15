@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,6 +36,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -76,6 +77,7 @@ import net.sf.jasperreports.charts.JRXySeries;
 import net.sf.jasperreports.charts.JRXyzDataset;
 import net.sf.jasperreports.charts.JRXyzSeries;
 import net.sf.jasperreports.charts.util.JRMeterInterval;
+import net.sf.jasperreports.crosstabs.CrosstabColumnCell;
 import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.crosstabs.JRCrosstabBucket;
@@ -109,7 +111,6 @@ import net.sf.jasperreports.engine.JRElementDataset;
 import net.sf.jasperreports.engine.JRElementGroup;
 import net.sf.jasperreports.engine.JREllipse;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRFont;
@@ -149,6 +150,7 @@ import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ReturnValue;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.query.JRJdbcQueryExecuterFactory;
@@ -172,17 +174,19 @@ import net.sf.jasperreports.engine.type.TabStopAlignEnum;
 import net.sf.jasperreports.engine.type.WhenNoDataTypeEnum;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
+import net.sf.jasperreports.export.WriterExporterOutput;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.time.Day;
 
+
 /**
  * A writer that generates the Java code required to produce a given report template programmatically, using the JasperReports API.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRApiWriter.java 5166 2012-03-28 13:11:05Z teodord $
+ * @version $Id: JRApiWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRApiWriter
 {
@@ -258,8 +262,8 @@ public class JRApiWriter
 		try
 		{
 			fos = new FileOutputStream(destFileName);
-			String encoding = report.getProperty(JRExporterParameter.PROPERTY_CHARACTER_ENCODING) != null
-			? report.getProperty(JRExporterParameter.PROPERTY_CHARACTER_ENCODING)
+			String encoding = report.getProperty(WriterExporterOutput.PROPERTY_CHARACTER_ENCODING) != null
+			? report.getProperty(WriterExporterOutput.PROPERTY_CHARACTER_ENCODING)
 			: "UTF-8";//FIXME this is an export time config property
 			Writer out = new OutputStreamWriter(fos, encoding);
 			writeReport(report, out);
@@ -294,8 +298,8 @@ public class JRApiWriter
 	{
 		try
 		{
-			String encoding = report.getProperty(JRExporterParameter.PROPERTY_CHARACTER_ENCODING) != null
-			? report.getProperty(JRExporterParameter.PROPERTY_CHARACTER_ENCODING)
+			String encoding = report.getProperty(WriterExporterOutput.PROPERTY_CHARACTER_ENCODING) != null
+			? report.getProperty(WriterExporterOutput.PROPERTY_CHARACTER_ENCODING)
 			: "UTF-8";
 			
 			Writer out = new OutputStreamWriter(outputStream, encoding);
@@ -1057,6 +1061,7 @@ public class JRApiWriter
 			writeExpression( image.getExpression(), imageName, "Expression");
 			writeExpression( image.getAnchorNameExpression(), imageName, "AnchorNameExpression");
 			writeExpression( image.getHyperlinkReferenceExpression(), imageName, "HyperlinkReferenceExpression");
+			writeExpression( image.getHyperlinkWhenExpression(), imageName, "HyperlinkWhenExpression");
 			writeExpression( image.getHyperlinkAnchorExpression(), imageName, "HyperlinkAnchorExpression");
 			writeExpression( image.getHyperlinkPageExpression(), imageName, "HyperlinkPageExpression");
 			writeExpression( image.getHyperlinkTooltipExpression(), imageName, "HyperlinkTooltipExpression");
@@ -1110,7 +1115,7 @@ public class JRApiWriter
 		if (font != null)
 		{
 			write( fontHolderName + ".setFontName(\"{0}\");\n", JRStringUtil.escapeJavaStringLiteral(font.getOwnFontName()));
-			write( fontHolderName + ".setFontSize({0, number, #});\n", font.getOwnFontSize());
+			write( fontHolderName + ".setFontSize({0});\n", font.getOwnFontsize());
 			write( fontHolderName + ".setBold({0});\n", font.isOwnBold());
 			write( fontHolderName + ".setItalic({0});\n", font.isOwnItalic());
 			write( fontHolderName + ".setUnderline({0});\n", font.isOwnUnderline());
@@ -1130,7 +1135,7 @@ public class JRApiWriter
 	{
 		write( styleName + ".setMode({0});\n", style.getOwnModeValue());
 		write( styleName + ".setFontName(\"{0}\");\n", JRStringUtil.escapeJavaStringLiteral(style.getOwnFontName()));
-		write( styleName + ".setFontSize({0, number, #});\n", style.getOwnFontSize());
+		write( styleName + ".setFontSize({0});\n", style.getOwnFontsize());
 		write( styleName + ".setBold({0});\n", style.isOwnBold());
 		write( styleName + ".setItalic({0});\n", style.isOwnItalic());
 		write( styleName + ".setUnderline({0});\n", style.isOwnUnderline());
@@ -1225,6 +1230,8 @@ public class JRApiWriter
 	
 			writeExpression( textField.getHyperlinkReferenceExpression(), textFieldName, "HyperlinkReferenceExpression");
 	
+			writeExpression( textField.getHyperlinkWhenExpression(), textFieldName, "HyperlinkWhenExpression");
+			
 			writeExpression( textField.getHyperlinkAnchorExpression(), textFieldName, "HyperlinkAnchorExpression");
 	
 			writeExpression( textField.getHyperlinkPageExpression(), textFieldName, "HyperlinkPageExpression");
@@ -1248,6 +1255,7 @@ public class JRApiWriter
 			write( "JRDesignSubreport " + subreportName + " = new JRDesignSubreport(jasperDesign);\n");
 			write( subreportName + ".setUsingCache({0});\n", subreport.getUsingCache());
 			write( subreportName + ".setRunToBottom({0});\n", subreport.isRunToBottom());
+			write(subreportName + ".setOverflowType({0});\n", subreport.getOverflowType());
 			writeReportElement( subreport, subreportName);
 	
 			writeExpression( subreport.getParametersMapExpression(), subreportName, "ParametersMapExpression");
@@ -1374,6 +1382,7 @@ public class JRApiWriter
 	
 			writeExpression( chart.getAnchorNameExpression(), chartName, "AnchorNameExpression");
 			writeExpression( chart.getHyperlinkReferenceExpression(), chartName, "HyperlinkReferenceExpression");
+			writeExpression( chart.getHyperlinkWhenExpression(), chartName, "HyperlinkWhenExpression");//FIXMENOW can we reuse hyperlink write method?
 			writeExpression( chart.getHyperlinkAnchorExpression(), chartName, "HyperlinkAnchorExpression");
 			writeExpression( chart.getHyperlinkPageExpression(), chartName, "HyperlinkPageExpression");
 			writeExpression( chart.getHyperlinkTooltipExpression(), chartName, "HyperlinkTooltipExpression");
@@ -1390,8 +1399,6 @@ public class JRApiWriter
 	 * The method produces a <code>&lt;dataset&gt;</code> XML element.
 	 * 
 	 * @param dataset the element dataset
-	 * @throws IOException any I/O exception that occurred while writing the
-	 * XML output
 	 */
 	public void writeElementDataset( JRElementDataset dataset, String datasetName)
 	{
@@ -1407,8 +1414,6 @@ public class JRApiWriter
 	 * @param dataset the element dataset
 	 * @param skipIfEmpty if set, no output will be produced if the element dataset
 	 * only has default attribute values
-	 * @throws IOException any I/O exception that occurred while writing the
-	 * XML output
 	 */
 	public void writeElementDataset( JRElementDataset dataset, boolean skipIfEmpty, String datasetName)
 	{
@@ -1649,7 +1654,10 @@ public class JRApiWriter
 		{
 			String xySeriesName = parentName + "XySeries" + index;
 			write( "JRDesignXySeries " + xySeriesName + " = new JRDesignXySeries();\n");
-	
+			if(xySeries.getAutoSort() != null)
+			{
+				write( xySeriesName + ".setAutoSort({0});\n", xySeries.getAutoSort());
+			}
 			writeExpression( xySeries.getSeriesExpression(), xySeriesName, "SeriesExpression");
 			writeExpression( xySeries.getXValueExpression(), xySeriesName, "XValueExpression");
 			writeExpression( xySeries.getYValueExpression(), xySeriesName, "YValueExpression");
@@ -3016,6 +3024,23 @@ public class JRApiWriter
 		}
 	}
 
+	private void writeReturnValue(ReturnValue returnValue, String returnValueName)
+	{
+		if(returnValue != null)
+		{
+			write("DesignReturnValue " + returnValueName + " = new DesignReturnValue();\n");
+			write(returnValueName + ".setFromVariable(\"{0}\");\n", 
+					JRStringUtil.escapeJavaStringLiteral(returnValue.getFromVariable()));
+			write(returnValueName + ".setToVariable(\"{0}\");\n", 
+					JRStringUtil.escapeJavaStringLiteral(returnValue.getToVariable()));
+			write(returnValueName + ".setCalculation({0});\n", 
+					returnValue.getCalculation(), CalculationEnum.NOTHING);
+			write(returnValueName + ".setIncrementerFactoryClassName(\"{0}\");\n", 
+					JRStringUtil.escapeJavaStringLiteral(returnValue.getIncrementerFactoryClassName()));
+			flush();
+		}
+	}
+
 	/**
 	 * 
 	 */
@@ -3028,6 +3053,7 @@ public class JRApiWriter
 			write( crosstabName + ".setRepeatRowHeaders({0});\n", crosstab.isRepeatRowHeaders(), true);
 			write( crosstabName + ".setColumnBreakOffset({0, number, #});\n", crosstab.getColumnBreakOffset(), JRCrosstab.DEFAULT_COLUMN_BREAK_OFFSET);
 			write( crosstabName + ".setRunDirection({0});\n", crosstab.getRunDirectionValue(), RunDirectionEnum.LTR);
+			write( crosstabName + ".setHorizontalPosition({0});\n", crosstab.getHorizontalPosition());
 			write( crosstabName + ".setIgnoreWidth({0});\n", getBooleanText(crosstab.getIgnoreWidth()));
 	
 			writeReportElement( crosstab, crosstabName);
@@ -3051,6 +3077,8 @@ public class JRApiWriter
 	
 			writeCrosstabDataset( crosstab, crosstabName);
 
+			writeCrosstabTitleCell(crosstab, crosstabName);
+			
 			writeCrosstabHeaderCell( crosstab, crosstabName);
 	
 			JRCrosstabRowGroup[] rowGroups = crosstab.getRowGroups();
@@ -3104,6 +3132,30 @@ public class JRApiWriter
 	
 			writeCrosstabWhenNoDataCell( crosstab, crosstabName);
 
+			flush();
+		}
+	}
+
+
+	protected void writeCrosstabTitleCell(JRCrosstab crosstab, String crosstabName)
+	{
+		CrosstabColumnCell titleCell = crosstab.getTitleCell();
+		if (titleCell != null)
+		{
+			String titleCellName = crosstabName + "TitleCell";
+			write("DesignCrosstabColumnCell {0} = new DesignCrosstabColumnCell();\n", titleCellName);
+			writePattern("{0}.setHeight({1, number, #});\n", titleCellName, titleCell.getHeight());
+			writePattern("{0}.setContentsPosition({1});\n", titleCellName, titleCell.getContentsPosition());//default value for educative purposes
+			
+			JRCellContents cellContents = titleCell.getCellContents();
+			if (cellContents != null)
+			{
+				String contentsName = titleCellName + "Contents";
+				writeCellContents(cellContents, contentsName);
+				writePattern("{0}.setCellContents({1});\n", titleCellName, contentsName);
+			}
+			
+			writePattern("{0}.setTitleCell({1});\n", crosstabName, titleCellName);
 			flush();
 		}
 	}
@@ -3207,7 +3259,14 @@ public class JRApiWriter
 			write( groupName + ".setPosition({0});\n", group.getPositionValue(), CrosstabColumnPositionEnum.LEFT);
 			
 			writeBucket( group.getBucket(), groupName);
-	
+			
+			JRCellContents crosstabHeader = group.getCrosstabHeader();
+			if(crosstabHeader != null)
+			{
+				writeCellContents( crosstabHeader, groupName + "CrosstabHeaderContents");
+				write( groupName + ".setCrosstabHeader(" + groupName + "CrosstabHeaderContents);\n");
+			}
+			
 			JRCellContents header = group.getHeader();
 			if(header != null)
 			{
@@ -3446,7 +3505,6 @@ public class JRApiWriter
 	 * Outputs the XML representation of a subdataset run object.
 	 * 
 	 * @param datasetRun the subdataset run
-	 * @throws IOException
 	 */
 	public void writeDatasetRun( JRDatasetRun datasetRun, String parentName)
 	{
@@ -3469,6 +3527,19 @@ public class JRApiWriter
 			writeExpression( datasetRun.getConnectionExpression(), runName, "ConnectionExpression");
 
 			writeExpression( datasetRun.getDataSourceExpression(), runName, "DataSourceExpression");
+			
+			List<ReturnValue> returnValues = datasetRun.getReturnValues();
+			if (returnValues != null && !returnValues.isEmpty())
+			{
+				for (ListIterator<ReturnValue> it = returnValues.listIterator(); it.hasNext();)
+				{
+					ReturnValue returnValue = it.next();
+					String returnValueVarName = runName + "ReturnValue" + it.previousIndex();
+					writeReturnValue(returnValue, returnValueVarName);
+					write(runName + ".addReturnValue(" + returnValueVarName + ");\n");
+				}
+			}
+			
 			write( parentName + ".setDatasetRun(" + runName + ");\n");
 			flush();
 		}
@@ -3549,6 +3620,8 @@ public class JRApiWriter
 
 			writer.writeExpression(JRApiConstants.ELEMENT_hyperlinkReferenceExpression, JASPERREPORTS_NAMESPACE,
 					hyperlink.getHyperlinkReferenceExpression(), false);
+			writer.writeExpression(JRApiConstants.ELEMENT_hyperlinkWhenExpression, JASPERREPORTS_NAMESPACE,
+					hyperlink.getHyperlinkWhenExpression(), false);
 			writer.writeExpression(JRApiConstants.ELEMENT_hyperlinkAnchorExpression, JASPERREPORTS_NAMESPACE,
 					hyperlink.getHyperlinkAnchorExpression(), false);
 			writer.writeExpression(JRApiConstants.ELEMENT_hyperlinkPageExpression, JASPERREPORTS_NAMESPACE,
@@ -3581,6 +3654,7 @@ public class JRApiWriter
 			}
 
 			writeExpression( hyperlink.getHyperlinkReferenceExpression(), hyperlinkName, "HyperlinkReferenceExpression");
+			writeExpression( hyperlink.getHyperlinkWhenExpression(), hyperlinkName, "HyperlinkWhenExpression");
 			writeExpression( hyperlink.getHyperlinkAnchorExpression(), hyperlinkName, "HyperlinkAnchorExpression");
 			writeExpression( hyperlink.getHyperlinkPageExpression(), hyperlinkName, "HyperlinkPageExpression");
 			writeExpression( hyperlink.getHyperlinkTooltipExpression(), hyperlinkName, "HyperlinkTooltipExpression");
@@ -4033,6 +4107,19 @@ public class JRApiWriter
 					);
 			write(MessageFormat.format(pattern, new Object[]{strColor}));
 		}
+	}
+	
+	protected void writePattern(String pattern, Object ... arguments)
+	{
+		for (int i = 0; i < arguments.length; i++)
+		{
+			if (arguments[i] != null && arguments[i].getClass().isEnum())
+			{
+				arguments[i] = arguments[i].getClass().getCanonicalName() + "." + ((Enum<?>) arguments[i]).name();
+			}
+		}
+		
+		write(MessageFormat.format(pattern, arguments));
 	}
 
 	

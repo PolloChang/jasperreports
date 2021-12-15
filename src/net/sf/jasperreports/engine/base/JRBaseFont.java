@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,8 @@
 package net.sf.jasperreports.engine.base;
 
 import java.awt.font.TextAttribute;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.util.Map;
@@ -44,7 +46,7 @@ import net.sf.jasperreports.engine.util.JRTextAttribute;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseFont.java 5254 2012-04-10 15:18:36Z teodord $
+ * @version $Id: JRBaseFont.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, JRCloneable
 {
@@ -55,15 +57,15 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	public static final String PROPERTY_BOLD = "bold";
+	public static final String PROPERTY_BOLD = "isBold";
 	
 	public static final String PROPERTY_FONT_NAME = "fontName";
 	
 	public static final String PROPERTY_FONT_SIZE = "fontSize";
 	
-	public static final String PROPERTY_ITALIC = "italic";
+	public static final String PROPERTY_ITALIC = "isItalic";
 	
-	public static final String PROPERTY_PDF_EMBEDDED = "pdfEmbedded";
+	public static final String PROPERTY_PDF_EMBEDDED = "isPdfEmbedded";
 	
 	public static final String PROPERTY_PDF_ENCODING = "pdfEncoding";
 	
@@ -71,9 +73,9 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 	
 	public static final String PROPERTY_REPORT_FONT = "reportFont";
 	
-	public static final String PROPERTY_STRIKE_THROUGH = "strikeThrough";
+	public static final String PROPERTY_STRIKE_THROUGH = "isStrikeThrough";
 	
-	public static final String PROPERTY_UNDERLINE = "underline";
+	public static final String PROPERTY_UNDERLINE = "isUnderline";
 
 	/**
 	 *
@@ -87,7 +89,7 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 	protected Boolean isItalic;
 	protected Boolean isUnderline;
 	protected Boolean isStrikeThrough;
-	protected Integer fontSize;
+	protected Float fontsize;
 	protected String pdfFontName;
 	protected String pdfEncoding;
 	protected Boolean isPdfEmbedded;
@@ -127,7 +129,7 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 		Float sizeAttr = (Float)attributes.get(TextAttribute.SIZE);
 		if (sizeAttr != null)
 		{
-			setFontSize(sizeAttr.intValue());
+			setFontSize(sizeAttr.floatValue());
 		}
 		
 		Object underline = attributes.get(TextAttribute.UNDERLINE);
@@ -188,7 +190,7 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 			isItalic = font.isOwnItalic();
 			isUnderline = font.isOwnUnderline();
 			isStrikeThrough = font.isOwnStrikeThrough();
-			fontSize = font.getOwnFontSize();
+			fontsize = font.getOwnFontsize();
 			pdfFontName = font.getOwnPdfFontName();
 			pdfEncoding = font.getOwnPdfEncoding();
 			isPdfEmbedded = font.isOwnPdfEmbedded();
@@ -213,7 +215,7 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 		isItalic = font.isOwnItalic();
 		isUnderline = font.isOwnUnderline();
 		isStrikeThrough = font.isOwnStrikeThrough();
-		fontSize = font.getOwnFontSize();
+		fontsize = font.getOwnFontsize();
 		pdfFontName = font.getOwnPdfFontName();
 		pdfEncoding = font.getOwnPdfEncoding();
 		isPdfEmbedded = font.isOwnPdfEmbedded();
@@ -415,36 +417,59 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 	/**
 	 *
 	 */
-	public int getFontSize()
+	public float getFontsize()
 	{
-		return JRStyleResolver.getFontSize(this);
+		return JRStyleResolver.getFontsize(this);
 	}
 	
 	/**
 	 *
 	 */
-	public Integer getOwnFontSize()
+	public Float getOwnFontsize()
 	{
-		return fontSize;
+		return fontsize;
 	}
 	
 	/**
-	 *
+	 * Method which allows also to reset the "own" size property.
 	 */
-	public void setFontSize(int fontSize)
+	public void setFontSize(Float fontSize) 
 	{
-		setFontSize(Integer.valueOf(fontSize));
+		Object old = this.fontsize;
+		this.fontsize = fontSize;
+		getEventSupport().firePropertyChange(PROPERTY_FONT_SIZE, old, this.fontsize);
 	}
 
 	/**
-	 * Alternative setSize method which allows also to reset
-	 * the "own" size property.
+	 * @deprecated Replaced by {@link #getFontsize()}.
+	 */
+	public int getFontSize()
+	{
+		return (int)getFontsize();
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #getOwnFontsize()}.
+	 */
+	public Integer getOwnFontSize()
+	{
+		return fontsize == null ? null : fontsize.intValue();
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
+	 */
+	public void setFontSize(int fontSize)
+	{
+		setFontSize((float)fontSize);
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #setFontSize(Float)}.
 	 */
 	public void setFontSize(Integer fontSize) 
 	{
-		Object old = this.fontSize;
-		this.fontSize = fontSize;
-		getEventSupport().firePropertyChange(PROPERTY_FONT_SIZE, old, this.fontSize);
+		setFontSize(fontSize == null ? null : fontSize.floatValue());
 	}
 
 	/**
@@ -571,5 +596,27 @@ public class JRBaseFont implements JRFont, Serializable, JRChangeEventsSupport, 
 		
 		return eventSupport;
 	}
+
 	
+	/*
+	 * These fields are only for serialization backward compatibility.
+	 */
+	private int PSEUDO_SERIAL_VERSION_UID = JRConstants.PSEUDO_SERIAL_VERSION_UID; //NOPMD
+	/**
+	 * @deprecated
+	 */
+	private Integer fontSize;
+	
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+		
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_5_5_2)
+		{
+			fontsize = fontSize == null ? null : fontSize.floatValue();
+			
+			fontSize = null;
+		}
+	}
+
 }

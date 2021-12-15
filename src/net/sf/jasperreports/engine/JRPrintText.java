@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,11 +28,12 @@ import net.sf.jasperreports.engine.type.LineSpacingEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintText.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPrintText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor, JRPrintHyperlink, JRFont, JRCommonText, TextFormat
 {
@@ -50,6 +51,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	 * @return the text of this object
 	 * @see #getFullText()
 	 * @see #getTextTruncateSuffix()
+	 * @deprecated Replaced by {@link JRStyledTextUtil#getTruncatedText(JRPrintText)}.
 	 */
 	public String getText();
 		
@@ -86,7 +88,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	/**
 	 * Sets the index to which this object's text is to be truncated.
 	 * 
-	 * The test is truncated when {@link #getText()} or {@link #getStyledText(JRStyledTextAttributeSelector)}
+	 * The test is truncated when {@link JRStyledTextUtil#getTruncatedText(JRPrintText)} or {@link #getStyledText(JRStyledTextAttributeSelector)}
 	 * are called.
 	 * 
 	 * @param index the index to which this object's text is to be truncated
@@ -95,7 +97,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	
 	/**
 	 * Returns the suffix that is to be appended to the truncated text
-	 * (as returned by {@link #getText()}.
+	 * (as returned by {@link JRStyledTextUtil#getTruncatedText(JRPrintText)}.
 	 * 
 	 * @return the truncated text suffix
 	 * @see JRTextElement#PROPERTY_TRUNCATE_SUFFIX
@@ -114,7 +116,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	 * Returns the full (not truncated) text of this object.
 	 * 
 	 * @return the full text of this object
-	 * @see #getText()
+	 * @see JRStyledTextUtil#getTruncatedText(JRPrintText)
 	 * @see #getTextTruncateIndex()
 	 */
 	public String getFullText();
@@ -129,10 +131,11 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	/**
 	 * Returns the styled text for this object.
 	 * 
-	 * The text is truncated according to {@link #getText()}.
+	 * The text is truncated according to {@link JRStyledTextUtil#getTruncatedText(JRPrintText)}.
 	 * 
 	 * @param attributeSelector the styled text attribute selector
 	 * @return the possibly truncated styled text for this object
+	 * @deprecated Replaced by {@link JRStyledTextUtil#getStyledText(JRPrintText, JRStyledTextAttributeSelector)}.
 	 */
 	public JRStyledText getStyledText(JRStyledTextAttributeSelector attributeSelector);
 	

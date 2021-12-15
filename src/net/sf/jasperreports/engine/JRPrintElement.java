@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,15 @@
  */
 package net.sf.jasperreports.engine;
 
+import java.util.UUID;
+
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintElement.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRPrintElement extends JRCommonElement, JRPropertiesHolder
+public interface JRPrintElement extends JRCommonElement, JRPropertiesHolder, JRIdentifiable
 {
 
 	/**
@@ -38,6 +40,8 @@ public interface JRPrintElement extends JRCommonElement, JRPropertiesHolder
 	 * @see #getSourceElementId()
 	 */
 	int UNSET_SOURCE_ELEMENT_ID = 0;
+	
+	int UNSET_PRINT_ELEMENT_ID = 0;
 	
 	/**
 	 *
@@ -53,6 +57,11 @@ public interface JRPrintElement extends JRCommonElement, JRPropertiesHolder
 	 *
 	 */
 	public int getX();
+	
+	/**
+	 *
+	 */
+	public void setUUID(UUID uuid);
 	
 	/**
 	 *
@@ -121,5 +130,13 @@ public interface JRPrintElement extends JRCommonElement, JRPropertiesHolder
 	 * @return the Id of the fill element that generated this element
 	 */
 	public int getSourceElementId();
+	
+	/**
+	 * Returns a numerical Id that together with {@link #getSourceElementId()} uniquely identifies a print element.
+	 * 
+	 * @return a print Id for the element
+	 * @see PrintElementId
+	 */
+	public int getPrintElementId();
 	
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -54,7 +54,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 /**
  * The actual implementation of a graphic element representing an image.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseImage.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseImage extends JRBaseGraphicElement implements JRImage
 {
@@ -69,11 +69,11 @@ public class JRBaseImage extends JRBaseGraphicElement implements JRImage
 	 * Image properties
 	 */
 
-	public static final String PROPERTY_LAZY = "lazy";
+	public static final String PROPERTY_LAZY = "isLazy";
 	
 	public static final String PROPERTY_ON_ERROR_TYPE = "onErrorType";
 	
-	public static final String PROPERTY_USING_CACHE = "usingCache";
+	public static final String PROPERTY_USING_CACHE = "isUsingCache";
 	
 	
 	/**
@@ -102,6 +102,7 @@ public class JRBaseImage extends JRBaseGraphicElement implements JRImage
 	protected JRExpression expression;
 	protected JRExpression anchorNameExpression;
 	protected JRExpression hyperlinkReferenceExpression;
+	protected JRExpression hyperlinkWhenExpression;
 	protected JRExpression hyperlinkAnchorExpression;
 	protected JRExpression hyperlinkPageExpression;
 	private JRExpression hyperlinkTooltipExpression;
@@ -150,6 +151,7 @@ public class JRBaseImage extends JRBaseGraphicElement implements JRImage
 		expression = factory.getExpression(image.getExpression());
 		anchorNameExpression = factory.getExpression(image.getAnchorNameExpression());
 		hyperlinkReferenceExpression = factory.getExpression(image.getHyperlinkReferenceExpression());
+		hyperlinkWhenExpression = factory.getExpression(image.getHyperlinkWhenExpression());
 		hyperlinkAnchorExpression = factory.getExpression(image.getHyperlinkAnchorExpression());
 		hyperlinkPageExpression = factory.getExpression(image.getHyperlinkPageExpression());
 		hyperlinkTooltipExpression = factory.getExpression(image.getHyperlinkTooltipExpression());
@@ -399,6 +401,14 @@ public class JRBaseImage extends JRBaseGraphicElement implements JRImage
 	/**
 	 *
 	 */
+	public JRExpression getHyperlinkWhenExpression()
+	{
+		return hyperlinkWhenExpression;
+	}
+
+	/**
+	 *
+	 */
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return hyperlinkAnchorExpression;
@@ -478,6 +488,7 @@ public class JRBaseImage extends JRBaseGraphicElement implements JRImage
 		clone.expression = JRCloneUtils.nullSafeClone(expression);
 		clone.anchorNameExpression = JRCloneUtils.nullSafeClone(anchorNameExpression);
 		clone.hyperlinkReferenceExpression = JRCloneUtils.nullSafeClone(hyperlinkReferenceExpression);
+		clone.hyperlinkWhenExpression = JRCloneUtils.nullSafeClone(hyperlinkWhenExpression);
 		clone.hyperlinkAnchorExpression = JRCloneUtils.nullSafeClone(hyperlinkAnchorExpression);
 		clone.hyperlinkPageExpression = JRCloneUtils.nullSafeClone(hyperlinkPageExpression);
 		clone.hyperlinkTooltipExpression = JRCloneUtils.nullSafeClone(hyperlinkTooltipExpression);

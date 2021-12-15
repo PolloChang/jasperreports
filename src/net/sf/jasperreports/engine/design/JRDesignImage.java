@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -61,7 +61,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 /**
  * The actual implementation of a graphic element representing an image, used at design time.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignImage.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRDesignImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignImage extends JRDesignGraphicElement implements JRImage
 {
@@ -112,6 +112,7 @@ public class JRDesignImage extends JRDesignGraphicElement implements JRImage
 	protected JRExpression expression;
 	protected JRExpression anchorNameExpression;
 	protected JRExpression hyperlinkReferenceExpression;
+	protected JRExpression hyperlinkWhenExpression;
 	protected JRExpression hyperlinkAnchorExpression;
 	protected JRExpression hyperlinkPageExpression;
 	private JRExpression hyperlinkTooltipExpression;
@@ -321,6 +322,14 @@ public class JRDesignImage extends JRDesignGraphicElement implements JRImage
 	/**
 	 *
 	 */
+	public JRExpression getHyperlinkWhenExpression()
+	{
+		return hyperlinkWhenExpression;
+	}
+
+	/**
+	 *
+	 */
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return hyperlinkAnchorExpression;
@@ -473,6 +482,16 @@ public class JRDesignImage extends JRDesignGraphicElement implements JRImage
 		Object old = this.hyperlinkReferenceExpression;
 		this.hyperlinkReferenceExpression = hyperlinkReferenceExpression;
 		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_REFERENCE_EXPRESSION, old, this.hyperlinkReferenceExpression);
+	}
+
+	/**
+	 *
+	 */
+	public void setHyperlinkWhenExpression(JRExpression hyperlinkWhenExpression)
+	{
+		Object old = this.hyperlinkWhenExpression;
+		this.hyperlinkWhenExpression = hyperlinkWhenExpression;
+		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_WHEN_EXPRESSION, old, this.hyperlinkWhenExpression);
 	}
 
 	/**
@@ -693,6 +712,7 @@ public class JRDesignImage extends JRDesignGraphicElement implements JRImage
 		clone.expression = JRCloneUtils.nullSafeClone(expression);
 		clone.anchorNameExpression = JRCloneUtils.nullSafeClone(anchorNameExpression);
 		clone.hyperlinkReferenceExpression = JRCloneUtils.nullSafeClone(hyperlinkReferenceExpression);
+		clone.hyperlinkWhenExpression = JRCloneUtils.nullSafeClone(hyperlinkWhenExpression);
 		clone.hyperlinkAnchorExpression = JRCloneUtils.nullSafeClone(hyperlinkAnchorExpression);
 		clone.hyperlinkPageExpression = JRCloneUtils.nullSafeClone(hyperlinkPageExpression);
 		clone.hyperlinkTooltipExpression = JRCloneUtils.nullSafeClone(hyperlinkTooltipExpression);

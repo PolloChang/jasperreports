@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,7 @@ import org.apache.commons.digester.Digester;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortComponentDigester.java 4638 2011-09-28 15:24:57Z narcism $
+ * @version $Id: SortComponentDigester.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortComponentDigester implements XmlDigesterConfigurer
 {
@@ -44,6 +44,8 @@ public class SortComponentDigester implements XmlDigesterConfigurer
 
 	public static void addSortComponentRules(Digester digester)
 	{
+		String componentNamespace = digester.getRuleNamespaceURI();
+		
 		String sortComponentPattern = "*/componentElement/sort";
 		digester.addObjectCreate(sortComponentPattern, SortComponent.class.getName());
 		
@@ -63,6 +65,8 @@ public class SortComponentDigester implements XmlDigesterConfigurer
 
 		digester.addFactoryCreate(sortComponentPattern + "/symbol/font", SortComponentSymbolFontFactory.class.getName());
 		digester.addSetNext(sortComponentPattern + "/symbol/font", "setSymbolFont", JRFont.class.getName());
+
+		digester.setRuleNamespaceURI(componentNamespace);
 	}
 
 }

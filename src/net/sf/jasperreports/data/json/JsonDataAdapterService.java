@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,8 +23,6 @@
  */
 package net.sf.jasperreports.data.json;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -35,12 +33,11 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.JsonDataSource;
-import net.sf.jasperreports.engine.query.JRXPathQueryExecuterFactory;
 import net.sf.jasperreports.engine.query.JsonQueryExecuterFactory;
 
 /**
  * @author Veaceslov Chicu (schicu@users.sourceforge.net)
- * @version $Id: JsonDataAdapterService.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JsonDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JsonDataAdapterService extends AbstractDataAdapterService 
 {
@@ -70,39 +67,34 @@ public class JsonDataAdapterService extends AbstractDataAdapterService
 		JsonDataAdapter jsonDataAdapter = getJsonDataAdapter();
 		if (jsonDataAdapter != null) {
 			if (jsonDataAdapter.isUseConnection()) {
-				try {
-					parameters.put(JsonQueryExecuterFactory.JSON_INPUT_STREAM,
-							new FileInputStream(jsonDataAdapter.getFileName()));
+				parameters.put(JsonQueryExecuterFactory.JSON_SOURCE, jsonDataAdapter.getFileName());
 
-					Locale locale = jsonDataAdapter.getLocale();
-					if (locale != null) {
-						parameters.put(JRXPathQueryExecuterFactory.XML_LOCALE,
-								locale);
-					}
+				Locale locale = jsonDataAdapter.getLocale();
+				if (locale != null) {
+					parameters.put(JsonQueryExecuterFactory.JSON_LOCALE,
+							locale);
+				}
 
-					TimeZone timeZone = jsonDataAdapter.getTimeZone();
-					if (timeZone != null) {
-						parameters.put(
-								JRXPathQueryExecuterFactory.XML_TIME_ZONE,
-								timeZone);
-					}
+				TimeZone timeZone = jsonDataAdapter.getTimeZone();
+				if (timeZone != null) {
+					parameters.put(
+							JsonQueryExecuterFactory.JSON_TIME_ZONE,
+							timeZone);
+				}
 
-					String datePattern = jsonDataAdapter.getDatePattern();
-					if (datePattern != null && datePattern.trim().length() > 0) {
-						parameters.put(
-								JRXPathQueryExecuterFactory.XML_DATE_PATTERN,
-								datePattern);
-					}
+				String datePattern = jsonDataAdapter.getDatePattern();
+				if (datePattern != null && datePattern.trim().length() > 0) {
+					parameters.put(
+							JsonQueryExecuterFactory.JSON_DATE_PATTERN,
+							datePattern);
+				}
 
-					String numberPattern = jsonDataAdapter.getNumberPattern();
-					if (numberPattern != null
-							&& numberPattern.trim().length() > 0) {
-						parameters.put(
-								JRXPathQueryExecuterFactory.XML_NUMBER_PATTERN,
-								numberPattern);
-					}
-				} catch (FileNotFoundException e) {
-					throw new JRException(e);
+				String numberPattern = jsonDataAdapter.getNumberPattern();
+				if (numberPattern != null
+						&& numberPattern.trim().length() > 0) {
+					parameters.put(
+							JsonQueryExecuterFactory.JSON_NUMBER_PATTERN,
+							numberPattern);
 				}
 			} else {
 				JsonDataSource ds = 

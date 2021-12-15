@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,30 +31,35 @@ package net.sf.jasperreports.engine.export.oasis;
 
 import java.util.Map;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.export.AbstractExporterNature;
 import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.ExporterFilter;
-import net.sf.jasperreports.engine.export.ExporterNature;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROpenDocumentExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
+ * @version $Id: JROpenDocumentExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public abstract class JROpenDocumentExporterNature implements ExporterNature
+public abstract class JROpenDocumentExporterNature extends AbstractExporterNature
 {
 	
-	public static final byte ODT_NATURE = 1;
-	public static final byte ODS_NATURE = 2;
-	
-	protected ExporterFilter filter;
-
 	/**
-	 * 
+	 * @deprecated Replaced by {@link #JROpenDocumentExporterNature(JasperReportsContext, ExporterFilter)}. 
 	 */
 	public JROpenDocumentExporterNature(ExporterFilter filter)
 	{
-		this.filter = filter;
+		this(DefaultJasperReportsContext.getInstance(), filter);
+	}
+	
+	/**
+	 * 
+	 */
+	public JROpenDocumentExporterNature(JasperReportsContext jasperReportsContext, ExporterFilter filter)
+	{
+		super(jasperReportsContext, filter);
 	}
 	
 	/**
@@ -71,14 +76,6 @@ public abstract class JROpenDocumentExporterNature implements ExporterNature
 	public boolean isDeep(JRPrintFrame frame)
 	{
 		return false;
-	}
-	
-	/**
-	 * 
-	 */
-	public boolean isSplitSharedRowSpan()
-	{
-		return true;
 	}
 
 	/**
@@ -125,8 +122,6 @@ public abstract class JROpenDocumentExporterNature implements ExporterNature
 	{
 		return false;
 	}
-	
-	protected abstract byte getOpenDocumentNature();
 	
 	public void setXProperties(CutsInfo xCuts, JRPrintElement element, int row1, int col1, int row2, int col2)
 	{

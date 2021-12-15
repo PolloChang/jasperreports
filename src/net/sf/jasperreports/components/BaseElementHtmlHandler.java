@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,7 @@ import net.sf.jasperreports.engine.export.GenericElementHtmlHandler;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: BaseElementHtmlHandler.java 4625 2011-09-27 12:13:28Z narcism $
+ * @version $Id: BaseElementHtmlHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BaseElementHtmlHandler implements GenericElementHtmlHandler {
 

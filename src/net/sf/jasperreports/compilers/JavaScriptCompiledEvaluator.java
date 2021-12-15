@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,25 +27,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.fill.JREvaluator;
 import net.sf.jasperreports.engine.fill.JRFillField;
 import net.sf.jasperreports.engine.fill.JRFillParameter;
 import net.sf.jasperreports.engine.fill.JRFillVariable;
+import net.sf.jasperreports.engine.fill.JasperReportsContextAware;
+import net.sf.jasperreports.functions.FunctionsUtil;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Script;
 
 /**
  * JavaScript expression evaluator that uses Java bytecode compiled by {@link JavaScriptClassCompiler}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptCompiledEvaluator.java 5451 2012-06-14 15:35:10Z lucianc $
+ * @version $Id: JavaScriptCompiledEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JavaScriptCompiledEvaluator extends JREvaluator
+public class JavaScriptCompiledEvaluator extends JREvaluator implements JasperReportsContextAware
 {
 
 	private static final Log log = LogFactory.getLog(JavaScriptCompiledEvaluator.class);
@@ -76,9 +77,10 @@ public class JavaScriptCompiledEvaluator extends JREvaluator
 		return loader;
 	}
 	
+	private final JasperReportsContext jasperReportsContext;
 	private final String unitName;
 	private final JavaScriptCompiledData compiledData;
-	private Context context;
+	private FunctionsUtil functionsUtil;
 	private JavaScriptEvaluatorScope evaluatorScope;
 	
 	private final Map<Integer, Script> scripts = new HashMap<Integer, Script>();
@@ -86,14 +88,22 @@ public class JavaScriptCompiledEvaluator extends JREvaluator
 
 	/**
 	 * Create a JavaScript expression evaluator.
-	 * @param unitName 
 	 * 
-	 * @param compileData the report compile data
+	 * @param jasperReportsContext 
+	 * @param unitName 
+	 * @param compiledData the report compile data
 	 */
-	public JavaScriptCompiledEvaluator(String unitName, JavaScriptCompiledData compiledData)
+	public JavaScriptCompiledEvaluator(JasperReportsContext jasperReportsContext, String unitName, JavaScriptCompiledData compiledData)
 	{
+		this.jasperReportsContext = jasperReportsContext;
 		this.unitName = unitName;
 		this.compiledData = compiledData;
+	}
+	
+	@Override
+	public void setJasperReportsContext(JasperReportsContext context)
+	{
+		this.functionsUtil = FunctionsUtil.getInstance(context);
 	}
 
 	protected void customizedInit(
@@ -102,10 +112,7 @@ public class JavaScriptCompiledEvaluator extends JREvaluator
 			Map<String, JRFillVariable> variablesMap
 			) throws JRException
 	{
-		context = ContextFactory.getGlobal().enterContext();//TODO exit context
-		context.getWrapFactory().setJavaPrimitiveWrap(false);
-		
-		evaluatorScope = new JavaScriptEvaluatorScope(context, this);
+		evaluatorScope = new JavaScriptEvaluatorScope(jasperReportsContext, this, functionsUtil);
 		evaluatorScope.init(parametersMap, fieldsMap, variablesMap);
 	}
 	

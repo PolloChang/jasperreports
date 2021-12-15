@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.util;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +34,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLStreamHandlerFactory;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
@@ -43,21 +43,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRVirtualizationHelper;
 import net.sf.jasperreports.engine.JRVirtualizer;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.repo.RepositoryUtil;
+import net.sf.jasperreports.engine.JasperReportsContext;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 
 /**
+ * Utility class that helps load serialized objects found in various locations 
+ * such as files, URLs, and input streams.
+ * <p>
+ * Many JasperReports processes, like report compilation, report filling and exporting,
+ * often work with serialized objects. Sometimes it is useful to manually load those
+ * serialized objects before submitting them to the desired JasperReport process.
+ * </p><p>
+ * The most interesting method exposed by this class is
+ * <code>loadObjectFromLocation(String)</code>. When calling this method to load an object from
+ * the supplied location, the program first tries to interpret the location as a valid URL. If
+ * this fails, then the program assumes that the supplied location is the name of a file on
+ * disk and tries to read from it. If no file is found at that location, it will try to locate a
+ * resource through the classpath that would correspond to the location. Only after this third
+ * try fails an exception is thrown.
+ * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRLoader.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRLoader.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRLoader
 {
@@ -68,15 +84,6 @@ public final class JRLoader
 	 *
 	 */
 	//private static boolean wasWarning;
-
-
-	/**
-	 * @deprecated Replaced by {@link #loadObjectFromFile(String)}.
-	 */
-	public static Object loadObject(String fileName) throws JRException
-	{
-		return loadObjectFromFile(fileName);
-	}
 
 
 	/**
@@ -93,6 +100,15 @@ public final class JRLoader
 	 */
 	public static Object loadObject(File file) throws JRException
 	{
+		return loadObject(DefaultJasperReportsContext.getInstance(), file);
+	}
+
+
+	/**
+	 *
+	 */
+	public static Object loadObject(JasperReportsContext jasperReportsContext, File file) throws JRException
+	{
 		if (!file.exists() || !file.isFile())
 		{
 			throw new JRException( new FileNotFoundException(String.valueOf(file)) );
@@ -107,7 +123,7 @@ public final class JRLoader
 		{
 			fis = new FileInputStream(file);
 			BufferedInputStream bufferedIn = new BufferedInputStream(fis);
-			ois = new ContextClassLoaderObjectInputStream(bufferedIn);
+			ois = new ContextClassLoaderObjectInputStream(jasperReportsContext, bufferedIn);
 			obj = ois.readObject();
 		}
 		catch (IOException e)
@@ -152,6 +168,15 @@ public final class JRLoader
 	 */
 	public static Object loadObject(URL url) throws JRException
 	{
+		return loadObject(DefaultJasperReportsContext.getInstance(), url);
+	}
+
+
+	/**
+	 *
+	 */
+	public static Object loadObject(JasperReportsContext jasperReportsContext, URL url) throws JRException
+	{
 		Object obj = null;
 
 		InputStream is = null;
@@ -160,7 +185,7 @@ public final class JRLoader
 		try
 		{
 			is = url.openStream();
-			ois = new ContextClassLoaderObjectInputStream(is);
+			ois = new ContextClassLoaderObjectInputStream(jasperReportsContext, is);
 			obj = ois.readObject();
 		}
 		catch (IOException e)
@@ -205,13 +230,22 @@ public final class JRLoader
 	 */
 	public static Object loadObject(InputStream is) throws JRException
 	{
+		return loadObject(DefaultJasperReportsContext.getInstance(), is);
+	}
+
+
+	/**
+	 *
+	 */
+	public static Object loadObject(JasperReportsContext jasperReportsContext, InputStream is) throws JRException
+	{
 		Object obj = null;
 
 		ObjectInputStream ois = null;
 
 		try
 		{
-			ois = new ContextClassLoaderObjectInputStream(is);
+			ois = new ContextClassLoaderObjectInputStream(jasperReportsContext, is);
 			obj = ois.readObject();
 		}
 		catch (IOException e)
@@ -224,56 +258,6 @@ public final class JRLoader
 		}
 
 		return obj;
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getResource(String, Class)}.
-	 */
-	public static Object loadObjectFromLocation(String location) throws JRException
-	{
-		return loadObjectFromLocation(location, null, null, null);
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getResource(String, Class)}.
-	 */
-	public static Object loadObjectFromLocation(String location, ClassLoader classLoader) throws JRException
-	{
-		return loadObjectFromLocation(location, classLoader, null, null);
-	}
-
-	
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getResource(String, Class)}.
-	 */
-	public static Object loadObjectFromLocation(
-		String location, 
-		ClassLoader classLoader,
-		URLStreamHandlerFactory urlHandlerFactory,
-		FileResolver fileResolver
-		) throws JRException
-	{
-		URL url = JRResourcesUtil.createURL(location, urlHandlerFactory);
-		if (url != null)
-		{
-			return loadObject(url);
-		}
-
-		File file = JRResourcesUtil.resolveFile(location, fileResolver);
-		if (file != null)
-		{
-			return loadObject(file);
-		}
-
-		url = JRResourcesUtil.findClassLoaderResource(location, classLoader);
-		if (url != null)
-		{
-			return loadObject(url);
-		}
-
-		throw new JRException("Could not load object from location : " + location);
 	}
 
 
@@ -319,47 +303,6 @@ public final class JRLoader
 		}
 
 		return is;
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getInputStream(String)}.
-	 */
-	public static InputStream getInputStreamFromLocation(String location) throws JRException
-	{
-		return getInputStreamFromLocation(location, null, null, null);
-	}
-	
-	
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getInputStream(String)}.
-	 */
-	public static InputStream getInputStreamFromLocation(
-		String location, 
-		ClassLoader classLoader,
-		URLStreamHandlerFactory urlHandlerFactory,
-		FileResolver fileResolver
-		) throws JRException
-	{
-		URL url = JRResourcesUtil.createURL(location, urlHandlerFactory);
-		if (url != null)
-		{
-			return getInputStream(url);
-		}
-
-		File file = JRResourcesUtil.resolveFile(location, fileResolver);
-		if (file != null)
-		{
-			return getInputStream(file);
-		}
-
-		url = JRResourcesUtil.findClassLoaderResource(location, classLoader);
-		if (url != null)
-		{
-			return getInputStream(url);
-		}
-
-		throw new JRException("Could not load object from location : " + location);
 	}
 
 
@@ -514,6 +457,33 @@ public final class JRLoader
 		return baos.toByteArray();
 	}
 
+	public static InputStream loadToMemoryInputStream(InputStream is) throws JRException
+	{
+		if (is instanceof ByteArrayInputStream)
+		{
+			return is;
+		}
+		
+		try
+		{
+			byte[] bytes = loadBytes(is);
+			return new ByteArrayInputStream(bytes);
+		}
+		finally
+		{
+			try
+			{
+				is.close();
+			}
+			catch (IOException e)
+			{
+				if (log.isWarnEnabled())
+				{
+					log.warn("Failed to close input stream " + is, e);
+				}
+			}
+		}
+	}
 
 	/**
 	 *
@@ -539,69 +509,6 @@ public final class JRLoader
 	}
 		
 	
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getBytes(String)}.
-	 */
-	public static byte[] loadBytesFromLocation(String location) throws JRException
-	{
-		return loadBytesFromLocation(location, null, null, null);
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getBytes(String)}.
-	 */
-	public static byte[] loadBytesFromLocation(String location, ClassLoader classLoader) throws JRException
-	{
-		return loadBytesFromLocation(location, classLoader, null, null);
-	}
-		
-	
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getBytes(String)}.
-	 */
-	public static byte[] loadBytesFromLocation(
-		String location, 
-		ClassLoader classLoader,
-		URLStreamHandlerFactory urlHandlerFactory
-		) throws JRException
-	{
-		return loadBytesFromLocation(location, classLoader, urlHandlerFactory, null);
-	}
-		
-	
-	/**
-	 * @deprecated Replaced by {@link RepositoryUtil#getBytes(String)}.
-	 */
-	public static byte[] loadBytesFromLocation(
-		String location, 
-		ClassLoader classLoader,
-		URLStreamHandlerFactory urlHandlerFactory,
-		FileResolver fileResolver
-		) throws JRException
-	{
-		URL url = JRResourcesUtil.createURL(location, urlHandlerFactory);
-		if (url != null)
-		{
-			return loadBytes(url);
-		}
-
-		File file = JRResourcesUtil.resolveFile(location, fileResolver);
-		if (file != null)
-		{
-			return loadBytes(file);
-		}
-
-		url = JRResourcesUtil.findClassLoaderResource(location, classLoader);
-		if (url != null)
-		{
-			return loadBytes(url);
-		}
-
-		throw new JRException("Byte data not found at location : " + location);
-	}
-
-
 	/**
 	 * Tries to open an input stream for a location.
 	 * <p>

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.repo;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
@@ -33,12 +34,9 @@ import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.util.JRSaver;
 
 
-
-
-
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SerializedObjectPersistenceService.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: SerializedObjectPersistenceService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SerializedObjectPersistenceService implements PersistenceService
 {
@@ -48,17 +46,17 @@ public class SerializedObjectPersistenceService implements PersistenceService
 	 */
 	public Resource load(String uri, RepositoryService repositoryService)
 	{
-		ObjectResource resource = null; 
+		SerializableResource<Serializable> resource = null; 
 
 		InputStreamResource isResource = repositoryService.getResource(uri, InputStreamResource.class);
 		
 		InputStream is = isResource == null ? null : isResource.getInputStream();
 		if (is != null)
 		{
-			resource = new ObjectResource();
+			resource = new SerializableResource<Serializable>();
 			try
 			{
-				resource.setValue(JRLoader.loadObject(is));
+				resource.setValue((Serializable)JRLoader.loadObject(is));
 			}
 			catch (JRException e)
 			{
@@ -84,7 +82,8 @@ public class SerializedObjectPersistenceService implements PersistenceService
 	 */
 	public void save(Resource resource, String uri, RepositoryService repositoryService)
 	{
-		ObjectResource objectResource = (ObjectResource)resource;
+		@SuppressWarnings("unchecked")
+		ObjectResource<Object> objectResource = (ObjectResource<Object>)resource;
 		
 		OutputStreamResource osResource = repositoryService.getResource(uri, OutputStreamResource.class);
 		

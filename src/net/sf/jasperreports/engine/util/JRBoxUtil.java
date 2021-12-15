@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.type.RotationEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBoxUtil.java 5062 2012-03-13 09:54:46Z teodord $
+ * @version $Id: JRBoxUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRBoxUtil
 {
@@ -182,6 +182,24 @@ public final class JRBoxUtil
 	/**
 	 * 
 	 */
+	public static void copy(JRLineBox source, JRLineBox dest)
+	{
+		dest.setLeftPadding(source.getOwnLeftPadding());
+		dest.copyLeftPen(source.getLeftPen());
+		dest.setRightPadding(source.getOwnRightPadding());
+		dest.copyRightPen(source.getRightPen());
+		dest.setTopPadding(source.getOwnTopPadding());
+		dest.copyTopPen(source.getTopPen());
+		dest.setBottomPadding(source.getOwnBottomPadding());
+		dest.copyBottomPen(source.getBottomPen());
+		dest.setPadding(source.getOwnPadding());
+		dest.copyPen(source.getPen());
+	}
+	
+
+	/**
+	 * 
+	 */
 	public static void rotate(JRLineBox box, RotationEnum rotation)
 	{
 		switch (rotation)
@@ -283,6 +301,17 @@ public final class JRBoxUtil
 			);
 	}
 	
+	public static void eraseBox(JRLineBox box)
+	{
+		box.setBottomPadding(0);
+		box.setTopPadding(0);
+		box.setLeftPadding(0);
+		box.setRightPadding(0);
+		box.getBottomPen().setLineWidth(0);
+		box.getTopPen().setLineWidth(0);
+		box.getLeftPen().setLineWidth(0);
+		box.getRightPen().setLineWidth(0);
+	}
 
 	private JRBoxUtil()
 	{

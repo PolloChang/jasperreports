@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,17 +31,35 @@ package net.sf.jasperreports.engine.util;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ResourceBundleMessageProviderFactory.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: ResourceBundleMessageProviderFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ResourceBundleMessageProviderFactory implements MessageProviderFactory
 {
+
+	private final ClassLoader classLoader;
+
+	/**
+	 *
+	 */
+	public ResourceBundleMessageProviderFactory()
+	{
+		this(null);
+	}
+
+	/**
+	 *
+	 */
+	public ResourceBundleMessageProviderFactory(ClassLoader classLoader)
+	{
+		this.classLoader = classLoader;
+	}
 
 	/**
 	 *
 	 */
 	public MessageProvider getMessageProvider(String name)
 	{
-		return new ResourceBundleMessageProvider(name);
+		return new ResourceBundleMessageProvider(name, classLoader);
 	}
 
 }

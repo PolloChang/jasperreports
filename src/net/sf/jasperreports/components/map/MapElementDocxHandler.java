@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,9 +23,7 @@
  */
 package net.sf.jasperreports.components.map;
 
-import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.export.ooxml.GenericElementDocxHandler;
 import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter;
@@ -33,7 +31,7 @@ import net.sf.jasperreports.engine.export.ooxml.JRDocxExporterContext;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementDocxHandler.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: MapElementDocxHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MapElementDocxHandler implements GenericElementDocxHandler
 {
@@ -52,8 +50,12 @@ public class MapElementDocxHandler implements GenericElementDocxHandler
 	{
 		try
 		{
-			JRDocxExporter exporter = (JRDocxExporter)exporterContext.getExporter();
-			exporter.exportImage(exporterContext.getTableHelper(), getImage(exporterContext, element), gridCell);
+			JRDocxExporter exporter = (JRDocxExporter)exporterContext.getExporterRef();
+			exporter.exportImage(
+				exporterContext.getTableHelper(), 
+				MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element), 
+				gridCell
+				);
 		}
 		catch (Exception e)
 		{
@@ -63,11 +65,6 @@ public class MapElementDocxHandler implements GenericElementDocxHandler
 
 	public boolean toExport(JRGenericPrintElement element) {
 		return true;
-	}
-
-	public JRPrintImage getImage(JRDocxExporterContext exporterContext, JRGenericPrintElement element) throws JRException
-	{
-		return MapElementImageProvider.getImage(exporterContext.getJasperReportsContext(), element);
 	}
 
 }

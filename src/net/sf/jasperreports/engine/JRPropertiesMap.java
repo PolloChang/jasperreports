@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -48,7 +48,7 @@ import org.apache.commons.logging.LogFactory;
  * is the same as the order in which the properties were added.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPropertiesMap.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRPropertiesMap.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPropertiesMap implements Serializable, Cloneable
 {
@@ -81,6 +81,8 @@ public class JRPropertiesMap implements Serializable, Cloneable
 		
 		this.base = propertiesMap.base;
 		
+		//this copies all properties from base to this instance
+		//FIXME in some cases we might want to keep the properties in base
 		String[] propertyNames = propertiesMap.getPropertyNames();
 		if (propertyNames != null && propertyNames.length > 0)
 		{
@@ -101,8 +103,9 @@ public class JRPropertiesMap implements Serializable, Cloneable
 
 	private void init()
 	{
-		propertiesMap = new HashMap<String, String>();
-		propertiesList = new ArrayList<String>();
+		// start with small collections
+		propertiesMap = new HashMap<String, String>(4, 0.75f);
+		propertiesList = new ArrayList<String>(2);
 	}
 
 	
@@ -130,6 +133,20 @@ public class JRPropertiesMap implements Serializable, Cloneable
 		else if (base != null)
 		{
 			names = base.getPropertyNames();
+		}
+		else
+		{
+			names = new String[0];
+		}
+		return names;
+	}
+	
+	public String[] getOwnPropertyNames()
+	{
+		String[] names;
+		if (hasOwnProperties())
+		{
+			names = propertiesList.toArray(new String[propertiesList.size()]);
 		}
 		else
 		{
@@ -223,7 +240,10 @@ public class JRPropertiesMap implements Serializable, Cloneable
 		}
 		propertiesMap.put(propName, value);
 
-		getEventSupport().firePropertyChange(PROPERTY_VALUE, old, value);
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_VALUE, old, value);
+		}
 	}
 	
 	
@@ -293,6 +313,11 @@ public class JRPropertiesMap implements Serializable, Cloneable
 				|| base != null && base.hasProperties();
 	}
 
+	public boolean isEmpty()
+	{
+		// only checking base for null and not whether base has any properties
+		return !hasOwnProperties() && base == null;
+	}
 
 	/**
 	 * Checks whether this object has properties of its own
@@ -413,6 +438,11 @@ public class JRPropertiesMap implements Serializable, Cloneable
 
 	
 	private transient JRPropertyChangeSupport eventSupport;
+	
+	protected boolean hasEventSupport()
+	{
+		return eventSupport != null;
+	}
 	
 	public JRPropertyChangeSupport getEventSupport()
 	{

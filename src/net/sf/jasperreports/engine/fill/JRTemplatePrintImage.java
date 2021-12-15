@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,6 +40,8 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
+import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
 
 
 /**
@@ -48,7 +50,7 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintImage.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRTemplatePrintImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implements JRPrintImage
 {
@@ -58,6 +60,10 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	 *
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	private static final int SERIALIZATION_FLAG_CACHED_RENDERER = 1;
+	private static final int SERIALIZATION_FLAG_ANCHOR = 1 << 1;
+	private static final int SERIALIZATION_FLAG_HYPERLINK = 1 << 2;
 
 	/**
 	 *
@@ -75,8 +81,12 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	 * @see JRAnchor#getBookmarkLevel()
 	 */
 	protected int bookmarkLevel = JRAnchor.NO_BOOKMARK;
-
-
+	
+	public JRTemplatePrintImage()
+	{
+		
+	}
+	
 	/**
 	 * Creates a print image element.
 	 * 
@@ -93,10 +103,22 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	 * 
 	 * @param image the template image that the element will use
 	 * @param sourceElementId the Id of the source element
+	 * @deprecated replaced by {@link #JRTemplatePrintImage(JRTemplateImage, PrintElementOriginator)}
 	 */
 	public JRTemplatePrintImage(JRTemplateImage image, int sourceElementId)
 	{
 		super(image, sourceElementId);
+	}
+
+	/**
+	 * Creates a print image element.
+	 * 
+	 * @param image the template image that the element will use
+	 * @param originator
+	 */
+	public JRTemplatePrintImage(JRTemplateImage image, PrintElementOriginator originator)
+	{
+		super(image, originator);
 	}
 	
 	/**
@@ -416,7 +438,6 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	 * @deprecated
 	 */
 	private net.sf.jasperreports.engine.JRRenderable renderer;
-
 	
 	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
@@ -440,6 +461,101 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);
+	}
+
+	@Override
+	public void writeVirtualized(VirtualizationOutput out) throws IOException
+	{
+		super.writeVirtualized(out);
+		
+		JRVirtualizationContext context = out.getVirtualizationContext();
+		
+		int flags = 0;
+		boolean cachedRenderer = renderable != null && context.hasCachedRenderer(renderable.getId());
+		boolean hasAnchor = anchorName != null || bookmarkLevel != JRAnchor.NO_BOOKMARK;
+		boolean hasHyperlink = hyperlinkReference != null || hyperlinkAnchor != null
+				|| hyperlinkPage != null || hyperlinkTooltip != null || hyperlinkParameters != null;
+		
+		if (cachedRenderer)
+		{
+			flags |= SERIALIZATION_FLAG_CACHED_RENDERER;
+		}
+		if (hasAnchor)
+		{
+			flags |= SERIALIZATION_FLAG_ANCHOR;
+		}
+		if (hasHyperlink)
+		{
+			flags |= SERIALIZATION_FLAG_HYPERLINK;
+		}
+		
+		out.writeByte(flags);
+		
+		if (cachedRenderer)
+		{
+			out.writeJRObject(renderable.getId());
+		}
+		else
+		{
+			out.writeJRObject(renderable);
+		}
+		
+		if (hasAnchor)
+		{
+			out.writeJRObject(anchorName);
+			out.writeIntCompressed(bookmarkLevel);
+		}
+
+		if (hasHyperlink)
+		{
+			out.writeJRObject(hyperlinkReference);
+			out.writeJRObject(hyperlinkAnchor);
+			out.writeJRObject(hyperlinkPage);
+			out.writeJRObject(hyperlinkTooltip);
+			out.writeJRObject(hyperlinkParameters);
+		}		
+	}
+
+	@Override
+	public void readVirtualized(VirtualizationInput in) throws IOException
+	{
+		super.readVirtualized(in);
+		
+		JRVirtualizationContext context = in.getVirtualizationContext();
+		int flags = in.readUnsignedByte();
+		
+		if ((flags & SERIALIZATION_FLAG_CACHED_RENDERER) != 0)
+		{
+			String renderedId = (String) in.readJRObject();
+			renderable = context.getCachedRenderer(renderedId);
+			if (renderable == null)
+			{
+				throw new RuntimeException();
+			}
+		}
+		else
+		{
+			renderable = (Renderable) in.readJRObject();
+		}
+		
+		if ((flags & SERIALIZATION_FLAG_ANCHOR) != 0)
+		{
+			anchorName = (String) in.readJRObject();
+			bookmarkLevel = in.readIntCompressed();
+		}
+		else
+		{
+			bookmarkLevel = JRAnchor.NO_BOOKMARK;
+		}
+
+		if ((flags & SERIALIZATION_FLAG_HYPERLINK) != 0)
+		{
+			hyperlinkReference = (String) in.readJRObject();
+			hyperlinkAnchor = (String) in.readJRObject();
+			hyperlinkPage = (Integer) in.readJRObject();
+			hyperlinkTooltip = (String) in.readJRObject();
+			hyperlinkParameters = (JRPrintHyperlinkParameters) in.readJRObject();
+		}
 	}
 
 }

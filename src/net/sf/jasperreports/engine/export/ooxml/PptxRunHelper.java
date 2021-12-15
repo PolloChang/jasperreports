@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,35 +34,34 @@ import java.util.StringTokenizer;
 
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.engine.fonts.FontInfo;
+import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
-import net.sf.jasperreports.engine.util.JRFontUtil;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PptxRunHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: PptxRunHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PptxRunHelper extends BaseHelper
 {
 	/**
 	 *
 	 */
-	private Map<String,String> fontMap;
 	private String exporterKey;
 
 
 	/**
 	 *
 	 */
-	public PptxRunHelper(Writer writer, Map<String,String> fontMap, String exporterKey)
+	public PptxRunHelper(JasperReportsContext jasperReportsContext, Writer writer, String exporterKey)
 	{
-		super(writer);
-		this.fontMap = fontMap;
+		super(jasperReportsContext, writer);
 		this.exporterKey = exporterKey;
 	}
 
@@ -71,6 +70,14 @@ public class PptxRunHelper extends BaseHelper
 	 *
 	 */
 	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale)
+	{
+		export(style, attributes, text, locale, null);
+	}
+	
+	/**
+	 *
+	 */
+	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale, String invalidCharReplacement)
 	{
 		if (text != null)
 		{
@@ -88,7 +95,7 @@ public class PptxRunHelper extends BaseHelper
 					exportProps("a:rPr", getAttributes(style), attributes, locale);
 					//write("<a:t xml:space=\"preserve\">");
 					write("<a:t>");
-					write(JRStringUtil.xmlEncode(token));//FIXMEODT try something nicer for replace
+					write(JRStringUtil.xmlEncode(token, invalidCharReplacement));//FIXMEODT try something nicer for replace
 					write("</a:t>\n");
 					write("      </a:r>\n");
 				}
@@ -104,7 +111,7 @@ public class PptxRunHelper extends BaseHelper
 		JRPrintText text = new JRBasePrintText(null);
 		text.setStyle(style);
 		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); //FIXMEPPTX is this map useless; check all run helpers
-		JRFontUtil.getAttributesWithoutAwtFont(styledTextAttributes, text);
+		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(styledTextAttributes, text);
 		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
 		if (style.getModeValue() == null || style.getModeValue() == ModeEnum.OPAQUE)
 		{
@@ -120,7 +127,7 @@ public class PptxRunHelper extends BaseHelper
 	public void exportProps(JRPrintText text, Locale locale)
 	{
 		Map<Attribute,Object> textAttributes = new HashMap<Attribute,Object>(); 
-		JRFontUtil.getAttributesWithoutAwtFont(textAttributes, text);
+		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(textAttributes, text);
 		textAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
 		if (text.getModeValue() == null || text.getModeValue() == ModeEnum.OPAQUE)
 		{
@@ -227,22 +234,15 @@ public class PptxRunHelper extends BaseHelper
 		{
 			String fontFamilyAttr = (String)value;
 			String fontFamily = fontFamilyAttr;
-			if (fontMap != null && fontMap.containsKey(fontFamilyAttr))
+			FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontFamilyAttr, locale);
+			if (fontInfo != null)
 			{
-				fontFamily = fontMap.get(fontFamilyAttr);
-			}
-			else
-			{
-				FontInfo fontInfo = JRFontUtil.getFontInfo(fontFamilyAttr, locale);
-				if (fontInfo != null)
+				//fontName found in font extensions
+				FontFamily family = fontInfo.getFontFamily();
+				String exportFont = family.getExportFont(exporterKey);
+				if (exportFont != null)
 				{
-					//fontName found in font extensions
-					FontFamily family = fontInfo.getFontFamily();
-					String exportFont = family.getExportFont(exporterKey);
-					if (exportFont != null)
-					{
-						fontFamily = exportFont;
-					}
+					fontFamily = exportFont;
 				}
 			}
 			write("        <a:latin typeface=\"" + fontFamily + "\"/>\n");
@@ -264,7 +264,7 @@ public class PptxRunHelper extends BaseHelper
 		
 		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); 
 		//JRFontUtil.getAttributes(styledTextAttributes, text, (Locale)null);//FIXMEDOCX getLocale());
-		JRFontUtil.getAttributesWithoutAwtFont(styledTextAttributes, text);
+		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(styledTextAttributes, text);
 		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
 		if (text.getModeValue() == ModeEnum.OPAQUE)
 		{

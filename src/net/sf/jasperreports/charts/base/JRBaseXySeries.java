@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseXySeries.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRBaseXySeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseXySeries implements JRXySeries, Serializable
 {
@@ -52,6 +52,7 @@ public class JRBaseXySeries implements JRXySeries, Serializable
 	protected JRExpression yValueExpression;
 	protected JRExpression labelExpression;
 	protected JRHyperlink itemHyperlink;
+	protected Boolean autoSort;
 
 	
 	/**
@@ -74,6 +75,7 @@ public class JRBaseXySeries implements JRXySeries, Serializable
 		yValueExpression = factory.getExpression(xySeries.getYValueExpression());
 		labelExpression = factory.getExpression(xySeries.getLabelExpression());
 		itemHyperlink = factory.getHyperlink(xySeries.getItemHyperlink());
+		autoSort = xySeries.getAutoSort();
 	}
 
 	
@@ -113,6 +115,11 @@ public class JRBaseXySeries implements JRXySeries, Serializable
 	public JRHyperlink getItemHyperlink()
 	{
 		return itemHyperlink;
+	}
+	
+	public Boolean getAutoSort()
+	{
+		return autoSort;
 	}
 	
 	/**

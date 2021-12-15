@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,7 @@ import net.sf.jasperreports.crosstabs.type.CrosstabColumnPositionEnum;
  * Crosstab column group interface.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabColumnGroup.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRCrosstabColumnGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCrosstabColumnGroup extends JRCrosstabGroup
 {
@@ -58,4 +58,24 @@ public interface JRCrosstabColumnGroup extends JRCrosstabGroup
 	 * @return the position of the header contents for header stretching
 	 */
 	public CrosstabColumnPositionEnum getPositionValue();
+	
+	/**
+	 * Returns the crosstab header cell of the column group.
+	 * 
+	 * <p>
+	 * The cell will be rendered at the left of the corresponding row of column headers, 
+	 * potentially overlapping {@link JRCrosstab#getHeaderCell() the crosstab header cell}.
+	 * </p>
+	 * 
+	 * <p>
+	 * The width of the cell is the total width of row group headers, 
+	 * and the height is the height of the corresponding column header.
+	 * </p>
+	 * 
+	 * @return the crosstab header cell of the column group, or <code>null</code> if no header cell is present
+	 * 
+	 * @see JRCrosstab#getHeaderCell()
+	 * @see #getHeight()
+	 */
+	public JRCellContents getCrosstabHeader();
 }

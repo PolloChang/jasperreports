@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,11 +36,12 @@ import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.ExporterFilter;
 import net.sf.jasperreports.engine.export.GenericElementHandler;
-import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
+import net.sf.jasperreports.export.DocxReportConfiguration;
+
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRDocxExporterNature.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: JRDocxExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 {
@@ -74,7 +75,7 @@ public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 		if (element instanceof JRGenericPrintElement)
 		{
 			JRGenericPrintElement genericElement = (JRGenericPrintElement) element;
-			GenericElementHandler handler = GenericElementHandlerEnviroment.getInstance(jasperReportsContext).getElementHandler(
+			GenericElementHandler handler = handlerEnvironment.getElementHandler(
 					genericElement.getGenericType(), JRDocxExporter.DOCX_EXPORTER_KEY);
 			if (handler == null || !handler.toExport(genericElement))
 			{
@@ -92,12 +93,12 @@ public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 	{
 		if (
 			frame.hasProperties()
-			&& frame.getPropertiesMap().containsProperty(JRDocxExporterParameter.PROPERTY_FRAMES_AS_NESTED_TABLES)
+			&& frame.getPropertiesMap().containsProperty(DocxReportConfiguration.PROPERTY_FRAMES_AS_NESTED_TABLES)
 			)
 		{
 			// we make this test to avoid reaching the global default value of the property directly
 			// and thus skipping the report level one, if present
-			return !getPropertiesUtil().getBooleanProperty(frame, JRDocxExporterParameter.PROPERTY_FRAMES_AS_NESTED_TABLES, !deepGrid);
+			return !getPropertiesUtil().getBooleanProperty(frame, DocxReportConfiguration.PROPERTY_FRAMES_AS_NESTED_TABLES, !deepGrid);
 		}
 		return deepGrid;
 	}

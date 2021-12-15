@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,14 +29,23 @@ import java.io.OutputStream;
 import java.sql.Connection;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.fill.JRFiller;
 import net.sf.jasperreports.engine.util.JRLoader;
 
 
 /**
- * Fa�ade class for the JasperReports engine. 
- * 
+ * Facade class for the JasperReports engine. 
+ * <p>
+ * Sometimes it is useful to produce documents only in a popular format such as PDF or
+ * HTML, without having to store on disk the serialized, intermediate
+ * {@link net.sf.jasperreports.engine.JasperPrint} object produced by the report-filling
+ * process.
+ * </p><p>
+ * This can be achieved using this manager class, which immediately exports the document
+ * produced by the report-filling process into the desired output format.
+ * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperRunManager.java 5427 2012-06-05 15:20:14Z lucianc $
+ * @version $Id: JasperRunManager.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JasperRunManager
 {
@@ -87,10 +96,10 @@ public final class JasperRunManager
 
 		JasperFillManager jasperFillManager = JasperFillManager.getInstance(jasperReportsContext);
 		
-		Map<String,Object> parameters =jasperFillManager.setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = jasperFillManager.getLocalJasperReportsContext(sourceFile);
 
 		/*   */
-		JasperPrint jasperPrint = jasperFillManager.fill(jasperReport, parameters, conn);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params, conn);
 
 		/*   */
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".pdf");
@@ -110,7 +119,7 @@ public final class JasperRunManager
 	 * @param params the parameters map
 	 * @return the name of the generated PDF file
 	 * @throws JRException
-	 * @see net.sf.jasperreports.engine.fill.JRFiller#fillReport(JasperReport, Map)
+	 * @see net.sf.jasperreports.engine.fill.JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public String runToPdfFile(
 		String sourceFileName, 
@@ -124,10 +133,10 @@ public final class JasperRunManager
 
 		JasperFillManager jasperFillManager = JasperFillManager.getInstance(jasperReportsContext);
 		
-		Map<String,Object> parameters = jasperFillManager.setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = jasperFillManager.getLocalJasperReportsContext(sourceFile);
 
 		/*   */
-		JasperPrint jasperPrint = jasperFillManager.fill(jasperReport, parameters);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params);
 
 		/*   */
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".pdf");
@@ -167,7 +176,7 @@ public final class JasperRunManager
 	 * @param destFileName PDF destination file name
 	 * @param parameters     report parameters map
 	 * @throws JRException
-	 * @see net.sf.jasperreports.engine.fill.JRFiller#fillReport(JasperReport, Map)
+	 * @see net.sf.jasperreports.engine.fill.JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public void runToPdfFile(
 		String sourceFileName, 
@@ -212,7 +221,7 @@ public final class JasperRunManager
 	 * @param outputStream PDF output stream
 	 * @param parameters parameters map
 	 * @throws JRException
-	 * @see net.sf.jasperreports.engine.fill.JRFiller#fillReport(JasperReport, Map)
+	 * @see net.sf.jasperreports.engine.fill.JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public void runToPdfStream(
 		InputStream inputStream, 
@@ -256,7 +265,7 @@ public final class JasperRunManager
 	 * @param parameters     report parameters map
 	 * @return binary PDF output
 	 * @throws JRException
-	 * @see net.sf.jasperreports.engine.fill.JRFiller#fillReport(JasperReport, Map)
+	 * @see net.sf.jasperreports.engine.fill.JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public byte[] runToPdf(
 		String sourceFileName, 
@@ -299,7 +308,7 @@ public final class JasperRunManager
 	 * @param parameters   report parameters map
 	 * @return binary PDF output
 	 * @throws JRException
-	 * @see net.sf.jasperreports.engine.fill.JRFiller#fillReport(JasperReport, Map)
+	 * @see net.sf.jasperreports.engine.fill.JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public byte[] runToPdf(
 		InputStream inputStream, 
@@ -342,7 +351,7 @@ public final class JasperRunManager
 	 * @param parameters the parameters map
 	 * @return binary PDF output
 	 * @throws JRException
-	 * @see net.sf.jasperreports.engine.fill.JRFiller#fillReport(JasperReport, Map)
+	 * @see net.sf.jasperreports.engine.fill.JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public byte[] runToPdf(
 		JasperReport jasperReport, 
@@ -375,10 +384,10 @@ public final class JasperRunManager
 
 		JasperFillManager jasperFillManager = JasperFillManager.getInstance(jasperReportsContext);
 		
-		Map<String,Object> parameters = jasperFillManager.setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = jasperFillManager.getLocalJasperReportsContext(sourceFile);
 
 		/*   */
-		JasperPrint jasperPrint = jasperFillManager.fill(jasperReport, parameters, jrDataSource);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params, jrDataSource);
 
 		/*   */
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".pdf");
@@ -505,10 +514,10 @@ public final class JasperRunManager
 
 		JasperFillManager jasperFillManager = JasperFillManager.getInstance(jasperReportsContext);
 		
-		Map<String,Object> parameters = jasperFillManager.setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = jasperFillManager.getLocalJasperReportsContext(sourceFile);
 
 		/*   */
-		JasperPrint jasperPrint = jasperFillManager.fill(jasperReport, parameters, conn);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params, conn);
 
 		/*   */
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".html");
@@ -528,7 +537,7 @@ public final class JasperRunManager
 	 * @param params the parameters map
 	 * @return the name of the generated HTML file
 	 * @throws JRException
-	 * @see net.sf.jasperreports.engine.fill.JRFiller#fillReport(JasperReport, Map)
+	 * @see net.sf.jasperreports.engine.fill.JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public String runToHtmlFile(
 		String sourceFileName, 
@@ -542,10 +551,10 @@ public final class JasperRunManager
 
 		JasperFillManager jasperFillManager = JasperFillManager.getInstance(jasperReportsContext);
 		
-		Map<String,Object> parameters = jasperFillManager.setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = jasperFillManager.getLocalJasperReportsContext(sourceFile);
 
 		/*   */
-		JasperPrint jasperPrint = jasperFillManager.fill(jasperReport, parameters);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params);
 
 		/*   */
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".html");
@@ -585,7 +594,7 @@ public final class JasperRunManager
 	 * @param destFileName name of the destination HTML file
 	 * @param parameters     report parameters map
 	 * @throws JRException
-	 * @see net.sf.jasperreports.engine.fill.JRFiller#fillReport(JasperReport, Map)
+	 * @see net.sf.jasperreports.engine.fill.JRFiller#fill(JasperReportsContext, JasperReport, Map)
 	 */
 	public void runToHtmlFile(
 		String sourceFileName, 
@@ -619,10 +628,10 @@ public final class JasperRunManager
 
 		JasperFillManager jasperFillManager = JasperFillManager.getInstance(jasperReportsContext);
 		
-		Map<String,Object> parameters = jasperFillManager.setFileResolver(sourceFile, params);
+		JasperReportsContext lcJrCtx = jasperFillManager.getLocalJasperReportsContext(sourceFile);
 
 		/*   */
-		JasperPrint jasperPrint = jasperFillManager.fill(jasperReport, parameters, jrDataSource);
+		JasperPrint jasperPrint = JRFiller.fill(lcJrCtx, jasperReport, params, jrDataSource);
 
 		/*   */
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".html");

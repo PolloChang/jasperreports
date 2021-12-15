@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,6 +39,7 @@ import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.base.JRBaseElementGroup;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
 
@@ -46,7 +47,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * Fill time implementation of a frame element.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillFrame.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillFrame.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillFrame extends JRFillElement implements JRFrame
 {
@@ -140,10 +141,11 @@ public class JRFillFrame extends JRFillElement implements JRFrame
 		reset();
 
 		evaluatePrintWhenExpression(evaluation);
-		evaluateProperties(evaluation);
-
 		if (isPrintWhenExpressionNull() || isPrintWhenTrue())
 		{
+			evaluateProperties(evaluation);
+			evaluateStyle(evaluation);
+
 			frameContainer.evaluate(evaluation);
 			
 			boolean repeating = true;
@@ -268,7 +270,8 @@ public class JRFillFrame extends JRFillElement implements JRFrame
 
 	protected JRPrintElement fill() throws JRException
 	{		
-		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getTemplate(), elementId);
+		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getTemplate(), printElementOriginator);
+		printFrame.setUUID(getUUID());
 		printFrame.setX(getX());
 		printFrame.setY(getRelativeY());
 		printFrame.setWidth(getWidth());
@@ -388,6 +391,11 @@ public class JRFillFrame extends JRFillElement implements JRFrame
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitFrame(this);
+		
+		if (ElementsVisitorUtils.visitDeepElements(visitor))
+		{
+			ElementsVisitorUtils.visitElements(visitor, getChildren());
+		}
 	}
 	
 	

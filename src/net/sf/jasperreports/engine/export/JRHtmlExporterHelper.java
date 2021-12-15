@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,8 +43,9 @@ import net.sf.jasperreports.engine.base.JRBasePrintFrame;
 
 
 /**
+ * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRHtmlExporterHelper.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRHtmlExporterHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRHtmlExporterHelper
 {
@@ -82,7 +83,7 @@ public class JRHtmlExporterHelper
 					tableTypes.push(crosstabStart ? TABLE_TYPE_CROSSTAB : TABLE_TYPE_TABLE);
 					
 					JRBasePrintFrame nestedFrame = new JRBasePrintFrame(jasperPrint.getDefaultStyleProvider());
-					nestedFrame.getPropertiesMap().setProperty(JRHtmlExporterParameter.PROPERTY_FRAMES_AS_NESTED_TABLES, Boolean.TRUE.toString());
+					nestedFrame.getPropertiesMap().setProperty(JRHtmlReportConfiguration.PROPERTY_FRAMES_AS_NESTED_TABLES, Boolean.TRUE.toString());
 					nestedFrame.addElement(element);
 
 					createNestedFrames(elemIt, nestedFrame);

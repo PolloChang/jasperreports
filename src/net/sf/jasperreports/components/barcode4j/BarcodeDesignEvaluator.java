@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,11 +32,12 @@ import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
 
 import org.krysalis.barcode4j.ChecksumMode;
+import org.krysalis.barcode4j.impl.code128.EAN128Bean;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeDesignEvaluator.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: BarcodeDesignEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 {
@@ -115,6 +116,12 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 	protected void evaluateEANCode128(EAN128Component ean128)
 	{
 		evaluateBaseBarcode(ean128, "0101234567890128");
+		String template = evaluateStringExpression(
+				ean128.getTemplateExpression(), null);
+		if (template != null) 
+		{
+			((EAN128Bean)barcode).setTemplate(template);
+		}
 	}
 
 	protected void evaluateCode39(Code39Component code39)

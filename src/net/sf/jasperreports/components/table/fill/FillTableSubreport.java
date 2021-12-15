@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -39,9 +38,9 @@ import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRSubreport;
 import net.sf.jasperreports.engine.JRTemplate;
 import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.component.FillContext;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
 import net.sf.jasperreports.engine.fill.DatasetExpressionEvaluator;
-import net.sf.jasperreports.engine.fill.JRBaseFiller;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 import net.sf.jasperreports.engine.fill.JRFillSubreport;
 
@@ -49,22 +48,28 @@ import net.sf.jasperreports.engine.fill.JRFillSubreport;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillTableSubreport.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: FillTableSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillTableSubreport extends JRFillSubreport
 {
 
-	private final JasperReport tableReport;
-	private final Map<JRExpression, BuiltinExpressionEvaluator> builtinEvaluators;
+	private final TableJasperReport tableReport;
+	private final BuiltinExpressionEvaluatorFactory builtinEvaluatorFactory;
 
-	protected FillTableSubreport(JRBaseFiller filler, JRSubreport subreport,
-			JRFillObjectFactory factory, JasperReport tableReport, 
-			Map<JRExpression, BuiltinExpressionEvaluator> builtinEvaluators)
+	protected FillTableSubreport(FillContext fillContext, JRSubreport subreport,
+			JRFillObjectFactory factory, TableJasperReport tableReport, 
+			BuiltinExpressionEvaluatorFactory builtinEvaluatorFactory)
 	{
-		super(filler, subreport, factory);
+		super(fillContext.getFiller(), subreport, factory);
 		
+		this.fillContainerContext = fillContext.getFillContainerContext();
 		this.tableReport = tableReport;
-		this.builtinEvaluators = builtinEvaluators;
+		this.builtinEvaluatorFactory = builtinEvaluatorFactory;
+	}
+
+	public TableJasperReport getTableReport()
+	{
+		return tableReport;
 	}
 
 	@Override
@@ -77,15 +82,7 @@ public class FillTableSubreport extends JRFillSubreport
 	protected DatasetExpressionEvaluator createEvaluator() throws JRException
 	{
 		DatasetExpressionEvaluator evaluator = super.createEvaluator();
-		
-		if (!builtinEvaluators.isEmpty())
-		{
-			// use the builtin expression evaluators
-			evaluator = new BuiltinExpressionEvaluatorDecorator(evaluator, 
-					builtinEvaluators);
-		}
-		
-		return evaluator;
+		return builtinEvaluatorFactory.decorate(evaluator);
 	}
 	
 	@Override

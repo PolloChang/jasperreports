@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,7 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.util.ClassUtils;
 import net.sf.jasperreports.engine.util.JRLoader;
 
-import org.apache.commons.collections.ReferenceMap;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.xml.sax.SAXException;
@@ -52,7 +52,7 @@ import org.xml.sax.SAXException;
  * SAX parser.  See {@link #PROPERTY_CACHE_SCHEMAS}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseSaxParserFactory.java 5088 2012-03-15 11:55:32Z teodord $
+ * @version $Id: BaseSaxParserFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 {

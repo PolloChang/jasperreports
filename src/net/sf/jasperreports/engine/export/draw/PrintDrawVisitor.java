@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,15 +44,17 @@ import net.sf.jasperreports.engine.export.GenericElementGraphics2DHandler;
 import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.export.Graphics2DReportConfiguration;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 
 /**
  * Print element draw visitor.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: PrintDrawVisitor.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: PrintDrawVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 {
@@ -88,7 +90,8 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 	{
 		AwtTextRenderer textRenderer = 
 			new AwtTextRenderer(
-				JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(report, JRGraphics2DExporter.MINIMIZE_PRINTER_JOB_SIZE, true),
+				jasperReportsContext,
+				JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(report, Graphics2DReportConfiguration.MINIMIZE_PRINTER_JOB_SIZE, true),
 				JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(report, JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT, false)
 				);
 		
@@ -210,6 +213,14 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 						+ printElement.getGenericType());
 			}
 		}
+	}
+
+	/**
+	 * @return the textDrawer
+	 */
+	public TextDrawer getTextDrawer()
+	{
+		return this.textDrawer;
 	}
 
 	/**

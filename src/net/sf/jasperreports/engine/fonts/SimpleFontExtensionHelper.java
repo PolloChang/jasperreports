@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -62,7 +62,7 @@ import org.xml.sax.SAXParseException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleFontExtensionHelper.java 5346 2012-05-08 12:08:01Z teodord $
+ * @version $Id: SimpleFontExtensionHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class SimpleFontExtensionHelper implements ErrorHandler
 {
@@ -82,6 +82,27 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	private static final String NODE_bold = "bold";
 	private static final String NODE_italic = "italic";
 	private static final String NODE_boldItalic = "boldItalic";
+	private static final String NODE_ttf = "ttf";
+	private static final String NODE_pdf = "pdf";
+	private static final String NODE_eot = "eot";
+	private static final String NODE_svg = "svg";
+	private static final String NODE_woff = "woff";
+	/**
+	 * @deprecated Replaced by {@link #NODE_pdf}.
+	 */
+	private static final String NODE_normalPdfFont = "normalPdfFont";
+	/**
+	 * @deprecated Replaced by {@link #NODE_pdf}.
+	 */
+	private static final String NODE_boldPdfFont = "boldPdfFont";
+	/**
+	 * @deprecated Replaced by {@link #NODE_pdf}.
+	 */
+	private static final String NODE_italicPdfFont = "italicPdfFont";
+	/**
+	 * @deprecated Replaced by {@link #NODE_pdf}.
+	 */
+	private static final String NODE_boldItalicPdfFont = "boldItalicPdfFont";
 	private static final String NODE_pdfEncoding = "pdfEncoding";
 	private static final String NODE_pdfEmbedded = "pdfEmbedded";
 	private static final String NODE_exportFonts = "exportFonts";
@@ -89,6 +110,7 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	private static final String NODE_locales = "locales";
 	private static final String NODE_locale = "locale";
 	private static final String ATTRIBUTE_name = "name";
+	private static final String ATTRIBUTE_visible = "visible";
 	private static final String ATTRIBUTE_key = "key";
 
 	/**
@@ -239,7 +261,8 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	/**
 	 *
 	 */
-	private FontFamily parseFontFamily(JasperReportsContext jasperReportsContext, Node fontFamilyNode) throws SAXException
+	@SuppressWarnings("deprecation")
+	private SimpleFontFamily parseFontFamily(JasperReportsContext jasperReportsContext, Node fontFamilyNode) throws SAXException
 	{
 		SimpleFontFamily fontFamily = new SimpleFontFamily(jasperReportsContext);
 		
@@ -248,6 +271,12 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		if (nodeAttrs.getNamedItem(ATTRIBUTE_name) != null)
 		{
 			fontFamily.setName(nodeAttrs.getNamedItem(ATTRIBUTE_name).getNodeValue());
+		}
+		if (nodeAttrs.getNamedItem(ATTRIBUTE_visible) != null)
+		{
+			fontFamily.setVisible(
+				Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_visible).getNodeValue()).booleanValue()
+				);
 		}
 
 		NodeList nodeList = fontFamilyNode.getChildNodes();
@@ -258,19 +287,35 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 			{
 				if (NODE_normal.equals(node.getNodeName()))
 				{
-					fontFamily.setNormal(node.getTextContent());
+					fontFamily.setNormalFace(parseFontFace(jasperReportsContext, node));
 				}
 				else if (NODE_bold.equals(node.getNodeName()))
 				{
-					fontFamily.setBold(node.getTextContent());
+					fontFamily.setBoldFace(parseFontFace(jasperReportsContext, node));
 				}
 				else if (NODE_italic.equals(node.getNodeName()))
 				{
-					fontFamily.setItalic(node.getTextContent());
+					fontFamily.setItalicFace(parseFontFace(jasperReportsContext, node));
 				}
 				else if (NODE_boldItalic.equals(node.getNodeName()))
 				{
-					fontFamily.setBoldItalic(node.getTextContent());
+					fontFamily.setBoldItalicFace(parseFontFace(jasperReportsContext, node));
+				}
+				else if (NODE_normalPdfFont.equals(node.getNodeName()))
+				{
+					fontFamily.setNormalPdfFont(node.getTextContent());
+				}
+				else if (NODE_boldPdfFont.equals(node.getNodeName()))
+				{
+					fontFamily.setBoldPdfFont(node.getTextContent());
+				}
+				else if (NODE_italicPdfFont.equals(node.getNodeName()))
+				{
+					fontFamily.setItalicPdfFont(node.getTextContent());
+				}
+				else if (NODE_boldItalicPdfFont.equals(node.getNodeName()))
+				{
+					fontFamily.setBoldItalicPdfFont(node.getTextContent());
 				}
 				else if (NODE_pdfEncoding.equals(node.getNodeName()))
 				{
@@ -292,6 +337,57 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		}
 		
 		return fontFamily;
+	}
+
+	/**
+	 *
+	 */
+	private SimpleFontFace parseFontFace(JasperReportsContext jasperReportsContext, Node fontFaceNode) throws SAXException
+	{
+		SimpleFontFace fontFace = new SimpleFontFace(jasperReportsContext);
+		
+		NodeList nodeList = fontFaceNode.getChildNodes();
+
+		if (
+			nodeList.getLength() == 1 
+			&& (fontFaceNode.getFirstChild().getNodeType() == Node.TEXT_NODE
+			|| fontFaceNode.getFirstChild().getNodeType() == Node.CDATA_SECTION_NODE)
+			)
+		{
+			fontFace.setTtf(fontFaceNode.getFirstChild().getTextContent());
+		}
+		else
+		{
+			for (int i = 0; i < nodeList.getLength(); i++)
+			{
+				Node node = nodeList.item(i);
+				if (node.getNodeType() == Node.ELEMENT_NODE)
+				{
+					if (NODE_ttf.equals(node.getNodeName()))
+					{
+						fontFace.setTtf(node.getTextContent());
+					}
+					else if (NODE_pdf.equals(node.getNodeName()))
+					{
+						fontFace.setPdf(node.getTextContent());
+					}
+					else if (NODE_eot.equals(node.getNodeName()))
+					{
+						fontFace.setEot(node.getTextContent());
+					}
+					else if (NODE_svg.equals(node.getNodeName()))
+					{
+						fontFace.setSvg(node.getTextContent());
+					}
+					else if (NODE_woff.equals(node.getNodeName()))
+					{
+						fontFace.setWoff(node.getTextContent());
+					}
+				}
+			}
+		}
+		
+		return fontFace;
 	}
 
 	/**
@@ -336,7 +432,7 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 			buffer.append("<fontFamilies>\n");
 			for (FontFamily fontFamily : fontFamilies)
 			{
-				addFontFamily(buffer, fontFamily);
+				writeFontFamily(buffer, fontFamily);
 			}
 			buffer.append("</fontFamilies>\n");
 			return buffer.toString();
@@ -351,7 +447,7 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	/**
 	 *
 	 */
-	private static void addFontFamily(StringBuffer buffer, FontFamily fontFamily) 
+	private static void writeFontFamily(StringBuffer buffer, FontFamily fontFamily) 
 	{
 		if(fontFamily != null)
 		{
@@ -362,27 +458,19 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 			}
 			
 			String indent = "  ";
-			buffer.append(indent + "<fontFamily name=\"" + fontFamily.getName() + "\">\n");
+			buffer.append(indent + "<fontFamily name=\"" + fontFamily.getName() + "\""); 
+			if (!fontFamily.isVisible())
+			{
+				buffer.append(" visible=\"" + fontFamily.isVisible() + "\""); 
+			}
+			buffer.append(">\n");
 			indent = "    ";
 			
-			if(fontFamily.getNormalFace() != null)
-			{
-				buffer.append(indent + "<normal>" + fontFamily.getNormalFace().getFile() +"</normal>\n");
-			}
-			if(fontFamily.getBoldFace() != null)
-			{
-				buffer.append(indent + "<bold>" + fontFamily.getBoldFace().getFile() +"</bold>\n");
-				
-			}
-			if(fontFamily.getItalicFace() != null)
-			{
-				buffer.append(indent + "<italic>" + fontFamily.getItalicFace().getFile() +"</italic>\n");
-				
-			}
-			if(fontFamily.getBoldItalicFace() != null)
-			{
-				buffer.append(indent + "<boldItalic>" + fontFamily.getBoldItalicFace().getFile() +"</boldItalic>\n");
-			}
+			writeFontFace(buffer, fontFamily.getNormalFace(), NODE_normal);
+			writeFontFace(buffer, fontFamily.getBoldFace(), NODE_bold);
+			writeFontFace(buffer, fontFamily.getItalicFace(), NODE_italic);
+			writeFontFace(buffer, fontFamily.getBoldItalicFace(), NODE_boldItalic);
+
 			if(fontFamily.getPdfEncoding() != null)
 			{
 				buffer.append(indent + "<pdfEncoding>" + fontFamily.getPdfEncoding() +"</pdfEncoding>\n");
@@ -432,6 +520,56 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		else
 		{
 			log.info("Null font family encountered.");
+		}
+	}
+	
+
+
+	/**
+	 *
+	 */
+	private static void writeFontFace(StringBuffer buffer, FontFace fontFace, String faceTypeName) 
+	{
+		String indent = "    ";
+		if(fontFace != null)
+		{
+			if (
+				fontFace.getPdf() == null
+				&& fontFace.getEot() == null
+				&& fontFace.getSvg() == null
+				&& fontFace.getWoff() == null
+				)
+			{
+				if (fontFace.getTtf() != null)
+				{
+					buffer.append(indent + "<" + faceTypeName + ">"	+ fontFace.getTtf() + "</" + faceTypeName + ">\n");
+				}
+			}
+			else
+			{
+				buffer.append(indent + "<" + faceTypeName + ">\n");
+				if (fontFace.getTtf() != null)
+				{
+					buffer.append(indent + "  <ttf>"	+ fontFace.getTtf() + "</ttf>\n");
+				}
+				if (fontFace.getPdf() != null)
+				{
+					buffer.append(indent + "  <pdf>"	+ fontFace.getPdf() + "</pdf>\n");
+				}
+				if (fontFace.getEot() != null)
+				{
+					buffer.append(indent + "  <eot>"	+ fontFace.getEot() + "</eot>\n");
+				}
+				if (fontFace.getSvg() != null)
+				{
+					buffer.append(indent + "  <svg>"	+ fontFace.getSvg() + "</svg>\n");
+				}
+				if (fontFace.getWoff() != null)
+				{
+					buffer.append(indent + "  <woff>"	+ fontFace.getWoff() + "</woff>\n");
+				}
+				buffer.append(indent + "</" + faceTypeName + ">\n");
+			}
 		}
 	}
 	

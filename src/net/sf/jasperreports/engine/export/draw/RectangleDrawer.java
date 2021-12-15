@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,6 @@ import java.awt.geom.AffineTransform;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.export.legacy.BorderOffset;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRPenUtil;
@@ -47,7 +46,7 @@ import net.sf.jasperreports.engine.util.JRPenUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RectangleDrawer.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: RectangleDrawer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RectangleDrawer extends ElementDrawer<JRPrintRectangle>
 {
@@ -215,28 +214,10 @@ public class RectangleDrawer extends ElementDrawer<JRPrintRectangle>
 			}
 			else
 			{
-				float lineOffset = BorderOffset.getOffset(rectangle.getLinePen());
-				
 				grx.translate(
-					rectangle.getX() + offsetX + lineOffset, 
-					rectangle.getY() + offsetY + lineOffset
+					rectangle.getX() + offsetX, 
+					rectangle.getY() + offsetY
 					);
-				if (width > 2 * lineOffset)
-				{
-					grx.scale(
-						(width - 2 * lineOffset) 
-							/ width, 
-						1 
-						);
-				}
-				if (height > 2 * lineOffset)
-				{
-					grx.scale(
-						1, 
-						(height - 2 * lineOffset) 
-							/ height 
-						);
-				}
 
 				if (rectangle.getRadius() > 0)
 				{

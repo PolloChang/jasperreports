@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,9 +29,8 @@
 
 package net.sf.jasperreports.engine.export;
 
-import java.util.Map;
-
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintText;
@@ -39,7 +38,7 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCsvExporterNature.java 5377 2012-05-11 13:50:50Z shertage $
+ * @version $Id: JRCsvExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCsvExporterNature extends AbstractExporterNature
 {
@@ -65,7 +64,26 @@ public class JRCsvExporterNature extends AbstractExporterNature
 	 */
 	public boolean isToExport(JRPrintElement element)
 	{
-		return (element instanceof JRPrintText || element instanceof JRPrintFrame)
+//		JRPrintFrame frame = element instanceof JRPrintFrame ? (JRPrintFrame)element : null;
+//		if (frame != null)
+//		{
+//			List<JRPrintElement> elements = frame.getElements();
+//			return elements != null && elements.size() > 0;
+//		}
+//		return (element instanceof JRPrintText || element instanceof JRGenericPrintElement)
+//			&& (filter == null || filter.isToExport(element));
+		if (element instanceof JRGenericPrintElement)
+		{
+			JRGenericPrintElement genericElement = (JRGenericPrintElement) element;
+			GenericElementHandler handler = handlerEnvironment.getElementHandler(
+					genericElement.getGenericType(), JRAbstractCsvExporter.CSV_EXPORTER_KEY);
+			if (handler == null || !handler.toExport(genericElement))
+			{
+				return false;
+			}
+		}
+		
+		return (element instanceof JRPrintText || element instanceof JRPrintFrame || element instanceof JRGenericPrintElement)
 			&& (filter == null || filter.isToExport(element));
 	}
 	
@@ -75,14 +93,6 @@ public class JRCsvExporterNature extends AbstractExporterNature
 	public boolean isDeep(JRPrintFrame frame)
 	{
 		return true;
-	}
-	
-	/**
-	 * 
-	 */
-	public boolean isSplitSharedRowSpan()
-	{
-		return false;
 	}
 
 	/**

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -55,7 +55,7 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillImage.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillImage extends JRFillGraphicElement implements JRImage
 {
@@ -76,11 +76,14 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	private Integer imageX;
 	private String anchorName;
 	private String hyperlinkReference;
+	private Boolean hyperlinkWhen;
 	private String hyperlinkAnchor;
 	private Integer hyperlinkPage;
 	private String hyperlinkTooltip;
 	private JRPrintHyperlinkParameters hyperlinkParameters;
-	protected final JRLineBox lineBox;
+
+	protected final JRLineBox initLineBox;
+	protected JRLineBox lineBox;
 
 
 	/**
@@ -94,7 +97,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	{
 		super(filler, image, factory);
 		
-		lineBox = image.getLineBox().clone(this);
+		initLineBox = image.getLineBox().clone(this);
 
 		evaluationGroup = factory.getGroup(image.getEvaluationGroup());
 	}
@@ -104,9 +107,28 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	{
 		super(image, factory);
 		
-		lineBox = image.getLineBox().clone(this);
+		initLineBox = image.getLineBox().clone(this);
 
 		evaluationGroup = image.evaluationGroup;
+	}
+
+
+	/**
+	 *
+	 */
+	protected void evaluateStyle(
+		byte evaluation
+		) throws JRException
+	{
+		super.evaluateStyle(evaluation);
+
+		lineBox = null;
+		
+		if (providerStyle != null)
+		{
+			lineBox = initLineBox.clone(this);
+			JRStyleResolver.appendBox(lineBox, providerStyle.getLineBox());
+		}
 	}
 
 
@@ -128,7 +150,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		
 	public ScaleImageEnum getOwnScaleImageValue()
 	{
-		return ((JRImage)this.parent).getOwnScaleImageValue();
+		return providerStyle == null || providerStyle.getOwnScaleImageValue() == null ? ((JRImage)this.parent).getOwnScaleImageValue() : providerStyle.getOwnScaleImageValue();
 	}
 
 	/**
@@ -149,7 +171,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		
 	public HorizontalAlignEnum getOwnHorizontalAlignmentValue()
 	{
-		return ((JRImage)this.parent).getOwnHorizontalAlignmentValue();
+		return providerStyle == null || providerStyle.getOwnHorizontalAlignmentValue() == null ? ((JRImage)this.parent).getOwnHorizontalAlignmentValue() : providerStyle.getOwnHorizontalAlignmentValue();
 	}
 
 	/**
@@ -170,7 +192,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		
 	public VerticalAlignEnum getOwnVerticalAlignmentValue()
 	{
-		return ((JRImage)this.parent).getOwnVerticalAlignmentValue();
+		return providerStyle == null || providerStyle.getOwnVerticalAlignmentValue() == null ? ((JRImage)this.parent).getOwnVerticalAlignmentValue() : providerStyle.getOwnVerticalAlignmentValue();
 	}
 
 	/**
@@ -271,7 +293,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	 */
 	public JRLineBox getLineBox()
 	{
-		return lineBox;
+		return lineBox == null ? initLineBox : lineBox;
 	}
 
 	/**
@@ -328,6 +350,14 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	public JRExpression getHyperlinkReferenceExpression()
 	{
 		return ((JRImage)this.parent).getHyperlinkReferenceExpression();
+	}
+
+	/**
+	 *
+	 */
+	public JRExpression getHyperlinkWhenExpression()
+	{
+		return ((JRImage)this.parent).getHyperlinkWhenExpression();
 	}
 
 	/**
@@ -453,6 +483,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		) throws JRException
 	{
 		evaluateProperties(evaluation);
+		evaluateStyle(evaluation);
 		
 		JRExpression expression = this.getExpression();
 
@@ -534,7 +565,8 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 
 				if (isUsingCache)
 				{
-					JRPrintImage img = new JRTemplatePrintImage(getJRTemplateImage(), elementId);
+					JRPrintImage img = new JRTemplatePrintImage(getJRTemplateImage(), 
+							printElementOriginator);//doesn't actually need a printElementId
 					img.setRenderable(newRenderer);
 					filler.fillContext.registerLoadedImage(source, img);
 				}
@@ -547,6 +579,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		
 		this.anchorName = (String) evaluateExpression(this.getAnchorNameExpression(), evaluation);
 		this.hyperlinkReference = (String) evaluateExpression(this.getHyperlinkReferenceExpression(), evaluation);
+		this.hyperlinkWhen = (Boolean) evaluateExpression(this.getHyperlinkWhenExpression(), evaluation);
 		this.hyperlinkAnchor = (String) evaluateExpression(this.getHyperlinkAnchorExpression(), evaluation);
 		this.hyperlinkPage = (Integer) evaluateExpression(this.getHyperlinkPageExpression(), evaluation);
 		this.hyperlinkTooltip = (String) evaluateExpression(this.getHyperlinkTooltipExpression(), evaluation);
@@ -782,18 +815,20 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		JRRecordedValuesPrintImage recordedValuesImage;
 		if (isEvaluateAuto())
 		{
-			printImage = recordedValuesImage = new JRRecordedValuesPrintImage(getJRTemplateImage(), elementId);
+			printImage = recordedValuesImage = new JRRecordedValuesPrintImage(getJRTemplateImage(), printElementOriginator);
 		}
 		else
 		{
-			printImage = new JRTemplatePrintImage(getJRTemplateImage(), elementId);
+			printImage = new JRTemplatePrintImage(getJRTemplateImage(), printElementOriginator);
 			recordedValuesImage = null;
 		}
 		
+		printImage.setUUID(this.getUUID());
 		printImage.setX(this.getX());
 		printImage.setY(this.getRelativeY());
 		printImage.setWidth(getWidth());
 		printImage.setHeight(this.getStretchHeight());
+		printImage.setBookmarkLevel(getBookmarkLevel());
 
 		if (isEvaluateNow())
 		{
@@ -817,6 +852,8 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	 */
 	protected void copy(JRPrintImage printImage)
 	{
+		printImage.setUUID(getUUID());
+
 		if (imageX != null)
 		{
 			printImage.setX(imageX.intValue());
@@ -826,13 +863,19 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 			printImage.setWidth(imageWidth.intValue());
 		}
 		
-		printImage.setRenderable(this.getRenderable());
-		printImage.setAnchorName(this.getAnchorName());
-		printImage.setHyperlinkReference(this.getHyperlinkReference());
-		printImage.setHyperlinkAnchor(this.getHyperlinkAnchor());
-		printImage.setHyperlinkPage(this.getHyperlinkPage());
+		printImage.setRenderable(getRenderable());
+		printImage.setAnchorName(getAnchorName());
+		if (getHyperlinkWhenExpression() == null || hyperlinkWhen == Boolean.TRUE)
+		{
+			printImage.setHyperlinkReference(getHyperlinkReference());
+		}
+		else
+		{
+			printImage.setHyperlinkReference(null);
+		}
+		printImage.setHyperlinkAnchor(getHyperlinkAnchor());
+		printImage.setHyperlinkPage(getHyperlinkPage());
 		printImage.setHyperlinkTooltip(getHyperlinkTooltip());
-		printImage.setBookmarkLevel(this.getBookmarkLevel());
 		printImage.setHyperlinkParameters(hyperlinkParameters);
 		transferProperties(printImage);
 	}
@@ -870,6 +913,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		}
 		
 		copy(printImage);
+		filler.getFillContext().updateBookmark(element);
 	}
 
 
@@ -891,6 +935,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		collectDelayedEvaluations(getExpression());
 		collectDelayedEvaluations(getAnchorNameExpression());
 		collectDelayedEvaluations(getHyperlinkReferenceExpression());
+		collectDelayedEvaluations(getHyperlinkWhenExpression());
 		collectDelayedEvaluations(getHyperlinkAnchorExpression());
 		collectDelayedEvaluations(getHyperlinkPageExpression());	
 	}

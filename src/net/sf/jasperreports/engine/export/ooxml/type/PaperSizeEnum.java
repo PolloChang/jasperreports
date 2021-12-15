@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,7 @@ import net.sf.jasperreports.engine.type.JREnum;
 
 /**
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: PaperSizeEnum.java 5302 2012-04-26 11:40:05Z shertage $
+ * @version $Id: PaperSizeEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public enum PaperSizeEnum implements JREnum
 {

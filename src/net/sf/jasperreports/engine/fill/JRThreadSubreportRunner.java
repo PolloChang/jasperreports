@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,9 +23,6 @@
  */
 package net.sf.jasperreports.engine.fill;
 
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRRuntimeException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -38,21 +35,18 @@ import org.apache.commons.logging.LogFactory;
  * the master thread.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRThreadSubreportRunner.java 5414 2012-05-25 09:51:28Z lucianc $
+ * @version $Id: JRThreadSubreportRunner.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRThreadSubreportRunner extends JRSubreportRunnable implements JRSubreportRunner
+public class JRThreadSubreportRunner extends AbstractThreadSubreportRunner
 {
 	
 	private static final Log log = LogFactory.getLog(JRThreadSubreportRunner.class);
-	
-	private final JRBaseFiller subreportFiller;
 	
 	private Thread fillThread;
 	
 	public JRThreadSubreportRunner(JRFillSubreport fillSubreport, JRBaseFiller subreportFiller)
 	{
-		super(fillSubreport);
-		this.subreportFiller = subreportFiller;
+		super(fillSubreport, subreportFiller);
 	}
 
 	public boolean isFilling()
@@ -60,7 +54,8 @@ public class JRThreadSubreportRunner extends JRSubreportRunnable implements JRSu
 		return fillThread != null;
 	}
 
-	public JRSubreportRunResult start()
+	@Override
+	protected void doStart()
 	{
 		fillThread = new Thread(this, subreportFiller.getJasperReport().getName() + " subreport filler");
 		
@@ -70,182 +65,11 @@ public class JRThreadSubreportRunner extends JRSubreportRunnable implements JRSu
 		}
 		
 		fillThread.start();
-
-		return waitResult();
-	}
-
-	public JRSubreportRunResult resume()
-	{
-		if (log.isDebugEnabled())
-		{
-			log.debug("Fill " + subreportFiller.fillerId + ": notifying to continue");
-		}
-		
-		//notifing the subreport fill thread that it can continue on the next page
-		subreportFiller.notifyAll();
-
-		return waitResult();
-	}
-
-	protected JRSubreportRunResult waitResult()
-	{
-		if (log.isDebugEnabled())
-		{
-			log.debug("Fill " + subreportFiller.fillerId + ": waiting for fill result");
-		}
-
-		try
-		{
-			// waiting for the subreport fill thread to fill the current page
-			subreportFiller.wait(); // FIXME maybe this is useless since you cannot enter 
-									// the synchornized bloc if the subreport filler hasn't 
-									// finished the page and passed to the wait state.
-		}
-		catch (InterruptedException e)
-		{
-			if (subreportFiller.fillContext.isCanceled())
-			{
-				// only debug when cancel was requested
-				if (log.isDebugEnabled())
-				{
-					log.debug("Fill " + subreportFiller.fillerId + ": exception", e);
-				}
-			}
-			else
-			{
-				if (log.isErrorEnabled())
-				{
-					log.error("Fill " + subreportFiller.fillerId + ": exception", e);
-				}
-			}
-			
-			throw new JRRuntimeException("Error encountered while waiting on the report filling thread.", e);
-		}
-		
-		if (log.isDebugEnabled())
-		{
-			log.debug("Fill " + subreportFiller.fillerId + ": notified of fill result");
-		}
-		
-		return runResult();
 	}
 
 	public void reset()
 	{
 		fillThread = null;
 	}
-	
-	public void cancel() throws JRException
-	{
-		if (log.isDebugEnabled())
-		{
-			log.debug("Fill " + subreportFiller.fillerId + ": notifying to continue on cancel");
-		}
 
-		// notifying the subreport filling thread that it can continue.
-		// it will stop anyway when trying to fill the current band
-		subreportFiller.notifyAll();
-
-		if (isRunning())
-		{
-			if (log.isDebugEnabled())
-			{
-				log.debug("Fill " + subreportFiller.fillerId + ": still running, waiting");
-			}
-			
-			try
-			{
-				//waits until the master filler notifies it that can continue with the next page
-				subreportFiller.wait();
-			}
-			catch(InterruptedException e)
-			{
-				if (log.isErrorEnabled())
-				{
-					log.error("Fill " + subreportFiller.fillerId + ": exception", e);
-				}
-				
-				throw new JRException("Error encountered while waiting on the subreport filling thread.", e);
-			}
-			
-			if (log.isDebugEnabled())
-			{
-				log.debug("Fill " + subreportFiller.fillerId + ": wait ended");
-			}
-		}
-	}
-
-	public void suspend() throws JRException
-	{
-		if (log.isDebugEnabled())
-		{
-			log.debug("Fill " + subreportFiller.fillerId + ": notifying on suspend");
-		}
-		
-		//signals to the master filler that is has finished the page
-		subreportFiller.notifyAll();
-		
-		if (log.isDebugEnabled())
-		{
-			log.debug("Fill " + subreportFiller.fillerId + ": waiting to continue");
-		}
-
-		try
-		{
-			//waits until the master filler notifies it that can continue with the next page
-			subreportFiller.wait();
-		}
-		catch(InterruptedException e)
-		{
-			if (subreportFiller.fillContext.isCanceled())
-			{
-				// only log a debug message if cancel was requested
-				if (log.isDebugEnabled())
-				{
-					log.debug("Fill " + subreportFiller.fillerId + ": exception", e);
-				}
-			}
-			else
-			{
-				if (log.isErrorEnabled())
-				{
-					log.error("Fill " + subreportFiller.fillerId + ": exception", e);
-				}
-			}
-			
-			throw new JRException("Error encountered while waiting on the subreport filling thread.", e);
-		}
-		
-		if (log.isDebugEnabled())
-		{
-			log.debug("Fill " + subreportFiller.fillerId + ": notified to continue");
-		}
-	}
-
-	public void run()
-	{
-		super.run();
-
-		if (log.isDebugEnabled())
-		{
-			log.debug("Fill " + subreportFiller.fillerId + ": notifying of completion");
-		}
-
-		synchronized (subreportFiller)
-		{
-			//main filler notified that the subreport has finished
-			subreportFiller.notifyAll();
-		}
-
-/*
-		if (error != null)
-		{
-			synchronized (subreportFiller)
-			{
-				//if an exception occured then we should notify the main filler that we have finished the subreport
-				subreportFiller.notifyAll();
-			}
-		}
-		*/
-	}
 }

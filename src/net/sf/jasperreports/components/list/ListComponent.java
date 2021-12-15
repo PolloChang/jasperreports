@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.components.list;
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.engine.JRCloneable;
 import net.sf.jasperreports.engine.JRDatasetRun;
+import net.sf.jasperreports.engine.JRVisitable;
 import net.sf.jasperreports.engine.component.Component;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
 
@@ -33,9 +34,9 @@ import net.sf.jasperreports.engine.type.PrintOrderEnum;
  * List component interface.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ListComponent.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: ListComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface ListComponent extends Component, JRCloneable
+public interface ListComponent extends Component, JRCloneable, JRVisitable
 {
 
 	/**

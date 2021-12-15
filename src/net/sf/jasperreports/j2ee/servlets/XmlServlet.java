@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,14 +35,16 @@ import javax.servlet.http.HttpServletResponse;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.export.JRXmlExporter;
 import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleReportExportConfiguration;
+import net.sf.jasperreports.export.SimpleWriterExporterOutput;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XmlServlet.java 5050 2012-03-12 10:11:26Z teodord $
+ * @version $Id: XmlServlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XmlServlet extends BaseHttpServlet
 {
@@ -115,16 +117,17 @@ public class XmlServlet extends BaseHttpServlet
 		{
 			FileBufferedOutputStream fbos = new FileBufferedOutputStream();
 			JRXmlExporter exporter = getExporter();
-			exporter.setParameter(JRExporterParameter.JASPER_PRINT_LIST, jasperPrintList);
+			exporter.setExporterInput(SimpleExporterInput.getInstance(jasperPrintList));
+			SimpleReportExportConfiguration configuration = new SimpleReportExportConfiguration();
 			if (startPageIndex >= 0)
 			{
-				exporter.setParameter(JRExporterParameter.START_PAGE_INDEX, Integer.valueOf(startPageIndex));
+				configuration.setStartPageIndex(startPageIndex);
 			}
 			if (endPageIndex >= 0)
 			{
-				exporter.setParameter(JRExporterParameter.END_PAGE_INDEX, Integer.valueOf(endPageIndex));
+				configuration.setEndPageIndex(endPageIndex);
 			}
-			exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, fbos);
+			exporter.setExporterOutput(new SimpleWriterExporterOutput(fbos));
 
 			try 
 			{
@@ -136,21 +139,21 @@ public class XmlServlet extends BaseHttpServlet
 					response.setContentType("text/xml");
 					response.setHeader("Content-Disposition", "inline; filename=\"file.jrpxml\"");
 					response.setContentLength(fbos.size());
-					ServletOutputStream ouputStream = response.getOutputStream();
+					ServletOutputStream outputStream = response.getOutputStream();
 	
 					try
 					{
-						fbos.writeData(ouputStream);
+						fbos.writeData(outputStream);
 						fbos.dispose();
-						ouputStream.flush();
+						outputStream.flush();
 					}
 					finally
 					{
-						if (ouputStream != null)
+						if (outputStream != null)
 						{
 							try
 							{
-								ouputStream.close();
+								outputStream.close();
 							}
 							catch (IOException ex)
 							{
@@ -185,18 +188,19 @@ public class XmlServlet extends BaseHttpServlet
 			response.setHeader("Content-Disposition", "inline; filename=\"file.jrpxml\"");
 
 			JRXmlExporter exporter = getExporter();
-			exporter.setParameter(JRExporterParameter.JASPER_PRINT_LIST, jasperPrintList);
+			exporter.setExporterInput(SimpleExporterInput.getInstance(jasperPrintList));
+			SimpleReportExportConfiguration configuration = new SimpleReportExportConfiguration();
 			if (startPageIndex >= 0)
 			{
-				exporter.setParameter(JRExporterParameter.START_PAGE_INDEX, Integer.valueOf(startPageIndex));
+				configuration.setStartPageIndex(startPageIndex);
 			}
 			if (endPageIndex >= 0)
 			{
-				exporter.setParameter(JRExporterParameter.END_PAGE_INDEX, Integer.valueOf(endPageIndex));
+				configuration.setEndPageIndex(endPageIndex);
 			}
 			
-			OutputStream ouputStream = response.getOutputStream();
-			exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, ouputStream);
+			OutputStream outputStream = response.getOutputStream();
+			exporter.setExporterOutput(new SimpleWriterExporterOutput(outputStream));
 
 			try 
 			{
@@ -208,11 +212,11 @@ public class XmlServlet extends BaseHttpServlet
 			}
 			finally
 			{
-				if (ouputStream != null)
+				if (outputStream != null)
 				{
 					try
 					{
-						ouputStream.close();
+						outputStream.close();
 					}
 					catch (IOException ex)
 					{

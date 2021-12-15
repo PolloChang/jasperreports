@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,7 @@ import net.sf.jasperreports.engine.JRPrintText;
  * Text measuring information as produced by a {@link JRTextMeasurer text measurer}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMeasuredText.java 4831 2011-11-30 16:55:17Z teodord $
+ * @version $Id: JRMeasuredText.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRTextMeasurer#measure(net.sf.jasperreports.engine.util.JRStyledText, int, int, boolean)
  */
 public interface JRMeasuredText
@@ -48,6 +48,13 @@ public interface JRMeasuredText
 	 * @return the line spacing factor
 	 */
 	float getLineSpacingFactor();
+
+	/**
+	 * Returns the text's measure width.
+	 * 
+	 * @return the text's measure width
+	 */
+	float getTextWidth();
 
 	/**
 	 * Returns the text's measure height.

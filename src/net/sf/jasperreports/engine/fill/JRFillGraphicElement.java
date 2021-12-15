@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,11 +34,13 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillGraphicElement.java 5180 2012-03-29 13:23:12Z teodord $
+ * @version $Id: JRFillGraphicElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRFillGraphicElement extends JRFillElement implements JRGraphicElement
 {
 
+	protected final JRPen initPen;
+	protected JRPen pen;
 
 	/**
 	 *
@@ -50,6 +52,8 @@ public abstract class JRFillGraphicElement extends JRFillElement implements JRGr
 		)
 	{
 		super(filler, graphicElement, factory);
+		
+		initPen = graphicElement.getLinePen().clone(this);
 	}
 
 
@@ -59,15 +63,36 @@ public abstract class JRFillGraphicElement extends JRFillElement implements JRGr
 		)
 	{
 		super(graphicElement, factory);
+		
+		initPen = graphicElement.getLinePen().clone(this);
 	}
 
 	
 	/**
 	 *
 	 */
+	protected void evaluateStyle(
+		byte evaluation
+		) throws JRException
+	{
+		super.evaluateStyle(evaluation);
+
+		pen = null;
+		
+		if (providerStyle != null)
+		{
+			pen = initPen.clone(this);
+			JRStyleResolver.appendPen(pen, providerStyle.getLinePen());
+		}
+	}
+
+
+	/**
+	 *
+	 */
 	public JRPen getLinePen()
 	{
-		return ((JRGraphicElement)parent).getLinePen();
+		return pen == null ? initPen : pen;
 	}
 
 	/**
@@ -83,7 +108,7 @@ public abstract class JRFillGraphicElement extends JRFillElement implements JRGr
 	 */
 	public FillEnum getOwnFillValue()
 	{
-		return ((JRGraphicElement)this.parent).getOwnFillValue();
+		return providerStyle == null || providerStyle.getOwnFillValue() == null ? ((JRGraphicElement)this.parent).getOwnFillValue() : providerStyle.getOwnFillValue();
 	}
 
 	/**

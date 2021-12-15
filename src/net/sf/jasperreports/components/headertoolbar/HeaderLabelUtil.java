@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -47,7 +47,7 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: HeaderLabelUtil.java 5248 2012-04-10 10:05:24Z teodord $
+ * @version $Id: HeaderLabelUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HeaderLabelUtil
 {
@@ -59,7 +59,7 @@ public class HeaderLabelUtil
 		HeaderLabelBuiltinExpression evaluator = null;
 		
 		JRElement[] elements = frame.getElements();
-		JRElement element = elements == null ? null : elements[0];
+		JRElement element = (elements == null || elements.length == 0) ? null : elements[0];
 
 		if (element instanceof JRStaticText)
 		{

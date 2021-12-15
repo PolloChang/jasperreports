@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,12 +26,13 @@ package net.sf.jasperreports.engine.export.oasis;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.export.GenericElementHandler;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
+import net.sf.jasperreports.engine.export.JRGridLayout;
 
 /**
  * A generic print element ODS export handler.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: GenericElementOdsHandler.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: GenericElementOdsHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface GenericElementOdsHandler extends GenericElementHandler
 {
@@ -46,6 +47,15 @@ public interface GenericElementOdsHandler extends GenericElementHandler
 	 * @param exporterContext the exporter context
 	 * @param element the generic element to export
 	 */
-	void exportElement(JROdsExporterContext exporterContext, JRGenericPrintElement element, JRExporterGridCell gridCell);
-	
+	void exportElement(
+		JROdsExporterContext exporterContext, 
+		JRGenericPrintElement element, 
+		JRExporterGridCell gridCell,
+		int colIndex, 
+		int rowIndex,
+		int emptyCols,
+		int yCutsRow, 
+		JRGridLayout layout
+		);
+
 }

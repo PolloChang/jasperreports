@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -58,12 +58,11 @@ import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.engine.base.JRVirtualPrintPage;
-import net.sf.jasperreports.engine.design.JRDesignSubreportReturnValue;
 import net.sf.jasperreports.engine.design.JRValidationException;
 import net.sf.jasperreports.engine.design.JRValidationFault;
 import net.sf.jasperreports.engine.design.JRVerifier;
-import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.type.OverflowType;
 import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.util.JRSingletonCache;
 import net.sf.jasperreports.engine.util.JRStyleResolver;
@@ -75,7 +74,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillSubreport.java 5340 2012-05-04 10:41:48Z lucianc $
+ * @version $Id: JRFillSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillSubreport extends JRFillElement implements JRSubreport
 {
@@ -102,8 +101,23 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	/**
 	 * Values to be copied from the subreport.
 	 */
-	private JRFillSubreportReturnValue[] returnValues;
+	private FillReturnValues returnValues;
 
+	private FillReturnValues.SourceContext returnValuesContext = new FillReturnValues.SourceContext()
+	{
+		@Override
+		public JRVariable getVariable(String name)
+		{
+			return subreportFiller.getVariable(name);
+		}
+
+		@Override
+		public Object getVariableValue(String name)
+		{
+			return subreportFiller.getVariableValue(name);
+		}
+	};
+	
 	/**
 	 *
 	 */
@@ -130,23 +144,18 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		super(filler, subreport, factory);
 
 		parameters = subreport.getParameters();
-		JRSubreportReturnValue[] subrepReturnValues = subreport.getReturnValues();
-		if (subrepReturnValues != null)
-		{
-			List<JRFillSubreportReturnValue> returnValuesList = new ArrayList<JRFillSubreportReturnValue>(subrepReturnValues.length * 2);
-			
-			returnValues = new JRFillSubreportReturnValue[subrepReturnValues.length];
-			for (int i = 0; i < subrepReturnValues.length; i++)
-			{
-				addReturnValue(subrepReturnValues[i], returnValuesList, factory);
-			}
-			
-			returnValues = new JRFillSubreportReturnValue[returnValuesList.size()];
-			returnValuesList.toArray(returnValues);
-		}
+		returnValues = new FillReturnValues(subreport.getReturnValues(), factory, filler);
 		
 		loadedEvaluators = new HashMap<JasperReport,JREvaluator>();
 		checkedReports = new HashSet<JasperReport>();
+	}
+
+	@Override
+	protected void setBand(JRFillBand band)
+	{
+		super.setBand(band);
+		
+		returnValues.setBand(band);
 	}
 
 
@@ -185,6 +194,18 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	}
 
 	public void setRunToBottom(Boolean runToBottom)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public OverflowType getOverflowType()
+	{
+		return ((JRSubreport) parent).getOverflowType();
+	}
+
+	@Override
+	public void setOverflowType(OverflowType overflowType)
 	{
 		throw new UnsupportedOperationException();
 	}
@@ -280,7 +301,6 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		reset();
 		
 		evaluatePrintWhenExpression(evaluation);
-		evaluateProperties(evaluation);
 
 		if (isPrintWhenExpressionNull() || isPrintWhenTrue())
 		{
@@ -356,6 +376,9 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		byte evaluation
 		) throws JRException
 	{
+		evaluateProperties(evaluation);
+		evaluateStyle(evaluation);
+
 		jasperReport = evaluateReport(evaluation);
 		
 		if (jasperReport != null)
@@ -397,7 +420,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			
 			validateReport();
 			
-			saveReturnVariables();
+			returnValues.saveReturnVariables();
 		}
 	}
 
@@ -405,6 +428,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	{
 		return getParameterValues(
 			filler, 
+			expressionEvaluator,
 			getParametersMapExpression(), 
 			getParameters(), 
 			evaluation, 
@@ -417,14 +441,15 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	protected DatasetExpressionEvaluator loadReportEvaluator() throws JRException
 	{
 		DatasetExpressionEvaluator evaluator = null;
-		if (isUsingCache())
+		boolean usingCache = usingCache();
+		if (usingCache)
 		{
 			evaluator = loadedEvaluators.get(jasperReport);
 		}
 		if (evaluator == null)
 		{
 			evaluator = createEvaluator();
-			if (isUsingCache())
+			if (usingCache)
 			{
 				loadedEvaluators.put(jasperReport, (JREvaluator)evaluator);
 			}
@@ -469,19 +494,6 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		
 		subreportFiller.mainDataset.setFillPosition(datasetPosition);
 		subreportFiller.mainDataset.setCacheSkipped(!cacheIncluded);
-	}
-
-
-	protected void saveReturnVariables()
-	{
-		if (returnValues != null)
-		{
-			for (int i = 0; i < returnValues.length; i++)
-			{
-				String varName = returnValues[i].getToVariable();
-				band.saveVariable(varName);
-			}
-		}
 	}
 
 	/**
@@ -563,6 +575,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 				parameterValues.remove(JRParameter.REPORT_FORMAT_FACTORY);
 			}
 			//parameterValues.remove(JRParameter.REPORT_TIME_ZONE);
+			parameterValues.remove(JRParameter.JASPER_REPORTS_CONTEXT);//FIXMENOW this is probably not necessary. other too
 			parameterValues.remove(JRParameter.JASPER_REPORT);
 			parameterValues.remove(JRParameter.REPORT_CONNECTION);
 			parameterValues.remove(JRParameter.REPORT_MAX_COUNT);
@@ -684,7 +697,8 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			return willOverflow;
 		}
 
-		if (availableHeight < getRelativeY() + getHeight())
+		int elementHeight = getHeight();
+		if (availableHeight < getRelativeY() + elementHeight)
 		{
 			setToPrint(false);
 			return true;//willOverflow;
@@ -697,6 +711,26 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		boolean filling = runner.isFilling();
 		boolean toPrint = !isOverflow || isPrintWhenDetailOverflows() || !isAlreadyPrinted();
 		boolean reprinted = isOverflow && isPrintWhenDetailOverflows();
+
+		// for zero height subreports, check if we are at the bottom of the available space
+		// and if the container is already marked to overflow.  in that case, do not
+		// start the subreport here as the column header infinite loop test could throw
+		// a false positive.
+		if (elementHeight == 0 && availableHeight == getRelativeY()
+				// test whether the report is starting now
+				&& !filling && toPrint
+				&& fillContainerContext != null// not sure if we need this
+				&& fillContainerContext.isCurrentOverflow()
+				&& fillContainerContext.isCurrentOverflowAllowed())
+		{
+			if (log.isDebugEnabled())
+			{
+				log.debug("zero height subreport at the bottom, not starting");
+			}
+			
+			setToPrint(false);
+			return true;//willOverflow;
+		}
 		
 		if (!filling && toPrint && reprinted)
 		{
@@ -711,7 +745,20 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			((JRVirtualPrintPage) printPage).dispose();
 		}
 		
-		subreportFiller.setPageHeight(availableHeight - getRelativeY());
+		int pageHeight;
+		OverflowType overflowType = getOverflowType();
+		if (overflowType == OverflowType.NO_STRETCH && !filler.getFillContext().isIgnorePagination())
+		{
+			// not allowed to stretch beyond the element height
+			// note that we always have elementHeight <= availableHeight - getRelativeY(), it's tested above
+			pageHeight = elementHeight;
+		}
+		else
+		{
+			// stretching by default
+			pageHeight = availableHeight - getRelativeY();
+		}
+		subreportFiller.setPageHeight(pageHeight);
 
 		synchronized (subreportFiller)
 		{
@@ -769,7 +816,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 					log.debug("Fill " + filler.fillerId + ": subreport " + subreportFiller.fillerId + " finished");
 				}
 				
-				copyValues();
+				returnValues.copyValues(returnValuesContext);
 			}
 			else
 			{
@@ -780,7 +827,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			}
 
 			printPage = subreportFiller.getCurrentPage();
-			setStretchHeight(result.hasFinished() ? subreportFiller.getCurrentPageStretchHeight() : availableHeight - getRelativeY());
+			setStretchHeight(result.hasFinished() ? subreportFiller.getCurrentPageStretchHeight() : pageHeight);
 
 			//if the subreport fill thread has not finished, 
 			// it means that the subreport will overflow on the next page
@@ -862,8 +909,10 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	 */
 	protected JRPrintElement fill()
 	{
-		JRPrintRectangle printRectangle = new JRTemplatePrintRectangle(getJRTemplateRectangle(), elementId);
+		//FIXME lucianc create a frame instead to avoid HTML layers
+		JRPrintRectangle printRectangle = new JRTemplatePrintRectangle(getJRTemplateRectangle(), printElementOriginator);
 
+		printRectangle.setUUID(getUUID());
 		printRectangle.setX(getX());
 		printRectangle.setY(getRelativeY());
 		printRectangle.setWidth(getWidth());
@@ -890,133 +939,9 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	}
 	
 
-	private JRFillSubreportReturnValue addReturnValue (
-			JRSubreportReturnValue parentReturnValue, 
-			List<JRFillSubreportReturnValue> returnValueList, 
-			JRFillObjectFactory factory
-			)
-	{
-		JRFillSubreportReturnValue returnValue = factory.getSubreportReturnValue(parentReturnValue);
-		
-		CalculationEnum calculation = returnValue.getCalculationValue();
-		switch (calculation)
-		{
-			case AVERAGE:
-			case VARIANCE:
-			{
-				JRSubreportReturnValue countVal = createHelperReturnValue(parentReturnValue, "_COUNT", CalculationEnum.COUNT);
-				addReturnValue(countVal, returnValueList, factory);
-
-				JRSubreportReturnValue sumVal = createHelperReturnValue(parentReturnValue, "_SUM", CalculationEnum.SUM);
-				addReturnValue(sumVal, returnValueList, factory);
-
-				filler.addVariableCalculationReq(returnValue.getToVariable(), calculation);
-
-				break;
-			}
-			case STANDARD_DEVIATION:
-			{
-				JRSubreportReturnValue varianceVal = createHelperReturnValue(parentReturnValue, "_VARIANCE", CalculationEnum.VARIANCE);
-				addReturnValue(varianceVal, returnValueList, factory);
-				
-				filler.addVariableCalculationReq(returnValue.getToVariable(), calculation);
-				break;
-			}
-			case DISTINCT_COUNT:
-			{
-				JRSubreportReturnValue countVal = createDistinctCountHelperReturnValue(parentReturnValue);
-				addReturnValue(countVal, returnValueList, factory);
-				
-				filler.addVariableCalculationReq(returnValue.getToVariable(), calculation);
-				break;
-			}
-		}
-
-		returnValueList.add(returnValue);
-		return returnValue;
-
-	}
-
-	
-	protected JRSubreportReturnValue createHelperReturnValue(JRSubreportReturnValue returnValue, String nameSuffix, CalculationEnum calculation)
-	{
-		JRDesignSubreportReturnValue helper = new JRDesignSubreportReturnValue();
-		helper.setToVariable(returnValue.getToVariable() + nameSuffix);
-		helper.setSubreportVariable(returnValue.getSubreportVariable());
-		helper.setCalculation(calculation);
-		helper.setIncrementerFactoryClassName(helper.getIncrementerFactoryClassName());//FIXME shouldn't it be returnValue?
-		
-		return helper;
-	}
-	
-
-	protected JRSubreportReturnValue createDistinctCountHelperReturnValue(JRSubreportReturnValue returnValue)
-	{
-		JRDesignSubreportReturnValue helper = new JRDesignSubreportReturnValue();
-		helper.setToVariable(returnValue.getToVariable() + "_DISTINCT_COUNT");
-		helper.setSubreportVariable(returnValue.getSubreportVariable());
-		helper.setCalculation(CalculationEnum.NOTHING);
-		helper.setIncrementerFactoryClassName(helper.getIncrementerFactoryClassName());//FIXME shouldn't it be returnValue? tests required
-		
-		return helper;
-	}
-	
-
 	public JRSubreportReturnValue[] getReturnValues()
 	{
-		return this.returnValues;
-	}
-	
-	
-	public boolean usesForReturnValue(String variableName)
-	{
-		boolean used = false;
-		if (returnValues != null)
-		{
-			for (int j = 0; j < returnValues.length; j++)
-			{
-				JRSubreportReturnValue returnValue = returnValues[j];
-				if (returnValue.getToVariable().equals(variableName))
-				{
-					used = true;
-					break;
-				}
-			}
-		}
-		return used;
-	}
-
-	/**
-	 * Copies the values from the subreport to the variables of the master report.
-	 */
-	protected void copyValues()
-	{
-		if (returnValues != null && returnValues.length > 0)
-		{
-			for (int i = 0; i < returnValues.length; i++)
-			{
-				copyValue(returnValues[i]);
-			}
-		}
-	}
-
-
-	protected void copyValue(JRFillSubreportReturnValue returnValue)
-	{
-		try
-		{
-			JRFillVariable variable = filler.getVariable(returnValue.getToVariable());
-			Object value = subreportFiller.getVariableValue(returnValue.getSubreportVariable());
-			
-			Object newValue = returnValue.getIncrementer().increment(variable, value, AbstractValueProvider.getCurrentValueProvider());
-			variable.setOldValue(newValue);
-			variable.setValue(newValue);
-			variable.setIncrementedValue(newValue);
-		}
-		catch (JRException e)
-		{
-			throw new JRRuntimeException(e);
-		}
+		return ((JRSubreport) parent).getReturnValues();
 	}
 
 	protected void validateReport() throws JRException
@@ -1024,9 +949,9 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		if (!checkedReports.contains(jasperReport))
 		{
 			verifyBandHeights();
-			checkReturnValues();
+			returnValues.checkReturnValues(returnValuesContext);
 			
-			if (isUsingCache())
+			if (usingCache())
 			{
 				checkedReports.add(jasperReport);
 			}
@@ -1073,48 +998,6 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 						+ jasperReport.getName() + "\" succeeded in the current page context "
 						+ "(height = " + pageHeight + ", top margin = " + topMargin
 						+ ", bottom margin = " + bottomMargin + ")");
-			}
-		}
-	}
-
-	/**
-	 * Verifies the list of copied values against the subreport.
-	 * 
-	 * @throws JRException
-	 */
-	private void checkReturnValues() throws JRException
-	{
-		if (returnValues != null && returnValues.length > 0)
-		{
-			for (int i = 0; i < returnValues.length; i++)
-			{
-				JRSubreportReturnValue returnValue = returnValues[i];
-				String subreportVariableName = returnValue.getSubreportVariable();
-				JRVariable subrepVariable = subreportFiller.getVariable(subreportVariableName);
-				if (subrepVariable == null)
-				{
-					throw new JRException("Subreport variable " + subreportVariableName + " not found.");
-				}
-				
-				JRVariable variable = filler.getVariable(returnValue.getToVariable());
-				if (
-					returnValue.getCalculationValue() == CalculationEnum.COUNT
-					|| returnValue.getCalculationValue() == CalculationEnum.DISTINCT_COUNT
-					)
-				{
-					if (!Number.class.isAssignableFrom(variable.getValueClass()))
-					{
-						throw new JRException("Variable " + returnValue.getToVariable() + 
-								" must have a numeric type.");
-					}
-				}
-				else if (!variable.getValueClass().isAssignableFrom(subrepVariable.getValueClass()) &&
-						!(Number.class.isAssignableFrom(variable.getValueClass()) && Number.class.isAssignableFrom(subrepVariable.getValueClass())))
-				{
-					throw new JRException("Variable " + returnValue.getToVariable() + 
-							" is not assignable from subreport variable " + 
-							subreportVariableName);
-				}
 			}
 		}
 	}

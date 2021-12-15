@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2011 Jaspersoft Corporation. All rights reserved.
+ * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,36 +31,30 @@ import net.sf.jasperreports.engine.JRFont;
 
 
 /**
- * Represents the formatting option for the textual
+ * Contains the formatting option for the textual 
  * representation of item labels in a category plot
  *
  * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRItemLabel.java 4595 2011-09-08 15:55:10Z teodord $
+ * @version $Id: JRItemLabel.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRItemLabel extends JRCloneable
 {
 	/**
-	 * 
+	 * @return the chart the current item label belongs to. 
 	 */
 	public JRChart getChart();
 	
 	/**
-	 * Returns the item label font.
-	 *
-	 * @return the item label font
+	 * @return the item label font. Allows full font customization for the item label.
 	 */
 	public JRFont getFont();
 
 	/**
-	 * Returns the item label text color
-	 *
 	 * @return the item label text color
 	 */
 	public Color getColor();
 
 	/**
-	 * Returns the item label background color
-	 *
 	 * @return the item label background color
 	 */
 	public Color getBackgroundColor();
@@ -73,5 +67,7 @@ public interface JRItemLabel extends JRCloneable
 	 * @return the item label formatting mask
 	 */
 //	public String getMask();
+
+	public JRItemLabel clone(JRChart parentChart);
 
 }
