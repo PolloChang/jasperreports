@@ -33,6 +33,8 @@ import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.type.TabStopAlignEnum;
 import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 
+import java.io.IOException;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
@@ -289,8 +291,89 @@ public class ParagraphStyle extends Style
 		return sb.toString();
 	}
 
+	/**
+	 * 寫入 content.xml 內容
+	 * @param paragraphStyleName
+	 */
 	@Override
-	public void write(String paragraphStyleName)
+	public void write(String paragraphStyleName) {
+		styleWriter.write("<style:style style:name=\"" + paragraphStyleName + "\"");
+		styleWriter.write(" style:family=\"paragraph\">\n");
+		styleWriter.write("<style:paragraph-properties");
+		switch (paragraph.getLineSpacing())
+		{
+			case ONE_AND_HALF:
+			{
+				styleWriter.write(" fo:line-height=\"150%\"");
+				break;
+			}
+			case DOUBLE:
+			{
+				styleWriter.write(" fo:line-height=\"200%\"");
+				break;
+			}
+			case AT_LEAST:
+			{
+				styleWriter.write(" style:line-height-at-least=\"" + LengthUtil.inchFloor4Dec(paragraph.getLineSpacingSize()) + "in\"");
+				break;
+			}
+			case FIXED:
+			{
+				styleWriter.write(" fo:line-height=\"" + LengthUtil.inchFloor4Dec(paragraph.getLineSpacingSize()) + "in\"");
+				break;
+			}
+			case PROPORTIONAL:
+			{
+				styleWriter.write(" fo:line-height=\"" + (100 * paragraph.getLineSpacingSize()) + "%\"");
+				break;
+			}
+			case SINGLE:
+			default:
+			{
+				styleWriter.write(" fo:line-height=\"100%\"");
+				break;
+			}
+		}
+		styleWriter.write(" fo:text-align=\"" + horizontalAlignment + "\"");
+
+		styleWriter.write(" fo:text-indent=\"" + LengthUtil.inchFloor4Dec(paragraph.getFirstLineIndent()) + "in\"");
+		styleWriter.write(" fo:margin-left=\"" + LengthUtil.inchFloor4Dec(paragraph.getLeftIndent()) + "in\"");
+		styleWriter.write(" fo:margin-right=\"" + LengthUtil.inchFloor4Dec(paragraph.getRightIndent()) + "in\"");
+		styleWriter.write(" fo:margin-top=\"" + LengthUtil.inchFloor4Dec(paragraph.getSpacingBefore()) + "in\"");
+		styleWriter.write(" fo:margin-bottom=\"" + LengthUtil.inchFloor4Dec(paragraph.getSpacingAfter()) + "in\"");
+		styleWriter.write(" style:vertical-align=\"" + verticalAlignment + "\"");
+		if (runDirection != null)
+		{
+			styleWriter.write(" style:writing-mode=\"" + runDirection + "\"");
+		}
+		styleWriter.write(">\n");
+
+		TabStop[] tabStops = paragraph.getTabStops();
+		if (tabStops != null && tabStops.length > 0)
+		{
+			styleWriter.write("<style:tab-stops>");
+			for (int i = 0; i < tabStops.length; i++)
+			{
+				TabStop tabStop = tabStops[i];
+				styleWriter.write("<style:tab-stop style:type=\"" + getTabStopAlignment(tabStop.getAlignment()) + "\" style:position=\"" + LengthUtil.inchFloor4Dec(tabStop.getPosition()) + "in\"/>");
+			}
+			styleWriter.write("</style:tab-stops>");
+		}
+
+		styleWriter.write("</style:paragraph-properties>\n");
+		styleWriter.write("<style:text-properties");
+		styleWriter.write(" style:text-rotation-angle=\"" + textRotation + "\"");
+		styleWriter.write(">\n");
+		styleWriter.write("</style:text-properties>\n");
+		styleWriter.write("</style:style>\n");
+	}
+
+	/**
+	 * 寫入 content.xml 內容 修正 無法產出客製化字型
+	 * @param fontName
+	 * @param paragraphStyleName
+	 */
+	public void write(String fontName, String paragraphStyleName)
 	{
 		styleWriter.write("<style:style style:name=\"" + paragraphStyleName + "\"");
 		styleWriter.write(" style:family=\"paragraph\">\n");
@@ -362,6 +445,10 @@ public class ParagraphStyle extends Style
 		styleWriter.write("</style:paragraph-properties>\n");
 		styleWriter.write("<style:text-properties");
 		styleWriter.write(" style:text-rotation-angle=\"" + textRotation + "\"");
+		if(!fontName.equals("") && fontName!= null){
+			styleWriter.write(" style:font-name=\"" + fontName + "\" ");
+			styleWriter.write(" style:font-name-asian=\"" + fontName + "\" ");
+		}
 		styleWriter.write(">\n");
 		styleWriter.write("</style:text-properties>\n");
 		

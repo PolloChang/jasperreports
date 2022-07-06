@@ -306,7 +306,7 @@ public class StyleCache
 			paragraphStyleName = "P" + paragraphStylesCounter++;
 			paragraphStyles.put(paragraphStyleId, paragraphStyleName);
 			
-			paragraphStyle.write(paragraphStyleName);
+			paragraphStyle.write(text.getFontName(),paragraphStyleName);
 		}
 		
 		return paragraphStyleName;
