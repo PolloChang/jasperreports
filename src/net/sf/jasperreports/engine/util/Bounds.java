@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,11 +23,12 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import net.sf.jasperreports.engine.JRRuntimeException;
+
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: Bounds.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class Bounds
+public class Bounds implements Cloneable
 {
 	private int startX;
 	private int endX;
@@ -113,5 +114,31 @@ public class Bounds
 	{
 		return this.startX <= startX && this.endX >= endX
 				&& this.startY <= startY && this.endY >= endY;
+	}
+
+	public Bounds cloneBounds()
+	{
+		try
+		{
+			return (Bounds) super.clone();
+		}
+		catch (CloneNotSupportedException e)
+		{
+			//should not happen
+			throw new JRRuntimeException(e);
+		}
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (!(obj instanceof Bounds))
+		{
+			return false;
+		}
+		
+		Bounds b = (Bounds) obj;
+		return startX == b.startX && endX == b.endX
+				&& startY == b.startY && endY == b.endY;
 	}
 }

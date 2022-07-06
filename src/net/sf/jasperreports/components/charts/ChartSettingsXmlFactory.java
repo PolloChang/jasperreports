@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,14 +36,11 @@ import org.xml.sax.Attributes;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ChartSettingsXmlFactory.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class ChartSettingsXmlFactory extends JRBaseFactory
 {
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		StandardChartSettings chartSettings = new StandardChartSettings();
@@ -81,6 +78,7 @@ public class ChartSettingsXmlFactory extends JRBaseFactory
 	 */
 	public static class ChartTitleFactory extends JRBaseFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			StandardChartSettings chartSettings = (StandardChartSettings) digester.peek();
@@ -107,6 +105,7 @@ public class ChartSettingsXmlFactory extends JRBaseFactory
 	 */
 	public static class ChartSubtitleFactory extends JRBaseFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			StandardChartSettings chartSettings = (StandardChartSettings) digester.peek();
@@ -127,9 +126,7 @@ public class ChartSettingsXmlFactory extends JRBaseFactory
 	 */
 	public static class ChartLegendFactory extends JRBaseFactory
 	{
-		/**
-		 *
-		 */
+		@Override
 		public Object createObject(Attributes atts) throws JRException
 		{
 			// Grab the chart from the object stack.

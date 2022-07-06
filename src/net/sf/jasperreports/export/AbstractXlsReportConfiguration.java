@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,15 +23,16 @@
  */
 package net.sf.jasperreports.export;
 
+import java.awt.Color;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.export.type.ImageAnchorTypeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractXlsReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class AbstractXlsReportConfiguration extends SimpleReportExportConfiguration implements XlsReportConfiguration
 {
@@ -71,7 +72,23 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	private Integer firstPageNumber;
 	private Boolean isShowGridLines;
 	private ImageAnchorTypeEnum imageAnchorType;
-	
+	private Boolean isAutoFitPageHeight;
+	private Boolean isForcePageBreaks;
+	private Boolean isShrinkToFit;
+	private Boolean isIgnoreTextFormatting;
+	private Color sheetTabColor;
+	private Integer freezeRow;
+	private String freezeColumn;
+	private Integer printPageTopMargin;
+	private Integer printPageLeftMargin;
+	private Integer printPageBottomMargin;
+	private Integer printPageRightMargin;
+	private Integer printPageHeight;
+	private Integer printPageWidth;
+	private Integer printHeaderMargin;
+	private Integer printFooterMargin;
+	private PropertySuffix[] definedNames;
+
 	
 	/**
 	 * 
@@ -81,9 +98,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isOnePagePerSheet()
 	{
 		return isOnePagePerSheet;
@@ -99,9 +114,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isRemoveEmptySpaceBetweenColumns()
 	{
 		return isRemoveEmptySpaceBetweenColumns;
@@ -117,9 +130,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isRemoveEmptySpaceBetweenRows()
 	{
 		return isRemoveEmptySpaceBetweenRows;
@@ -135,9 +146,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isWhitePageBackground()
 	{
 		return isWhitePageBackground;
@@ -153,9 +162,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isDetectCellType()
 	{
 		return isDetectCellType;
@@ -171,9 +178,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isFontSizeFixEnabled()
 	{
 		return isFontSizeFixEnabled;
@@ -189,9 +194,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isImageBorderFixEnabled()
 	{
 		return isImageBorderFixEnabled;
@@ -207,9 +210,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreGraphics()
 	{
 		return isIgnoreGraphics;
@@ -225,9 +226,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isCollapseRowSpan()
 	{
 		return isCollapseRowSpan;
@@ -243,9 +242,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreCellBorder()
 	{
 		return isIgnoreCellBorder;
@@ -261,9 +258,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreCellBackground()
 	{
 		return isIgnoreCellBackground;
@@ -279,9 +274,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isWrapText()
 	{
 		return isWrapText;
@@ -297,9 +290,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isCellLocked()
 	{
 		return isCellLocked;
@@ -315,9 +306,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isCellHidden()
 	{
 		return isCellHidden;
@@ -333,9 +322,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getMaxRowsPerSheet()
 	{
 		return maxRowsPerSheet;
@@ -351,9 +338,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnorePageMargins()
 	{
 		return isIgnorePageMargins;
@@ -369,9 +354,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getSheetHeaderLeft()
 	{
 		return sheetHeaderLeft;
@@ -387,9 +370,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getSheetHeaderCenter()
 	{
 		return sheetHeaderCenter;
@@ -405,9 +386,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getSheetHeaderRight()
 	{
 		return sheetHeaderRight;
@@ -423,9 +402,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getSheetFooterLeft()
 	{
 		return sheetFooterLeft;
@@ -441,9 +418,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getSheetFooterCenter()
 	{
 		return sheetFooterCenter;
@@ -459,9 +434,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getSheetFooterRight()
 	{
 		return sheetFooterRight;
@@ -477,9 +450,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getPassword()
 	{
 		return password;
@@ -495,9 +466,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String[] getSheetNames()
 	{
 		return sheetNames;
@@ -513,9 +482,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Map<String, String> getFormatPatternsMap()
 	{
 		return formatPatternsMap;
@@ -531,9 +498,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreHyperlink()
 	{
 		return isIgnoreHyperlink;
@@ -549,9 +514,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreAnchors()
 	{
 		return isIgnoreAnchors;
@@ -567,9 +530,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getFitWidth()
 	{
 		return fitWidth;
@@ -585,9 +546,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getFitHeight()
 	{
 		return fitHeight;
@@ -603,9 +562,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getPageScale()
 	{
 		return pageScale;
@@ -621,9 +578,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public RunDirectionEnum getSheetDirection()
 	{
 		return sheetDirection;
@@ -639,9 +594,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Float getColumnWidthRatio()
 	{
 		return columnWidthRatio;
@@ -657,9 +610,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isUseTimeZone()
 	{
 		return isUseTimeZone;
@@ -675,9 +626,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getFirstPageNumber()
 	{
 		return firstPageNumber;
@@ -693,9 +642,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isShowGridLines()
 	{
 		return isShowGridLines;
@@ -711,9 +658,7 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public ImageAnchorTypeEnum getImageAnchorType()
 	{
 		return imageAnchorType;
@@ -727,4 +672,200 @@ public class AbstractXlsReportConfiguration extends SimpleReportExportConfigurat
 	{
 		this.imageAnchorType = imageAnchorType;
 	}
+	
+	@Override
+	public Boolean isAutoFitPageHeight()
+	{
+		return isAutoFitPageHeight;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setAutoFitPageHeight(Boolean isAutoFitPageHeight)
+	{
+		this.isAutoFitPageHeight = isAutoFitPageHeight;
+	}
+	
+	@Override
+	public Boolean isForcePageBreaks()
+	{
+		return isForcePageBreaks;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setForcePageBreaks(Boolean isForcePageBreaks)
+	{
+		this.isForcePageBreaks = isForcePageBreaks;
+	}
+
+
+	@Override
+	public Boolean isShrinkToFit() 
+	{
+		return isShrinkToFit;
+	}
+
+
+	public void setShrinkToFit(Boolean isShrinkToFit) 
+	{
+		this.isShrinkToFit = isShrinkToFit;
+	}
+
+
+	@Override
+	public Boolean isIgnoreTextFormatting() 
+	{
+		return isIgnoreTextFormatting;
+	}
+
+
+	/**
+	 * 
+	 */
+	public void setIgnoreTextFormatting(Boolean isIgnoreTextFormatting) 
+	{
+		this.isIgnoreTextFormatting = isIgnoreTextFormatting;
+	}
+
+
+	@Override
+	public Color getSheetTabColor() 
+	{
+		return sheetTabColor;
+	}
+	
+	public void setSheetTabColor(Color tabColor)
+	{
+		this.sheetTabColor = tabColor;
+	}
+
+
+	@Override
+	public Integer getFreezeRow() 
+	{
+		return freezeRow;
+	}
+
+	public void setFreezeRow(Integer freezeRow)
+	{
+		this.freezeRow = freezeRow;
+	}
+
+	@Override
+	public String getFreezeColumn() 
+	{
+		return freezeColumn;
+	}
+
+	public void setFreezeColumn(String freezeColumn)
+	{
+		this.freezeColumn = freezeColumn;
+	}
+	
+	@Override
+	public Integer getPrintPageTopMargin() 
+	{
+		return printPageTopMargin;
+	}
+	
+	public void setPrintPageTopMargin(Integer printPageTopMargin)
+	{
+		this.printPageTopMargin = printPageTopMargin;
+	}
+	
+	@Override
+	public Integer getPrintPageLeftMargin() 
+	{
+		return printPageLeftMargin;
+	}
+	
+	public void setPrintPageLeftMargin(Integer printPageLeftMargin)
+	{
+		this.printPageLeftMargin = printPageLeftMargin;
+	}
+	
+	@Override
+	public Integer getPrintPageBottomMargin() 
+	{
+		return printPageBottomMargin;
+	}
+	
+	public void setPrintPageBottomMargin(Integer printPageBottomMargin)
+	{
+		this.printPageBottomMargin = printPageBottomMargin;
+	}
+	
+	@Override
+	public Integer getPrintPageRightMargin() 
+	{
+		return printPageRightMargin;
+	}
+	
+	public void setPrintPageRightMargin(Integer printPageRightMargin)
+	{
+		this.printPageRightMargin = printPageRightMargin;
+	}
+	
+	@Override
+	public Integer getPrintPageHeight() 
+	{
+		return printPageHeight;
+	}
+	
+	public void setPrintPageHeight(Integer printPageHeight)
+	{
+		this.printPageHeight = printPageHeight;
+	}
+	
+	@Override
+	public Integer getPrintPageWidth() 
+	{
+		return printPageWidth;
+	}
+	
+	public void setPrintPageWidth(Integer printPageWidth)
+	{
+		this.printPageWidth = printPageWidth;
+	}
+	
+	@Override
+	public Integer getPrintHeaderMargin() 
+	{
+		return printHeaderMargin;
+	}
+	
+	public void setPrintHeaderMargin(Integer printHeaderMargin)
+	{
+		this.printHeaderMargin = printHeaderMargin;
+	}
+	
+	@Override
+	public Integer getPrintFooterMargin() 
+	{
+		return printFooterMargin;
+	}
+
+	public void setPrintFooterMargin(Integer printFooterMargin)
+	{
+		this.printFooterMargin = printFooterMargin;
+	}
+	
+	@Override
+	public PropertySuffix[] getDefinedNames()
+	{
+		return definedNames;
+	}
+
+	
+	/**
+	 * 
+	 */
+	public void setDefinedNames(PropertySuffix[] definedNames)
+	{
+		this.definedNames = definedNames;
+	}
+	
 }

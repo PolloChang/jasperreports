@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.type.ResetTypeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillVariable.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillVariable implements JRVariable, JRCalculable
 {
@@ -53,6 +52,7 @@ public class JRFillVariable implements JRVariable, JRCalculable
 	/**
 	 *
 	 */
+	private Object previousIncrementedValue;
 	private Object previousOldValue;
 	private Object oldValue;
 	private Object estimatedValue;
@@ -87,6 +87,10 @@ public class JRFillVariable implements JRVariable, JRCalculable
 		helperVariables = new JRFillVariable[JRCalculable.HELPER_SIZE];
 	}
 
+	protected JRVariable getParent()
+	{
+		return parent;
+	}
 
 	protected void reset()
 	{
@@ -100,105 +104,90 @@ public class JRFillVariable implements JRVariable, JRCalculable
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return parent.getName();
 	}
+
+	@Override
+	public String getDescription()
+	{
+		return parent.getDescription();
+	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public void setDescription(String description)
+	{
+	}
+	
+	@Override
 	public Class<?> getValueClass()
 	{
 		return parent.getValueClass();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getValueClassName()
 	{
 		return parent.getValueClassName();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public Class<?> getIncrementerFactoryClass()
 	{
 		return parent.getIncrementerFactoryClass();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getIncrementerFactoryClassName()
 	{
 		return parent.getIncrementerFactoryClassName();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getExpression()
 	{
 		return parent.getExpression();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getInitialValueExpression()
 	{
 		return parent.getInitialValueExpression();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public ResetTypeEnum getResetTypeValue()
 	{
 		return parent.getResetTypeValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public IncrementTypeEnum getIncrementTypeValue()
 	{
 		return parent.getIncrementTypeValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public CalculationEnum getCalculationValue()
 	{
 		return parent.getCalculationValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isSystemDefined()
 	{
 		return parent.isSystemDefined();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getResetGroup()
 	{
 		return resetGroup;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getIncrementGroup()
 	{
 		return incrementGroup;
@@ -236,9 +225,7 @@ public class JRFillVariable implements JRVariable, JRCalculable
 		this.estimatedValue = estimatedValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getIncrementedValue()
 	{
 		return incrementedValue;
@@ -255,6 +242,20 @@ public class JRFillVariable implements JRVariable, JRCalculable
 	/**
 	 *
 	 */
+	public Object getPreviousIncrementedValue()
+	{
+		return previousIncrementedValue;
+	}
+		
+	/**
+	 *
+	 */
+	public void setPreviousIncrementedValue(Object previousIncrementedValue)
+	{
+		this.previousIncrementedValue = previousIncrementedValue;
+	}
+
+	@Override
 	public Object getValue()
 	{
 		return value;
@@ -268,17 +269,13 @@ public class JRFillVariable implements JRVariable, JRCalculable
 		this.value = value;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isInitialized()
 	{
 		return isInitialized;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setInitialized(boolean isInitialized)
 	{
 		this.isInitialized = isInitialized;
@@ -332,6 +329,7 @@ public class JRFillVariable implements JRVariable, JRCalculable
 	 * @param type the helper type
 	 * @return the helper variable for the specified type
 	 */
+	@Override
 	public JRCalculable getHelperVariable(byte type)
 	{
 		return helperVariables[type];
@@ -406,9 +404,7 @@ public class JRFillVariable implements JRVariable, JRCalculable
 		this.previousOldValue = previousOldValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

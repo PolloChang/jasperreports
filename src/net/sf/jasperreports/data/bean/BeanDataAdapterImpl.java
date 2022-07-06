@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,38 +23,47 @@
  */
 package net.sf.jasperreports.data.bean;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
+
 import net.sf.jasperreports.data.AbstractClasspathAwareDataAdapter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: BeanDataAdapterImpl.java 7199 2014-08-27 13:58:10Z teodord $
  */
+
+@JsonRootName(value = "beanDataAdapter")
 public class BeanDataAdapterImpl extends AbstractClasspathAwareDataAdapter implements BeanDataAdapter 
 {
 	private boolean isUseFieldDescription;
 	private String factoryClass;
 	private String methodName;
 
+	@Override
 	public boolean isUseFieldDescription() {
 		return isUseFieldDescription;
 	}
 
+	@Override
 	public void setUseFieldDescription(boolean isUseFieldDescription) {
 		this.isUseFieldDescription = isUseFieldDescription;
 	}
 
+	@Override
 	public String getFactoryClass() {
 		return factoryClass;
 	}
 
+	@Override
 	public void setFactoryClass(String factoryClass) {
 		this.factoryClass = factoryClass;
 	}
 
+	@Override
 	public String getMethodName() {
 		return methodName;
 	}
 
+	@Override
 	public void setMethodName(String methodName) {
 		this.methodName = methodName;
 	}

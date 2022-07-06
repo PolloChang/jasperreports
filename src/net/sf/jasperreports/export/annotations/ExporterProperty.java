@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import java.lang.annotation.Target;
  * Annotation used to specify the JR configuration property that is associated with a particular exporter configuration setting.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ExporterProperty.java 7199 2014-08-27 13:58:10Z teodord $
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
@@ -44,5 +43,6 @@ public @interface ExporterProperty
 	int intDefault() default 0;
 	float floatDefault() default 0;
 	long longDefault() default 0;
-	boolean acceptNull() default false;
+	String stringDefault() default "";
+	boolean nullDefault() default false;
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,15 +24,16 @@
 package net.sf.jasperreports.export;
 
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.repo.RepositoryResourceContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleExporterInputItem.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleExporterInputItem implements ExporterInputItem
 {
 	private JasperPrint jasperPrint;
+	private RepositoryResourceContext repositoryContext;
 	private ReportExportConfiguration configuration;
 	
 	
@@ -41,7 +42,7 @@ public class SimpleExporterInputItem implements ExporterInputItem
 	 */
 	public SimpleExporterInputItem(JasperPrint jasperPrint)
 	{
-		this(jasperPrint, null);
+		this(jasperPrint, null, null);
 	}
 
 	
@@ -50,25 +51,36 @@ public class SimpleExporterInputItem implements ExporterInputItem
 	 */
 	public SimpleExporterInputItem(JasperPrint jasperPrint, ReportExportConfiguration configuration)
 	{
+		this(jasperPrint, null, configuration);
+	}
+
+	
+	public SimpleExporterInputItem(JasperPrint jasperPrint, RepositoryResourceContext repositoryContext, 
+			ReportExportConfiguration configuration)
+	{
 		this.jasperPrint = jasperPrint;
+		this.repositoryContext = repositoryContext;
 		this.configuration = configuration;
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public JasperPrint getJasperPrint()
 	{
 		return jasperPrint;
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public ReportExportConfiguration getConfiguration()
 	{
 		return configuration;
+	}
+
+
+	@Override
+	public RepositoryResourceContext getRepositoryReportContext()
+	{
+		return repositoryContext;
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,17 +26,17 @@ package net.sf.jasperreports.compilers;
 import java.io.File;
 import java.util.Iterator;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextFactory;
+import org.mozilla.javascript.EvaluatorException;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.design.JRCompilationUnit;
+import net.sf.jasperreports.engine.design.JRSourceCompileTask;
 import net.sf.jasperreports.engine.util.CompositeExpressionChunkVisitor;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
-
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
-import org.mozilla.javascript.EvaluatorException;
 
 /**
  * Compiler for reports that use JavaScript as expression language.
@@ -44,7 +44,6 @@ import org.mozilla.javascript.EvaluatorException;
  * This implementation produces evaluators that compile expressions at fill time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JavaScriptEvaluator
  * @see JavaScriptClassCompiler
  */
@@ -59,19 +58,13 @@ public class JavaScriptCompiler extends JavaScriptCompilerBase
 		super(jasperReportsContext);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JavaScriptCompiler(JasperReportsContext)}.
-	 */
-	public JavaScriptCompiler()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
+	@Override
 	protected void checkLanguage(String language) throws JRException
 	{
 		//NOOP
 	}
 
+	@Override
 	protected String compileUnits(JRCompilationUnit[] units, String classpath,
 			File tempDirFile) throws JRException
 	{
@@ -83,10 +76,11 @@ public class JavaScriptCompiler extends JavaScriptCompilerBase
 			{
 				JRCompilationUnit unit = units[i];
 				JavaScriptCompileData compileData = new JavaScriptCompileData();
-				for (Iterator<JRExpression> it = unit.getExpressions().iterator(); it.hasNext();)
+				JRSourceCompileTask compileTask = unit.getCompileTask();
+				for (Iterator<JRExpression> it = compileTask.getExpressions().iterator(); it.hasNext();)
 				{
 					JRExpression expr = it.next();
-					int id = unit.getCompileTask().getExpressionId(expr).intValue();
+					int id = compileTask.getExpressionId(expr);
 					
 					ScriptExpressionVisitor defaultVisitor = defaultExpressionCreator();
 					JRExpressionUtil.visitChunks(expr, defaultVisitor);

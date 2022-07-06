@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,10 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.util.JRStyledTextUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 
@@ -31,9 +34,8 @@ import net.sf.jasperreports.engine.util.JRStyledTextUtil;
  * An abstract representation of a report text element. It provides basic functionality for static texts and text fields.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTextElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRTextElement extends JRElement, JRAlignment, JRFont, JRCommonText
+public interface JRTextElement extends JRElement, JRTextAlignment, JRFont, JRCommonText
 {
 
 	/**
@@ -59,6 +61,13 @@ public interface JRTextElement extends JRElement, JRAlignment, JRFont, JRCommonT
 	 * @see JRStyledTextUtil#getTruncatedText(JRPrintText)
 	 * @see JRPrintText#getTextTruncateIndex()
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.TEXT_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_2_0_3,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_PRINT_KEEP_FULL_TEXT = JRPropertiesUtil.PROPERTY_PREFIX + "print.keep.full.text";
 	
 	/**
@@ -76,6 +85,13 @@ public interface JRTextElement extends JRElement, JRAlignment, JRFont, JRCommonT
 	 * The property can be set at the same levels as {@link #PROPERTY_PRINT_KEEP_FULL_TEXT}.
 	 * </p>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.TEXT_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_2_0_3,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_TRUNCATE_AT_CHAR = JRPropertiesUtil.PROPERTY_PREFIX + "text.truncate.at.char";
 
 	/**
@@ -91,6 +107,12 @@ public interface JRTextElement extends JRElement, JRAlignment, JRFont, JRCommonT
 	 * The property can be set at the same levels as {@link #PROPERTY_PRINT_KEEP_FULL_TEXT}.
 	 * </p>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = "empty string",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.TEXT_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_2_0_3
+			)
 	public static final String PROPERTY_TRUNCATE_SUFFIX = JRPropertiesUtil.PROPERTY_PREFIX + "text.truncate.suffix";
 	
 	/**
@@ -120,6 +142,13 @@ public interface JRTextElement extends JRElement, JRAlignment, JRFont, JRCommonT
 	 * 
 	 * @see JRPrintText#getLineBreakOffsets()
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.TEXT_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_5_1,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_SAVE_LINE_BREAKS = JRPropertiesUtil.PROPERTY_PREFIX 
 			+ "text.save.line.breaks";
 	

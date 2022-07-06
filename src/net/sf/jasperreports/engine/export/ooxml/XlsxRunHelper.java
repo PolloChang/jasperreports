@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,14 +31,10 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
-import net.sf.jasperreports.engine.fonts.FontFamily;
-import net.sf.jasperreports.engine.fonts.FontInfo;
-import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.engine.util.JRStringUtil;
@@ -46,7 +42,6 @@ import net.sf.jasperreports.engine.util.JRStringUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxRunHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxRunHelper extends BaseHelper
 {
@@ -70,37 +65,13 @@ public class XlsxRunHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale)
-	{
-		export(style,attributes, text, locale, null);
-	}
-	
-	/**
-	 *
-	 */
-	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale, String invalidCharReplacement)
+	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale, String invalidCharReplacement, boolean isStyledText)
 	{
 		if (text != null)
 		{
 			write("<r>\n");
-			
-			exportProps(getAttributes(style), attributes, locale);
-			
-			write("<t xml:space=\"preserve\">");
-			write(JRStringUtil.xmlEncode(text, invalidCharReplacement));
-			write("</t></r>\n");
-		}
-	}
-	
-	/**
-	 *
-	 */
-	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale, String invalidCharReplacement, String markup)
-	{
-		if (text != null)
-		{
-			write("<r>\n");
-			if(!(markup == null || JRCommonText.MARKUP_NONE.equals(markup))){
+			if (isStyledText)
+			{
 				exportProps(getAttributes(style), attributes, locale);
 			}
 			write("<t xml:space=\"preserve\">");
@@ -112,134 +83,122 @@ public class XlsxRunHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public void exportProps(JRStyle style, Locale locale)
-	{
-		JRPrintText text = new JRBasePrintText(null);
-		text.setStyle(style);
-		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); 
-		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(styledTextAttributes, text);
-		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
-		if (style.getModeValue() == null || style.getModeValue() == ModeEnum.OPAQUE)
-		{
-			styledTextAttributes.put(TextAttribute.BACKGROUND, style.getBackcolor());
-		}
-
-		exportProps(getAttributes(style.getStyle()), getAttributes(style), locale);
-	}
-
-	/**
-	 *
-	 */
 	public void exportProps(Map<Attribute,Object> parentAttrs,  Map<Attribute,Object> attrs, Locale locale)
 	{
-		write("       <rPr>\n");
 
-		Object value = attrs.get(TextAttribute.FAMILY);
-		Object oldValue = parentAttrs.get(TextAttribute.FAMILY);
-		boolean isOwnFont = false;
+		boolean isOpen = false;
 		
-		if (value != null && !value.equals(oldValue))//FIXMEXLSX the text locale might be different from the report locale, resulting in different export font
+		// tracker #8326: text run properties do not inherit font settings from the cell style in XLSX; we need to set it manually
+		Object value = attrs.get(TextAttribute.FAMILY) == null 
+				? parentAttrs.get(TextAttribute.FAMILY) 
+				: attrs.get(TextAttribute.FAMILY);
+		
+		if (value != null)	//FIXMEXLSX the text locale might be different from the report locale, resulting in different export font
 		{
 			String fontFamilyAttr = (String)value;
-			String fontFamily = fontFamilyAttr;
-			FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontFamilyAttr, locale);
-			if (fontInfo != null)
-			{
-				//fontName found in font extensions
-				FontFamily family = fontInfo.getFontFamily();
-				String exportFont = family.getExportFont(exporterKey);
-				if (exportFont != null)
-				{
-					fontFamily = exportFont;
-				}
-			}
+			String fontFamily = fontUtil.getExportFontFamily(fontFamilyAttr, locale, exporterKey);
+			write("       <rPr>\n");
 			write("        <rFont val=\"" + fontFamily + "\"/>\n");
-			isOwnFont = true;
+			isOpen = true;
 		}
 		
-		value = attrs.get(TextAttribute.FOREGROUND);
-		oldValue = parentAttrs.get(TextAttribute.FOREGROUND);
-		
-		if (value != null && (isOwnFont ||!value.equals(oldValue)))
+		if(isOpen)
 		{
-			write("        <color rgb=\"" + JRColorUtil.getColorHexa((Color)value) + "\" />\n");
-		}
-
-		
-//		highlighted text run is not allowed in Excel Spreadsheet ML
-		
-//		value = attrs.get(TextAttribute.BACKGROUND);
-//		oldValue = parentAttrs.get(TextAttribute.BACKGROUND);
-//		
-//		
-//		if (value != null && (isOwnFont ||!value.equals(oldValue)))
-//		{
-//			String backcolor = ColorEnum.getByColor((Color)value) == null ? COLOR_NONE : ColorEnum.getByColor((Color)value).getName();
-//			if(backcolor != null){
-//				write("        <highlight val=\"" + backcolor + "\" />\n");
-//			}
-//		}
-
-		value = attrs.get(TextAttribute.SIZE);
-		oldValue = parentAttrs.get(TextAttribute.SIZE);
-
-		if (value != null && (isOwnFont ||!value.equals(oldValue)))
-		{
-			write("        <sz val=\"" + value + "\" />\n");
+			value = attrs.get(TextAttribute.FOREGROUND) == null 
+					? parentAttrs.get(TextAttribute.FOREGROUND) 
+					: attrs.get(TextAttribute.FOREGROUND);
 			
+			if (value != null)
+			{
+				write("        <color rgb=\"" + JRColorUtil.getColorHexa((Color)value) + "\" />\n");
+			}
+	
+			
+	//		highlighted text run is not allowed in Excel Spreadsheet ML
+			
+	//		value = attrs.get(TextAttribute.BACKGROUND);
+	//		oldValue = parentAttrs.get(TextAttribute.BACKGROUND);
+	//		
+	//		
+	//		if (value != null && (isOwnFont ||!value.equals(oldValue)))
+	//		{
+	//			String backcolor = ColorEnum.getByColor((Color)value) == null ? COLOR_NONE : ColorEnum.getByColor((Color)value).getName();
+	//			if(backcolor != null){
+	//				write("        <highlight val=\"" + backcolor + "\" />\n");
+	//			}
+	//		}
+	
+			value = attrs.get(TextAttribute.SIZE) == null 
+					? parentAttrs.get(TextAttribute.SIZE) 
+					: attrs.get(TextAttribute.SIZE);
+	
+			if (value != null)
+			{
+				write("        <sz val=\"" + value + "\" />\n");
+			}
+			
+			value = attrs.get(TextAttribute.WEIGHT) == null 
+					? parentAttrs.get(TextAttribute.WEIGHT) 
+					: attrs.get(TextAttribute.WEIGHT);
+	
+			if (value != null)
+			{
+				write("        <b val=\"" + value.equals(TextAttribute.WEIGHT_BOLD) + "\"/>\n");
+			}
+	
+			value = attrs.get(TextAttribute.POSTURE) == null 
+					? parentAttrs.get(TextAttribute.POSTURE) 
+					: attrs.get(TextAttribute.POSTURE);
+	
+			if (value != null)
+			{
+				write("        <i val=\"" + value.equals(TextAttribute.POSTURE_OBLIQUE) + "\"/>\n");
+			}
+		
+			value = attrs.get(TextAttribute.UNDERLINE) == null 
+					? parentAttrs.get(TextAttribute.UNDERLINE) 
+					: attrs.get(TextAttribute.UNDERLINE);
+	
+			if (value != null)
+			{
+				write("        <u val=\"" + (value == null ? "none" : "single") + "\"/>\n");
+			}
+			
+			value = attrs.get(TextAttribute.STRIKETHROUGH) == null 
+					? parentAttrs.get(TextAttribute.STRIKETHROUGH) 
+					: attrs.get(TextAttribute.STRIKETHROUGH);
+	
+			if (value != null)
+			{
+				write("        <strike val=\"" + (value != null) + "\"/>\n");
+			}
 		}
 		
-		value = attrs.get(TextAttribute.WEIGHT);
-		oldValue = parentAttrs.get(TextAttribute.WEIGHT);
-
-		if (value != null && (isOwnFont ||!value.equals(oldValue)))
-		{
-			write("        <b val=\"" + value.equals(TextAttribute.WEIGHT_BOLD) + "\"/>\n");
-		}
-
-		value = attrs.get(TextAttribute.POSTURE);
-		oldValue = parentAttrs.get(TextAttribute.POSTURE);
-
-		if (value != null && (isOwnFont ||!value.equals(oldValue)))
-		{
-			write("        <i val=\"" + value.equals(TextAttribute.POSTURE_OBLIQUE) + "\"/>\n");
-		}
-
-
-		value = attrs.get(TextAttribute.UNDERLINE);
-		oldValue = parentAttrs.get(TextAttribute.UNDERLINE);
-
-		if (
-			(value == null && oldValue != null)
-			|| (value != null && (isOwnFont ||!value.equals(oldValue)))
-			)
-		{
-			write("        <u val=\"" + (value == null ? "none" : "single") + "\"/>\n");
-		}
-		
-		value = attrs.get(TextAttribute.STRIKETHROUGH);
-		oldValue = parentAttrs.get(TextAttribute.STRIKETHROUGH);
-
-		if (
-			(value == null && oldValue != null)
-			|| (value != null && (isOwnFont ||!value.equals(oldValue)))
-			)
-		{
-			write("        <strike val=\"" + (value != null) + "\"/>\n");
-		}
-
 		value = attrs.get(TextAttribute.SUPERSCRIPT);
 
 		if (TextAttribute.SUPERSCRIPT_SUPER.equals(value))
 		{
+			if(!isOpen)
+			{
+				write("       <rPr>\n");
+				isOpen = true;
+			}
 			write("        <vertAlign val=\"superscript\" />\n");
 		}
 		else if (TextAttribute.SUPERSCRIPT_SUB.equals(value))
 		{
+			if(!isOpen)
+			{
+				write("       <rPr>\n");
+				isOpen = true;
+			}
 			write("        <vertAlign val=\"subscript\" />\n");
 		}
-
-		write("       </rPr>\n");
+		
+		if(isOpen)
+		{
+			write("       </rPr>\n");
+		}
 	}
 
 
@@ -251,9 +210,9 @@ public class XlsxRunHelper extends BaseHelper
 		JRPrintText text = new JRBasePrintText(null);
 		text.setStyle(style);
 		
-		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); 
+		Map<Attribute,Object> styledTextAttributes = new HashMap<>(); 
 		//JRFontUtil.getAttributes(styledTextAttributes, text, (Locale)null);//FIXMEDOCX getLocale());
-		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(styledTextAttributes, text);
+		fontUtil.getAttributesWithoutAwtFont(styledTextAttributes, text);
 		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
 		if (text.getModeValue() == ModeEnum.OPAQUE)
 		{

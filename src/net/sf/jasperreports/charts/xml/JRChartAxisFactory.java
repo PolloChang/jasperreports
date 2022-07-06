@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,16 +34,13 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRChartAxisFactory.java 1578 2007-02-09 16:27:52Z shertage	$
  */
 public class JRChartAxisFactory	extends	JRBaseFactory
 {
 	public static final	String ELEMENT_axis	= "axis";
 	public static final	String ATTRIBUTE_position =	"position";
 
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)	throws JRException
 	{
 		JRDesignChart parentChart =	(JRDesignChart)digester.peek(1);

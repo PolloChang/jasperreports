@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.engine.export.oasis;
 import java.awt.Color;
 import java.awt.font.TextAttribute;
 import java.io.IOException;
-import java.text.AttributedCharacterIterator;
 import java.text.AttributedCharacterIterator.Attribute;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,47 +39,41 @@ import net.sf.jasperreports.engine.JRPrintGraphicElement;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
-import net.sf.jasperreports.engine.fonts.FontFamily;
-import net.sf.jasperreports.engine.fonts.FontInfo;
 import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.util.JRColorUtil;
-import net.sf.jasperreports.engine.util.JRStyledText;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StyleCache.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StyleCache
 {
-
-	private final DocumentBuilder documentBuilder;
 	/**
 	 *
 	 */
-	private final JasperReportsContext jasperReportsContext;
+	private final FontUtil fontUtil;
 	private final WriterHelper styleWriter;
-	private Set<String> fontFaces = new HashSet<String>();
+	private Set<String> fontFaces = new HashSet<>();
 	private final String exporterKey;
 
 	/**
 	 *
 	 */
-	private Map<String,String> tableStyles = new HashMap<String,String>();//FIXMEODT soft cache?
+	private Map<String,String> tableStyles = new HashMap<>();//FIXMEODT soft cache?
 	private int tableStylesCounter;
-	private Map<String,String> rowStyles = new HashMap<String,String>();
+	private Map<String,String> rowStyles = new HashMap<>();
 	private int rowStylesCounter;
-	private Map<String,String> columnStyles = new HashMap<String,String>();
+	private Map<String,String> columnStyles = new HashMap<>();
 	private int columnStylesCounter;
-	private Map<String,String> frameStyles = new HashMap<String,String>();
+	private Map<String,String> frameStyles = new HashMap<>();
 	private int frameStylesCounter;
-	private Map<String,String> cellStyles = new HashMap<String,String>();
+	private Map<String,String> cellStyles = new HashMap<>();
 	private int cellStylesCounter;
-	private Map<String,String> graphicStyles = new HashMap<String,String>();
+	private Map<String,String> graphicStyles = new HashMap<>();
 	private int graphicStylesCounter;
-	private Map<String,String> paragraphStyles = new HashMap<String,String>();
+	private Map<String,String> paragraphStyles = new HashMap<>();
 	private int paragraphStylesCounter;
-	private Map<String,String> textSpanStyles = new HashMap<String,String>();
+	private Map<String,String> textSpanStyles = new HashMap<>();
 	private int textSpanStylesCounter;
 
 
@@ -88,13 +81,12 @@ public class StyleCache
 	 *
 	 */
 	public StyleCache(
-			DocumentBuilder documentBuilder, JasperReportsContext jasperReportsContext,
-			WriterHelper styleWriter,
-			String exporterKey
-	)
+		JasperReportsContext jasperReportsContext, 
+		WriterHelper styleWriter, 
+		String exporterKey
+		)
 	{
-		this.documentBuilder = documentBuilder;
-		this.jasperReportsContext = jasperReportsContext;
+		this.fontUtil = FontUtil.getInstance(jasperReportsContext);
 		this.styleWriter = styleWriter;
 		this.exporterKey = exporterKey;
 	}
@@ -112,9 +104,9 @@ public class StyleCache
 	/**
 	 *
 	 */
-	public String getTableStyle(int width, int reportIndex, boolean isFrame, boolean isPageBreak) throws IOException 
+	public String getTableStyle(int width, int pageFormatIndex, boolean isFrame, boolean isPageBreak, Color tabColor) throws IOException 
 	{
-		TableStyle tableStyle  = new TableStyle(styleWriter, width, reportIndex, isFrame, isPageBreak);
+		TableStyle tableStyle  = new TableStyle(styleWriter, width, pageFormatIndex, isFrame, isPageBreak, tabColor);
 		
 		String tableStyleId = tableStyle.getId();
 		String tableStyleName = tableStyles.get(tableStyleId);
@@ -225,7 +217,28 @@ public class StyleCache
 	 */
 	public String getGraphicStyle(JRPrintGraphicElement element)
 	{
-		GraphicStyle graphicStyle  = new GraphicStyle(styleWriter, element);
+		return getGraphicStyle(element, 0, 0, 0, 0);
+	}
+	
+	
+	/**
+	 *
+	 */
+	public String getGraphicStyle(
+			JRPrintGraphicElement element, 
+			double cropTop,
+			double cropLeft,
+			double cropBottom,
+			double cropRight
+			)
+	{
+		GraphicStyle graphicStyle  = new GraphicStyle(
+				styleWriter, 
+				element, 
+				cropTop, 
+				cropLeft,
+				cropBottom,
+				cropRight);
 		
 		String graphicStyleId = graphicStyle.getId();
 		String graphicStyleName = cellStyles.get(graphicStyleId);
@@ -247,8 +260,22 @@ public class StyleCache
 	 */
 	public String getCellStyle(JRExporterGridCell gridCell)
 	{
-		CellStyle cellStyle  = new CellStyle(styleWriter, gridCell);
-
+		return getCellStyle(gridCell, false, true);
+	}
+	
+	/**
+	 *
+	 */
+	public String getCellStyle(JRExporterGridCell gridCell, boolean shrinkToFit, boolean wrapText)
+	{
+		CellStyle cellStyle  = new CellStyle(styleWriter, gridCell, shrinkToFit, wrapText);
+		
+//		JRPrintElement element = gridCell.getElement();
+//
+//		if (element instanceof JRBoxContainer)
+//			cellStyle.setBox(((JRBoxContainer)element).getLineBox());
+//		if (element instanceof JRCommonGraphicElement)
+//			cellStyle.setPen(((JRCommonGraphicElement)element).getLinePen());
 		
 		String cellStyleId = cellStyle.getId();
 		String cellStyleName = cellStyles.get(cellStyleId);
@@ -264,14 +291,13 @@ public class StyleCache
 		return cellStyleName;
 	}
 
-
 	/**
 	 *
 	 */
-	public String getParagraphStyle(JRPrintText text)
+	public String getParagraphStyle(JRPrintText text, boolean isIgnoreTextFormatting)
 	{
-		ParagraphStyle paragraphStyle  = new ParagraphStyle(styleWriter, text);
-
+		ParagraphStyle paragraphStyle  = new ParagraphStyle(styleWriter, text, isIgnoreTextFormatting);
+		
 		String paragraphStyleId = paragraphStyle.getId();
 		String paragraphStyleName = paragraphStyles.get(paragraphStyleId);
 		
@@ -280,7 +306,7 @@ public class StyleCache
 			paragraphStyleName = "P" + paragraphStylesCounter++;
 			paragraphStyles.put(paragraphStyleId, paragraphStyleName);
 			
-			paragraphStyle.write(text.getFontName(),paragraphStyleName);
+			paragraphStyle.write(paragraphStyleName);
 		}
 		
 		return paragraphStyleName;
@@ -288,38 +314,38 @@ public class StyleCache
 
 
 	/**
-	 * XML: text:span
-	 * @param attributes
-	 * @param text
-	 * @param locale
-	 * @return
+	 *
 	 */
-	public String getTextSpanStyle(Map<Attribute,Object> attributes, String text, Locale locale)
+	public String getTextSpanStyle(Map<Attribute,Object> attributes, String text, Locale locale, boolean isIgnoreTextFormatting)
 	{
-		String fontFamilyAttr = (String)attributes.get(TextAttribute.FAMILY);
-		String fontFamily = fontFamilyAttr;
-		FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontFamilyAttr, locale);
-		if (fontInfo != null)
+		if(isIgnoreTextFormatting)
 		{
-			//fontName found in font extensions
-			FontFamily family = fontInfo.getFontFamily();
-			String exportFont = family.getExportFont(exporterKey);
-			if (exportFont != null)
+			String textSpanStyleName = textSpanStyles.get("");
+			if (textSpanStyleName == null)
 			{
-				fontFamily = exportFont;
+				textSpanStyleName = "T" + textSpanStylesCounter++;
+				textSpanStyles.put("", textSpanStyleName);
+				styleWriter.write("<style:style style:name=\"" + textSpanStyleName + "\"");
+				styleWriter.write(" style:family=\"text\">\n");
+				styleWriter.write("<style:text-properties>\n");
+				styleWriter.write("</style:text-properties>\n");	
+				styleWriter.write("</style:style>\n");
 			}
+			return textSpanStyleName;
 		}
+		String fontFamilyAttr = (String)attributes.get(TextAttribute.FAMILY);
+		String fontFamily = fontUtil.getExportFontFamily(fontFamilyAttr, locale, exporterKey);
 		fontFaces.add(fontFamily);
 		
-		StringBuffer textSpanStyleIdBuffer = new StringBuffer();
-		textSpanStyleIdBuffer.append(fontFamily);
+		StringBuilder textSpanStyleIdBuilder = new StringBuilder();
+		textSpanStyleIdBuilder.append(fontFamily);
 
 		String forecolorHexa = null;
 		Color forecolor = (Color)attributes.get(TextAttribute.FOREGROUND);
 		if (!Color.black.equals(forecolor))
 		{
 			forecolorHexa = JRColorUtil.getColorHexa(forecolor);
-			textSpanStyleIdBuffer.append(forecolorHexa);
+			textSpanStyleIdBuilder.append(forecolorHexa);
 		}
 
 		String backcolorHexa = null;
@@ -327,39 +353,47 @@ public class StyleCache
 		if (runBackcolor != null)
 		{
 			backcolorHexa = JRColorUtil.getColorHexa(runBackcolor);
-			textSpanStyleIdBuffer.append(backcolorHexa);
+			textSpanStyleIdBuilder.append(backcolorHexa);
 		}
 
 		String size = String.valueOf(attributes.get(TextAttribute.SIZE));
-		textSpanStyleIdBuffer.append(size);
+		textSpanStyleIdBuilder.append(size);
 
 		String weight = null;
 		if (TextAttribute.WEIGHT_BOLD.equals(attributes.get(TextAttribute.WEIGHT)))
 		{
 			weight = "bold";
-			textSpanStyleIdBuffer.append(weight);
+			textSpanStyleIdBuilder.append(weight);
 		}
 		String posture = null;
 		if (TextAttribute.POSTURE_OBLIQUE.equals(attributes.get(TextAttribute.POSTURE)))
 		{
 			posture = "italic";
-			textSpanStyleIdBuffer.append(posture);
+			textSpanStyleIdBuilder.append(posture);
 		}
 		String underline = null;
 		if (TextAttribute.UNDERLINE_ON.equals(attributes.get(TextAttribute.UNDERLINE)))
 		{
 			underline = "single";
-			textSpanStyleIdBuffer.append(underline);
+			textSpanStyleIdBuilder.append(underline);
 		}
 		String strikeThrough = null;
 		if (TextAttribute.STRIKETHROUGH_ON.equals(attributes.get(TextAttribute.STRIKETHROUGH)))
 		{
 			strikeThrough = "single";
-			textSpanStyleIdBuffer.append(strikeThrough);
+			textSpanStyleIdBuilder.append(strikeThrough);
 		}
 
+//		if (TextAttribute.SUPERSCRIPT_SUPER.equals(attributes.get(TextAttribute.SUPERSCRIPT)))
+//		{
+//			textSpanStyleIdBuffer.append(" vertical-align: super;");
+//		}
+//		else if (TextAttribute.SUPERSCRIPT_SUB.equals(attributes.get(TextAttribute.SUPERSCRIPT)))
+//		{
+//			textSpanStyleIdBuffer.append(" vertical-align: sub;");
+//		}
 
-		String textSpanStyleId = textSpanStyleIdBuffer.toString();
+		String textSpanStyleId = textSpanStyleIdBuilder.toString();
 		String textSpanStyleName = textSpanStyles.get(textSpanStyleId);
 		
 		if (textSpanStyleName == null)
@@ -390,6 +424,8 @@ public class StyleCache
 			{
 				styleWriter.write(" fo:background-color=\"#" + backcolorHexa + "\"");
 			}
+//			styleWriter.write(" style:text-rotation-angle=\"" + textRotationAngle + "\"");
+//			styleWriter.write(" style:text-rotation-scale=\"" + textRotationScale + "\"");
 			if (underline != null)
 			{
 				styleWriter.write(" style:text-underline-type=\"" + underline + "\"");

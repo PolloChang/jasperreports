@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,7 @@ package net.sf.jasperreports.extensions;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.collections.map.ReferenceMap;
+import org.apache.commons.collections4.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -36,7 +36,6 @@ import org.springframework.beans.factory.ListableBeanFactory;
  * for beans of a specific extension type in a Spring beans factory.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SpringExtensionsRegistry.java 7199 2014-08-27 13:58:10Z teodord $
  */
 //TODO generic element fallback handlers
 public class SpringExtensionsRegistry implements ExtensionsRegistry
@@ -46,8 +45,10 @@ public class SpringExtensionsRegistry implements ExtensionsRegistry
 	
 	private final ListableBeanFactory beanFactory;
 	
-	private final ReferenceMap extensionBeanNamesCache = new ReferenceMap(
-			ReferenceMap.WEAK, ReferenceMap.HARD);
+	private final ReferenceMap<Class<?>, String[]> extensionBeanNamesCache = 
+		new ReferenceMap<>(
+			ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.HARD
+			);
 
 	/**
 	 * Creates a Spring-based extension registry.
@@ -62,10 +63,11 @@ public class SpringExtensionsRegistry implements ExtensionsRegistry
 	/**
 	 * Returns all beans that match the extension class.
 	 */
+	@Override
 	public <T> List<T> getExtensions(Class<T> extensionType)
 	{
 		String[] beanNames = getExtensionBeanNames(extensionType);
-		List<T> beans = new ArrayList<T>(beanNames.length);
+		List<T> beans = new ArrayList<>(beanNames.length);
 		for (int i = 0; i < beanNames.length; i++)
 		{
 			String name = beanNames[i];
@@ -74,8 +76,7 @@ public class SpringExtensionsRegistry implements ExtensionsRegistry
 				log.debug("Getting bean " + name + " as extension of type "
 						+ extensionType.getName());
 			}
-			@SuppressWarnings("unchecked")
-			T bean = (T) beanFactory.getBean(name, extensionType);
+			T bean = beanFactory.getBean(name, extensionType);
 			beans.add(bean);
 		}
 		return beans;
@@ -83,16 +84,27 @@ public class SpringExtensionsRegistry implements ExtensionsRegistry
 
 	protected String[] getExtensionBeanNames(Class<?> extensionType)
 	{
+		String[] beanNames;
 		synchronized (extensionBeanNamesCache)
 		{
-			String[] beanNames = (String[]) extensionBeanNamesCache.get(extensionType);
-			if (beanNames == null)
-			{
-				beanNames = findExtensionBeanNames(extensionType);
-				extensionBeanNamesCache.put(extensionType, beanNames);
-			}
-			return beanNames;
+			beanNames = extensionBeanNamesCache.get(extensionType);
 		}
+		
+		if (beanNames == null)
+		{
+			// can be executed concurrently
+			beanNames = findExtensionBeanNames(extensionType);
+			
+			synchronized (extensionBeanNamesCache)
+			{
+				// checking again
+				if (extensionBeanNamesCache.get(extensionType) == null)
+				{
+					extensionBeanNamesCache.put(extensionType, beanNames);
+				}
+			}
+		}
+		return beanNames;
 	}
 
 	protected String[] findExtensionBeanNames(Class<?> extensionType)

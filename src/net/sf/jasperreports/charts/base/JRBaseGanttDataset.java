@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.design.JRVerifier;
 
 /**
  * @author Peter Risko (peter@risko.hu)
- * @version $Id: JRBaseGanttDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 //FIXME clone
 public class JRBaseGanttDataset extends JRBaseChartDataset implements JRGanttDataset {
@@ -75,9 +74,7 @@ public class JRBaseGanttDataset extends JRBaseChartDataset implements JRGanttDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRGanttSeries[] getSeries()
 	{
 		return ganttSeries;
@@ -87,20 +84,20 @@ public class JRBaseGanttDataset extends JRBaseChartDataset implements JRGanttDat
 	/* (non-Javadoc)
 	 * @see net.sf.jasperreports.engine.JRChartDataset#getDatasetType()
 	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.GANTT_DATASET;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

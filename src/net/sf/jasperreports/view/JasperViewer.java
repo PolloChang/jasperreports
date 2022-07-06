@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -46,12 +46,11 @@ import org.apache.commons.logging.LogFactory;
 
 
 /**
- * This class uses the {@link net.sf.jasperreports.view.JRViewer} component to display reports. 
+ * This class uses the {@link net.sf.jasperreports.swing.JRViewer} component to display reports. 
  * It represents a simple Java Swing application that can load and display reports. It is used 
  * in almost all of the supplied samples to display the generated documents.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperViewer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JasperViewer extends javax.swing.JFrame 
 {
@@ -63,7 +62,7 @@ public class JasperViewer extends javax.swing.JFrame
 	/**
 	 *
 	 */
-	protected JRViewer viewer;
+	protected net.sf.jasperreports.swing.JRViewer viewer;
 
 	/**
 	 *
@@ -225,7 +224,7 @@ public class JasperViewer extends javax.swing.JFrame
 
 		initComponents();
 
-		this.viewer = new JRViewer(jasperReportsContext, sourceFile, isXMLFile, locale, resBundle);
+		this.viewer = new net.sf.jasperreports.swing.JRViewer(jasperReportsContext, sourceFile, isXMLFile, locale, resBundle);
 		this.pnlMain.add(this.viewer, BorderLayout.CENTER);
 	}
 
@@ -250,7 +249,7 @@ public class JasperViewer extends javax.swing.JFrame
 
 		initComponents();
 
-		this.viewer = new JRViewer(jasperReportsContext, is, isXMLFile, locale, resBundle);
+		this.viewer = new net.sf.jasperreports.swing.JRViewer(jasperReportsContext, is, isXMLFile, locale, resBundle);
 		this.pnlMain.add(this.viewer, BorderLayout.CENTER);
 	}
 
@@ -274,7 +273,7 @@ public class JasperViewer extends javax.swing.JFrame
 
 		initComponents();
 
-		this.viewer = new JRViewer(jasperReportsContext, jasperPrint, locale, resBundle);
+		this.viewer = new net.sf.jasperreports.swing.JRViewer(jasperReportsContext, jasperPrint, locale, resBundle);
 		this.pnlMain.add(this.viewer, BorderLayout.CENTER);
 	}
 
@@ -331,6 +330,7 @@ public class JasperViewer extends javax.swing.JFrame
 		setTitle("JasperViewer");
 		setIconImage(new javax.swing.ImageIcon(getClass().getResource("/net/sf/jasperreports/view/images/jricon.GIF")).getImage());
 		addWindowListener(new java.awt.event.WindowAdapter() {
+			@Override
 			public void windowClosing(java.awt.event.WindowEvent evt) {
 				exitForm();
 			}
@@ -345,7 +345,7 @@ public class JasperViewer extends javax.swing.JFrame
 		Toolkit toolkit = java.awt.Toolkit.getDefaultToolkit();
 		java.awt.Dimension screenSize = toolkit.getScreenSize();
 		int screenResolution = toolkit.getScreenResolution();
-		float zoom = ((float) screenResolution) / JRViewer.REPORT_RESOLUTION;
+		float zoom = ((float) screenResolution) / net.sf.jasperreports.swing.JRViewerPanel.REPORT_RESOLUTION;
 
 		int height = (int) (550 * zoom);
 		if (height > screenSize.getHeight())

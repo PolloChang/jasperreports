@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.charts.design;
 import net.sf.jasperreports.charts.JRChartAxis;
 import net.sf.jasperreports.charts.base.JRBaseChartAxis;
 import net.sf.jasperreports.charts.type.AxisPositionEnum;
+import net.sf.jasperreports.engine.JRChart;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.design.JRDesignChart;
@@ -36,7 +37,6 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
  * {@link JRChartAxis JRChartAxis} implementation to be used for report design.
  *
  * @author Barry Klawans (barry@users.sourceforge.net)
- * @version $Id: JRDesignChartAxis.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignChartAxis extends JRBaseChartAxis implements JRChangeEventsSupport
 {
@@ -119,18 +119,25 @@ public class JRDesignChartAxis extends JRBaseChartAxis implements JRChangeEvents
 		setChart((JRDesignChart)element);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignChartAxis clone = (JRDesignChartAxis)super.clone();
 		clone.eventSupport = null;
 		return clone;
 	}
+
+	@Override
+	public JRChartAxis clone(JRChart parentChart)
+	{
+		JRDesignChartAxis clone = (JRDesignChartAxis) super.clone(parentChart);
+		clone.parentChart = (JRDesignChart) parentChart;
+		return clone;
+	}
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

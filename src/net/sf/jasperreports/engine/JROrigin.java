@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.type.BandTypeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROrigin.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JROrigin implements JRCloneable, Serializable
 {
@@ -107,9 +106,7 @@ public class JROrigin implements JRCloneable, Serializable
 		return bandTypeValue;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public boolean equals(Object obj) 
 	{
 		if (obj instanceof JROrigin)
@@ -125,9 +122,7 @@ public class JROrigin implements JRCloneable, Serializable
 		return false;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public int hashCode() 
 	{
 		if (hashCode == null)
@@ -136,15 +131,13 @@ public class JROrigin implements JRCloneable, Serializable
 			hash = 31 * hash + (reportName == null ? 0 : reportName.hashCode());
 			hash = 31 * hash + (groupName == null ? 0 : groupName.hashCode());
 			hash = 31 * hash + bandTypeValue.hashCode();
-			hashCode = new Integer(hash);
+			hashCode = hash;
 		}
-		return hashCode.intValue();
+		return hashCode;
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		try
@@ -176,6 +169,7 @@ public class JROrigin implements JRCloneable, Serializable
 	 */
 	private byte bandType;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

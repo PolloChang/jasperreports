@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.web;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -35,7 +36,6 @@ import net.sf.jasperreports.engine.ReportContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: WebReportContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class WebReportContext implements ReportContext
 {
@@ -45,11 +45,6 @@ public class WebReportContext implements ReportContext
 	private static final String SESSION_ATTRIBUTE_REPORT_CONTEXT_ID_PREFIX = "net.sf.jasperreports.web.report.context_";
 	public static final String REQUEST_PARAMETER_REPORT_CONTEXT_ID = "jr_ctxid";
 
-	/**
-	 * @deprecated Replaced by {@link #REPORT_CONTEXT_PARAMETER_JASPER_PRINT_ACCESSOR}.
-	 */
-	public static final String REPORT_CONTEXT_PARAMETER_JASPER_PRINT = "net.sf.jasperreports.web.jasper_print";
-	
 	public static final String REPORT_CONTEXT_PARAMETER_JASPER_PRINT_ACCESSOR = "net.sf.jasperreports.web.jasper_print.accessor";
 	//public static final String REPORT_CONTEXT_PARAMETER_JASPER_REPORT = "net.sf.jasperreports.web.jasper_report";
 	
@@ -59,7 +54,7 @@ public class WebReportContext implements ReportContext
 	 *
 	 */
 	//private ThreadLocal<HttpServletRequest> threadLocalRequest = new ThreadLocal<HttpServletRequest>();//FIXMEJIVE
-	private Map<String, String> requestParameters = new HashMap<String, String>();
+	private Map<String, String> requestParameters = new HashMap<>();
 	private Map<String, Object> parameterValues;
 	private String id;
 	
@@ -71,14 +66,25 @@ public class WebReportContext implements ReportContext
 		return getInstance(request, true);
 	}
 
+	public static final WebReportContext getInstance(HttpServletRequest request, String reportContextId) {
+		return getInstance(request, reportContextId, true);
+	}
+
+	public static final WebReportContext getInstance(HttpServletRequest request, boolean create) {
+		return getInstance(request, null, create);
+	}
+
 	/**
 	 *
 	 */
-	public static final WebReportContext getInstance(HttpServletRequest request, boolean create)
+	public static final WebReportContext getInstance(HttpServletRequest request, String reportContextId, boolean create)
 	{
 		WebReportContext webReportContext = null;
 
-		String reportContextId = request.getParameter(REQUEST_PARAMETER_REPORT_CONTEXT_ID);
+		if (reportContextId == null) {
+			reportContextId = request.getParameter(REQUEST_PARAMETER_REPORT_CONTEXT_ID);
+		}
+
 		if (reportContextId != null)
 		{
 			webReportContext = (WebReportContext)request.getSession().getAttribute(getSessionAttributeName(reportContextId));
@@ -105,19 +111,14 @@ public class WebReportContext implements ReportContext
 	 */
 	private WebReportContext()
 	{
-		parameterValues = new HashMap<String, Object>();
+		parameterValues = new HashMap<>();
+		id = UUID.randomUUID().toString();
 //		parameterValues.put(JRParameter.REPORT_CONTEXT, this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getId()
 	{
-		if (id == null)
-		{
-			id = String.valueOf(System.currentTimeMillis());//FIXMEJIVE make stronger?
-		}
 		return id;
 	}
 
@@ -145,9 +146,7 @@ public class WebReportContext implements ReportContext
 		return getSessionAttributeName(getId());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getParameterValue(String parameterName)
 	{
 		String requestParameterValue = requestParameters.get(parameterName);
@@ -159,9 +158,7 @@ public class WebReportContext implements ReportContext
 		return parameterValues.get(parameterName);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean containsParameter(String parameterName)
 	{
 		String requestParameterValue = requestParameters.get(parameterName);
@@ -173,9 +170,7 @@ public class WebReportContext implements ReportContext
 		return parameterValues.containsKey(parameterName);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setParameterValue(String parameterName, Object value)
 	{
 		parameterValues.put(parameterName, value);
@@ -189,9 +184,7 @@ public class WebReportContext implements ReportContext
 		parameterValues.putAll(newValues);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Map<String, Object> getParameterValues()
 	{
 		return parameterValues;
@@ -203,5 +196,17 @@ public class WebReportContext implements ReportContext
 	private static final String getSessionAttributeName(String id)
 	{
 		return SESSION_ATTRIBUTE_REPORT_CONTEXT_ID_PREFIX + id;
+	}
+
+	@Override
+	public Object removeParameterValue(String parameterName)
+	{
+		return parameterValues.remove(parameterName);
+	}
+
+	@Override
+	public void clearParameterValues()
+	{
+		parameterValues.clear();
 	}
 }

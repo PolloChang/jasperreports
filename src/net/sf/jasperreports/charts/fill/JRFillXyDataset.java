@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -48,7 +48,6 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillXyDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 {
@@ -88,18 +87,14 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRXySeries[] getSeries()
 	{
 		return xySeries;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customInitialize()
 	{
 		seriesNames = null;
@@ -109,9 +104,7 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	protected void customEvaluate(JRCalculator calculator) throws JRExpressionEvalException
 	{
 		if (xySeries != null && xySeries.length > 0)
@@ -124,19 +117,17 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	protected void customIncrement()
 	{
 		if (xySeries != null && xySeries.length > 0)
 		{
 			if (seriesNames == null)
 			{
-				seriesNames = new ArrayList<Comparable<?>>();
-				seriesMap = new HashMap<Comparable<?>, XYSeries>();
-				labelsMap = new HashMap<Comparable<?>, Map<Number, String>>();
-				itemHyperlinks = new HashMap<Comparable<?>, Map<Pair, JRPrintHyperlink>>();
+				seriesNames = new ArrayList<>();
+				seriesMap = new HashMap<>();
+				labelsMap = new HashMap<>();
+				itemHyperlinks = new HashMap<>();
 			}
 
 			for(int i = 0; i < xySeries.length; i++)
@@ -163,7 +154,7 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 					Map<Number, String> seriesLabels = labelsMap.get(seriesName);
 					if (seriesLabels == null)
 					{
-						seriesLabels = new HashMap<Number, String>();
+						seriesLabels = new HashMap<>();
 						labelsMap.put(seriesName, seriesLabels);
 					}
 					
@@ -175,10 +166,10 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 					Map<Pair, JRPrintHyperlink> seriesLinks = itemHyperlinks.get(seriesName);
 					if (seriesLinks == null)
 					{
-						seriesLinks = new HashMap<Pair, JRPrintHyperlink>();
+						seriesLinks = new HashMap<>();
 						itemHyperlinks.put(seriesName, seriesLinks);
 					}
-					Pair<Number,Number> xyKey = new Pair<Number,Number>(crtXySeries.getXValue(), crtXySeries.getYValue());
+					Pair<Number,Number> xyKey = new Pair<>(crtXySeries.getXValue(), crtXySeries.getYValue());
 					seriesLinks.put(xyKey, crtXySeries.getPrintItemHyperlink());
 				}
 			}
@@ -186,9 +177,7 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public Dataset getCustomDataset()
 	{
 		XYSeriesCollection dataset = new XYSeriesCollection();
@@ -204,25 +193,19 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.XY_DATASET;
 	}
 	
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object getLabelGenerator(){
-		return new XYDatasetLabelGenerator(labelsMap);	
+		return new XYDatasetLabelGenerator(labelsMap, getLocale());
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
@@ -250,6 +233,7 @@ public class JRFillXyDataset extends JRFillChartDataset implements JRXyDataset
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

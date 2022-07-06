@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,24 +23,46 @@
  */
 package net.sf.jasperreports.data.cache;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * Report data cache handler.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DataCacheHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface DataCacheHandler
 {
 	
 	String PARAMETER_DATA_CACHE_HANDLER = "net.sf.jasperreports.data.cache.handler";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_CACHE,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			sinceVersion = PropertyConstants.VERSION_4_6_0,
+			valueType = Boolean.class
+			)
 	String PROPERTY_DATA_RECORDABLE = JRPropertiesUtil.PROPERTY_PREFIX + "data.cache.recordable";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_CACHE,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			sinceVersion = PropertyConstants.VERSION_4_6_0,
+			valueType = Boolean.class
+			)
 	String PROPERTY_DATA_PERSISTABLE = JRPropertiesUtil.PROPERTY_PREFIX + "data.cache.persistable";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_CACHE,
+			scopes = {PropertyScope.PARAMETER, PropertyScope.SUBDATASET_RUN, PropertyScope.SUBREPORT, PropertyScope.PART},
+			sinceVersion = PropertyConstants.VERSION_4_6_0,
+			valueType = Boolean.class
+			)
 	String PROPERTY_INCLUDED = JRPropertiesUtil.PROPERTY_PREFIX + "data.cache.included";
 
 	boolean isRecordingEnabled();

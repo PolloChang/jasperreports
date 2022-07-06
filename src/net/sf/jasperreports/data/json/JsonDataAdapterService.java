@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,33 +28,30 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import net.sf.jasperreports.data.AbstractDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.data.DataFileStream;
+import net.sf.jasperreports.data.DataFileUtils;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
+import net.sf.jasperreports.engine.data.JRAbstractTextDataSource;
 import net.sf.jasperreports.engine.data.JsonDataSource;
+import net.sf.jasperreports.engine.data.JsonQLDataSource;
 import net.sf.jasperreports.engine.query.JsonQueryExecuterFactory;
 
 /**
  * @author Veaceslov Chicu (schicu@users.sourceforge.net)
- * @version $Id: JsonDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JsonDataAdapterService extends AbstractDataAdapterService 
 {
+	
+	private DataFileStream dataStream;
+	
 	/**
 	 * 
 	 */
-	public JsonDataAdapterService(JasperReportsContext jasperReportsContext, JsonDataAdapter jsonDataAdapter) 
+	public JsonDataAdapterService(ParameterContributorContext paramContribContext, JsonDataAdapter jsonDataAdapter)
 	{
-		super(jasperReportsContext, jsonDataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #JsonDataAdapterService(JasperReportsContext, JsonDataAdapter)}.
-	 */
-	public JsonDataAdapterService(JsonDataAdapter jsonDataAdapter) 
-	{
-		super(DefaultJasperReportsContext.getInstance(), jsonDataAdapter);
+		super(paramContribContext, jsonDataAdapter);
 	}
 
 	public JsonDataAdapter getJsonDataAdapter() {
@@ -66,8 +63,11 @@ public class JsonDataAdapterService extends AbstractDataAdapterService
 			throws JRException {
 		JsonDataAdapter jsonDataAdapter = getJsonDataAdapter();
 		if (jsonDataAdapter != null) {
+			dataStream = DataFileUtils.instance(getParameterContributorContext()).getDataStream(
+					jsonDataAdapter.getDataFile(), parameters);
+			
 			if (jsonDataAdapter.isUseConnection()) {
-				parameters.put(JsonQueryExecuterFactory.JSON_SOURCE, jsonDataAdapter.getFileName());
+				parameters.put(JsonQueryExecuterFactory.JSON_INPUT_STREAM, dataStream);
 
 				Locale locale = jsonDataAdapter.getLocale();
 				if (locale != null) {
@@ -97,12 +97,17 @@ public class JsonDataAdapterService extends AbstractDataAdapterService
 							numberPattern);
 				}
 			} else {
-				JsonDataSource ds = 
-					new JsonDataSource(
-						getJasperReportsContext(),
-						jsonDataAdapter.getFileName(),
-						jsonDataAdapter.getSelectExpression()
-						);
+				JRAbstractTextDataSource ds;
+
+				switch (jsonDataAdapter.getLanguage()) {
+					case JSONQL:
+						ds = new JsonQLDataSource(dataStream, jsonDataAdapter.getSelectExpression());
+						break;
+					case JSON:
+					default:
+						ds = new JsonDataSource(dataStream, jsonDataAdapter.getSelectExpression());
+						break;
+				}
 
 				Locale locale = jsonDataAdapter.getLocale();
 				if (locale != null) {
@@ -127,5 +132,16 @@ public class JsonDataAdapterService extends AbstractDataAdapterService
 				parameters.put(JRParameter.REPORT_DATA_SOURCE, ds);
 			}
 		}
+	}
+
+	@Override
+	public void dispose()
+	{
+		if (dataStream != null)
+		{
+			dataStream.dispose();
+		}
+		
+		super.dispose();
 	}
 }

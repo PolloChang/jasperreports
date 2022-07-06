@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,10 +28,14 @@ package net.sf.jasperreports.util;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CastorMapping.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated To be removed.
  */
 public class CastorMapping
 {
+	private String key;
+	// the version at which the mapping became effective
+	// null version means that mapping is the initial mapping
+	private String version;
 	private String path;
 	
 	/**
@@ -39,6 +43,13 @@ public class CastorMapping
 	 */
 	public CastorMapping(String path)
 	{
+		this.path = path;
+	}
+	
+	public CastorMapping(String key, String version, String path)
+	{
+		this.key = key;
+		this.version = version;
 		this.path = path;
 	}
 
@@ -56,5 +67,25 @@ public class CastorMapping
 	public void setPath(String path)
 	{
 		this.path = path;
+	}
+
+	public String getKey()
+	{
+		return key;
+	}
+
+	public void setKey(String key)
+	{
+		this.key = key;
+	}
+
+	public String getVersion()
+	{
+		return version;
+	}
+
+	public void setVersion(String version)
+	{
+		this.version = version;
 	}
 }

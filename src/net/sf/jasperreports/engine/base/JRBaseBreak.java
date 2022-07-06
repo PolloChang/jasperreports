@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.type.BreakTypeEnum;
 /**
  * The actual implementation of a break element.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseBreak.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseBreak extends JRBaseElement implements JRBreak
 {
@@ -68,33 +67,25 @@ public class JRBaseBreak extends JRBaseElement implements JRBreak
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public int getX()
 	{
 		return 0;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getHeight()
 	{
 		return 1;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public BreakTypeEnum getTypeValue()
 	{
 		return this.typeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setType(BreakTypeEnum typeValue)
 	{
 		Object old = this.typeValue;
@@ -102,17 +93,13 @@ public class JRBaseBreak extends JRBaseElement implements JRBreak
 		getEventSupport().firePropertyChange(PROPERTY_TYPE, old, this.typeValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitBreak(this);
@@ -127,6 +114,7 @@ public class JRBaseBreak extends JRBaseElement implements JRBreak
 	 */
 	private byte type;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

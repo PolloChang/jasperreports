@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import org.jfree.data.xy.AbstractXYZDataset;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: DefaultXYZDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultXYZDataset extends AbstractXYZDataset 
 {
@@ -49,7 +48,7 @@ public class DefaultXYZDataset extends AbstractXYZDataset
 	 */
 	public DefaultXYZDataset()
 	{
-		dataset = new ArrayList<XYZElement>();
+		dataset = new ArrayList<>();
 	}
 	
 	/**
@@ -77,6 +76,7 @@ public class DefaultXYZDataset extends AbstractXYZDataset
 	/** 
 	 *
 	 */
+	@Override
 	public int getSeriesCount() {
 		int retVal = 0;
 		if( dataset != null ){
@@ -86,9 +86,7 @@ public class DefaultXYZDataset extends AbstractXYZDataset
 		return retVal;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Number getZ(int series, int index ) {
 		Number retVal = null;
 		if( dataset != null ){
@@ -100,9 +98,7 @@ public class DefaultXYZDataset extends AbstractXYZDataset
 		return retVal;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public int getItemCount(int series ) {
 		int retVal = 0;
 		if( dataset != null ){
@@ -114,9 +110,7 @@ public class DefaultXYZDataset extends AbstractXYZDataset
 		return retVal;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Number getX(int series, int index ) {
 		Number retVal = null;
 		if( dataset != null ){
@@ -128,9 +122,7 @@ public class DefaultXYZDataset extends AbstractXYZDataset
 		return retVal;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Number getY(int series, int index ) {
 		Number retVal = null;
 		if( dataset != null ){
@@ -142,9 +134,7 @@ public class DefaultXYZDataset extends AbstractXYZDataset
 		return retVal;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Comparable<?> getSeriesKey(int index) {
 		String retVal = null;
 		if( dataset != null ){

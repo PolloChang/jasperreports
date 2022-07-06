@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,7 @@
  * 
  * Contributors:
  * Majid Ali Khan - majidkk@users.sourceforge.net
- * Frank Sch�nheit - Frank.Schoenheit@Sun.COM
+ * Frank Schönheit - Frank.Schoenheit@Sun.COM
  */
 package net.sf.jasperreports.engine.export.oasis;
 
@@ -42,7 +42,6 @@ import net.sf.jasperreports.engine.export.zip.ExportZipEntry;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ContentBuilder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ContentBuilder
 {
@@ -62,7 +61,7 @@ public class ContentBuilder
 	
 	private String mimeType;
 	
-	private StringBuffer namedExpressions;
+	private StringBuilder namedExpressions;
 	
 	/**
 	 * 
@@ -114,7 +113,7 @@ public class ContentBuilder
 		ExportZipEntry bodyEntry,
 		Collection<String> fontFaces,
 		String mimeType,
-		StringBuffer namedExpressions
+		StringBuilder namedExpressions
 		)
 	{
 		this.contentEntry = contentEntry;
@@ -153,6 +152,7 @@ public class ContentBuilder
 		writer.write(" xmlns:ooo=\"http://openoffice.org/2004/office\"");
 		writer.write(" xmlns:ooow=\"http://openoffice.org/2004/writer\"");
 		writer.write(" xmlns:oooc=\"http://openoffice.org/2004/calc\"");
+		writer.write(" xmlns:tableooo=\"http://openoffice.org/2009/table\"");
 		writer.write(" xmlns:dom=\"http://www.w3.org/2001/xml-events\"");
 		writer.write(" xmlns:xforms=\"http://www.w3.org/2002/xforms\"");
 		writer.write(" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"");
@@ -177,6 +177,9 @@ public class ContentBuilder
 		writer.write(" </office:font-face-decls>\n");
 		
 		writer.write(" <office:automatic-styles>\n");
+		writer.write(" <style:style style:name=\"G_ImgFrm\" style:family=\"graphic\" style:parent-style-name=\"Graphics\">\n");
+		writer.write("  <style:graphic-properties style:vertical-pos=\"top\" style:vertical-rel=\"baseline\" style:horizontal-pos=\"left\" style:horizontal-rel=\"paragraph\" />\n");
+		writer.write(" </style:style>\n");
 		
 		writer.flush();
 		styleEntry.writeData(contentEntry.getOutputStream());

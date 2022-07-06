@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -48,8 +48,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.query.JRJdbcQueryExecuterFactory;
 import net.sf.jasperreports.engine.util.JRImageLoader;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -64,26 +70,71 @@ import net.sf.jasperreports.engine.util.JRImageLoader;
  * present) through JDBC.
 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRResultSetDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRResultSetDataSource implements JRDataSource
 {
 
+	private static final Log log = LogFactory.getLog(JRResultSetDataSource.class);
 
+	/**
+	 * Property specifying the result set column name for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {JRJdbcQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+	)
+	public static final String PROPERTY_FIELD_COLUMN_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "sql.field.column.name";
+	
+	/**
+	 * Property specifying the result set column label for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {JRJdbcQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+	)
+	public static final String PROPERTY_FIELD_COLUMN_LABEL = JRPropertiesUtil.PROPERTY_PREFIX + "sql.field.column.label";
+	
+	/**
+	 * Property specifying the result set column index for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {JRJdbcQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1,
+			valueType = Integer.class
+	)
+	public static final String PROPERTY_FIELD_COLUMN_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "sql.field.column.index";
+	
 	public static final String INDEXED_COLUMN_PREFIX = "COLUMN_";
 	private static final int INDEXED_COLUMN_PREFIX_LENGTH = INDEXED_COLUMN_PREFIX.length();
 	
+	public static final String EXCEPTION_MESSAGE_KEY_RESULT_SET_CLOB_VALUE_READ_FAILURE = "data.result.set.clob.value.read.failure";
+	public static final String EXCEPTION_MESSAGE_KEY_RESULT_SET_COLUMN_INDEX_OUT_OF_RANGE = "data.result.set.column.index.out.of.range";
+	public static final String EXCEPTION_MESSAGE_KEY_RESULT_SET_FIELD_VALUE_NOT_RETRIEVED = "data.result.set.field.value.not.retrieved";
+	public static final String EXCEPTION_MESSAGE_KEY_RESULT_SET_METADATA_NOT_RETRIEVED = "data.result.set.metadata.not.retrieved";
+	public static final String EXCEPTION_MESSAGE_KEY_RESULT_SET_UNKNOWN_COLUMN_NAME = "data.result.set.unknown.column.name";
+	public static final String EXCEPTION_MESSAGE_KEY_RESULT_SET_UNKNOWN_COLUMN_LABEL = "data.result.set.unknown.column.label";
+	public static final String EXCEPTION_MESSAGE_KEY_RESULT_SET_NEXT_RECORD_NOT_RETRIEVED = "data.result.set.next.record.not.retrieved";
+
+
 	/**
 	 *
 	 */
 	private JasperReportsContext jasperReportsContext;
 	private ResultSet resultSet;
-	private Map<String,Integer> columnIndexMap = new HashMap<String,Integer>();
+	private Map<String,Integer> columnIndexMap = new HashMap<>();
 
 	private TimeZone timeZone;
 	private boolean timeZoneOverride;
-	private Map<JRField, Calendar> fieldCalendars = new HashMap<JRField, Calendar>();
+	private TimeZone reportTimeZone;
+	private Map<JRField, Calendar> fieldCalendars = new HashMap<>();
 
+	private int rowCount;
 
 	/**
 	 *
@@ -92,6 +143,7 @@ public class JRResultSetDataSource implements JRDataSource
 	{
 		this.jasperReportsContext = jasperReportsContext;
 		this.resultSet = resultSet;
+		this.rowCount = 0;
 	}
 
 
@@ -104,9 +156,7 @@ public class JRResultSetDataSource implements JRDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean next() throws JRException
 	{
 		boolean hasNext = false;
@@ -119,7 +169,20 @@ public class JRResultSetDataSource implements JRDataSource
 			}
 			catch (SQLException e)
 			{
-				throw new JRException("Unable to get next record.", e);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_RESULT_SET_NEXT_RECORD_NOT_RETRIEVED, 
+						null,
+						e);
+			}
+
+			if (hasNext)
+			{
+				++rowCount;
+			}
+			else if (log.isDebugEnabled())
+			{
+				log.debug("read " + rowCount + " rows from result set");
 			}
 		}
 		
@@ -127,27 +190,29 @@ public class JRResultSetDataSource implements JRDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(JRField field) throws JRException
 	{
 		Object objValue = null;
 
 		if (field != null && resultSet != null)
 		{
-			Integer columnIndex = getColumnIndex(field.getName());
+			Integer columnIndex = getColumnIndex(field);
 			Class<?> clazz = field.getValueClass();
 
 			try
 			{
 				if (clazz.equals(java.lang.Boolean.class))
 				{
-					objValue = resultSet.getBoolean(columnIndex.intValue()) ? Boolean.TRUE : Boolean.FALSE;
+					objValue = resultSet.getBoolean(columnIndex);
+					if(resultSet.wasNull())
+					{
+						objValue = null;
+					}
 				}
 				else if (clazz.equals(java.lang.Byte.class))
 				{
-					objValue = new Byte(resultSet.getByte(columnIndex.intValue()));
+					objValue = resultSet.getByte(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -170,7 +235,7 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(java.lang.Double.class))
 				{
-					objValue = new Double(resultSet.getDouble(columnIndex.intValue()));
+					objValue = resultSet.getDouble(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -178,7 +243,7 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(java.lang.Float.class))
 				{
-					objValue = new Float(resultSet.getFloat(columnIndex.intValue()));
+					objValue = resultSet.getFloat(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -186,7 +251,7 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(java.lang.Integer.class))
 				{
-					objValue = Integer.valueOf(resultSet.getInt(columnIndex.intValue()));
+					objValue = resultSet.getInt(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -207,7 +272,7 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(java.lang.Long.class))
 				{
-					objValue = new Long(resultSet.getLong(columnIndex.intValue()));
+					objValue = resultSet.getLong(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -215,7 +280,7 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(java.lang.Short.class))
 				{
-					objValue = new Short(resultSet.getShort(columnIndex.intValue()));
+					objValue = resultSet.getShort(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -223,7 +288,7 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(java.math.BigDecimal.class))
 				{
-					objValue = resultSet.getBigDecimal(columnIndex.intValue());
+					objValue = resultSet.getBigDecimal(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -231,11 +296,11 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(java.lang.String.class))
 				{
-					int columnType = resultSet.getMetaData().getColumnType(columnIndex.intValue());
+					int columnType = resultSet.getMetaData().getColumnType(columnIndex);
 					switch (columnType)
 					{
 						case Types.CLOB:
-							Clob clob = resultSet.getClob(columnIndex.intValue());
+							Clob clob = resultSet.getClob(columnIndex);
 							if (resultSet.wasNull())
 							{
 								objValue = null;
@@ -247,7 +312,7 @@ public class JRResultSetDataSource implements JRDataSource
 							break;
 							
 						default:
-							objValue = resultSet.getString(columnIndex.intValue());
+							objValue = resultSet.getString(columnIndex);
 							if(resultSet.wasNull())
 							{
 								objValue = null;
@@ -257,7 +322,7 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(Clob.class))
 				{
-					objValue = resultSet.getClob(columnIndex.intValue());
+					objValue = resultSet.getClob(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -268,11 +333,11 @@ public class JRResultSetDataSource implements JRDataSource
 					Reader reader = null;
 					long size = -1;
 					
-					int columnType = resultSet.getMetaData().getColumnType(columnIndex.intValue());
+					int columnType = resultSet.getMetaData().getColumnType(columnIndex);
 					switch (columnType)
 					{
 						case Types.CLOB:
-							Clob clob = resultSet.getClob(columnIndex.intValue());
+							Clob clob = resultSet.getClob(columnIndex);
 							if (!resultSet.wasNull())
 							{
 								reader = clob.getCharacterStream();
@@ -281,7 +346,7 @@ public class JRResultSetDataSource implements JRDataSource
 							break;
 							
 						default:
-							reader = resultSet.getCharacterStream(columnIndex.intValue());
+							reader = resultSet.getCharacterStream(columnIndex);
 							if (resultSet.wasNull())
 							{
 								reader = null; 
@@ -299,7 +364,7 @@ public class JRResultSetDataSource implements JRDataSource
 				}
 				else if (clazz.equals(Blob.class))
 				{
-					objValue = resultSet.getBlob(columnIndex.intValue());
+					objValue = resultSet.getBlob(columnIndex);
 					if(resultSet.wasNull())
 					{
 						objValue = null;
@@ -318,14 +383,22 @@ public class JRResultSetDataSource implements JRDataSource
 						objValue = JRImageLoader.getInstance(jasperReportsContext).loadAwtImageFromBytes(bytes);
 					}					
 				}
+				else if (clazz.equals(byte[].class))
+				{
+					objValue = readBytes(columnIndex);
+				}
 				else
 				{
-					objValue = resultSet.getObject(columnIndex.intValue());
+					objValue = resultSet.getObject(columnIndex);
 				}
 			}
 			catch (Exception e)
 			{
-				throw new JRException("Unable to get value for field '" + field.getName() + "' of class '" + clazz.getName() + "'", e);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_RESULT_SET_FIELD_VALUE_NOT_RETRIEVED,
+						new Object[]{field.getName(), clazz.getName()}, 
+						e);
 			}
 		}
 		
@@ -336,11 +409,17 @@ public class JRResultSetDataSource implements JRDataSource
 	protected Object readDate(Integer columnIndex, JRField field) throws SQLException
 	{
 		Calendar calendar = getFieldCalendar(field);
-		Object objValue = calendar == null ? resultSet.getDate(columnIndex.intValue())
-				: resultSet.getDate(columnIndex.intValue(), calendar);
+		java.sql.Date objValue = calendar == null ? resultSet.getDate(columnIndex)
+				: resultSet.getDate(columnIndex, calendar);
 		if(resultSet.wasNull())
 		{
 			objValue = null;
+		} 
+		if (log.isDebugEnabled())
+		{
+			log.debug("date field " + field.getName()
+					+ " is " + (objValue == null ? "null"
+							: (objValue + " (" + objValue.getTime() + ")")));
 		}
 		return objValue;
 	}
@@ -349,11 +428,17 @@ public class JRResultSetDataSource implements JRDataSource
 	protected Object readTimestamp(Integer columnIndex, JRField field) throws SQLException
 	{
 		Calendar calendar = getFieldCalendar(field);
-		Object objValue = calendar == null ? resultSet.getTimestamp(columnIndex.intValue())
-				: resultSet.getTimestamp(columnIndex.intValue(), calendar);
+		java.sql.Timestamp objValue = calendar == null ? resultSet.getTimestamp(columnIndex)
+				: resultSet.getTimestamp(columnIndex, calendar);
 		if(resultSet.wasNull())
 		{
 			objValue = null;
+		}
+		if (log.isDebugEnabled())
+		{
+			log.debug("timestamp field " + field.getName()
+					+ " is " + (objValue == null ? "null"
+							: (objValue + " (" + objValue.getTime() + ")")));
 		}
 		return objValue;
 	}
@@ -362,11 +447,17 @@ public class JRResultSetDataSource implements JRDataSource
 	protected Object readTime(Integer columnIndex, JRField field) throws SQLException
 	{
 		Calendar calendar = getFieldCalendar(field);
-		Object objValue = calendar == null ? resultSet.getTime(columnIndex.intValue())
-				: resultSet.getTime(columnIndex.intValue(), calendar);
+		java.sql.Time objValue = calendar == null ? resultSet.getTime(columnIndex)
+				: resultSet.getTime(columnIndex, calendar);
 		if(resultSet.wasNull())
 		{
 			objValue = null;
+		}
+		if (log.isDebugEnabled())
+		{
+			log.debug("time field " + field.getName()
+					+ " is " + (objValue == null ? "null"
+							: (objValue + " (" + objValue.getTime() + ")")));
 		}
 		return objValue;
 	}
@@ -378,14 +469,30 @@ public class JRResultSetDataSource implements JRDataSource
 	/**
 	 *
 	 */
-	private Integer getColumnIndex(String fieldName) throws JRException
+	private Integer getColumnIndex(JRField field) throws JRException
 	{
+		String fieldName = field.getName();
 		Integer columnIndex = columnIndexMap.get(fieldName);
 		if (columnIndex == null)
 		{
 			try
 			{
-				columnIndex = searchColumnByName(fieldName);
+				columnIndex = searchColumnByName(field);
+				
+				if (columnIndex == null)
+				{
+					columnIndex = searchColumnByLabel(field);
+				}
+				
+				if (columnIndex == null)
+				{
+					columnIndex = searchColumnByIndex(field);
+				}
+				
+				if (columnIndex == null)
+				{
+					columnIndex = searchColumnByName(fieldName);
+				}
 				
 				if (columnIndex == null)
 				{
@@ -394,26 +501,42 @@ public class JRResultSetDataSource implements JRDataSource
 				
 				if (columnIndex == null && fieldName.startsWith(INDEXED_COLUMN_PREFIX))
 				{
-					columnIndex = Integer.valueOf(fieldName.substring(INDEXED_COLUMN_PREFIX_LENGTH));
-					if (
-						columnIndex.intValue() <= 0
-						|| columnIndex.intValue() > resultSet.getMetaData().getColumnCount()
-						)
-					{
-						throw new JRException("Column index out of range : " + columnIndex);
-					}
+					columnIndex = searchColumnByIndex(fieldName.substring(INDEXED_COLUMN_PREFIX_LENGTH));
 				}
 				
 				if (columnIndex == null)
 				{
-					throw new JRException("Unknown column name : " + fieldName);
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_RESULT_SET_UNKNOWN_COLUMN_NAME,
+							new Object[]{fieldName});
 				}
 			}
 			catch (SQLException e)
 			{
-				throw new JRException("Unable to retrieve result set metadata.", e);
+				throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_RESULT_SET_METADATA_NOT_RETRIEVED, 
+					null, 
+					e);
 			}
 
+			if (log.isDebugEnabled())
+			{
+				try
+				{
+					ResultSetMetaData metaData = resultSet.getMetaData();
+					log.debug("field " + fieldName 
+							+ " has type " + metaData.getColumnType(columnIndex)
+							+ "/" + metaData.getColumnTypeName(columnIndex)
+							+ ", class " + metaData.getColumnClassName(columnIndex));
+				}
+				catch (SQLException e)
+				{
+					log.debug("failed to read result set metadata", e);
+				}
+			}
+			
 			columnIndexMap.put(fieldName, columnIndex);
 		}
 		
@@ -421,16 +544,39 @@ public class JRResultSetDataSource implements JRDataSource
 	}
 
 
-	protected Integer searchColumnByName(String fieldName) throws SQLException
+	protected Integer searchColumnByName(JRField field) throws SQLException, JRException
+	{
+		if (field.hasProperties())
+		{
+			String name = field.getPropertiesMap().getProperty(PROPERTY_FIELD_COLUMN_NAME);
+			if (name != null)
+			{
+				Integer columnIndex = searchColumnByName(name);
+				if (columnIndex == null)
+				{
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_RESULT_SET_UNKNOWN_COLUMN_NAME,
+							new Object[]{name});
+				}
+				return columnIndex;
+			}
+		}
+
+		return null;
+	}
+
+
+	protected Integer searchColumnByName(String name) throws SQLException
 	{
 		Integer columnIndex = null;
 		ResultSetMetaData metadata = resultSet.getMetaData();
-		for(int i = 1; i <= metadata.getColumnCount(); i++)
+		for (int i = 1; i <= metadata.getColumnCount(); i++)
 		{
 			String columnName = metadata.getColumnName(i);
-			if (fieldName.equalsIgnoreCase(columnName))
+			if (name.equalsIgnoreCase(columnName))
 			{
-				columnIndex = Integer.valueOf(i);
+				columnIndex = i;
 				break;
 			}
 		}
@@ -438,19 +584,74 @@ public class JRResultSetDataSource implements JRDataSource
 	}
 
 
-	protected Integer searchColumnByLabel(String fieldName) throws SQLException
+	protected Integer searchColumnByLabel(JRField field) throws SQLException, JRException
+	{
+		if (field.hasProperties())
+		{
+			String label = field.getPropertiesMap().getProperty(PROPERTY_FIELD_COLUMN_LABEL);
+			if (label != null)
+			{
+				Integer columnIndex = searchColumnByLabel(label);
+				if (columnIndex == null)
+				{
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_RESULT_SET_UNKNOWN_COLUMN_LABEL,
+							new Object[]{label});
+				}
+				return columnIndex;
+			}
+		}
+		return null;
+	}
+
+
+	protected Integer searchColumnByLabel(String label) throws SQLException
 	{
 		Integer columnIndex = null;
 		ResultSetMetaData metadata = resultSet.getMetaData();
-		for(int i = 1; i <= metadata.getColumnCount(); i++)
+		for (int i = 1; i <= metadata.getColumnCount(); i++)
 		{
 			String columnLabel = metadata.getColumnLabel(i);
-			if (columnLabel != null && fieldName.equalsIgnoreCase(columnLabel))
+			if (columnLabel != null && label.equalsIgnoreCase(columnLabel))
 			{
-				columnIndex = Integer.valueOf(i);
+				columnIndex = i;
 				break;
 			}
 		}
+		return columnIndex;
+	}
+
+
+	protected Integer searchColumnByIndex(JRField field) throws SQLException, JRException
+	{
+		if (field.hasProperties())
+		{
+			String index = field.getPropertiesMap().getProperty(PROPERTY_FIELD_COLUMN_INDEX);
+			if (index != null)
+			{
+				return searchColumnByIndex(index);
+			}
+		}
+
+		return null;
+	}
+
+
+	protected Integer searchColumnByIndex(String index) throws SQLException, JRException
+	{
+		Integer columnIndex = Integer.valueOf(index);
+		if (
+			columnIndex <= 0
+			|| columnIndex > resultSet.getMetaData().getColumnCount()
+			)
+		{
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_RESULT_SET_COLUMN_INDEX_OUT_OF_RANGE,
+					new Object[]{columnIndex});
+		}
+
 		return columnIndex;
 	}
 
@@ -463,7 +664,7 @@ public class JRResultSetDataSource implements JRDataSource
 			char[] buf = new char[bufSize];
 			
 			Reader reader = new BufferedReader(clob.getCharacterStream(), bufSize);
-			StringBuffer str = new StringBuffer((int) clob.length());
+			StringBuilder str = new StringBuilder((int) clob.length());
 			
 			for (int read = reader.read(buf); read > 0; read = reader.read(buf))
 			{
@@ -472,13 +673,13 @@ public class JRResultSetDataSource implements JRDataSource
 
 			return str.toString();
 		}
-		catch (SQLException e)
+		catch (SQLException | IOException e)
 		{
-			throw new JRException("Unable to read clob value", e);
-		}
-		catch (IOException e)
-		{
-			throw new JRException("Unable to read clob value", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_RESULT_SET_CLOB_VALUE_READ_FAILURE, 
+					null, 
+					e);
 		}
 	}
 
@@ -502,11 +703,11 @@ public class JRResultSetDataSource implements JRDataSource
 		InputStream is = null;
 		long size = -1;
 		
-		int columnType = resultSet.getMetaData().getColumnType(columnIndex.intValue());
+		int columnType = resultSet.getMetaData().getColumnType(columnIndex);
 		switch (columnType)
 		{
 			case Types.BLOB:
-				Blob blob = resultSet.getBlob(columnIndex.intValue());
+				Blob blob = resultSet.getBlob(columnIndex);
 				if (!resultSet.wasNull())
 				{
 					is = blob.getBinaryStream();
@@ -515,7 +716,7 @@ public class JRResultSetDataSource implements JRDataSource
 				break;
 				
 			default:
-				is = resultSet.getBinaryStream(columnIndex.intValue());
+				is = resultSet.getBinaryStream(columnIndex);
 				if (resultSet.wasNull())
 				{
 					is = null; 
@@ -575,6 +776,19 @@ public class JRResultSetDataSource implements JRDataSource
 		this.timeZoneOverride = override;
 	}
 	
+	/**
+	 * Sets the report time zone, which is the one used to display datetime values in the report.
+	 * 
+	 * The time zone is used when the {@link JRJdbcQueryExecuterFactory#PROPERTY_TIME_ZONE} property
+	 * is set to REPORT_TIME_ZONE.
+	 * 
+	 * @param reportTimeZone the time zone used to display datetime values in the report
+	 */
+	public void setReportTimeZone(TimeZone reportTimeZone)
+	{
+		this.reportTimeZone = reportTimeZone;
+	}
+	
 	protected Calendar getFieldCalendar(JRField field)
 	{
 		if (fieldCalendars.containsKey(field))
@@ -584,6 +798,11 @@ public class JRResultSetDataSource implements JRDataSource
 		
 		Calendar calendar = createFieldCalendar(field);
 		fieldCalendars.put(field, calendar);
+		if (log.isDebugEnabled())
+		{
+			log.debug("calendar for field " + field.getName()
+					+ " is " + calendar);
+		}
 		return calendar;
 	}
 
@@ -603,8 +822,7 @@ public class JRResultSetDataSource implements JRDataSource
 				// read the field level property
 				String timezoneId = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(field, 
 						JRJdbcQueryExecuterFactory.PROPERTY_TIME_ZONE);
-				tz = (timezoneId == null || timezoneId.length() == 0) ? null 
-						: TimeZone.getTimeZone(timezoneId);
+				tz = resolveTimeZone(timezoneId);
 			}
 			else
 			{
@@ -617,4 +835,25 @@ public class JRResultSetDataSource implements JRDataSource
 		Calendar cal = tz == null ? null : Calendar.getInstance(tz);
 		return cal;
 	}
+	
+	protected TimeZone resolveTimeZone(String timezoneId)
+	{
+		TimeZone tz;
+		if (timezoneId == null || timezoneId.length() == 0)
+		{
+			tz = null;
+		}
+		else if (timezoneId.equals(JRParameter.REPORT_TIME_ZONE))
+		{
+			// using the report timezone
+			tz = reportTimeZone;
+		}
+		else
+		{
+			// resolving as tz ID
+			tz = TimeZone.getTimeZone(timezoneId);
+		}
+		return tz;
+	}
+
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,8 +23,8 @@
  */
 package net.sf.jasperreports.compilers;
 
-import net.sf.jasperreports.compilers.JavaScriptCompiledData.CompiledClass;
-import net.sf.jasperreports.engine.JRRuntimeException;
+import java.lang.reflect.InvocationTargetException;
+import java.security.ProtectionDomain;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,17 +32,26 @@ import org.mozilla.javascript.DefiningClassLoader;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.optimizer.Codegen;
 
+import net.sf.jasperreports.compilers.JavaScriptCompiledData.CompiledClass;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.util.JRClassLoader;
+import net.sf.jasperreports.engine.util.ProtectionDomainFactory;
+
 /**
  * Class loader used to load classes generated for JavaScript expression evaluation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptClassLoader.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JavaScriptCompiledEvaluator
  */
 public class JavaScriptClassLoader extends DefiningClassLoader
 {
 
 	private static final Log log = LogFactory.getLog(JavaScriptClassLoader.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_INSTANCE_ERROR = "compilers.javascript.instance.error";
+	public static final String EXCEPTION_MESSAGE_KEY_LOAD_ERROR = "compilers.javascript.load.error";
+	
+	private volatile ProtectionDomain protectionDomain;
 	
 	public JavaScriptClassLoader()
 	{
@@ -55,18 +64,17 @@ public class JavaScriptClassLoader extends DefiningClassLoader
 		Class<? extends Script> scriptClass = loadExpressionClass(compiledClass);
 		try
 		{
-			Script script = scriptClass.newInstance();
+			Script script = scriptClass.getDeclaredConstructor().newInstance();
 			return script;
 		}
-		catch (InstantiationException e)
+		catch (InstantiationException | IllegalAccessException 
+			| NoSuchMethodException | InvocationTargetException e)
 		{
-			throw new JRRuntimeException("Failed to instantiate script class " 
-					+ compiledClass.getClassName(), e);
-		}
-		catch (IllegalAccessException e)
-		{
-			throw new JRRuntimeException("Failed to instantiate script class " 
-					+ compiledClass.getClassName(), e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_INSTANCE_ERROR,
+					new Object[]{compiledClass.getClassName()},
+					e);
 		}
 	}
 	
@@ -85,22 +93,43 @@ public class JavaScriptClassLoader extends DefiningClassLoader
 
 			try
 			{
-				scriptClass = defineClass(className, compiledClass.getClassBytes());
+				ProtectionDomain domain = getProtectionDomain();
+				byte[] classBytes = compiledClass.getClassBytes();
+				scriptClass = defineClass(className, classBytes, 0, classBytes.length, domain);
 				linkClass(scriptClass);
 			}
-			catch (SecurityException e)
+			catch (SecurityException | IllegalArgumentException e)
 			{
-				throw new JRRuntimeException("Failed to load script class " + className, e);
-			}
-			catch (IllegalArgumentException e)
-			{
-				throw new JRRuntimeException("Failed to load script class " + className, e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_LOAD_ERROR,
+						new Object[]{className},
+						e);
 			}
 		}
 		
 		return (Class<? extends Script>) scriptClass;
 	}
+
+	protected ProtectionDomain getProtectionDomain()
+	{
+		ProtectionDomain domain = protectionDomain;
+		if (domain == null)
+		{
+			synchronized (this)
+			{
+				domain = protectionDomain;
+				if (domain == null)
+				{
+					ProtectionDomainFactory protectionDomainFactory = JRClassLoader.getProtectionDomainFactory();
+					domain = protectionDomain = protectionDomainFactory.getProtectionDomain(this);
+				}
+			}
+		}
+		return domain;
+	}
 	
+	@Override
 	public String toString()
 	{
 		return getClass().getSimpleName() + '@' + hashCode();

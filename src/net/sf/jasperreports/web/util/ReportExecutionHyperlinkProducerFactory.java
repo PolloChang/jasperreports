@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,15 +32,9 @@ import net.sf.jasperreports.engine.export.JRHyperlinkProducerFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ReportExecutionHyperlinkProducerFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ReportExecutionHyperlinkProducerFactory extends JRHyperlinkProducerFactory
 {
-	/**
-	 * @deprecated Replaced by {@link ReportExecutionHyperlinkProducer#HYPERLINK_TYPE_REPORT_EXECUTION}.
-	 */
-	public static final String HYPERLINK_TYPE_REPORT_EXECUTION = "ReportExecution";
-	
 	private JasperReportsContext jasperReportsContext;
 	private HttpServletRequest request;
 	
@@ -61,9 +55,7 @@ public class ReportExecutionHyperlinkProducerFactory extends JRHyperlinkProducer
 		return new ReportExecutionHyperlinkProducerFactory(jasperReportsContext, request);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRHyperlinkProducer getHandler(String linkType)
 	{
 		if (linkType != null)
@@ -71,10 +63,6 @@ public class ReportExecutionHyperlinkProducerFactory extends JRHyperlinkProducer
 			if (ReportExecutionHyperlinkProducer.HYPERLINK_TYPE_REPORT_EXECUTION.equals(linkType))
 			{
 				return ReportExecutionHyperlinkProducer.getInstance(jasperReportsContext, request);
-			}
-			if (ReportInteractionHyperlinkProducer.HYPERLINK_TYPE_REPORT_INTERACTION.equals(linkType))
-			{
-				return ReportInteractionHyperlinkProducer.getInstance(jasperReportsContext, request);
 			}
 		}
 		return null;

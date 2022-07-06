@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -46,7 +46,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardBaseColumn.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class StandardBaseColumn implements BaseColumn, Serializable, JRChangeEventsSupport
 {
@@ -73,12 +72,12 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 	private Integer width;
 
 	private JRPropertiesMap propertiesMap;
-	private List<JRPropertyExpression> propertyExpressions = new ArrayList<JRPropertyExpression>();
+	private List<JRPropertyExpression> propertyExpressions = new ArrayList<>();
 
 	public StandardBaseColumn()
 	{
-		groupHeaders = new ArrayList<GroupCell>();
-		groupFooters = new ArrayList<GroupCell>();
+		groupHeaders = new ArrayList<>();
+		groupFooters = new ArrayList<>();
 	}
 
 	public StandardBaseColumn(BaseColumn column, ColumnFactory factory)
@@ -106,7 +105,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		JRPropertyExpression[] props = column.getPropertyExpressions();
 		if (props != null && props.length > 0)
 		{
-			propertyExpressions = new ArrayList<JRPropertyExpression>(props.length);
+			propertyExpressions = new ArrayList<>(props.length);
 			for (int i = 0; i < props.length; i++)
 			{
 				propertyExpressions.add(factory.getBaseObjectFactory().getPropertyExpression(props[i]));
@@ -114,9 +113,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		}
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public UUID getUUID()
 	{
 		if (uuid == null)
@@ -134,16 +131,19 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		this.uuid = uuid;
 	}
 		
+	@Override
 	public Cell getColumnHeader()
 	{
 		return columnHeader;
 	}
 	
+	@Override
 	public Cell getColumnFooter()
 	{
 		return columnFooter;
 	}
 
+	@Override
 	public JRExpression getPrintWhenExpression()
 	{
 		return printWhenExpression;
@@ -173,6 +173,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 				old, this.columnFooter);
 	}
 	
+	@Override
 	public Object clone()
 	{
 		StandardBaseColumn clone = null;
@@ -192,12 +193,13 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		clone.columnHeader = JRCloneUtils.nullSafeClone(columnHeader);
 		clone.columnFooter = JRCloneUtils.nullSafeClone(columnFooter);
 		clone.printWhenExpression = JRCloneUtils.nullSafeClone(printWhenExpression);
-		//FIXMECLONE should we deal with propertyExpressions? check all
+		clone.propertyExpressions = JRCloneUtils.cloneList(propertyExpressions);
 		clone.eventSupport = null;
 		clone.uuid = null;
 		return clone;
 	}
 
+	@Override
 	public Cell getTableHeader()
 	{
 		return tableHeader;
@@ -211,6 +213,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 				old, this.tableHeader);
 	}
 
+	@Override
 	public Cell getTableFooter()
 	{
 		return tableFooter;
@@ -224,6 +227,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 				old, this.tableFooter);
 	}
 
+	@Override
 	public Integer getWidth()
 	{
 		return width;
@@ -239,6 +243,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -252,11 +257,13 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		return eventSupport;
 	}
 
+	@Override
 	public List<GroupCell> getGroupHeaders()
 	{
 		return groupHeaders;
 	}
 
+	@Override
 	public List<GroupCell> getGroupFooters()
 	{
 		return groupFooters;
@@ -276,12 +283,14 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		return idx;
 	}
 	
+	@Override
 	public Cell getGroupFooter(String groupName)
 	{
 		int idx = findGroupCellIndex(groupFooters, groupName);
 		return idx < 0 ? null : groupFooters.get(idx).getCell();
 	}
 
+	@Override
 	public Cell getGroupHeader(String groupName)
 	{
 		int idx = findGroupCellIndex(groupHeaders, groupName);
@@ -402,11 +411,13 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		}
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		if (propertiesMap == null)
@@ -416,11 +427,13 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
 	}
 
+	@Override
 	public JRPropertyExpression[] getPropertyExpressions()
 	{
 		JRPropertyExpression[] props;
@@ -510,7 +523,7 @@ public abstract class StandardBaseColumn implements BaseColumn, Serializable, JR
 		
 		if (propertyExpressions == null)
 		{
-			propertyExpressions = new ArrayList<JRPropertyExpression>();
+			propertyExpressions = new ArrayList<>();
 		}
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.components.map;
 
 import java.io.Serializable;
 
+import net.sf.jasperreports.components.items.ItemProperty;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
@@ -33,7 +34,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StandardItemProperty.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link net.sf.jasperreports.components.items.StandardItemProperty}.
  */
 public class StandardItemProperty implements ItemProperty, JRChangeEventsSupport, Serializable
 {
@@ -61,6 +62,7 @@ public class StandardItemProperty implements ItemProperty, JRChangeEventsSupport
 		this.value = value;
 	}
 	
+	@Override
 	public String getName()
 	{
 		return name;
@@ -73,6 +75,7 @@ public class StandardItemProperty implements ItemProperty, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_NAME, old, this.name);
 	}
 
+	@Override
 	public String getValue()
 	{
 		return value;
@@ -85,6 +88,7 @@ public class StandardItemProperty implements ItemProperty, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_VALUE, old, this.value);
 	}
 	
+	@Override
 	public JRExpression getValueExpression()
 	{
 		return valueExpression;
@@ -97,6 +101,7 @@ public class StandardItemProperty implements ItemProperty, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_VALUE_EXPRESSION, old, this.valueExpression);
 	}
 
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -110,6 +115,7 @@ public class StandardItemProperty implements ItemProperty, JRChangeEventsSupport
 		return eventSupport;
 	}
 
+	@Override
 	public Object clone()
 	{
 		try

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.type.FillEnum;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintGraphicElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintGraphicElement extends JRTemplatePrintElement implements JRPrintGraphicElement
 {
@@ -55,25 +54,6 @@ public class JRTemplatePrintGraphicElement extends JRTemplatePrintElement implem
 	
 	/**
 	 *
-	 * @deprecated provide a source Id via {@link #JRTemplatePrintGraphicElement(JRTemplateGraphicElement, int)}
-	 */
-	protected JRTemplatePrintGraphicElement(JRTemplateGraphicElement graphicElement)
-	{
-		super(graphicElement);
-	}
-
-	/**
-	 *
-	 * @param sourceElementId the Id of the source element
-	 * @deprecated replaced by {@link #JRTemplatePrintGraphicElement(JRTemplateGraphicElement, PrintElementOriginator)}
-	 */
-	protected JRTemplatePrintGraphicElement(JRTemplateGraphicElement graphicElement, int sourceElementId)
-	{
-		super(graphicElement, sourceElementId);
-	}
-
-	/**
-	 *
 	 * @param originator
 	 */
 	protected JRTemplatePrintGraphicElement(JRTemplateGraphicElement graphicElement, PrintElementOriginator originator)
@@ -81,50 +61,38 @@ public class JRTemplatePrintGraphicElement extends JRTemplatePrintElement implem
 		super(graphicElement, originator);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPen getLinePen()
 	{
 		return ((JRTemplateGraphicElement)template).getLinePen();
 	}
 		
 
-	/**
-	 * 
-	 */
+	@Override
 	public FillEnum getFillValue()
 	{
 		return ((JRTemplateGraphicElement)this.template).getFillValue();
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public FillEnum getOwnFillValue()
 	{
 		return ((JRTemplateGraphicElement)this.template).getOwnFillValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setFill(FillEnum fill)
 	{
 		throw new UnsupportedOperationException();
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Float getDefaultLineWidth() 
 	{
 		return ((JRTemplateGraphicElement)template).getDefaultLineWidth();
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return ((JRTemplateGraphicElement)template).getDefaultLineColor();

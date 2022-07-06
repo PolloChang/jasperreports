@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,37 +28,69 @@
  */
 package net.sf.jasperreports.engine.xml;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.parsers.SAXParser;
 
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.util.JRLoader;
-
 import org.apache.commons.digester.Digester;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.properties.PropertyConstants;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlDigester.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlDigester extends Digester
 {
+	@SuppressWarnings("hiding")
+	private static final Log log = LogFactory.getLog(JRXmlDigester.class);
 
+	public static final String EXCEPTION_MESSAGE_KEY_ENTITY_LOADING_ERROR = "xml.digester.entity.loading.error";
 
+	public static final String EXCEPTION_MESSAGE_UNKOWN_ENTITY_NOT_LOADING = "xml.digester.unknown.entity.not.loading";
+
+	/**
+	 * Property that determines whether loading entities that are not known to the engine is allowed.
+	 * 
+	 * <p>
+	 * By default the property is set to <code>false</code>.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_OTHER,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_2_1,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_LOAD_UNKNOWN_ENTITIES = 
+			JRPropertiesUtil.PROPERTY_PREFIX + "xml.load.unknown.entities";
+	
 	/**
 	 *
 	 */
 	//private static boolean wasWarning;
 
-	private Map<String,String> internalEntityResources;
+	private Map<String, URL> internalEntityResources;
+	private Set<String> entityURLs;
+	private boolean loadUnknownEntities;
 
 	private String lastNamespacePrefix;
 	private Object lastPopped;
@@ -93,18 +125,31 @@ public class JRXmlDigester extends Digester
 
 	private void initInternalResources()
 	{
-		internalEntityResources = new HashMap<String,String>();
+		internalEntityResources = new HashMap<>();
+		entityURLs = new HashSet<>();
 		
-		internalEntityResources.put(JRXmlConstants.JASPERREPORT_SYSTEM_ID, 
+		//FIXME only add entities relevant to the current document type (report, print, template)
+		addEntityResource(JRXmlConstants.JASPERREPORT_SYSTEM_ID, 
 				JRXmlConstants.JASPERREPORT_DTD);
-		internalEntityResources.put(JRXmlConstants.JASPERPRINT_SYSTEM_ID, 
+		addEntityResource(JRXmlConstants.JASPERPRINT_SYSTEM_ID, 
 				JRXmlConstants.JASPERPRINT_DTD);
-		internalEntityResources.put(JRXmlConstants.JASPERTEMPLATE_SYSTEM_ID, 
+		addEntityResource(JRXmlConstants.JASPERTEMPLATE_SYSTEM_ID, 
 				JRXmlConstants.JASPERTEMPLATE_DTD);
-		internalEntityResources.put(JRXmlConstants.JASPERREPORT_XSD_SYSTEM_ID, 
+		addEntityResource(JRXmlConstants.JASPERREPORT_XSD_SYSTEM_ID, 
 				JRXmlConstants.JASPERREPORT_XSD_RESOURCE);
-		internalEntityResources.put(JRXmlConstants.JASPERPRINT_XSD_SYSTEM_ID, 
+		addEntityResource(null, 
+				JRXmlConstants.JASPERREPORT_XSD_DTD_COMPAT_RESOURCE);
+		addEntityResource(JRXmlConstants.JASPERPRINT_XSD_SYSTEM_ID, 
 				JRXmlConstants.JASPERPRINT_XSD_RESOURCE);
+		addEntityResource(null, 
+				JRXmlConstants.JASPERPRINT_XSD_DTD_COMPAT_RESOURCE);
+		addEntityResource(JRXmlConstants.JASPERTEMPLATE_XSD_SYSTEM_ID, 
+				JRXmlConstants.JASPERTEMPLATE_XSD_RESOURCE);
+		addEntityResource(null, 
+				JRXmlConstants.JASPERTEMPLATE_XSD_DTD_COMPAT_RESOURCE);
+		
+		loadUnknownEntities = JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(
+				PROPERTY_LOAD_UNKNOWN_ENTITIES, false);
 	}
 
 
@@ -121,13 +166,44 @@ public class JRXmlDigester extends Digester
 	 */
 	public void addInternalEntityResource(String systemId, String resource)
 	{
-		internalEntityResources.put(systemId, resource);
+		if (resource == null)
+		{
+			if (log.isDebugEnabled())
+			{
+				log.debug("adding entity URL " + systemId);
+			}
+			
+			entityURLs.add(systemId);
+		}
+		else
+		{
+			addEntityResource(systemId, resource);
+		}
+	}
+	
+	private void addEntityResource(String systemId, String resource)
+	{
+		URL resourceURL = JRLoader.getResource(resource);
+		if (resourceURL == null)
+		{
+			log.warn("Could not find entity resource " + resource);
+			return;
+		}
+		
+		if (log.isDebugEnabled())
+		{
+			log.debug("Entity " + systemId + " resolved to " + resourceURL);
+		}
+		
+		if (systemId != null)
+		{
+			internalEntityResources.put(systemId, resourceURL);
+		}
+		entityURLs.add(resourceURL.toExternalForm());
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public InputSource resolveEntity(
 		String pubId,
 		String systemId
@@ -137,52 +213,42 @@ public class JRXmlDigester extends Digester
 
 		if (systemId != null)
 		{
-			String resource = internalEntityResources.get(systemId);
+			URL resourceURL = internalEntityResources.get(systemId);
 			
-			if (resource == null)
+			if (resourceURL == null)
 			{
-				return new InputSource(systemId);
-			}
-
-			ClassLoader clsLoader = Thread.currentThread().getContextClassLoader();
-
-			URL url = null;
-			if (clsLoader != null)
-			{
-				url = clsLoader.getResource(resource);
-			}
-			if (url == null)
-			{
-				//if (!wasWarning)
-				//{
-				//	if (log.isWarnEnabled())
-				//		log.warn("Failure using Thread.currentThread().getContextClassLoader() in JRXmlDigester class. Using JRXmlDigester.class.getClassLoader() instead.");
-				//	wasWarning = true;
-				//}
-				clsLoader = JRXmlDigester.class.getClassLoader();
-			}
-			
-			InputStream is;
-			if (clsLoader == null)
-			{
-				is = JRXmlDigester.class.getResourceAsStream("/" + resource);
+				if (entityURLs.contains(systemId) || loadUnknownEntities)
+				{
+					if (log.isDebugEnabled())
+					{
+						log.debug("loading entity " + systemId);
+					}
+					
+					//FIXME load from resource URLs?
+					inputSource = new InputSource(systemId);
+				}
+				else
+				{
+					throw new JRRuntimeException(EXCEPTION_MESSAGE_UNKOWN_ENTITY_NOT_LOADING, 
+							new Object[]{systemId});
+				}
 			}
 			else
 			{
-				is = clsLoader.getResourceAsStream(resource);
-			}
-			
-			if (is != null)
-			{
 				try
 				{
-					// load the data into the memory so that we don't leave the stream open
-					InputStream memoryStream = JRLoader.loadToMemoryInputStream(is);
+					// load the data into the memory
+					byte[] resourceData = JRLoader.loadBytes(resourceURL);
+					InputStream memoryStream = new ByteArrayInputStream(resourceData);
 					inputSource = new InputSource(memoryStream);
 				}
 				catch (JRException e)
 				{
-					throw new JRRuntimeException("Failed to load entity " + systemId, e);
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_ENTITY_LOADING_ERROR,
+							new Object[]{systemId},
+							e);
 				}
 			}
 		}
@@ -191,6 +257,7 @@ public class JRXmlDigester extends Digester
 	}
 
 
+	@Override
 	public void endElement(String namespaceURI, String localName, String qName)
 			throws SAXException
 	{

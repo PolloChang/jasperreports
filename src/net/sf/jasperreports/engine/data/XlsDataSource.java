@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,6 +29,8 @@ import java.io.InputStream;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.repo.RepositoryContext;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -42,7 +44,6 @@ import org.apache.poi.ss.usermodel.Workbook;
  * names or set a flag to read the column names from the first row of the CSV file.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsDataSource extends AbstractPoiXlsDataSource
 {
@@ -84,9 +85,13 @@ public class XlsDataSource extends AbstractPoiXlsDataSource
 	 */
 	public XlsDataSource(JasperReportsContext jasperReportsContext, String location) throws JRException, IOException
 	{
-		super(jasperReportsContext, location);
+		this(SimpleRepositoryContext.of(jasperReportsContext), location);
 	}
 
+	public XlsDataSource(RepositoryContext context, String location) throws JRException, IOException
+	{
+		super(context, location);
+	}
 	
 	/**
 	 * @see #XlsDataSource(JasperReportsContext, String)
@@ -97,9 +102,7 @@ public class XlsDataSource extends AbstractPoiXlsDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Workbook loadWorkbook(InputStream inputStream) throws IOException
 	{
 		return new HSSFWorkbook(inputStream);

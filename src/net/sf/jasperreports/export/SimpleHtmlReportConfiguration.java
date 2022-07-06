@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,12 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.export.type.HtmlBorderCollapseEnum;
 import net.sf.jasperreports.export.type.HtmlSizeUnitEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleHtmlReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleHtmlReportConfiguration extends SimpleReportExportConfiguration implements HtmlReportConfiguration
 {
@@ -36,11 +36,15 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 	private Boolean isWhitePageBackground;
 	private Boolean isWrapBreakWord;
 	private HtmlSizeUnitEnum sizeUnit;
-	private String borderCollapse;
+	private HtmlBorderCollapseEnum borderCollapse;
 	private Boolean isIgnorePageMargins;
 	private Boolean accessibleHtml;
 	private Float zoomRatio;
 	private Boolean isIgnoreHyperlink;
+	private Boolean isEmbedImage;
+	private Boolean isEmbeddedSvgUseFonts;
+	private Boolean isConvertSvgToImage;
+	private Boolean isUseBackgroundImageToAlign;
 
 	
 	/**
@@ -50,9 +54,7 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 	{
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isRemoveEmptySpaceBetweenRows()
 	{
 		return isRemoveEmptySpaceBetweenRows;
@@ -66,9 +68,7 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 		this.isRemoveEmptySpaceBetweenRows = isRemoveEmptySpaceBetweenRows;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isWhitePageBackground()
 	{
 		return isWhitePageBackground;
@@ -82,9 +82,7 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 		this.isWhitePageBackground = isWhitePageBackground;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isWrapBreakWord()
 	{
 		return isWrapBreakWord;
@@ -98,9 +96,7 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 		this.isWrapBreakWord = isWrapBreakWord;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public HtmlSizeUnitEnum getSizeUnit()
 	{
 		return sizeUnit;
@@ -115,9 +111,24 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 	}
 	
 	/**
-	 * 
+	 * @deprecated Replaced by {@link #getBorderCollapseValue()}.
 	 */
+	@Override
 	public String getBorderCollapse()
+	{
+		return borderCollapse == null ? null : borderCollapse.getName();
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #setBorderCollapse(HtmlBorderCollapseEnum)}.
+	 */
+	public void setBorderCollapse(String borderCollapse)
+	{
+		setBorderCollapse(HtmlBorderCollapseEnum.getByName(borderCollapse));
+	}
+	
+	@Override
+	public HtmlBorderCollapseEnum getBorderCollapseValue()
 	{
 		return borderCollapse;
 	}
@@ -125,14 +136,12 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 	/**
 	 * 
 	 */
-	public void setBorderCollapse(String borderCollapse)
+	public void setBorderCollapse(HtmlBorderCollapseEnum borderCollapse)
 	{
 		this.borderCollapse = borderCollapse;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnorePageMargins()
 	{
 		return isIgnorePageMargins;
@@ -146,9 +155,7 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 		this.isIgnorePageMargins = isIgnorePageMargins;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isAccessibleHtml()
 	{
 		return accessibleHtml;
@@ -162,9 +169,7 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 		this.accessibleHtml = accessibleHtml;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Float getZoomRatio()
 	{
 		return zoomRatio;
@@ -178,9 +183,7 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 		this.zoomRatio = zoomRatio;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreHyperlink()
 	{
 		return isIgnoreHyperlink;
@@ -192,5 +195,61 @@ public class SimpleHtmlReportConfiguration extends SimpleReportExportConfigurati
 	public void setIgnoreHyperlink(Boolean isIgnoreHyperlink)
 	{
 		this.isIgnoreHyperlink = isIgnoreHyperlink;
+	}
+	
+	@Override
+	public Boolean isEmbedImage()
+	{
+		return isEmbedImage;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setEmbedImage(Boolean isEmbedImage)
+	{
+		this.isEmbedImage = isEmbedImage;
+	}
+	
+	@Override
+	public Boolean isEmbeddedSvgUseFonts()
+	{
+		return isEmbeddedSvgUseFonts;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setEmbeddedSvgUseFonts(Boolean isEmbeddedSvgUseFonts)
+	{
+		this.isEmbeddedSvgUseFonts = isEmbeddedSvgUseFonts;
+	}
+	
+	@Override
+	public Boolean isConvertSvgToImage()
+	{
+		return isConvertSvgToImage;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setConvertSvgToImage(Boolean isConvertSvgToImage)
+	{
+		this.isConvertSvgToImage = isConvertSvgToImage;
+	}
+	
+	@Override
+	public Boolean isUseBackgroundImageToAlign()
+	{
+		return isUseBackgroundImageToAlign;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setUseBackgroundImageToAlign(Boolean isUseBackgroundImageToAlign)
+	{
+		this.isUseBackgroundImageToAlign = isUseBackgroundImageToAlign;
 	}
 }

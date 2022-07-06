@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,11 +34,10 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
- * An immutable instantiation of a <code>JRDataRange</code>, suitable for holding
+ * An immutable instantiation of a {@link net.sf.jasperreports.charts.JRDataRange JRDataRange}, suitable for holding
  * a range.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRBaseDataRange.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseDataRange implements JRDataRange, Serializable
 {
@@ -89,16 +88,12 @@ public class JRBaseDataRange implements JRDataRange, Serializable
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getLowExpression()
 	{
 		return lowExpression;
 	}
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHighExpression()
 	{
 		return highExpression;
@@ -117,9 +112,7 @@ public class JRBaseDataRange implements JRDataRange, Serializable
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseDataRange clone = null;

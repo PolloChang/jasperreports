@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,36 +23,12 @@
  */
 package net.sf.jasperreports.components.map;
 
-import net.sf.jasperreports.engine.xml.JRBaseFactory;
-import net.sf.jasperreports.engine.xml.JRXmlConstants;
-
-import org.xml.sax.Attributes;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ItemPropertyXmlFactory.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link net.sf.jasperreports.components.items.ItemPropertyXmlFactory}.
  */
-public class ItemPropertyXmlFactory extends JRBaseFactory
+public class ItemPropertyXmlFactory extends net.sf.jasperreports.components.items.ItemPropertyXmlFactory
 {
-
-	/**
-	 *
-	 */
-	public Object createObject(Attributes atts)
-	{
-		StandardItemProperty itemProperty = new StandardItemProperty();
-		
-		String name = atts.getValue(JRXmlConstants.ATTRIBUTE_name);
-		if(name != null)
-		{
-			itemProperty.setName(name);
-		}
-		String value = atts.getValue(JRXmlConstants.ATTRIBUTE_value);
-		if(value != null)
-		{
-			itemProperty.setValue(value);
-		}
-		return itemProperty;
-	}
 }

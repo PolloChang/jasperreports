@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRBaseTimeSeriesDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseTimeSeriesDataset extends JRBaseChartDataset implements JRTimeSeriesDataset, JRChangeEventsSupport {
 	
@@ -69,14 +68,17 @@ public class JRBaseTimeSeriesDataset extends JRBaseChartDataset implements JRTim
 		}
 	}
 	
+	@Override
 	public JRTimeSeries[] getSeries(){
 		return timeSeries;
 	}
 	
+	@Override
 	public Class<?> getTimePeriod(){
 		return timePeriod;
 	}
 	
+	@Override
 	public void setTimePeriod( Class<?> timePeriod ){
 		Object old = this.timePeriod;
 		this.timePeriod = timePeriod;
@@ -84,31 +86,26 @@ public class JRBaseTimeSeriesDataset extends JRBaseChartDataset implements JRTim
 	}
 
 
-	/** 
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.TIMESERIES_DATASET;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseTimeSeriesDataset clone = (JRBaseTimeSeriesDataset)super.clone();
@@ -119,6 +116,7 @@ public class JRBaseTimeSeriesDataset extends JRBaseChartDataset implements JRTim
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

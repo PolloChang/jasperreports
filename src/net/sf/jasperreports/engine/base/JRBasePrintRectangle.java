@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,12 +27,10 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.PrintElementVisitor;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePrintRectangle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePrintRectangle extends JRBasePrintGraphicElement implements JRPrintRectangle
 {
@@ -57,38 +55,25 @@ public class JRBasePrintRectangle extends JRBasePrintGraphicElement implements J
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public int getRadius()
 	{
-		return JRStyleResolver.getRadius(this);
+		return getStyleResolver().getRadius(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getOwnRadius()
 	{
 		return radius;
 	}
 
-	/**
-	 *
-	 */
-	public void setRadius(int radius)
-	{
-		this.radius = Integer.valueOf(radius);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setRadius(Integer radius)
 	{
 		this.radius = radius;
 	}
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);

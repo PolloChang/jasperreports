@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,24 +23,27 @@
  */
 package net.sf.jasperreports.extensions;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.util.ClassUtils;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * A class that provides means of setting and accessing
  * {@link ExtensionsRegistry} instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ExtensionsEnvironment.java 7199 2014-08-27 13:58:10Z teodord $
  * @see #getExtensionsRegistry()
  */
 public final class ExtensionsEnvironment
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NULL_EXTENSIONS_REGISTRY = "extensions.null.extensions.registry";
 
 	private ExtensionsEnvironment()
 	{
@@ -58,11 +61,17 @@ public final class ExtensionsEnvironment
 	 * This property is only read at initialization time, therefore changing
 	 * the property value at a later time will have no effect. 
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXTENSIONS,
+			defaultValue = "net.sf.jasperreports.extensions.DefaultExtensionsRegistry",
+			scopes = {PropertyScope.GLOBAL},
+			sinceVersion = PropertyConstants.VERSION_3_1_0
+			)
 	public static final String PROPERTY_EXTENSIONS_REGISTRY_CLASS = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "extensions.registry.class";
 	
 	private static ExtensionsRegistry systemRegistry;
-	private static final ThreadLocal<ExtensionsRegistry> threadRegistry = new InheritableThreadLocal<ExtensionsRegistry>();
+	private static final ThreadLocal<ExtensionsRegistry> threadRegistry = new InheritableThreadLocal<>();
 	
 	static
 	{
@@ -106,7 +115,10 @@ public final class ExtensionsEnvironment
 	{
 		if (extensionsRegistry == null)
 		{
-			throw new JRRuntimeException("Cannot set a null extensions registry.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NULL_EXTENSIONS_REGISTRY,
+					(Object[])null);
 		}
 		
 		systemRegistry = extensionsRegistry;
@@ -140,7 +152,7 @@ public final class ExtensionsEnvironment
 	 */
 	public static void resetThreadExtensionsRegistry()
 	{
-		threadRegistry.set(null);
+		threadRegistry.remove();
 	}
 	
 	/**

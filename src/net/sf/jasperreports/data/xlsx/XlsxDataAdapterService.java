@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,16 +29,14 @@ import java.util.Map;
 import net.sf.jasperreports.data.excel.ExcelFormatEnum;
 import net.sf.jasperreports.data.xls.AbstractXlsDataAdapterService;
 import net.sf.jasperreports.data.xls.XlsDataAdapter;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.data.AbstractXlsDataSource;
 import net.sf.jasperreports.engine.data.JRXlsxDataSource;
 import net.sf.jasperreports.engine.query.ExcelQueryExecuterFactory;
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: XlsxDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class XlsxDataAdapterService extends AbstractXlsDataAdapterService 
 {
@@ -46,17 +44,9 @@ public class XlsxDataAdapterService extends AbstractXlsDataAdapterService
 	/**
 	 * 
 	 */
-	public XlsxDataAdapterService(JasperReportsContext jasperReportsContext, XlsxDataAdapter xlsxDataAdapter)
+	public XlsxDataAdapterService(ParameterContributorContext paramContribContext, XlsxDataAdapter xlsxDataAdapter)
 	{
-		super(jasperReportsContext, xlsxDataAdapter);
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #XlsxDataAdapterService(JasperReportsContext, XlsxDataAdapter)}.
-	 */
-	public XlsxDataAdapterService(XlsxDataAdapter xlsxDataAdapter)
-	{
-		this(DefaultJasperReportsContext.getInstance(), xlsxDataAdapter);
+		super(paramContribContext, xlsxDataAdapter);
 	}
 	
 	public XlsxDataAdapter getXlsxDataAdapter()
@@ -82,12 +72,10 @@ public class XlsxDataAdapterService extends AbstractXlsDataAdapterService
 	@Override
 	protected AbstractXlsDataSource getXlsDataSource() throws JRException
 	{
-		XlsDataAdapter xlsDataAdapter  = getXlsDataAdapter();
-		
 		AbstractXlsDataSource dataSource = null;
 		try
 		{
-			dataSource = new JRXlsxDataSource(getJasperReportsContext(), xlsDataAdapter.getFileName());
+			dataSource = new JRXlsxDataSource(dataStream);
 		}
 		catch (IOException e)
 		{

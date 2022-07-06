@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.JRValueParameter;
  * Query executer factory instances must be thread-safe as they are cached and used as singletons.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.query.JRQueryExecuter
  * @deprecated Replaced by {@link QueryExecuterFactory}.
  */

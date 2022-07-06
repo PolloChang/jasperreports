@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,8 +23,6 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.export.XlsExporterConfiguration;
 import net.sf.jasperreports.export.XlsReportConfiguration;
 
@@ -37,9 +35,8 @@ import net.sf.jasperreports.export.XlsReportConfiguration;
  *
  * @deprecated Replaced by {@link XlsExporterConfiguration}.
  * @author Sanda Zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRXlsAbstractExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRXlsAbstractExporterParameter extends JRExporterParameter
+public class JRXlsAbstractExporterParameter extends net.sf.jasperreports.engine.JRExporterParameter
 {
 
 
@@ -59,21 +56,9 @@ public class JRXlsAbstractExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_ONE_PAGE_PER_SHEET}.
-	 */
-	public static final String PROPERTY_ONE_PAGE_PER_SHEET = XlsReportConfiguration.PROPERTY_ONE_PAGE_PER_SHEET;
-
-
-	/**
 	 * @deprecated Replaced by {@link XlsReportConfiguration#isRemoveEmptySpaceBetweenRows()}.
 	 */
 	public static final JRXlsAbstractExporterParameter IS_REMOVE_EMPTY_SPACE_BETWEEN_ROWS = new JRXlsAbstractExporterParameter("Is Remove Empty Space Between Rows");
-
-
-	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_ROWS}.
-	 */
-	public static final String PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_ROWS = XlsReportConfiguration.PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_ROWS;
 
 
 	/**
@@ -83,21 +68,9 @@ public class JRXlsAbstractExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_COLUMNS}.
-	 */
-	public static final String PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_COLUMNS = XlsReportConfiguration.PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_COLUMNS;
-
-
-	/**
 	 * @deprecated Replaced by {@link XlsReportConfiguration#isWhitePageBackground()}.
 	 */
 	public static final JRXlsAbstractExporterParameter IS_WHITE_PAGE_BACKGROUND = new JRXlsAbstractExporterParameter("Is White Page Background");
-
-
-	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_WHITE_PAGE_BACKGROUND}.
-	 */
-	public static final String PROPERTY_WHITE_PAGE_BACKGROUND = XlsReportConfiguration.PROPERTY_WHITE_PAGE_BACKGROUND;
 
 
 	/**
@@ -107,27 +80,9 @@ public class JRXlsAbstractExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_DETECT_CELL_TYPE}.
-	 */
-	public static final String PROPERTY_DETECT_CELL_TYPE = XlsReportConfiguration.PROPERTY_DETECT_CELL_TYPE;
-
-
-	/**
 	 * @deprecated Replaced by {@link XlsReportConfiguration#getSheetNames()}.
 	 */
 	public static final JRXlsAbstractExporterParameter SHEET_NAMES = new JRXlsAbstractExporterParameter("Sheet Names");
-
-
-	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_SHEET_NAMES_PREFIX}.
-	 */
-	public static final String PROPERTY_SHEET_NAMES_PREFIX = XlsReportConfiguration.PROPERTY_SHEET_NAMES_PREFIX;
-
-
-	/**
-	 * @deprecated Replaced by {@link JRXlsAbstractExporter#PROPERTY_SHEET_NAME}.
-	 */
-	public static final String PROPERTY_SHEET_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.sheet.name";
 
 
 	/**
@@ -143,35 +98,19 @@ public class JRXlsAbstractExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_FONT_SIZE_FIX_ENABLED}.
-	 */
-	public static final String PROPERTY_FONT_SIZE_FIX_ENABLED = XlsReportConfiguration.PROPERTY_FONT_SIZE_FIX_ENABLED;
-
-
-	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_IMAGE_BORDER_FIX_ENABLED}.
-	 */
-	public static final String PROPERTY_IMAGE_BORDER_FIX_ENABLED = XlsReportConfiguration.PROPERTY_IMAGE_BORDER_FIX_ENABLED;
-
-
-	/**
 	 * @deprecated Replaced by {@link XlsReportConfiguration#getFormatPatternsMap()}.
 	 */
-	public static final JRExporterParameter FORMAT_PATTERNS_MAP = new JRXlsExporterParameter("Format Patterns Map");
+	public static final net.sf.jasperreports.engine.JRExporterParameter FORMAT_PATTERNS_MAP = 
+		new JRXlsExporterParameter("Format Patterns Map");
 
 	
 	/**
 	 * @deprecated Replaced by {@link XlsReportConfiguration#getMaxRowsPerSheet()}.
 	 */
-	public static final JRExporterParameter MAXIMUM_ROWS_PER_SHEET = new JRXlsExporterParameter("Maximum Rows Per Sheet");
+	public static final net.sf.jasperreports.engine.JRExporterParameter MAXIMUM_ROWS_PER_SHEET = 
+		new JRXlsExporterParameter("Maximum Rows Per Sheet");
 
 	
-	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_MAXIMUM_ROWS_PER_SHEET}.
-	 */
-	public static final String PROPERTY_MAXIMUM_ROWS_PER_SHEET = XlsReportConfiguration.PROPERTY_MAXIMUM_ROWS_PER_SHEET;
-
-
 	/**
 	 * @deprecated Replaced by {@link XlsReportConfiguration#isIgnoreGraphics()}.
 	 */
@@ -179,21 +118,9 @@ public class JRXlsAbstractExporterParameter extends JRExporterParameter
 
 	
 	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_IGNORE_GRAPHICS}.
-	 */
-	public static final String PROPERTY_IGNORE_GRAPHICS = XlsReportConfiguration.PROPERTY_IGNORE_GRAPHICS;
-
-
-	/**
 	 * @deprecated Replaced by {@link XlsReportConfiguration#isCollapseRowSpan()}.
 	 */
 	public static final JRXlsAbstractExporterParameter IS_COLLAPSE_ROW_SPAN = new JRXlsAbstractExporterParameter("Is Collapse Row Span");
-
-
-	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_COLLAPSE_ROW_SPAN}.
-	 */
-	public static final String PROPERTY_COLLAPSE_ROW_SPAN = XlsReportConfiguration.PROPERTY_COLLAPSE_ROW_SPAN;
 
 
 	/**
@@ -203,21 +130,9 @@ public class JRXlsAbstractExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_IGNORE_CELL_BORDER}.
-	 */
-	public static final String PROPERTY_IGNORE_CELL_BORDER = XlsReportConfiguration.PROPERTY_IGNORE_CELL_BORDER;
-
-
-	/**
 	 * @deprecated Replaced by {@link XlsReportConfiguration#isIgnoreCellBackground()}.
 	 */
 	public static final JRXlsAbstractExporterParameter IS_IGNORE_CELL_BACKGROUND = new JRXlsAbstractExporterParameter("Is Ignore Cell Background");
-
-
-	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_IGNORE_CELL_BACKGROUND}.
-	 */
-	public static final String PROPERTY_IGNORE_CELL_BACKGROUND = XlsReportConfiguration.PROPERTY_IGNORE_CELL_BACKGROUND;
 
 
 	/**
@@ -227,20 +142,9 @@ public class JRXlsAbstractExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link XlsReportConfiguration#PROPERTY_PASSWORD}.
-	 */
-	public static final String PROPERTY_PASSWORD = XlsReportConfiguration.PROPERTY_PASSWORD;
-
-	
-	/**
 	 * @deprecated Replaced by {@link XlsExporterConfiguration#isCreateCustomPalette()}.
 	 */
-	public static final JRExporterParameter CREATE_CUSTOM_PALETTE = new JExcelApiExporterParameter("Create Custom Palette");
-
-	/**
-	 * @deprecated Replaced by {@link XlsExporterConfiguration#PROPERTY_CREATE_CUSTOM_PALETTE}.
-	 */
-	public static final String PROPERTY_CREATE_CUSTOM_PALETTE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.create.custom.palette";
-
+	public static final net.sf.jasperreports.engine.JRExporterParameter CREATE_CUSTOM_PALETTE = 
+		new JRXlsAbstractExporterParameter("Create Custom Palette");
 
 }

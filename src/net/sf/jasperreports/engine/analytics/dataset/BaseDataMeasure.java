@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,12 +35,14 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseDataMeasure.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BaseDataMeasure implements DataMeasure, Serializable
 {
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	public static final String EXCEPTION_MESSAGE_KEY_MEASURE_INCREMENTER_LOAD_ERROR = "engine.analytics.dataset.measure.incrementer.load.error";
+	public static final String EXCEPTION_MESSAGE_KEY_MEASURE_VALUE_LOAD_ERROR = "engine.analytics.dataset.measure.value.load.error";
 	
 	protected String name;
 	protected JRExpression labelExpression;
@@ -105,7 +107,11 @@ public class BaseDataMeasure implements DataMeasure, Serializable
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new JRRuntimeException("Could not load measure value class", e);
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_MEASURE_VALUE_LOAD_ERROR,
+							(Object[])null,
+							e);
 				}
 			}
 		}
@@ -145,7 +151,11 @@ public class BaseDataMeasure implements DataMeasure, Serializable
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new JRRuntimeException("Could not load measure incrementer class", e);
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_MEASURE_INCREMENTER_LOAD_ERROR,
+							(Object[])null,
+							e);
 				}
 			}
 		}

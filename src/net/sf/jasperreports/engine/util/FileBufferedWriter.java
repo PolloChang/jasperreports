@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,13 +30,13 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FileBufferedWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FileBufferedWriter extends Writer 
 {
@@ -79,7 +79,7 @@ public class FileBufferedWriter extends Writer
 		{
 			close();
 			
-			reader = new InputStreamReader(fbos.getDataInputStream(), "UTF-8");
+			reader = new InputStreamReader(fbos.getDataInputStream(), StandardCharsets.UTF_8);
 
 			char[] chars = new char[10000];
 			int ln = 0;
@@ -114,16 +114,19 @@ public class FileBufferedWriter extends Writer
 		fbos.dispose();
 	}
 	
+	@Override
 	public void close() throws IOException 
 	{
 		osw.close();
 	}
 
+	@Override
 	public void flush() throws IOException 
 	{
 		osw.flush();
 	}
 
+	@Override
 	public void write(char[] cbuf, int off, int len) throws IOException 
 	{
 		if (len > 0)

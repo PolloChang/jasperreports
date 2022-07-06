@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,8 +37,7 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
  * An object that specifies how an item label should be displayed.  Used with
  * category plots such as a bar or pie plot.
  *
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRDesignItemLabel.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class JRDesignItemLabel extends JRBaseItemLabel implements JRChangeEventsSupport
 {
@@ -115,9 +114,7 @@ public class JRDesignItemLabel extends JRBaseItemLabel implements JRChangeEvents
 		getEventSupport().firePropertyChange(PROPERTY_FONT, old, this.font);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignItemLabel clone = (JRDesignItemLabel)super.clone();
@@ -127,6 +124,7 @@ public class JRDesignItemLabel extends JRBaseItemLabel implements JRChangeEvents
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

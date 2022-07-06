@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,20 +23,21 @@
  */
 package net.sf.jasperreports.export;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.StringWriter;
 import java.io.Writer;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.util.StringBufferWriter;
+import net.sf.jasperreports.util.StringBuilderWriter;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleWriterExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleWriterExporterOutput implements WriterExporterOutput
 {
@@ -45,7 +46,6 @@ public class SimpleWriterExporterOutput implements WriterExporterOutput
 	 */
 	private final String encoding;
 	private Writer writer;
-	private StringBuffer sbuffer;
 	private boolean toClose;
 
 	
@@ -56,12 +56,25 @@ public class SimpleWriterExporterOutput implements WriterExporterOutput
 	public SimpleWriterExporterOutput(StringBuffer sbuffer)
 	{
 		this.encoding = "UTF-8";
-		this.sbuffer = sbuffer;
 		
 		if (sbuffer != null)
 		{
-			writer = new StringWriter();
-			toClose = true;
+			writer = new StringBufferWriter(sbuffer);
+		}
+	}
+
+	
+	/**
+	 * Creates a {@link WriterExporterOutput} instance which stores its result into the provided string builder. 
+	 * Useful for just storing the result in a string for later use.
+	 */
+	public SimpleWriterExporterOutput(StringBuilder sbuilder)
+	{
+		this.encoding = "UTF-8";
+		
+		if (sbuilder != null)
+		{
+			writer = new StringBuilderWriter(sbuilder);
 		}
 	}
 
@@ -129,7 +142,7 @@ public class SimpleWriterExporterOutput implements WriterExporterOutput
 		{
 			try
 			{
-				OutputStream os = new FileOutputStream(file);
+				OutputStream os = new BufferedOutputStream(new FileOutputStream(file));
 				writer = new OutputStreamWriter(os, encoding);
 			}
 			catch (IOException e)
@@ -166,24 +179,21 @@ public class SimpleWriterExporterOutput implements WriterExporterOutput
 	/**
 	 * The character encoding used for export.
 	 */
+	@Override
 	public String getEncoding()
 	{
 		return encoding;
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Writer getWriter()
 	{
 		return writer;
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public void close()
 	{
 		if (toClose && writer != null)
@@ -194,11 +204,6 @@ public class SimpleWriterExporterOutput implements WriterExporterOutput
 			}
 			catch (IOException e)
 			{
-			}
-
-			if (sbuffer != null)
-			{
-				sbuffer.append(writer.toString());
 			}
 		}
 	}

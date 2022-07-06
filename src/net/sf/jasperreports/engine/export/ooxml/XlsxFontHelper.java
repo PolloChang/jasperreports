@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,19 +31,15 @@ import java.util.Map;
 import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
-import net.sf.jasperreports.engine.fonts.FontFamily;
-import net.sf.jasperreports.engine.fonts.FontInfo;
-import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.export.XlsReportConfiguration;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxFontHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxFontHelper extends BaseHelper
 {
-	private Map<String,Integer> fontCache = new HashMap<String,Integer>();//FIXMEXLSX use soft cache? check other exporter caches as well
+	private Map<String,Integer> fontCache = new HashMap<>();//FIXMEXLSX use soft cache? check other exporter caches as well
 	
 	private String exporterKey;
 	private XlsReportConfiguration configuration;
@@ -81,29 +77,17 @@ public class XlsxFontHelper extends BaseHelper
 			return -1;			
 		}
 
-		String fontName = font.getFontName();
-
-		FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontName, locale);
-		if (fontInfo != null)
-		{
-			//fontName found in font extensions
-			FontFamily family = fontInfo.getFontFamily();
-			String exportFont = family.getExportFont(exporterKey);
-			if (exportFont != null)
-			{
-				fontName = exportFont;
-			}
-		}
+		String fontName = fontUtil.getExportFontFamily(font.getFontName(), locale, exporterKey);
 		
 		XlsxFontInfo xlsxFontInfo = new XlsxFontInfo(gridCell, fontName, configuration.isFontSizeFixEnabled());
 		Integer fontIndex = fontCache.get(xlsxFontInfo.getId());
 		if (fontIndex == null)
 		{
-			fontIndex = Integer.valueOf(fontCache.size());
+			fontIndex = fontCache.size();
 			export(xlsxFontInfo);
 			fontCache.put(xlsxFontInfo.getId(), fontIndex);
 		}
-		return fontIndex.intValue();
+		return fontIndex;
 	}
 
 	/**

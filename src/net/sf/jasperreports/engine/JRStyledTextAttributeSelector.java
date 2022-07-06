@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,6 @@ import net.sf.jasperreports.engine.util.JRStyledTextUtil;
  * Selector of element-level styled text attributes for print text objects.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRStyledTextAttributeSelector.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRStyledTextUtil#getStyledText(JRPrintText, JRStyledTextAttributeSelector)
  * @see JRPrintText#getFullStyledText(JRStyledTextAttributeSelector)
  */
@@ -77,21 +76,6 @@ public abstract class JRStyledTextAttributeSelector
 	}
 	
 	/**
-	 * @deprecated Replaced by {@link #getAllSelector(JasperReportsContext)}.
-	 */
-	public static final JRStyledTextAttributeSelector ALL = new AllSelector(DefaultJasperReportsContext.getInstance());
-
-	/**
-	 * @deprecated Replaced by {@link #getNoBackcolorSelector(JasperReportsContext)}.
-	 */
-	public static final JRStyledTextAttributeSelector NO_BACKCOLOR = new NoBackcolorSelector(DefaultJasperReportsContext.getInstance());
-
-	/**
-	 * @deprecated Replaced by {@link #getNoneSelector(JasperReportsContext)}.
-	 */
-	public static final JRStyledTextAttributeSelector NONE = new NoneSelector(DefaultJasperReportsContext.getInstance());
-	
-	/**
 	 * Construct a map containing the selected element-level styled text attributes
 	 * for a print text element.
 	 * 
@@ -122,9 +106,10 @@ public abstract class JRStyledTextAttributeSelector
 			super(jasperReportsContext);
 		}
 		
+		@Override
 		public Map<Attribute,Object> getStyledTextAttributes(JRPrintText printText)
 		{
-			Map<Attribute,Object> attributes = new HashMap<Attribute,Object>(); 
+			Map<Attribute,Object> attributes = new HashMap<>(); 
 			//JRFontUtil.getAttributes(attributes, printText, getTextLocale(printText));
 			FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(attributes, printText);
 			attributes.put(TextAttribute.FOREGROUND, printText.getForecolor());
@@ -158,9 +143,10 @@ public abstract class JRStyledTextAttributeSelector
 			super(jasperReportsContext);
 		}
 		
+		@Override
 		public Map<Attribute,Object> getStyledTextAttributes(JRPrintText printText)
 		{
-			Map<Attribute,Object> attributes = new HashMap<Attribute,Object>(); 
+			Map<Attribute,Object> attributes = new HashMap<>(); 
 			//JRFontUtil.getAttributes(attributes, printText, getTextLocale(printText));
 			FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(attributes, printText);
 			attributes.put(TextAttribute.FOREGROUND, printText.getForecolor());
@@ -188,6 +174,7 @@ public abstract class JRStyledTextAttributeSelector
 			super(jasperReportsContext);
 		}
 		
+		@Override
 		public Map<Attribute,Object> getStyledTextAttributes(JRPrintText printText)
 		{
 			return null;

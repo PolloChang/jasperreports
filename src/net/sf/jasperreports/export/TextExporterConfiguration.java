@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,10 +23,13 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.export.JRTextExporter;
 import net.sf.jasperreports.export.annotations.ExporterParameter;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -35,7 +38,6 @@ import net.sf.jasperreports.export.annotations.ExporterProperty;
  * @see JRTextExporter
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: TextExporterConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface TextExporterConfiguration extends ExporterConfiguration
 {
@@ -45,7 +47,13 @@ public interface TextExporterConfiguration extends ExporterConfiguration
 	 * 
 	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_PAGE_SEPARATOR = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.text.page.separator";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = "the duplicated value of the \"line.separator\" system property",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
+	public static final String PROPERTY_PAGE_SEPARATOR = JRPropertiesUtil.PROPERTY_PREFIX + "export.text.page.separator";
 
 	/**
 	 * Property whose value is used as default for the {@link #getLineSeparator()} export configuration setting.
@@ -53,7 +61,29 @@ public interface TextExporterConfiguration extends ExporterConfiguration
 	 * 
 	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_LINE_SEPARATOR = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.text.line.separator";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = "the value of the \"line.separator\" system property",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
+	public static final String PROPERTY_LINE_SEPARATOR = JRPropertiesUtil.PROPERTY_PREFIX + "export.text.line.separator";
+
+	/**
+	 * Property whose value is used as default for the {@link #isTrimLineRight()} export configuration setting.
+	 * <p/>
+	 * This property is by default not set (<code>false</code>).
+	 *
+	 * @see JRPropertiesUtil
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_0_0,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_TRIM_LINE_RIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "export.text.trim.line.right";
 
 	/**
 	 * Returns a string representing text that will be inserted between pages of the generated report. By default, JasperReports
@@ -78,4 +108,14 @@ public interface TextExporterConfiguration extends ExporterConfiguration
 		)
 	@ExporterProperty(PROPERTY_LINE_SEPARATOR)
 	public String getLineSeparator();
+
+	/**
+	 * Returns a boolean value specifying  whether the lines of text in the document should be trimmed to the right.
+	 * @see #PROPERTY_TRIM_LINE_RIGHT
+	 */
+	@ExporterProperty(
+		value=PROPERTY_TRIM_LINE_RIGHT, 
+		booleanDefault=false
+		)
+	public Boolean isTrimLineRight();
 }

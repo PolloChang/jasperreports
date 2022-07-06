@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,15 +26,16 @@ package net.sf.jasperreports.engine;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
+import net.sf.jasperreports.renderers.AreaHyperlinksRenderable;
+
 
 /**
  * Image renderer able to produce image maps.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageMapRenderable.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link AreaHyperlinksRenderable}.
  */
-@SuppressWarnings("deprecation")
-public interface ImageMapRenderable extends Renderable, JRImageMapRenderer
+public interface ImageMapRenderable extends Renderable, JRImageMapRenderer, AreaHyperlinksRenderable
 {
 
 	/**
@@ -44,6 +45,7 @@ public interface ImageMapRenderable extends Renderable, JRImageMapRenderer
 	 * @return a list of {@link JRPrintImageAreaHyperlink JRPrintImageAreaHyperlink} instances.
 	 * @throws JRException
 	 */
+	@Override
 	List<JRPrintImageAreaHyperlink> getImageAreaHyperlinks(Rectangle2D renderingArea) throws JRException;
 
 	/**
@@ -51,6 +53,7 @@ public interface ImageMapRenderable extends Renderable, JRImageMapRenderer
 	 * 
 	 * @return whether the renderer actually includes any image map areas
 	 */
+	@Override
 	boolean hasImageAreaHyperlinks();
 
 }

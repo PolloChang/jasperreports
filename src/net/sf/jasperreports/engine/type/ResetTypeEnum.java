@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,11 @@
  */
 package net.sf.jasperreports.engine.type;
 
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRVariable;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ResetTypeEnum.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public enum ResetTypeEnum implements JREnum
 {
@@ -58,12 +56,20 @@ public enum ResetTypeEnum implements JREnum
 	 * The variable will never be initialized using its initial value expression and will only contain values obtained by
 	 * evaluating the variable's expression.
 	 */
-	NONE((byte)5, "None");
+	NONE((byte)5, "None"),
+	
+	/**
+	 * Used internally by the master report page variables to allow the variables to be used in
+	 * text fields with {@link EvaluationTimeEnum#AUTO Auto} evaluation time.
+	 * 
+	 * @see JRVariable#MASTER_CURRENT_PAGE
+	 * @see JRVariable#MASTER_TOTAL_PAGES
+	 */
+	MASTER((byte) 6, "Master");
 
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient byte value;
 	private final transient String name;
 
@@ -74,24 +80,24 @@ public enum ResetTypeEnum implements JREnum
 	}
 
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
 	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
 	{
 		return value;
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
+	public final byte getValue()
+	{
+		return value;
+	}
+	
+	@Override
 	public String getName()
 	{
 		return name;
@@ -102,11 +108,11 @@ public enum ResetTypeEnum implements JREnum
 	 */
 	public static ResetTypeEnum getByName(String name)
 	{
-		return (ResetTypeEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static ResetTypeEnum getByValue(Byte value)
 	{
@@ -118,7 +124,6 @@ public enum ResetTypeEnum implements JREnum
 	 */
 	public static ResetTypeEnum getByValue(byte value)
 	{
-		return getByValue(new Byte(value));
+		return getByValue((Byte)value);
 	}
-
 }

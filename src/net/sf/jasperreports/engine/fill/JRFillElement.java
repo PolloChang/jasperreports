@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRConditionalStyle;
@@ -62,15 +63,19 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.PositionTypeEnum;
 import net.sf.jasperreports.engine.type.StretchTypeEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.StyleResolver;
+import net.sf.jasperreports.engine.util.StyleUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRFillElement implements JRElement, JRFillCloneable, JRStyleSetter, DynamicPropertiesHolder
 {
+	/**
+	 *
+	 */
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_BOOKMARK_LEVEL = "fill.anchor.bookmark.level.invalid";
 
 
 	/**
@@ -80,7 +85,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	protected List<JRPropertyExpression> propertyExpressions;
 	protected List<String> dynamicTransferProperties;
 	protected JRStyle providerStyle;
-	protected Map<JRStyle,JRTemplateElement> templates = new HashMap<JRStyle,JRTemplateElement>();
+	protected Map<JRStyle,JRTemplateElement> templates = new HashMap<>();
 	protected List<StyleProvider> styleProviders;
 
 	/**
@@ -114,9 +119,18 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	private boolean isToPrint = true;
 	private boolean isReprinted;
 	private boolean isAlreadyPrinted;
-	private Collection<JRElement> dependantElements = new ArrayList<JRElement>();
+	private Collection<JRFillElement> dependantElements = new ArrayList<>();
 	private int relativeY;
+	private int collapsedHeightAbove;
+	private int collapsedHeightBelow;
+	/**
+	 * Keeps total stretch height, including forced stretch after honoring the stretchType property of the element. 
+	 */
 	private int stretchHeight;
+	/**
+	 * Keeps the natural stretch height calculated during element prepare. 
+	 */
+	private int prepareHeight;
 
 	private int x;
 	private int y;
@@ -185,8 +199,8 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		mergedProperties = staticProperties;
 		
 		JRPropertyExpression[] elementPropertyExpressions = element.getPropertyExpressions();
-		propertyExpressions = elementPropertyExpressions == null ? new ArrayList<JRPropertyExpression>(0)
-				: new ArrayList<JRPropertyExpression>(Arrays.asList(elementPropertyExpressions));
+		propertyExpressions = elementPropertyExpressions == null ? new ArrayList<>(0)
+				: new ArrayList<>(Arrays.asList(elementPropertyExpressions));
 		
 		dynamicTransferProperties = findDynamicTransferProperties();
 		
@@ -225,10 +239,11 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		
 		staticProperties = element.staticProperties == null ? null : element.staticProperties.cloneProperties();
 		mergedProperties = staticProperties;
-		this.propertyExpressions = new ArrayList<JRPropertyExpression>(element.propertyExpressions);
+		this.propertyExpressions = new ArrayList<>(element.propertyExpressions);
 		this.dynamicTransferProperties = element.dynamicTransferProperties;
 		
-		styleProviders = element.styleProviders;
+		// we need a style provider context for this element instance
+		initStyleProviders();
 	}
 	
 	private List<String> findDynamicTransferProperties()
@@ -239,7 +254,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		}
 		
 		List<String> prefixes = filler.getPrintTransferPropertyPrefixes();
-		List<String> transferProperties = new ArrayList<String>(propertyExpressions.size());
+		List<String> transferProperties = new ArrayList<>(propertyExpressions.size());
 		for (JRPropertyExpression propertyExpression : propertyExpressions)
 		{
 			String propertyName = propertyExpression.getName();
@@ -256,112 +271,91 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return defaultStyleProvider;
 	}
 
-
 	/**
 	 *
 	 */
+	protected StyleResolver getStyleResolver() 
+	{
+		return getDefaultStyleProvider().getStyleResolver();
+	}
+
+	@Override
 	public UUID getUUID()
 	{
 		return parent.getUUID();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getKey()
 	{
 		return parent.getKey();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public PositionTypeEnum getPositionTypeValue()
 	{
 		return parent.getPositionTypeValue();//FIXME optimize this by consolidating style properties
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPositionType(PositionTypeEnum positionType)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public StretchTypeEnum getStretchTypeValue()
 	{
 		return parent.getStretchTypeValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setStretchType(StretchTypeEnum stretchType)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isPrintRepeatedValues()
 	{
 		return parent.isPrintRepeatedValues();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPrintRepeatedValues(boolean isPrintRepeatedValues)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.OPAQUE);
+		return getStyleResolver().getMode(this, ModeEnum.OPAQUE);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getOwnModeValue()
 	{
 		return providerStyle == null || providerStyle.getOwnModeValue() == null ? parent.getOwnModeValue() : providerStyle.getOwnModeValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMode(ModeEnum modeValue)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getX()
 	{
 		return x;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setX(int x)
 	{
 		this.x = x;
@@ -375,25 +369,19 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		this.y = y;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getY()
 	{
 		return y;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getWidth()
 	{
 		return width;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setWidth(int width)
 	{
 		this.width = width;
@@ -407,121 +395,92 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		this.height = height;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getHeight()
 	{
 		return height;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isRemoveLineWhenBlank()
 	{
 		return parent.isRemoveLineWhenBlank();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRemoveLineWhenBlank(boolean isRemoveLine)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isPrintInFirstWholeBand()
 	{
 		return parent.isPrintInFirstWholeBand();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPrintInFirstWholeBand(boolean isPrint)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isPrintWhenDetailOverflows()
 	{
 		return parent.isPrintWhenDetailOverflows();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPrintWhenDetailOverflows(boolean isPrint)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getForecolor()
 	{
-		return JRStyleResolver.getForecolor(this);
+		return getStyleResolver().getForecolor(this);
 	}
 
+	@Override
 	public Color getOwnForecolor()
 	{
 		return providerStyle == null || providerStyle.getOwnForecolor() == null ? parent.getOwnForecolor() : providerStyle.getOwnForecolor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setForecolor(Color forecolor)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getBackcolor()
 	{
-		return JRStyleResolver.getBackcolor(this);
+		return getStyleResolver().getBackcolor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnBackcolor()
 	{
 		return providerStyle == null || providerStyle.getOwnBackcolor() == null ? parent.getOwnBackcolor() : providerStyle.getOwnBackcolor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setBackcolor(Color backcolor)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getPrintWhenExpression()
 	{
 		return parent.getPrintWhenExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getPrintWhenGroupChanges()
 	{
 		return printWhenGroupChanges;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRElementGroup getElementGroup()
 	{
 		return elementGroup;
@@ -562,7 +521,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
-	protected boolean isToPrint()
+	public boolean isToPrint()
 	{
 		return isToPrint;
 	}
@@ -594,7 +553,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
-	protected boolean isAlreadyPrinted()
+	public boolean isAlreadyPrinted()
 	{
 		return isAlreadyPrinted;
 	}
@@ -602,7 +561,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
-	protected void setAlreadyPrinted(boolean isAlreadyPrinted)
+	public void setAlreadyPrinted(boolean isAlreadyPrinted)
 	{
 		this.isAlreadyPrinted = isAlreadyPrinted;
 	}
@@ -625,7 +584,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
-	protected Collection<JRElement> getDependantElements()
+	protected Collection<JRFillElement> getDependantElements()
 	{
 		return dependantElements;
 	}
@@ -633,7 +592,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
-	protected void addDependantElement(JRElement element)
+	protected void addDependantElement(JRFillElement element)
 	{
 		dependantElements.add(element);
 	}
@@ -657,6 +616,38 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
+	protected int getCollapsedHeightAbove()
+	{
+		return collapsedHeightAbove;
+	}
+
+	/**
+	 *
+	 */
+	protected void setCollapsedHeightAbove(int collapsedHeightAbove)
+	{
+		this.collapsedHeightAbove = collapsedHeightAbove;
+	}
+
+ 	/**
+	 *
+	 */
+	protected int getCollapsedHeightBelow()
+	{
+		return collapsedHeightBelow;
+	}
+
+	/**
+	 *
+	 */
+	protected void setCollapsedHeightBelow(int collapsedHeightBelow)
+	{
+		this.collapsedHeightBelow = collapsedHeightBelow;
+	}
+
+	/**
+	 *
+	 */
 	public int getStretchHeight()
 	{
 		return stretchHeight;
@@ -675,6 +666,28 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		{
 			this.stretchHeight = getHeight();
 		}
+	}
+
+	/**
+	 *
+	 */
+	public int getPrepareHeight()
+	{
+		return prepareHeight;
+	}
+
+	/**
+	 * Element height is calculated in two phases. 
+	 * First, the element stretches on its own during prepare, to accommodate all its content.
+	 * This is the natural stretch and we keep track of the calculated height in prepareHeight.
+	 * Secondly, the element stretches further in accordance with its stretchType property.
+	 * This forced stretch occurs at a later time and the amount of stretch is kept in stretchHeight. 
+	 */
+	protected void setPrepareHeight(int prepareHeight)
+	{
+		this.prepareHeight = prepareHeight;
+		
+		setStretchHeight(prepareHeight);
 	}
 
 	/**
@@ -715,7 +728,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 				{
 					if (styleProviders == null)
 					{
-						styleProviders = new ArrayList<StyleProvider>();
+						styleProviders = new ArrayList<>();
 					}
 					styleProviders.add(styleProvider);
 				}
@@ -730,7 +743,10 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	protected void reset()
 	{
 		relativeY = y;
+		collapsedHeightAbove = 0;
+		collapsedHeightBelow = 0;
 		stretchHeight = height;
+		prepareHeight = height;
 
 		if (elementGroup != null)
 		{
@@ -771,12 +787,16 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 					{
 						providerStyle = new JRBaseStyle();
 					}
-					JRStyleResolver.appendStyle(providerStyle, style);
+					StyleUtil.appendStyle(providerStyle, style);
 				}
 			}
 		}
 	}
 
+	protected TimeZone getTimeZone()
+	{
+		return filler.getTimeZone();
+	}
 
 	/**
 	 *
@@ -799,7 +819,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 			}
 			else
 			{
-				isExprTrue = printWhenExpressionValue.booleanValue();
+				isExprTrue = printWhenExpressionValue;
 			}
 		}
 
@@ -876,25 +896,28 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	}
 
 
-
 	/**
-	 *
+	 * @deprecated To be removed.
 	 */
-	protected void stretchElement(int bandStretch)
+	protected void _stretchElement(int bandStretch)
 	{
 		switch (getStretchTypeValue())
 		{
 			case RELATIVE_TO_BAND_HEIGHT :
+			case CONTAINER_HEIGHT :
+			case CONTAINER_BOTTOM :
 			{
-				stretchElementToHeight(getHeight() + bandStretch);
+				_stretchElementToHeight(getHeight() + bandStretch);
 				break;
 			}
 			case RELATIVE_TO_TALLEST_OBJECT :
+			case ELEMENT_GROUP_HEIGHT :
+			case ELEMENT_GROUP_BOTTOM :
 			{
 				if (elementGroup != null)
 				{
 					//setStretchHeight(getHeight() + getStretchHeightDiff());
-					stretchElementToHeight(getHeight() + elementGroup.getStretchHeightDiff());
+					_stretchElementToHeight(getHeight() + elementGroup.getStretchHeightDiff());
 				}
 
 				break;
@@ -907,7 +930,10 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		}
 	}
 	
-	protected void stretchElementToHeight(int stretchHeight)
+	/**
+	 * @deprecated To be removed.
+	 */
+	protected void _stretchElementToHeight(int stretchHeight)
 	{
 		if (stretchHeight > getStretchHeight())
 		{
@@ -919,26 +945,155 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 *
 	 */
-	protected void moveDependantElements()
+	@SuppressWarnings("deprecation")
+	protected boolean stretchElement(int containerStretch)
 	{
-		Collection<JRElement> elements = getDependantElements();
+		boolean applied = false;
+		switch (getStretchTypeValue())
+		{
+			case RELATIVE_TO_BAND_HEIGHT :
+			case CONTAINER_HEIGHT :
+			case CONTAINER_BOTTOM :
+			{
+				applied = stretchElementToContainer(containerStretch);
+				break;
+			}
+			case RELATIVE_TO_TALLEST_OBJECT :
+			case ELEMENT_GROUP_HEIGHT :
+			case ELEMENT_GROUP_BOTTOM :
+			{
+				applied = stretchElementToElementGroup();
+				break;
+			}
+			case NO_STRETCH :
+			default :
+			{
+				break;
+			}
+		}
+		return applied;
+	}
+
+
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	protected boolean stretchElementToContainer(int containerStretch)//TODO subtract firstY?
+	{
+		boolean applied = false;
+		switch (getStretchTypeValue())
+		{
+			case RELATIVE_TO_BAND_HEIGHT :
+			case CONTAINER_HEIGHT :
+			{
+				applied = stretchElementToHeight(getHeight() + containerStretch);
+				break;
+			}
+			case CONTAINER_BOTTOM :
+			{
+				applied = stretchElementToHeight(getY() - getRelativeY() + getHeight() + containerStretch);
+				break;
+			}
+			default :
+		}
+		return applied;
+	}
+
+
+	/**
+	 *
+	 */
+	@SuppressWarnings("deprecation")
+	protected boolean stretchElementToElementGroup()
+	{
+		boolean applied = false;
+		if (elementGroup != null)
+		{
+			switch (getStretchTypeValue())
+			{
+				case RELATIVE_TO_TALLEST_OBJECT :
+				case ELEMENT_GROUP_HEIGHT :
+				{
+					applied = stretchElementToHeight(getHeight() + elementGroup.getStretchHeightDiff());
+					break;
+				}
+				case ELEMENT_GROUP_BOTTOM :
+				{
+					applied = stretchElementToHeight(getY() - getRelativeY() + getHeight() + elementGroup.getStretchHeightDiff());
+					break;
+				}
+				default :
+			}
+		}
+		return applied;
+	}
+
+
+	/**
+	 * This method returns a boolean signaling if any stretch change occurred.
+	 * It does not say which amount of stretch was applied, but that is OK, because the only place where this is checked
+	 * is during frame cascading stretch, where the stretchHeight field of the frame (set here) is used directly.
+	 */
+	protected boolean stretchElementToHeight(int stretchHeight)
+	{
+		// cannot force the element to shrink below its natural stretch calculated during prepare;
+		// such situation could occur when the container breaks and overflows
+		boolean applied = false;
+		if (stretchHeight > getPrepareHeight())
+		{
+			// any new stretchHeight that is greater than element's natural growth is fine
+			setStretchHeight(stretchHeight);
+			applied = true;
+		}
+		return applied;
+	}
+
+
+	/**
+	 * @deprecated To be removed.
+	 */
+	protected void _moveDependantElements()
+	{
+		Collection<JRFillElement> elements = getDependantElements();
 		if (elements != null && elements.size() > 0)
 		{
-			JRFillElement element = null;
-			int diffY = 0;
-			for(Iterator<JRElement> it = elements.iterator(); it.hasNext();)
+			for (JRFillElement element : elements)
 			{
-				element = (JRFillElement)it.next();
+				int newRelativeY = 
+					getRelativeY() + getStretchHeight() //pusher element current bottom edge
+					+ (element.getY() - (getY() + getHeight())); //design time distance between elements; difference between float element top edge and pusher element bottom edge
 
-				diffY = element.getY() - getY() - getHeight() -
-						(element.getRelativeY() - getRelativeY() - getStretchHeight());
-
-				if (diffY < 0)
+				if (newRelativeY > element.getRelativeY())
 				{
-					diffY = 0;
+					element.setRelativeY(newRelativeY);
 				}
+			}
+		}
+	}
 
-				element.setRelativeY(element.getRelativeY() + diffY);
+
+	/**
+	 *
+	 */
+	protected void moveDependantElements()
+	{
+		Collection<JRFillElement> elements = getDependantElements();
+		if (elements != null && elements.size() > 0)
+		{
+			for (JRFillElement element : elements)
+			{
+				int newRelativeY = 
+					getRelativeY() + getStretchHeight() //pusher element current bottom edge
+					+ (element.getY() - (getY() + getHeight())) //design time distance between elements; difference between float element top edge and pusher element bottom edge
+					- (element.getCollapsedHeightAbove() - getCollapsedHeightAbove()); //difference in collapsedY amount, meaning the elements could only have become closer together due to blank element removal
+
+				if (newRelativeY > element.getRelativeY())
+				{
+					element.setRelativeY(newRelativeY);
+
+					element.moveDependantElements();
+				}
 			}
 		}
 	}
@@ -956,7 +1111,8 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 			throws JRException
 	{
 		boolean updateTemplate = false;
-		
+
+		JRStyle printStyle = element.getStyle();
 		if (isDelayedStyleEvaluation())
 		{
 			JRStyle elementStyle = initStyle;
@@ -970,15 +1126,18 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 				JRStyle evaluatedStyle = conditionalStylesContainer.evaluateConditionalStyle(
 						elementStyle, evaluation);
 				// if the evaluated style differs from the existing style
-				if (evaluatedStyle != element.getStyle())
+				if (evaluatedStyle != printStyle)
 				{
-					// set the evaluated style as current style
-					this.currentStyle = evaluatedStyle;
+					// set the evaluated style as element style
+					printStyle = evaluatedStyle;
 					
 					updateTemplate = true;
 				}
 			}
 		}
+		
+		// set the current element style
+		this.currentStyle = printStyle;
 		
 		resolveElement(element, evaluation);
 		
@@ -1096,8 +1255,8 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 
 		DelayedEvaluations()
 		{
-			fields = new HashSet<String>();
-			variables = new HashSet<String>();
+			fields = new HashSet<>();
+			variables = new HashSet<>();
 		}
 	}
 
@@ -1105,7 +1264,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	{
 		if (getEvaluationTimeValue() == EvaluationTimeEnum.AUTO && delayedEvaluationsMap == null)
 		{
-			delayedEvaluationsMap = new HashMap<JREvaluationTime,DelayedEvaluations>();
+			delayedEvaluationsMap = new HashMap<>();
 			collectDelayedEvaluations();
 		}
 	}
@@ -1180,6 +1339,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 							delayedEvaluations.variables.add(chunk.getText());
 							break;
 						}
+						default:
 					}
 				}
 			}
@@ -1237,6 +1397,9 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		{
 			case REPORT:
 				evaluationTime = JREvaluationTime.EVALUATION_TIME_REPORT;
+				break;
+			case MASTER:
+				evaluationTime = JREvaluationTime.EVALUATION_TIME_MASTER;
 				break;
 			case PAGE:
 				evaluationTime = JREvaluationTime.EVALUATION_TIME_PAGE;
@@ -1397,9 +1560,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		return conditionalStylesContainer;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRStyle getStyle()
 	{
 		// the current style overrides other style objects
@@ -1465,6 +1626,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	/**
 	 * Called when the stretch height of an element is final so that
 	 * the element can perform any adjustments.
+	 * @deprecated To be removed.
 	 */
 	protected void stretchHeightFinal()
 	{
@@ -1506,11 +1668,13 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		return getEvaluationTimeValue() == EvaluationTimeEnum.AUTO && !isAutoEvaluateNow();
 	}
 
+	@Override
 	public String getStyleNameReference()
 	{
 		return null;
 	}
 
+	@Override
 	public void setStyle(JRStyle style)
 	{
 		initStyle = style;
@@ -1520,22 +1684,19 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		}
 	}
 
+	@Override
 	public void setStyleNameReference(String name)
 	{
 		throw new UnsupportedOperationException("Style name references not allowed at fill time");
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone(JRElementGroup parentGroup) 
 	{
 		throw new UnsupportedOperationException();
@@ -1547,23 +1708,27 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return mergedProperties != null && mergedProperties.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return mergedProperties;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		//element properties default to report properties
-		return filler.getJasperReport();
+		return filler.getMainDataset();
 	}
 
 
+	@Override
 	public JRPropertyExpression[] getPropertyExpressions()
 	{
 		return propertyExpressions.toArray(new JRPropertyExpression[propertyExpressions.size()]);
@@ -1600,7 +1765,7 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 			for (JRPropertyExpression prop : propertyExpressions)
 			{
 				String value = (String) evaluateExpression(prop.getValueExpression(), evaluation);
-				if (value != null)
+				//if (value != null) //for some properties such as data properties in metadata exporters, the null value is significant
 				{
 					dynamicProperties.setProperty(prop.getName(), value);
 				}
@@ -1688,5 +1853,44 @@ public abstract class JRFillElement implements JRElement, JRFillCloneable, JRSty
 	protected void setExpressionEvaluator(JRFillExpressionEvaluator expressionEvaluator)
 	{
 		this.expressionEvaluator = expressionEvaluator;
+	}
+
+
+	/**
+	 *
+	 */
+	public static Integer getBookmarkLevel(Object value) throws JRException
+	{
+		Integer level = null;
+		
+		if (value != null)
+		{
+			if (value instanceof Number)
+			{
+				level = ((Number)value).intValue();
+			}
+			else
+			{
+				try
+				{
+					level = Integer.parseInt(value.toString());
+				}
+				catch (NumberFormatException e)
+				{
+					//do nothing
+				}
+			}
+			
+			if (level == null || level < 0)
+			{
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_INVALID_BOOKMARK_LEVEL,  
+						new Object[] {value} 
+						);
+			}
+		}
+		
+		return level;
 	}
 }

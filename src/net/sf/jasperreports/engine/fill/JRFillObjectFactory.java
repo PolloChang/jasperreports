@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.collections4.map.LinkedMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import net.sf.jasperreports.charts.JRAreaPlot;
 import net.sf.jasperreports.charts.JRBar3DPlot;
@@ -98,6 +102,7 @@ import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.crosstabs.JRCrosstabDataset;
 import net.sf.jasperreports.crosstabs.JRCrosstabParameter;
 import net.sf.jasperreports.crosstabs.fill.JRFillCrosstabParameter;
+import net.sf.jasperreports.engine.ExpressionReturnValue;
 import net.sf.jasperreports.engine.JRAbstractObjectFactory;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRBreak;
@@ -129,49 +134,48 @@ import net.sf.jasperreports.engine.JRSubreport;
 import net.sf.jasperreports.engine.JRSubreportReturnValue;
 import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRVariable;
-import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.VariableReturnValue;
 import net.sf.jasperreports.engine.analytics.dataset.FillMultiAxisData;
 import net.sf.jasperreports.engine.analytics.dataset.MultiAxisData;
 import net.sf.jasperreports.engine.base.JRBaseConditionalStyle;
 import net.sf.jasperreports.engine.base.JRBaseStyle;
-
-import org.apache.commons.collections.map.LinkedMap;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 
 /**
  * A factory used to instantiate fill objects based on compiled report objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillObjectFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillObjectFactory extends JRAbstractObjectFactory
 {
 
 	private static final Log log = LogFactory.getLog(JRFillObjectFactory.class);
 
+	public static final String EXCEPTION_MESSAGE_KEY_UNRESOLVED_STYLE = "fill.object.factory.unresolved.style";
+	public static final String EXCEPTION_MESSAGE_KEY_STYLE_NOT_FOUND = "fill.object.factory.style.not.found";
+	
 	/**
 	 *
 	 */
 	protected JRBaseFiller filler;
+	protected BaseReportFiller reportFiller;
 	private JRFillExpressionEvaluator evaluator;
 
 	private JRFillObjectFactory parentFiller;
 	
 //	private JRFont defaultFont;
 
-	private List<JRFillElementDataset> elementDatasets = new ArrayList<JRFillElementDataset>();
-	private Map<String,List<JRFillElementDataset>> elementDatasetMap = new HashMap<String,List<JRFillElementDataset>>();
+	private List<JRFillElementDataset> elementDatasets = new ArrayList<>();
+	private Map<String,List<JRFillElementDataset>> elementDatasetMap = new HashMap<>();
 	
-	private LinkedList<List<JRFillDatasetRun>> trackedDatasetRunsStack = new LinkedList<List<JRFillDatasetRun>>();
+	private LinkedList<List<JRFillDatasetRun>> trackedDatasetRunsStack = new LinkedList<>();
 	
-	private Map<String,List<JRStyleSetter>> delayedStyleSettersByName = new HashMap<String,List<JRStyleSetter>>();
+	private Map<String,List<JRStyleSetter>> delayedStyleSettersByName = new HashMap<>();
 	
 	protected static class StylesList
 	{
-		private final List<JRStyle> styles = new ArrayList<JRStyle>();
-		private final Map<String,Integer> stylesIdx = new HashMap<String,Integer>();
+		private final List<JRStyle> styles = new ArrayList<>();
+		private final Map<String,Integer> stylesIdx = new HashMap<>();
 		
 		public boolean containsStyle(String name)
 		{
@@ -181,13 +185,13 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		public JRStyle getStyle(String name)
 		{
 			Integer idx = stylesIdx.get(name);
-			return idx == null ? null : styles.get(idx.intValue());
+			return idx == null ? null : styles.get(idx);
 		}
 		
 		public void addStyle(JRStyle style)
 		{
 			styles.add(style);
-			stylesIdx.put(style.getName(), Integer.valueOf(styles.size() - 1));
+			stylesIdx.put(style.getName(), styles.size() - 1);
 		}
 		
 		public void renamed(String oldName, String newName)
@@ -216,6 +220,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	public JRFillObjectFactory(JRBaseFiller filler, JRFillExpressionEvaluator expressionEvaluator)
 	{
 		this.filler = filler;
+		this.reportFiller = filler;
 		this.evaluator = expressionEvaluator;
 	}
 
@@ -224,10 +229,18 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	{
 		this.parentFiller = parent;
 		this.filler = parent.filler;
+		this.reportFiller = parent.reportFiller;
 		this.evaluator = expressionEvaluator;
 	}
 
 	
+	public JRFillObjectFactory(BaseReportFiller reportFiller)
+	{
+		this.reportFiller = reportFiller;
+		this.evaluator = reportFiller.calculator;
+	}
+
+
 	/**
 	 * Returns the expression evaluator which is to be used by objects
 	 * created by this factory.
@@ -282,7 +295,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 			List<JRStyleSetter> setters = delayedStyleSettersByName.get(styleName);
 			if (setters == null)
 			{
-				setters = new ArrayList<JRStyleSetter>();
+				setters = new ArrayList<>();
 				delayedStyleSettersByName.put(styleName, setters);
 			}
 			
@@ -308,6 +321,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		}
 	}
 	
+	@Override
 	public JRBaseStyle getStyle(JRStyle style)
 	{
 		JRBaseStyle fillStyle = null;
@@ -359,6 +373,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public void setStyle(JRStyleSetter setter, JRStyleContainer styleContainer)
 	{
 		JRStyle style = styleContainer.getStyle();
@@ -373,7 +388,11 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 			JRStyle originalStyle = stylesMap.getStyle(nameReference);
 			if (originalStyle == null)
 			{
-				throw new JRRuntimeException("Style " + nameReference + " not found");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNRESOLVED_STYLE,  
+						new Object[]{nameReference} 
+						);
 			}
 			
 			JRStyle externalStyle = (JRStyle) get(originalStyle);
@@ -445,7 +464,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	/**
 	 *
 	 */
-	protected JRFillGroup getGroup(JRGroup group)
+	public JRFillGroup getGroup(JRGroup group)
 	{
 		JRFillGroup fillGroup = null;
 
@@ -510,9 +529,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitElementGroup(JRElementGroup elementGroup)
 	{
 		JRFillElementGroup fillElementGroup = null;
@@ -530,9 +547,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitBreak(JRBreak breakElement)
 	{
 		JRFillBreak fillBreak = null;
@@ -550,9 +565,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitLine(JRLine line)
 	{
 		JRFillLine fillLine = null;
@@ -570,9 +583,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitRectangle(JRRectangle rectangle)
 	{
 		JRFillRectangle fillRectangle = null;
@@ -590,9 +601,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitEllipse(JREllipse ellipse)
 	{
 		JRFillEllipse fillEllipse = null;
@@ -610,9 +619,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitImage(JRImage image)
 	{
 		JRFillImage fillImage = null;
@@ -630,9 +637,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitStaticText(JRStaticText staticText)
 	{
 		JRFillStaticText fillStaticText = null;
@@ -650,9 +655,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitTextField(JRTextField textField)
 	{
 		JRFillTextField fillTextField = null;
@@ -670,9 +673,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitSubreport(JRSubreport subreport)
 	{
 		JRFillSubreport fillSubreport = null;
@@ -690,6 +691,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public void visitChart(JRChart chart)
 	{
 		JRFillChart fillChart = null;
@@ -707,9 +709,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPieDataset getPieDataset(JRPieDataset pieDataset)
 	{
 		JRFillPieDataset fillPieDataset = null;
@@ -728,9 +728,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPiePlot getPiePlot(JRPiePlot piePlot)
 	{
 		JRFillPiePlot fillPiePlot = null;
@@ -748,9 +746,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPie3DPlot getPie3DPlot(JRPie3DPlot pie3DPlot)
 	{
 		JRFillPie3DPlot fillPie3DPlot = null;
@@ -768,9 +764,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRCategoryDataset getCategoryDataset(JRCategoryDataset categoryDataset)
 	{
 		JRFillCategoryDataset fillCategoryDataset = null;
@@ -788,6 +782,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		return fillCategoryDataset;
 	}
 
+	@Override
 	public JRXyzDataset getXyzDataset( JRXyzDataset xyzDataset ){
 		JRFillXyzDataset fillXyzDataset = null;
 		if( xyzDataset != null ){
@@ -824,9 +819,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRTimeSeriesDataset getTimeSeriesDataset( JRTimeSeriesDataset timeSeriesDataset ){
 		JRFillTimeSeriesDataset fillTimeSeriesDataset = null;
 
@@ -843,6 +836,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		return fillTimeSeriesDataset;
 	}
 
+	@Override
 	public JRTimePeriodDataset getTimePeriodDataset( JRTimePeriodDataset timePeriodDataset ){
 		JRFillTimePeriodDataset fillTimePeriodDataset = null;
 		if( timePeriodDataset != null ){
@@ -875,9 +869,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		return fillGanttDataset;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRPieSeries getPieSeries(JRPieSeries pieSeries)
 	{
 		JRFillPieSeries fillPieSeries = null;
@@ -895,9 +887,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRCategorySeries getCategorySeries(JRCategorySeries categorySeries)
 	{
 		JRFillCategorySeries fillCategorySeries = null;
@@ -915,6 +905,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public JRXyzSeries getXyzSeries( JRXyzSeries xyzSeries ){
 		JRFillXyzSeries fillXyzSeries = null;
 
@@ -970,9 +961,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRBarPlot getBarPlot(JRBarPlot barPlot)
 	{
 		JRFillBarPlot fillBarPlot = null;
@@ -990,9 +979,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRTimeSeries getTimeSeries(JRTimeSeries timeSeries)
 	{
 		JRFillTimeSeries fillTimeSeries = null;
@@ -1009,6 +996,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		return fillTimeSeries;
 	}
 
+	@Override
 	public JRTimePeriodSeries getTimePeriodSeries( JRTimePeriodSeries timePeriodSeries ){
 		JRFillTimePeriodSeries fillTimePeriodSeries = null;
 		if( timePeriodSeries != null ){
@@ -1022,9 +1010,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBar3DPlot getBar3DPlot(JRBar3DPlot barPlot) {
 		JRFillBar3DPlot fillBarPlot = null;
 
@@ -1039,9 +1025,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRLinePlot getLinePlot(JRLinePlot linePlot) {
 		JRFillLinePlot fillLinePlot = null;
 
@@ -1073,9 +1057,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRAreaPlot getAreaPlot(JRAreaPlot areaPlot) {
 		JRFillAreaPlot fillAreaPlot = null;
 
@@ -1095,6 +1077,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	/* (non-Javadoc)
 	 * @see net.sf.jasperreports.engine.JRAbstractObjectFactory#getBubblePlot(net.sf.jasperreports.charts.JRBubblePlot)
 	 */
+	@Override
 	public JRBubblePlot getBubblePlot(JRBubblePlot bubblePlot) {
 		JRFillBubblePlot fillBubblePlot = null;
 
@@ -1149,6 +1132,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public JRCandlestickPlot getCandlestickPlot(JRCandlestickPlot candlestickPlot)
 	{
 		JRFillCandlestickPlot fillCandlestickPlot = null;
@@ -1216,7 +1200,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 
 		return fillMeterPlot;
 	}
-	
+
 	/**
 	 *
 	 */
@@ -1235,8 +1219,8 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 
 		return fillThermometerPlot;
 	}
-	
-	
+
+
 	/**
 	 *
 	 */
@@ -1255,35 +1239,18 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 
 		return fillMultiAxisPlot;
 	}
-	
-	
-	protected JRFillSubreportReturnValue getSubreportReturnValue(JRSubreportReturnValue returnValue)
+
+
+	protected JRFillVariableReturnValue getSubreportReturnValue(JRSubreportReturnValue returnValue)
 	{
-		JRFillSubreportReturnValue fillReturnValue = null;
+		JRFillVariableReturnValue fillReturnValue = null;
 
 		if (returnValue != null)
 		{
-			fillReturnValue = (JRFillSubreportReturnValue) get(returnValue);
+			fillReturnValue = (JRFillVariableReturnValue) get(returnValue);
 			if (fillReturnValue == null)
 			{
-				fillReturnValue = new JRFillSubreportReturnValue(returnValue, this, filler);
-			}
-		}
-
-		return fillReturnValue;
-	}
-	
-	
-	protected JRFillSubreportReturnValue getReturnValue(ReturnValue returnValue)
-	{
-		JRFillSubreportReturnValue fillReturnValue = null;
-
-		if (returnValue != null)
-		{
-			fillReturnValue = (JRFillSubreportReturnValue) get(returnValue);
-			if (fillReturnValue == null)
-			{
-				fillReturnValue = new JRFillSubreportReturnValue(returnValue, this, filler);
+				fillReturnValue = new JRFillVariableReturnValue(returnValue, this, reportFiller);
 			}
 		}
 
@@ -1291,6 +1258,42 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	protected JRFillVariableReturnValue getReturnValue(VariableReturnValue returnValue)
+	{
+		JRFillVariableReturnValue fillReturnValue = null;
+
+		if (returnValue != null)
+		{
+			fillReturnValue = (JRFillVariableReturnValue) get(returnValue);
+			if (fillReturnValue == null)
+			{
+				fillReturnValue = new JRFillVariableReturnValue(returnValue, this, filler);
+			}
+		}
+
+		return fillReturnValue;
+	}
+
+
+	protected JRFillExpressionReturnValue getReturnValue(ExpressionReturnValue returnValue)
+	{
+		JRFillExpressionReturnValue fillReturnValue = null;
+
+		if (returnValue != null)
+		{
+			fillReturnValue = (JRFillExpressionReturnValue) get(returnValue);
+			if (fillReturnValue == null)
+			{
+				fillReturnValue = new JRFillExpressionReturnValue(returnValue, this, filler);//FIXMERETURN passing the right filler? 
+				//why two possible fillers here after all? if single filler, could remove getSubreportReturnValue() above
+			}
+		}
+
+		return fillReturnValue;
+	}
+
+
+	@Override
 	public void visitCrosstab(JRCrosstab crosstabElement)
 	{
 		JRFillCrosstab fillCrosstab = null;
@@ -1335,7 +1338,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 			fillDataset = (JRFillDataset) get(dataset);
 			if (fillDataset == null)
 			{
-				fillDataset = new JRFillDataset(filler, dataset, this);
+				fillDataset = new JRFillDataset(reportFiller, dataset, this);
 			}
 		}
 
@@ -1363,16 +1366,27 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		else
 		{
 			String datasetName = datasetRun.getDatasetName();
-			elementDatasetsList = elementDatasetMap.get(datasetName);
-			if (elementDatasetsList == null)
-			{
-				elementDatasetsList = new ArrayList<JRFillElementDataset>();
-				elementDatasetMap.put(datasetName, elementDatasetsList);
-			}
+			elementDatasetsList = getElementDatasetsList(datasetName);
 			
 			registerDatasetRun((JRFillDatasetRun) datasetRun);
 		}
 		elementDatasetsList.add(elementDataset);
+	}
+	
+	protected List<JRFillElementDataset> getElementDatasetsList(String datasetName)
+	{
+		if (parentFiller != null)
+		{
+			return parentFiller.getElementDatasetsList(datasetName);
+		}
+		
+		List<JRFillElementDataset> elementDatasetsList = elementDatasetMap.get(datasetName);
+		if (elementDatasetsList == null)
+		{
+			elementDatasetsList = new ArrayList<>();
+			elementDatasetMap.put(datasetName, elementDatasetsList);
+		}
+		return elementDatasetsList;
 	}
 
 	public void trackDatasetRuns()
@@ -1382,7 +1396,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 			log.debug("tracking dataset runs");
 		}
 
-		ArrayList<JRFillDatasetRun> trackedDatasets = new ArrayList<JRFillDatasetRun>(2);
+		ArrayList<JRFillDatasetRun> trackedDatasets = new ArrayList<>(2);
 		trackedDatasetRunsStack.push(trackedDatasets);
 	}
 	
@@ -1418,7 +1432,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 			fillDatasetRun = (JRFillDatasetRun) get(datasetRun);
 			if (fillDatasetRun == null)
 			{
-				fillDatasetRun = new JRFillDatasetRun(filler, datasetRun, this);
+				fillDatasetRun = new JRFillDatasetRun(datasetRun, this);
 			}
 		}
 
@@ -1443,6 +1457,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public void visitFrame(JRFrame frame)
 	{
 		Object fillFrame = null;
@@ -1464,6 +1479,10 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 		setVisitResult(fillFrame);
 	}
 
+	public BaseReportFiller getReportFiller()
+	{
+		return reportFiller;
+	}
 
 	/**
 	 * Returns the current report filler.
@@ -1476,9 +1495,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRConditionalStyle getConditionalStyle(JRConditionalStyle conditionalStyle, JRStyle style)
 	{
 		JRBaseConditionalStyle baseConditionalStyle = null;
@@ -1494,6 +1511,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public JRExpression getExpression(JRExpression expression, boolean assignNotUsedId)
 	{
 		return expression;
@@ -1531,14 +1549,14 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	
 	public List<JRStyle> setStyles(List<JRStyle> styles)
 	{
-		originalStyleList = new HashSet<JRStyle>(styles);
+		originalStyleList = new HashSet<>(styles);
 		
 		//filtering requested styles
 		Set<JRStyle> requestedStyles = collectRequestedStyles(styles);
 		
 		//collect used styles
-		Map<JRStyle,Object> usedStylesMap = new LinkedMap();
-		Map<String,JRStyle> allStylesMap = new HashMap<String,JRStyle>();
+		Map<JRStyle,Object> usedStylesMap = new LinkedMap<>();
+		Map<String,JRStyle> allStylesMap = new HashMap<>();
 		for (Iterator<JRStyle> it = styles.iterator(); it.hasNext();)
 		{
 			JRStyle style = it.next();
@@ -1549,7 +1567,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 			allStylesMap.put(style.getName(), style);
 		}
 		
-		List<JRStyle> includedStyles = new ArrayList<JRStyle>();
+		List<JRStyle> includedStyles = new ArrayList<>();
 		for (Iterator<JRStyle> it = usedStylesMap.keySet().iterator(); it.hasNext();)
 		{
 			JRStyle style = it.next();
@@ -1569,7 +1587,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 
 	protected Set<JRStyle> collectRequestedStyles(List<JRStyle> externalStyles)
 	{
-		Map<String,JRStyle> requestedStylesMap = new HashMap<String,JRStyle>();
+		Map<String,JRStyle> requestedStylesMap = new HashMap<>();
 		for (Iterator<JRStyle> it = externalStyles.iterator(); it.hasNext();)
 		{
 			JRStyle style = it.next();
@@ -1580,7 +1598,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 			}
 		}
 		
-		return new HashSet<JRStyle>(requestedStylesMap.values());
+		return new HashSet<>(requestedStylesMap.values());
 	}
 
 	protected void collectUsedStyles(JRStyle style, Map<JRStyle,Object> usedStylesMap, Map<String,JRStyle> allStylesMap)
@@ -1596,7 +1614,11 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 					parent = allStylesMap.get(parentName);
 					if (parent == null)
 					{
-						throw new JRRuntimeException("Style " + parentName + " not found");
+						throw 
+							new JRRuntimeException(
+								EXCEPTION_MESSAGE_KEY_STYLE_NOT_FOUND,  
+								new Object[]{parentName} 
+								);
 					}
 				}
 			}
@@ -1627,7 +1649,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	{
 		if (!delayedStyleSettersByName.isEmpty())
 		{
-			StringBuffer errorMsg = new StringBuffer("Could not resolve style(s): ");
+			StringBuilder errorMsg = new StringBuilder();
 			for (Iterator<String> it = delayedStyleSettersByName.keySet().iterator(); it.hasNext();)
 			{
 				String name = it.next();
@@ -1635,16 +1657,22 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 				errorMsg.append(", ");
 			}
 			
-			throw new JRRuntimeException(errorMsg.substring(0, errorMsg.length() - 2));
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNRESOLVED_STYLE,  
+					new Object[]{errorMsg.substring(0, errorMsg.length() - 2)} 
+					);
 		}
 	}
 
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return filler.getJasperPrint().getDefaultStyleProvider();
 	}
 
 
+	@Override
 	public void visitComponentElement(JRComponentElement componentElement)
 	{
 		JRFillComponentElement fill = null;
@@ -1662,6 +1690,7 @@ public class JRFillObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public void visitGenericElement(JRGenericElement element)
 	{
 		JRFillGenericElement fill = null;

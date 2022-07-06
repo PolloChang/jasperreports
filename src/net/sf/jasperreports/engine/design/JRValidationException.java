@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.JRException;
  * An exception that contains a list of {@link JRValidationFault report validation faults}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRValidationException.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRVerifier
  */
 public class JRValidationException extends JRException
@@ -114,14 +113,14 @@ public class JRValidationException extends JRException
 			header = "Report design not valid : ";
 		}
 
-		StringBuffer sbuffer = new StringBuffer();
-		sbuffer.append(header);
+		StringBuilder sb = new StringBuilder();
+		sb.append(header);
 		int i = 1;
 		for(Iterator<JRValidationFault> it = faults.iterator(); it.hasNext(); i++)
 		{
 			JRValidationFault fault = it.next();
-			sbuffer.append("\n\t " + i + ". " + fault.getMessage());
+			sb.append("\n\t " + i + ". " + fault.getMessage());
 		}
-		return sbuffer.toString();
+		return sb.toString();
 	}
 }

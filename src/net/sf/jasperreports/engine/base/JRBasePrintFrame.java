@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,8 +24,6 @@
 package net.sf.jasperreports.engine.base;
 
 import java.awt.Color;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,19 +31,17 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPrintElementContainer;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.PrintElementVisitor;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * Base implementation of {@link net.sf.jasperreports.engine.JRPrintFrame JRPrintFrame}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBasePrintFrame.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRBasePrintFrame extends JRBasePrintElement implements JRPrintFrame
+public class JRBasePrintFrame extends JRBasePrintElement implements JRPrintFrame, JRPrintElementContainer
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
@@ -56,17 +52,15 @@ public class JRBasePrintFrame extends JRBasePrintElement implements JRPrintFrame
 	{
 		super(defaultStyleProvider);
 		
-		elements = new ArrayList<JRPrintElement>();
+		elements = new ArrayList<>();
 
 		lineBox = new JRBaseLineBox(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 		
 	/**
@@ -77,141 +71,33 @@ public class JRBasePrintFrame extends JRBasePrintElement implements JRPrintFrame
 		this.lineBox = lineBox.clone(this);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
 	}
 
+	@Override
 	public void addElement(JRPrintElement element)
 	{
 		elements.add(element);
 	}
 	
+	@Override
 	public List<JRPrintElement> getElements()
 	{
 		return elements;
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return getForecolor();
 	}
 
 
-	/*
-	 * These fields are only for serialization backward compatibility.
-	 */
-	/**
-	 * @deprecated
-	 */
-	private Byte border;
-	/**
-	 * @deprecated
-	 */
-	private Byte topBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte leftBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte bottomBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte rightBorder;
-	/**
-	 * @deprecated
-	 */
-	private Color borderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color topBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color leftBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color bottomBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color rightBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Integer padding;
-	/**
-	 * @deprecated
-	 */
-	private Integer topPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer leftPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer bottomPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer rightPadding;
-	
-	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
-	{
-		in.defaultReadObject();
-
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setToBox(
-				border,
-				topBorder,
-				leftBorder,
-				bottomBorder,
-				rightBorder,
-				borderColor,
-				topBorderColor,
-				leftBorderColor,
-				bottomBorderColor,
-				rightBorderColor,
-				padding,
-				topPadding,
-				leftPadding,
-				bottomPadding,
-				rightPadding,
-				lineBox
-				);
-			border = null;
-			topBorder = null;
-			leftBorder = null;
-			bottomBorder = null;
-			rightBorder = null;
-			borderColor = null;
-			topBorderColor = null;
-			leftBorderColor = null;
-			bottomBorderColor = null;
-			rightBorderColor = null;
-			padding = null;
-			topPadding = null;
-			leftPadding = null;
-			bottomPadding = null;
-			rightPadding = null;
-		}
-	}
-
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);

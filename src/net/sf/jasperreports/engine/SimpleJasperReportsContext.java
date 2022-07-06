@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleJasperReportsContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleJasperReportsContext implements JasperReportsContext
 {
@@ -41,7 +40,7 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 	 */
 	private JasperReportsContext parent;
 	
-	private Map<String, Object> values = new ConcurrentHashMap<String, Object>(16, .75f, 1);// assume low update concurrency
+	private Map<String, Object> values = new ConcurrentHashMap<>(16, .75f, 1);// assume low update concurrency
 	private Map<String, String> properties;
 	private Map<Class<?>, List<?>> extensionsMap;
 
@@ -68,10 +67,13 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 	{
 		this.parent = parent;
 	}
+	
+	public JasperReportsContext getParent()
+	{
+		return parent;
+	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getValue(String key)
 	{
 		if (values.containsKey(key))
@@ -85,9 +87,13 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 		return null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public Object getOwnValue(String key)
+	{
+		return values.get(key);
+	}
+
+	@Override
 	public void setValue(String key, Object value)
 	{
 		values.put(key, value);
@@ -108,6 +114,7 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 	 * @param <T> generic extension type
 	 * @return a list of extension objects
 	 */
+	@Override
 	public <T> List<T> getExtensions(Class<T> extensionType)
 	{
 		if (extensionsMap == null || !extensionsMap.containsKey(extensionType))
@@ -151,7 +158,7 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 					}
 					else
 					{
-						List<T> returnedList = new ArrayList<T>();
+						List<T> returnedList = new ArrayList<>();
 						returnedList.addAll(extensionsList);
 						returnedList.addAll(parentExtensions);
 						return returnedList;
@@ -168,7 +175,7 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 	{
 		if (extensionsMap == null)
 		{
-			extensionsMap = new HashMap<Class<?>, List<?>>();
+			extensionsMap = new HashMap<>();
 		}
 		extensionsMap.put(extensionType, extensions);
 	}
@@ -187,6 +194,7 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 	 * @param key the key
 	 * @return the property value
 	 */
+	@Override
 	public String getProperty(String key)
 	{
 		if (properties != null && properties.containsKey(key))
@@ -206,22 +214,24 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 		}
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
+	public String getOwnProperty(String key)
+	{
+		return properties == null ? null : properties.get(key);
+	}
+	
+	@Override
 	public void setProperty(String key, String value)
 	{
 		if (properties == null)
 		{
-			properties = new HashMap<String, String>();
+			properties = new HashMap<>();
 		}
 		
 		properties.put(key, value);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public void removeProperty(String key)
 	{
 		if (properties != null)
@@ -230,9 +240,7 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 		}
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Map<String, String> getProperties()
 	{
 		if (properties == null)
@@ -274,7 +282,7 @@ public class SimpleJasperReportsContext implements JasperReportsContext
 					}
 					else
 					{
-						Map<String, String> returnedMap = new HashMap<String, String>();
+						Map<String, String> returnedMap = new HashMap<>();
 						returnedMap.putAll(parentProperties);
 						returnedMap.putAll(properties);
 						return returnedMap;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,8 +27,7 @@ package net.sf.jasperreports.engine.query;
 /**
  * SQL "EQUAL" clause function.
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRSqlNotEqualClause.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  * @see #apply(JRClauseTokens, JRQueryClauseContext)
  */
 public class JRSqlNotEqualClause extends JRSqlAbstractEqualClause

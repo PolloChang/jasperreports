@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.convert.ReportConverter;
  * provides a preview representation of a component instance.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentDesignConverter.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.view.JasperDesignViewer
  * @see JRPrintElement
  */

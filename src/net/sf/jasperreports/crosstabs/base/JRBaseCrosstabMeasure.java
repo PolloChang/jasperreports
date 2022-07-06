@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,16 +42,19 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base read-only crosstab measure implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstabMeasure.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, CrosstabBaseCloneable
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+	public static final String EXCEPTION_MESSAGE_KEY_MEASURE_INCREMENTER_CLASS_LOAD_ERROR = "crosstabs.measure.incrementer.class.load.error";
+	public static final String EXCEPTION_MESSAGE_KEY_MEASURE_PERCENTAGE_CALCULATOR_CLASS_LOAD_ERROR = "crosstabs.measure.percentage.calculator.class.load.error";
+	public static final String EXCEPTION_MESSAGE_KEY_MEASURE_VALUE_CLASS_LOAD_ERROR = "crosstabs.measure.value.class.load.error";
+	
 	protected String name;
 	protected String valueClassName;
 	protected String valueClassRealName;
-	protected Class<?> valueClass;//FIXME transient
+	protected transient Class<?> valueClass;
 	protected JRExpression expression;
 	protected CalculationEnum calculationValue = CalculationEnum.COUNT;
 	protected String incrementerFactoryClassName;
@@ -81,36 +84,43 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, C
 		this.variable = factory.getVariable(measure.getVariable());
 	}
 	
+	@Override
 	public String getName()
 	{
 		return name;
 	}
 
+	@Override
 	public String getValueClassName()
 	{
 		return valueClassName;
 	}
 
+	@Override
 	public JRExpression getValueExpression()
 	{
 		return expression;
 	}
 
+	@Override
 	public CalculationEnum getCalculationValue()
 	{
 		return calculationValue;
 	}
 
+	@Override
 	public String getIncrementerFactoryClassName()
 	{
 		return incrementerFactoryClassName;
 	}
 
+	@Override
 	public CrosstabPercentageEnum getPercentageType()
 	{
 		return percentageType;
 	}
 
+	@Override
 	public Class<?> getIncrementerFactoryClass()
 	{
 		if (incrementerFactoryClass == null)
@@ -124,7 +134,11 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, C
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new JRRuntimeException("Could not load measure incrementer class", e);
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_MEASURE_INCREMENTER_CLASS_LOAD_ERROR,
+							(Object[])null,
+							e);
 				}
 			}
 		}
@@ -145,6 +159,7 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, C
 		return incrementerFactoryClassRealName;
 	}
 
+	@Override
 	public Class<?> getValueClass()
 	{
 		if (valueClass == null)
@@ -158,7 +173,11 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, C
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new JRRuntimeException("Could not load measure value class", e);
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_MEASURE_VALUE_CLASS_LOAD_ERROR,
+							(Object[])null,
+							e);
 				}
 			}
 		}
@@ -179,16 +198,19 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, C
 		return valueClassRealName;
 	}
 
+	@Override
 	public JRVariable getVariable()
 	{
 		return variable;
 	}
 
+	@Override
 	public String getPercentageCalculatorClassName()
 	{
 		return percentageCalculatorClassName;
 	}
 
+	@Override
 	public Class<?> getPercentageCalculatorClass()
 	{
 		if (percentageCalculatorClass == null)
@@ -202,7 +224,11 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, C
 				}
 				catch (ClassNotFoundException e)
 				{
-					throw new JRRuntimeException("Could not load measure percentage calculator class", e);
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_MEASURE_PERCENTAGE_CALCULATOR_CLASS_LOAD_ERROR,
+							(Object[])null,
+							e);
 				}
 			}
 		}
@@ -223,9 +249,7 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, C
 		return percentageCalculatorClassRealName;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseCrosstabMeasure clone = null;
@@ -265,6 +289,7 @@ public class JRBaseCrosstabMeasure implements JRCrosstabMeasure, Serializable, C
 	 */
 	private byte calculation;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

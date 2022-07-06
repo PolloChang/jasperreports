@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -49,10 +49,12 @@ import net.sf.jasperreports.engine.query.JRJpaQueryExecuter;
  * </ul>
  * 
  * @author Marcel Overdijk (marceloverdijk@hotmail.com)
- * @version $Id: JRJpaDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory#PROPERTY_JPA_QUERY_PAGE_SIZE
  */
 public class JRJpaDataSource extends JRAbstractBeanDataSource {
+	
+	public static final String EXCEPTION_MESSAGE_KEY_INDEX_OUT_OF_BOUNDS = "data.jpa.index.out.of.bounds";
+
 	private static final String MAPPING_INDEX_PREFIX = "COLUMN_";
 	private static final int MAPPING_INDEX_PREFIX_LENGTH = MAPPING_INDEX_PREFIX.length();
 	private static final String MAPPING_INDEX_PROPERTY_SEP = ".";
@@ -73,7 +75,7 @@ public class JRJpaDataSource extends JRAbstractBeanDataSource {
 		this.queryExecuter = queryExecuter;
 		this.pageSize = pageSize;
 		
-		fieldValueReaders = new HashMap<String,FieldValueReader>();
+		fieldValueReaders = new HashMap<>();
 		
 		pageCount = 0;
 		fetchPage();
@@ -94,6 +96,7 @@ public class JRJpaDataSource extends JRAbstractBeanDataSource {
 		initIterator();
 	}
 
+	@Override
 	public boolean next() {
 		if (iterator == null) {
 			return false;
@@ -112,6 +115,7 @@ public class JRJpaDataSource extends JRAbstractBeanDataSource {
 		return hasNext;
 	}
 
+	@Override
 	public void moveFirst() {
 		if (pageCount == 1) {
 			initIterator();
@@ -126,6 +130,7 @@ public class JRJpaDataSource extends JRAbstractBeanDataSource {
 		iterator = returnValues == null ? null : returnValues.iterator();
 	}
 	
+	@Override
 	public Object getFieldValue(JRField field) throws JRException {
 		FieldValueReader reader = getFieldValueReader(field);
 		return reader.getValue();
@@ -201,6 +206,7 @@ public class JRJpaDataSource extends JRAbstractBeanDataSource {
 			this.property = property;
 		}
 		
+		@Override
 		public Object getValue() throws JRException
 		{
 			return getBeanProperty(currentRow, property);
@@ -216,12 +222,16 @@ public class JRJpaDataSource extends JRAbstractBeanDataSource {
 			this.position = position;
 		}
 		
+		@Override
 		public Object getValue() throws JRException
 		{
 			Object[] values = (Object[]) currentRow;
 			if (position < 0 || position >= values.length)
 			{
-				throw new JRRuntimeException("Index " + position + " out of bounds for query result of length " + values.length);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_INDEX_OUT_OF_BOUNDS,
+						new Object[]{position, values.length});
 			}
 			return values[position];
 		}	
@@ -238,12 +248,16 @@ public class JRJpaDataSource extends JRAbstractBeanDataSource {
 			this.property = property;
 		}
 		
+		@Override
 		public Object getValue() throws JRException
 		{
 			Object[] values = (Object[]) currentRow;
 			if (position < 0 || position >= values.length)
 			{
-				throw new JRRuntimeException("Index " + position + " out of bounds for query result of length " + values.length);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_INDEX_OUT_OF_BOUNDS,
+						new Object[]{position, values.length});
 			}
 			return getBeanProperty(values[position], property);
 		}

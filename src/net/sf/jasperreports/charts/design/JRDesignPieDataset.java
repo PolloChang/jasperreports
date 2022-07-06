@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignPieDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDataset
 {
@@ -68,7 +67,7 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 	private Float minPercentage;
 	private Integer maxCount;
 	
-	private List<JRPieSeries> pieSeriesList = new ArrayList<JRPieSeries>();
+	private List<JRPieSeries> pieSeriesList = new ArrayList<>();
 
 	protected JRExpression otherKeyExpression;
 	protected JRExpression otherLabelExpression;
@@ -84,17 +83,13 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Float getMinPercentage()
 	{
 		return minPercentage;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setMinPercentage(Float minPercentage)
 	{
 		Object old = this.minPercentage;
@@ -102,17 +97,13 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 		getEventSupport().firePropertyChange(PROPERTY_MIN_PERCENTAGE, old, this.minPercentage);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getMaxCount()
 	{
 		return maxCount;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setMaxCount(Integer maxCount)
 	{
 		Object old = this.maxCount;
@@ -120,9 +111,7 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 		getEventSupport().firePropertyChange(PROPERTY_MAX_COUNT, old, this.maxCount);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPieSeries[] getSeries()
 	{
 		JRPieSeries[] pieSeriesArray = new JRPieSeries[pieSeriesList.size()];
@@ -264,9 +253,7 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getOtherKeyExpression()
 	{
 		return otherKeyExpression;
@@ -282,9 +269,7 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 		getEventSupport().firePropertyChange(PROPERTY_OTHER_KEY_EXPRESSION, old, this.otherKeyExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getOtherLabelExpression()
 	{
 		return otherLabelExpression;
@@ -300,9 +285,7 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 		getEventSupport().firePropertyChange(PROPERTY_OTHER_LABEL_EXPRESSION, old, this.otherLabelExpression);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRHyperlink getOtherSectionHyperlink()
 	{
 		return otherSectionHyperlink;
@@ -319,32 +302,27 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 	}
 
 
-	/** 
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.PIE_DATASET;
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 	
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignPieDataset clone = (JRDesignPieDataset)super.clone();
@@ -381,7 +359,7 @@ public class JRDesignPieDataset extends JRDesignChartDataset implements JRPieDat
 		
 		if (pieSeriesList == null)
 		{
-			pieSeriesList = new ArrayList<JRPieSeries>();
+			pieSeriesList = new ArrayList<>();
 			
 			JRDesignPieSeries ps = new JRDesignPieSeries();
 			ps.setKeyExpression(keyExpression);

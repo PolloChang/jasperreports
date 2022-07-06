@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,17 +29,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.Document;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.JRXmlDataSource;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.w3c.dom.Document;
 
 /**
  * XPath query executer implementation.
@@ -52,13 +51,12 @@ import org.w3c.dom.Document;
  * on the parameter value.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXPathQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXPathQueryExecuter extends JRAbstractQueryExecuter
 {
 	private static final Log log = LogFactory.getLog(JRXPathQueryExecuter.class);
 
-	protected static final String CANONICAL_LANGUAGE = "XPath";
+	public static final String CANONICAL_LANGUAGE = "XPath";
 	
 	private JRXmlDataSource datasource;
 
@@ -71,17 +69,19 @@ public class JRXPathQueryExecuter extends JRAbstractQueryExecuter
 		Map<String,? extends JRValueParameter> parametersMap
 		)
 	{
-		super(jasperReportsContext, dataset, parametersMap);
+		this(SimpleQueryExecutionContext.of(jasperReportsContext),
+				dataset, parametersMap);
+	}
+	
+	public JRXPathQueryExecuter(
+		QueryExecutionContext context,
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parametersMap
+		)
+	{
+		super(context, dataset, parametersMap);
 				
 		parseQuery();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #JRXPathQueryExecuter(JasperReportsContext, JRDataset, Map)}.
-	 */
-	public JRXPathQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap)
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
 	}
 
 	@Override
@@ -90,11 +90,13 @@ public class JRXPathQueryExecuter extends JRAbstractQueryExecuter
 		return CANONICAL_LANGUAGE;
 	}
 
+	@Override
 	protected String getParameterReplacement(String parameterName)
 	{
 		return String.valueOf(getParameterValue(parameterName));
 	}
 
+	@Override
 	public JRDataSource createDatasource() throws JRException
 	{
 		JRXmlDataSource datasource = null;
@@ -122,7 +124,7 @@ public class JRXPathQueryExecuter extends JRAbstractQueryExecuter
 					} else {
 						String xmlSource = getStringParameterOrProperty(JRXPathQueryExecuterFactory.XML_SOURCE);
 						if (xmlSource != null) {
-							datasource = new JRXmlDataSource(getJasperReportsContext(), xmlSource, xPath);
+							datasource = new JRXmlDataSource(getRepositoryContext(), xmlSource, xPath, false);
 						} else {
 							if (log.isWarnEnabled()){
 								log.warn("No XML source was provided.");
@@ -144,6 +146,7 @@ public class JRXPathQueryExecuter extends JRAbstractQueryExecuter
 		return datasource;
 	}
 
+	@Override
 	public void close()
 	{
 		if(datasource != null){
@@ -151,6 +154,7 @@ public class JRXPathQueryExecuter extends JRAbstractQueryExecuter
 		}
 	}
 
+	@Override
 	public boolean cancelQuery() throws JRException
 	{
 		//nothing to cancel

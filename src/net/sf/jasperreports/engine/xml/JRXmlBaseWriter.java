@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,8 @@ package net.sf.jasperreports.engine.xml;
 
 import java.io.IOException;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRConditionalStyle;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
@@ -35,16 +37,17 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRStyleContainer;
 import net.sf.jasperreports.engine.TabStop;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
 import net.sf.jasperreports.engine.util.VersionComparator;
 import net.sf.jasperreports.engine.util.XmlNamespace;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * Base XML writer.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlBaseWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRXmlBaseWriter
 {
@@ -56,6 +59,11 @@ public abstract class JRXmlBaseWriter
 	 * 
 	 * @see JRXmlWriter
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_OTHER,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String PROPERTY_REPORT_VERSION = JRPropertiesUtil.PROPERTY_PREFIX + "report.version";
 
 	protected JRXmlWriteHelper writer;
@@ -91,8 +99,38 @@ public abstract class JRXmlBaseWriter
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_fill, style.getOwnFillValue());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_radius, style.getOwnRadius());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_scaleImage, style.getOwnScaleImageValue());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, style.getOwnHorizontalAlignmentValue());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, style.getOwnVerticalAlignmentValue());
+		if (isOlderVersionThan(JRConstants.VERSION_6_0_2))
+		{
+			if (style.getOwnHorizontalTextAlign() == null)
+			{
+				writer.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, style.getOwnHorizontalImageAlign());
+			}
+			else
+			{
+				writer.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, style.getOwnHorizontalTextAlign());
+			}
+
+			if (style.getOwnVerticalTextAlign() == null)
+			{
+				writer.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, style.getOwnVerticalImageAlign());
+			}
+			else
+			{
+				writer.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, style.getOwnVerticalTextAlign());
+			}
+		}
+		else
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_hTextAlign, style.getOwnHorizontalTextAlign());
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_hImageAlign, style.getOwnHorizontalImageAlign());
+			VerticalTextAlignEnum vTextAlign = style.getOwnVerticalTextAlign();
+			if (isOlderVersionThan(JRConstants.VERSION_6_2_1))
+			{
+				vTextAlign = vTextAlign == VerticalTextAlignEnum.JUSTIFIED ? VerticalTextAlignEnum.TOP : vTextAlign;
+			}
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_vTextAlign, vTextAlign);
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_vImageAlign, style.getOwnVerticalImageAlign());
+		}
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_rotation, style.getOwnRotationValue());
 		if (isOlderVersionThan(JRConstants.VERSION_4_0_2))
 		{

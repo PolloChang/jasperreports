@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.j2ee.servlets;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.io.IOException;
 import java.util.List;
@@ -35,19 +36,22 @@ import javax.servlet.http.HttpServletResponse;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintImage;
-import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.export.HtmlExporter;
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.util.JRImageLoader;
+import net.sf.jasperreports.engine.util.JRTypeSniffer;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.ResourceRenderer;
+import net.sf.jasperreports.renderers.util.RendererUtil;
+import net.sf.jasperreports.repo.RepositoryUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageServlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ImageServlet extends BaseHttpServlet
 {
@@ -60,9 +64,7 @@ public class ImageServlet extends BaseHttpServlet
 	public static final String IMAGE_NAME_REQUEST_PARAMETER = "image";
 
 			
-	/**
-	 *
-	 */
+	@Override
 	public void service(
 		HttpServletRequest request,
 		HttpServletResponse response
@@ -76,9 +78,7 @@ public class ImageServlet extends BaseHttpServlet
 		{
 			try
 			{
-				Renderable pxRenderer = 
-					RenderableUtil.getInstance(getJasperReportsContext()).getRenderable("net/sf/jasperreports/engine/images/pixel.GIF");
-				imageData = pxRenderer.getImageData(getJasperReportsContext());
+				imageData = RepositoryUtil.getInstance(getJasperReportsContext()).getBytesFromLocation(JRImageLoader.PIXEL_IMAGE_RESOURCE);
 				imageMimeType = ImageTypeEnum.GIF.getMimeType();
 			}
 			catch (JRException e)
@@ -97,27 +97,37 @@ public class ImageServlet extends BaseHttpServlet
 			
 			JRPrintImage image = HtmlExporter.getImage(jasperPrintList, imageName);
 			
-			Renderable renderer = image.getRenderable();
-			if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
-			{
-				renderer = 
-					new JRWrappingSvgRenderer(
-						renderer, 
-						new Dimension(image.getWidth(), image.getHeight()),
-						ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null
-						);
-			}
-
-			imageMimeType = renderer.getImageTypeValue().getMimeType();
+			Renderable renderer = image.getRenderer();
+			
+			Dimension dimension = new Dimension(image.getWidth(), image.getHeight());
+			Color backcolor = ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null;
+			
+			RendererUtil rendererUtil = RendererUtil.getInstance(getJasperReportsContext());
 			
 			try
 			{
-				imageData = renderer.getImageData(getJasperReportsContext());
+				imageData = process(renderer, dimension, backcolor);
 			}
-			catch (JRException e)
+			catch (Exception e)
 			{
-				throw new ServletException(e);
+				try
+				{
+					Renderable onErrorRenderer = rendererUtil.handleImageError(e, image.getOnErrorTypeValue());
+					if (onErrorRenderer != null)
+					{
+						imageData = process(onErrorRenderer, dimension, backcolor);
+					}
+				}
+				catch (Exception ex)
+				{
+					throw new ServletException(ex);
+				}
 			}
+			
+			imageMimeType = 
+				rendererUtil.isSvgData(imageData)
+				? RendererUtil.SVG_MIME_TYPE
+				: JRTypeSniffer.getImageTypeValue(imageData).getMimeType();
 		}
 
 		if (imageData != null && imageData.length > 0)
@@ -134,5 +144,31 @@ public class ImageServlet extends BaseHttpServlet
 		}
 	}
 
+	
+	protected byte[] process(
+		Renderable renderer,
+		Dimension dimension,
+		Color backcolor
+		) throws JRException
+	{
+		RendererUtil rendererUtil = RendererUtil.getInstance(getJasperReportsContext());
+		
+		if (renderer instanceof ResourceRenderer)
+		{
+			renderer = //hard to use a cache here and it would be just for some icon type of images, if any 
+					rendererUtil.getNonLazyRenderable(
+					((ResourceRenderer)renderer).getResourceLocation(), 
+					OnErrorTypeEnum.ERROR
+					);
+		}
 
+		DataRenderable dataRenderer = 
+				rendererUtil.getDataRenderable(
+				renderer,
+				dimension,
+				backcolor
+				);
+		
+		return dataRenderer.getData(getJasperReportsContext());
+	}
 }

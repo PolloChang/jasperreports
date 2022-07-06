@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,18 +28,17 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.export.JRXmlExporterParameter;
+import net.sf.jasperreports.engine.export.FileXmlResourceHandler;
+import net.sf.jasperreports.engine.export.XmlResourceHandler;
 import net.sf.jasperreports.export.XmlExporterOutput;
 
 
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParametersXmlExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParametersXmlExporterOutput extends ParametersWriterExporterOutput implements XmlExporterOutput
 {
@@ -49,7 +48,11 @@ public class ParametersXmlExporterOutput extends ParametersWriterExporterOutput 
 	/**
 	 * 
 	 */
+	private XmlResourceHandler imageHandler;
 	private Boolean isEmbeddingImages;
+	/**
+	 * @deprecated To be removed.
+	 */ 
 	private File imagesDir;
 	
 	/**
@@ -57,7 +60,7 @@ public class ParametersXmlExporterOutput extends ParametersWriterExporterOutput 
 	 */
 	public ParametersXmlExporterOutput(
 		JasperReportsContext jasperReportsContext,
-		Map<JRExporterParameter, Object> parameters,
+		Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters,
 		JasperPrint jasperPrint
 		)
 	{
@@ -69,37 +72,41 @@ public class ParametersXmlExporterOutput extends ParametersWriterExporterOutput 
 		
 		isEmbeddingImages = Boolean.TRUE;
 
-		StringBuffer sb = (StringBuffer)parameters.get(JRExporterParameter.OUTPUT_STRING_BUFFER);
+		StringBuffer sb = (StringBuffer)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_STRING_BUFFER);
 		if (sb == null)
 		{
-			Writer writer = (Writer)parameters.get(JRExporterParameter.OUTPUT_WRITER);
+			Writer writer = (Writer)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_WRITER);
 			if (writer == null)
 			{
-				OutputStream os = (OutputStream)parameters.get(JRExporterParameter.OUTPUT_STREAM);
+				OutputStream os = (OutputStream)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_STREAM);
 				if (os == null)
 				{
-					File destFile = (File)parameters.get(JRExporterParameter.OUTPUT_FILE);
+					File destFile = (File)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_FILE);
 					if (destFile == null)
 					{
-						String fileName = (String)parameters.get(JRExporterParameter.OUTPUT_FILE_NAME);
+						String fileName = (String)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_FILE_NAME);
 						if (fileName != null)
 						{
 							destFile = new File(fileName);
 						}
 						else
 						{
-							throw new JRRuntimeException("No output specified for the exporter.");
+							throw 
+								new JRRuntimeException(
+									EXCEPTION_MESSAGE_KEY_NO_OUTPUT_SPECIFIED,
+									(Object[])null);
 						}
 					}
 					
 					imagesDir = new File(destFile.getParent(), destFile.getName() + XML_FILES_SUFFIX);
-					
-					Boolean isEmbeddingImagesParameter = (Boolean)parameters.get(JRXmlExporterParameter.IS_EMBEDDING_IMAGES);
+					imageHandler = new FileXmlResourceHandler(imagesDir, imagesDir.getName() + "/{0}");
+
+					Boolean isEmbeddingImagesParameter = (Boolean)parameters.get(net.sf.jasperreports.engine.export.JRXmlExporterParameter.IS_EMBEDDING_IMAGES);
 					if (isEmbeddingImagesParameter == null)
 					{
 						isEmbeddingImagesParameter = Boolean.TRUE;
 					}
-					isEmbeddingImages = isEmbeddingImagesParameter.booleanValue();
+					isEmbeddingImages = isEmbeddingImagesParameter;
 				}
 			}
 		}
@@ -108,23 +115,27 @@ public class ParametersXmlExporterOutput extends ParametersWriterExporterOutput 
 	@Override
 	protected void setEncoding()//FIXMEEXPORT why do we need override here?
 	{
-		encoding = (String)parameters.get(JRExporterParameter.CHARACTER_ENCODING);
+		encoding = (String)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.CHARACTER_ENCODING);
 		if (encoding == null)
 		{
 			encoding = DEFAULT_XML_ENCODING;
 		}
 	}
+	
+	@Override
+	public XmlResourceHandler getImageHandler() 
+	{
+		return imageHandler;
+	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isEmbeddingImages()
 	{
 		return isEmbeddingImages;
 	}
 	
 	/**
-	 * 
+	 * @deprecated To be removed. 
 	 */
 	public File getImagesDir()
 	{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,23 +23,40 @@
  */
 package net.sf.jasperreports.components.barcode4j;
 
+import org.krysalis.barcode4j.BarcodeGenerator;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-
-import org.krysalis.barcode4j.BarcodeGenerator;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.renderers.Renderable;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeImageProducer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface BarcodeImageProducer
 {
 
+	@Property(
+			category = PropertyConstants.CATEGORY_BARCODE,
+			defaultValue = "svg",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.COMPONENT},
+			scopeQualifications = {Barcode4jComponent.COMPONENT_DESIGNATION, QRCodeComponent.COMPONENT_DESIGNATION},
+			sinceVersion = PropertyConstants.VERSION_3_5_2
+			)
 	String PROPERTY_IMAGE_PRODUCER = 
 		BarcodeComponent.PROPERTY_PREFIX + "image.producer";
 
+	@Property(
+			name = "net.sf.jasperreports.components.barcode4j.image.producer.{alias}",
+			category = PropertyConstants.CATEGORY_BARCODE,
+			valueType = Class.class,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.COMPONENT},
+			scopeQualifications = {Barcode4jComponent.COMPONENT_DESIGNATION},
+			sinceVersion = PropertyConstants.VERSION_3_5_2
+			)
 	String PROPERTY_PREFIX_IMAGE_PRODUCER = 
 		BarcodeComponent.PROPERTY_PREFIX + "image.producer.";
 	
@@ -47,8 +64,7 @@ public interface BarcodeImageProducer
 		JasperReportsContext jasperReportsContext,
 		JRComponentElement componentElement, 
 		BarcodeGenerator barcode, 
-		String message, 
-		int orientation
+		String message
 		);
 	
 }

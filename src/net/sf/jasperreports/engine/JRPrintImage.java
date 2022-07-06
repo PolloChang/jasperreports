@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,42 +31,36 @@
 package net.sf.jasperreports.engine;
 
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
-import net.sf.jasperreports.engine.type.ScaleImageEnum;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRPrintImage extends JRPrintGraphicElement, JRPrintAnchor, JRPrintHyperlink, JRAlignment, JRCommonImage
+public interface JRPrintImage extends JRPrintGraphicElement, JRPrintAnchor, JRPrintHyperlink, JRCommonImage
 {
 
 
 	/**
-	 * @deprecated Replaced by {@link #getRenderable()}.
-	 */
-	public JRRenderable getRenderer();
-		
-	/**
-	 * @deprecated Replaced by {@link #setRenderable(Renderable)}.
-	 */
-	public void setRenderer(JRRenderable renderer);
-		
-	/**
-	 *
+	 * @deprecated Replaced by {@link #getRenderer()}.
 	 */
 	public Renderable getRenderable();
 		
 	/**
-	 *
+	 * @deprecated Replaced by {@link #setRenderer(net.sf.jasperreports.renderers.Renderable)}.
 	 */
 	public void setRenderable(Renderable renderer);
 		
 	/**
-	 * 
+	 *
 	 */
-	public void setScaleImage(ScaleImageEnum scaleImage);
-
+	public net.sf.jasperreports.renderers.Renderable getRenderer();
+		
+	/**
+	 *
+	 */
+	public void setRenderer(net.sf.jasperreports.renderers.Renderable renderer);
+		
 	/**
 	 *
 	 */
@@ -78,12 +72,12 @@ public interface JRPrintImage extends JRPrintGraphicElement, JRPrintAnchor, JRPr
 	public void setUsingCache(boolean isUsingCache);
 	
 	/**
-	 *
+	 * @deprecated Replaced by {@link ResourceRenderer}.
 	 */
 	public boolean isLazy();
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link ResourceRenderer}.
 	 */
 	public void setLazy(boolean isLazy);
 

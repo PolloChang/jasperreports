@@ -1,7 +1,9 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2005 - 2014 Works, Inc. All rights reserved.
+ * Copyright (C) 2005 Works, Inc. All rights reserved.
  * http://www.works.com
+ * Copyright (C) 2005 - 2022 TIBCO Software Inc. All rights reserved.
+ * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
  * the following license terms apply:
@@ -30,7 +32,6 @@ package net.sf.jasperreports.engine;
 
 /**
  * @author John Bindel
- * @version $Id: JRVirtualizer.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.JRVirtualizationHelper
  */
 public interface JRVirtualizer

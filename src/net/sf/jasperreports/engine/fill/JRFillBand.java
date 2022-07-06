@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,9 +27,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.engine.CommonReturnValue;
+import net.sf.jasperreports.engine.ExpressionReturnValue;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRException;
@@ -38,15 +44,14 @@ import net.sf.jasperreports.engine.JRGroup;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.type.BandTypeEnum;
+import net.sf.jasperreports.engine.type.PrintOrderEnum;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillBand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillBand extends JRFillElementContainer implements JRBand, JROriginProvider
 {
@@ -65,18 +70,50 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	 */
 	private boolean isNewPageColumn;
 	private boolean isFirstWholeOnPageColumn;
-	private Map<JRGroup,Boolean> isNewGroupMap = new HashMap<JRGroup,Boolean>();
+	private Map<JRGroup,Boolean> isNewGroupMap = new HashMap<>();
 
 	private Set<JREvaluationTime> nowEvaluationTimes;
 	
 	// used by subreports to save values of variables used as return receptacles
 	// so that the values can be restored when the bands gets rewound
-	private Map<String,Object> savedVariableValues = new HashMap<String,Object>();
+	private Map<String,Object> savedVariableValues = new HashMap<>();
 
 	protected JROrigin origin;
 	
 	private SplitTypeEnum splitType;
-	private int breakHeight;
+	private Integer breakHeight;
+
+	private FillReturnValues returnValues;
+	private FillReturnValues.SourceContext returnValuesContext = new FillReturnValues.SourceContext() 
+	{
+		@Override
+		public Object getValue(CommonReturnValue returnValue) 
+		{
+			ExpressionReturnValue expressionReturnValue = (ExpressionReturnValue)returnValue;
+			Object value = null;
+			try
+			{
+				value = filler.evaluateExpression(expressionReturnValue.getExpression(), JRExpression.EVALUATION_DEFAULT);
+			}
+			catch (JRException e)
+			{
+				throw new JRRuntimeException(e);
+			}
+			return value;
+		}
+		
+		@Override
+		public void check(CommonReturnValue returnValue) throws JRException 
+		{
+			//FIXMERETURN check something
+		}
+
+		@Override
+		public JRFillVariable getToVariable(String name)
+		{
+			return filler.getVariable(name);
+		}
+	};
 
 	private Set<FillReturnValues> returnValuesSet;
 	
@@ -94,7 +131,7 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 		parent = band;
 		
 		// we need to do this before setBand()
-		returnValuesSet = new LinkedHashSet<FillReturnValues>();
+		returnValuesSet = new LinkedHashSet<>();
 
 		if (deepElements.length > 0)
 		{
@@ -104,40 +141,24 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 			}
 		}
 
-		splitType = (parent == null ? null : parent.getSplitTypeValue());
-		if (splitType == null)
-		{
-			splitType = 
-				SplitTypeEnum.getByName(
-					filler.getPropertiesUtil().getProperty(filler.getJasperReport(), JRBand.PROPERTY_SPLIT_TYPE)
-					);
-		}
+		List<ExpressionReturnValue> expRetValues = getReturnValues();
+		returnValues = 
+			new FillReturnValues(
+				expRetValues == null ? null : (ExpressionReturnValue[]) expRetValues.toArray(new ExpressionReturnValue[expRetValues.size()]), //FIXMERETURN make special class for constructor differentiation
+				factory, 
+				filler
+				);
+		registerReturnValues(returnValues);
 		
-		breakHeight = getHeight();
-		if (
-			SplitTypeEnum.IMMEDIATE == getSplitTypeValue()
-			&& elements != null && elements.length > 0
-			)
-		{
-			for(int i = 0; i < elements.length; i++)
-			{
-				JRElement element = elements[i];
-				int bottom = element.getY() + element.getHeight();
-				breakHeight = bottom < breakHeight ? bottom : breakHeight;
-			}
-		}
-
 		initElements();
 
 		initConditionalStyles();
 
-		nowEvaluationTimes = new HashSet<JREvaluationTime>();
+		nowEvaluationTimes = new HashSet<>();
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JROrigin getOrigin()
 	{
 		return origin;
@@ -193,7 +214,7 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	 */
 	protected void setNewGroup(JRGroup group, boolean isNew)
 	{
-		isNewGroupMap.put(group, isNew ? Boolean.TRUE : Boolean.FALSE);
+		isNewGroupMap.put(group, isNew);
 	}
 
 
@@ -209,13 +230,11 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 			value = Boolean.FALSE;
 		}
 
-		return value.booleanValue();
+		return value;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public int getHeight()
 	{
 		return (parent == null ? 0 : parent.getHeight());
@@ -226,28 +245,54 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	 */
 	public int getBreakHeight()
 	{
+		// needs to be lazy calculated because it depends on splitType, which is itself lazy loaded
+		if (breakHeight == null)
+		{
+			breakHeight = getHeight();
+			if (
+				SplitTypeEnum.IMMEDIATE == getSplitTypeValue()
+				&& elements != null && elements.length > 0
+				)
+			{
+				for(int i = 0; i < elements.length; i++)
+				{
+					JRElement element = elements[i];
+					int bottom = element.getY() + element.getHeight();
+					breakHeight = bottom < breakHeight ? bottom : breakHeight;
+				}
+			}
+		}
+
 		return breakHeight;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public SplitTypeEnum getSplitTypeValue()
 	{
+		// needs to be lazy loaded because in JRFillBand constructor above, the filler.getMainDataset() is not yet set, 
+		// when the band is a group band
+		if (splitType == null)
+		{
+			splitType = (parent == null ? null : parent.getSplitTypeValue());
+			if (splitType == null)
+			{
+				splitType = 
+					SplitTypeEnum.getByName(
+						filler.getPropertiesUtil().getProperty(filler.getMainDataset(), JRBand.PROPERTY_SPLIT_TYPE)
+						);
+			}
+		}
+		
 		return splitType;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setSplitType(SplitTypeEnum splitType)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getPrintWhenExpression()
 	{
 		return (parent == null ? null : parent.getPrintWhenExpression());
@@ -291,9 +336,9 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	protected boolean isToPrint()
 	{
 		return
-			(isPrintWhenExpressionNull() ||
-			 (!isPrintWhenExpressionNull() &&
-			  isPrintWhenTrue()));
+			this != filler.missingFillBand
+			&& (isPrintWhenExpressionNull() 
+			|| (!isPrintWhenExpressionNull() && isPrintWhenTrue()));
 	}
 
 
@@ -316,7 +361,7 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 			}
 			else
 			{
-				isPrintTrue = printWhenExpressionValue.booleanValue();
+				isPrintTrue = printWhenExpressionValue;
 			}
 		}
 
@@ -329,13 +374,38 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	 *
 	 */
 	protected JRPrintBand refill(
+		byte evaluation,
 		int availableHeight
 		) throws JRException
 	{
 		rewind();
 		restoreSavedVariables();
 
-		return fill(availableHeight);
+		JRPrintBand printBand = null;
+		
+		@SuppressWarnings("deprecation")
+		boolean isLegacyBandEvaluationEnabled = filler.getFillContext().isLegacyBandEvaluationEnabled(); 
+		if (isLegacyBandEvaluationEnabled)
+		{
+			printBand = fill(availableHeight);
+		}
+		else
+		{
+			evaluatePrintWhenExpression(evaluation);
+			
+			if (isToPrint())
+			{
+				evaluate(evaluation);
+				
+				printBand = fill(availableHeight);
+			}
+			else
+			{
+				printBand = new JRPrintBand();
+			}
+		}
+		
+		return printBand;
 	}
 
 
@@ -368,7 +438,6 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 		) throws JRException
 	{
 		filler.checkInterrupted();
-		filler.fillContext.ensureMasterPageAvailable();
 
 		filler.setBandOverFlowAllowed(isOverflowAllowed);
 
@@ -383,26 +452,48 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 
 		prepareElements(availableHeight, isOverflowAllowed);
 
-		stretchElements();
+		if (isLegacyElementStretchEnabled())
+		{
+			stretchElements();
 
-		moveBandBottomElements();
+			moveBandBottomElements();
 
-		removeBlankElements();
+			removeBlankElements();
+		}
 
 		isFirstWholeOnPageColumn = isNewPageColumn && isOverflow;
 		isNewPageColumn = false;
-		isNewGroupMap = new HashMap<JRGroup,Boolean>();
+		isNewGroupMap = new HashMap<>();
 
 		JRPrintBand printBand = new JRPrintBand();
 		fillElements(printBand);
+		
+		if (!willOverflow())
+		{
+			returnValues.copyValues(returnValuesContext);
+		}
 
 		return printBand;
 	}
 
 
+	protected boolean willOverflowWithElements()
+	{
+		return willOverflowWithElements;
+	}
+
+
+	@Override
 	protected int getContainerHeight()
 	{
 		return getHeight();
+	}
+
+
+	@Override
+	protected int getActualContainerHeight()
+	{
+		return getContainerHeight(); 
 	}
 
 
@@ -449,6 +540,7 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 	}
 
 
+	@Override
 	protected void evaluate(byte evaluation) throws JRException
 	{
 		resetSavedVariables();
@@ -493,32 +585,87 @@ public class JRFillBand extends JRFillElementContainer implements JRBand, JROrig
 					&& getPrintWhenExpression() == null);
 	}
 
+	protected boolean isColumnBand()
+	{
+		BandTypeEnum bandType = origin.getBandTypeValue();
+		
+		return
+			bandType == BandTypeEnum.GROUP_HEADER
+			|| bandType == BandTypeEnum.GROUP_FOOTER
+			|| bandType == BandTypeEnum.DETAIL;
+	}
+
 	protected boolean isPageBreakInhibited()
 	{
-		boolean isPageBreakInhibited = filler.isFirstPageBand && firstYElement == null;
+		boolean isPageBreakInhibited = filler.isFirstPageBand && !atLeastOneElementIsToPrint;
 		
 		if (isPageBreakInhibited && filler.isSubreport())
 		{
-			isPageBreakInhibited = filler.parentElement.getBand().isPageBreakInhibited();
+			isPageBreakInhibited = filler.getBandReportParent().isPageBreakInhibited();
 		}
 		
 		return isPageBreakInhibited;
 	}
 	
+	protected boolean isSplitTypePreventInhibited()
+	{
+		return isSplitTypePreventInhibited(true);
+	}
+	
+	@Override
+	public boolean isSplitTypePreventInhibited(boolean isTopLevelCall)
+	{
+		boolean isSplitTypePreventInhibited = false;
+		
+		if (
+			((filler.printOrder == PrintOrderEnum.VERTICAL && filler.isFirstColumnBand)
+			|| (filler.printOrder == PrintOrderEnum.HORIZONTAL && filler.isFirstPageBand))
+			&& (isTopLevelCall || !atLeastOneElementIsToPrint)
+			)
+		{
+			if (isColumnBand() && filler.columnIndex < filler.columnCount - 1)
+			{
+				isSplitTypePreventInhibited = true;
+			}
+			else
+			{
+				if (filler.isSubreport())
+				{
+					isSplitTypePreventInhibited = filler.getBandReportParent().isSplitTypePreventInhibited(false);
+				}
+				else
+				{
+					isSplitTypePreventInhibited = true;
+				}
+			}
+		}
+		
+		return isSplitTypePreventInhibited;
+	}
+	
+	@Override
 	public boolean hasProperties()
 	{
 		return parent.hasProperties();
 	}
 
 	// not doing anything with the properties at fill time
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return parent.getPropertiesMap();
 	}
 	
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
+	}
+
+	@Override
+	public List<ExpressionReturnValue> getReturnValues()
+	{
+		return parent == null ? null : parent.getReturnValues();
 	}
 
 	public void registerReturnValues(FillReturnValues fillReturnValues)

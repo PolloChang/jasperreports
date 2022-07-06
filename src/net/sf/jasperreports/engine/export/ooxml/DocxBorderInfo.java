@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxBorderInfo.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxBorderInfo
 {
@@ -56,13 +55,13 @@ public class DocxBorderInfo
 	public DocxBorderInfo(JRLineBox box)
 	{
 		setBorder(box.getTopPen(), TOP_BORDER);
-		borderPadding[TOP_BORDER] = String.valueOf(LengthUtil.twip(box.getTopPadding().intValue()));
+		borderPadding[TOP_BORDER] = String.valueOf(LengthUtil.twip(box.getTopPadding()));
 		setBorder(box.getLeftPen(), LEFT_BORDER);
-		borderPadding[LEFT_BORDER] = String.valueOf(LengthUtil.twip(box.getLeftPadding().intValue()));
+		borderPadding[LEFT_BORDER] = String.valueOf(LengthUtil.twip(box.getLeftPadding()));
 		setBorder(box.getBottomPen(), BOTTOM_BORDER);
-		borderPadding[BOTTOM_BORDER] = String.valueOf(LengthUtil.twip(box.getBottomPadding().intValue()));
+		borderPadding[BOTTOM_BORDER] = String.valueOf(LengthUtil.twip(box.getBottomPadding()));
 		setBorder(box.getRightPen(), RIGHT_BORDER);
-		borderPadding[RIGHT_BORDER] = String.valueOf(LengthUtil.twip(box.getRightPadding().intValue()));
+		borderPadding[RIGHT_BORDER] = String.valueOf(LengthUtil.twip(box.getRightPadding()));
 	}
 	
 	/**
@@ -101,12 +100,12 @@ public class DocxBorderInfo
 	 */
 	private void setBorder(JRPen pen, int side)
 	{
-		float width = pen.getLineWidth() == null ? 0 : pen.getLineWidth().floatValue();
+		float width = pen.getLineWidth() == null ? 0 : pen.getLineWidth();
 		String style = null;
 
 		if (width > 0f)
 		{
-			switch (pen.getLineStyleValue())//FIXMEBORDER is this working? deal with double border too.
+			switch (pen.getLineStyleValue())
 			{
 				case DOTTED :
 				{
@@ -116,6 +115,11 @@ public class DocxBorderInfo
 				case DASHED :
 				{
 					style = "dashSmallGap";
+					break;
+				}
+				case DOUBLE :
+				{
+					style = "double";
 					break;
 				}
 				case SOLID :

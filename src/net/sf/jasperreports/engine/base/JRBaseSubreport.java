@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,12 +33,10 @@ import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OverflowType;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseSubreport extends JRBaseElement implements JRSubreport
 {
@@ -78,12 +76,10 @@ public class JRBaseSubreport extends JRBaseElement implements JRSubreport
 	protected JRSubreportReturnValue[] returnValues;
 
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 
 
@@ -129,79 +125,47 @@ public class JRBaseSubreport extends JRBaseElement implements JRSubreport
 	}
 		
 
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public boolean isUsingCache()
-	{
-		if (isUsingCache == null)
-		{
-			JRExpression subreportExpression = getExpression();
-			if (subreportExpression != null)
-			{
-				return String.class.getName().equals(subreportExpression.getValueClassName());
-			}
-			return true;
-		}
-		return isUsingCache.booleanValue();
-	}
-
-
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getParametersMapExpression()
 	{
 		return this.parametersMapExpression;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRSubreportParameter[] getParameters()
 	{
 		return this.parameters;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getConnectionExpression()
 	{
 		return this.connectionExpression;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getDataSourceExpression()
 	{
 		return this.dataSourceExpression;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getExpression()
 	{
 		return this.expression;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitSubreport(this);
@@ -213,27 +177,21 @@ public class JRBaseSubreport extends JRBaseElement implements JRSubreport
 	 * 
 	 * @return the list of values to be copied from the subreport into the master.
 	 */
+	@Override
 	public JRSubreportReturnValue[] getReturnValues()
 	{
 		return this.returnValues;
 	}
 
 
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public Boolean isOwnUsingCache()
-	{
-		return isUsingCache;
-	}
-
-
+	@Override
 	public Boolean getUsingCache()
 	{
 		return isUsingCache;
 	}
 
 
+	@Override
 	public void setUsingCache(Boolean isUsingCache)
 	{
 		Object old = this.isUsingCache;
@@ -242,12 +200,14 @@ public class JRBaseSubreport extends JRBaseElement implements JRSubreport
 	}
 
 	
+	@Override
 	public Boolean isRunToBottom()
 	{
 		return runToBottom;
 	}
 
 
+	@Override
 	public void setRunToBottom(Boolean runToBottom)
 	{
 		Object old = this.runToBottom;
@@ -269,9 +229,7 @@ public class JRBaseSubreport extends JRBaseElement implements JRSubreport
 		getEventSupport().firePropertyChange(PROPERTY_OVERFLOW_TYPE, old, this.overflowType);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseSubreport clone = (JRBaseSubreport)super.clone();

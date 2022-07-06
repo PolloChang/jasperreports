@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,6 @@ import org.apache.commons.logging.LogFactory;
  * design time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignComponentElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignComponentElement extends JRDesignElement implements JRComponentElement
 {
@@ -80,6 +79,7 @@ public class JRDesignComponentElement extends JRDesignElement implements JRCompo
 		super(defaultStyleProvider);
 	}
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -93,11 +93,13 @@ public class JRDesignComponentElement extends JRDesignElement implements JRCompo
 		return eventSupport;
 	}
 	
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitComponentElement(this);
@@ -108,6 +110,7 @@ public class JRDesignComponentElement extends JRDesignElement implements JRCompo
 		}
 	}
 
+	@Override
 	public Component getComponent()
 	{
 		return component;
@@ -121,19 +124,24 @@ public class JRDesignComponentElement extends JRDesignElement implements JRCompo
 	 */
 	public void setComponent(Component component)
 	{
-		ContextAwareComponent contextAwareComponent = component instanceof ContextAwareComponent ? (ContextAwareComponent)component : null;
-		if (contextAwareComponent != null)
+		Object old = this.component;
+		this.component = component;
+		setComponentContext();
+		getEventSupport().firePropertyChange(PROPERTY_COMPONENT, old, this.component);
+	}
+
+	protected void setComponentContext()
+	{
+		if (component instanceof ContextAwareComponent)
 		{
+			ContextAwareComponent contextAwareComponent = (ContextAwareComponent) component;
 			BaseComponentContext context = new BaseComponentContext();
 			context.setComponentElement(this);
 			contextAwareComponent.setContext(context);
 		}
-		
-		Object old = this.component;
-		this.component = component;
-		getEventSupport().firePropertyChange(PROPERTY_COMPONENT, old, this.component);
 	}
 
+	@Override
 	public ComponentKey getComponentKey()
 	{
 		return componentKey;
@@ -152,6 +160,7 @@ public class JRDesignComponentElement extends JRDesignElement implements JRCompo
 		getEventSupport().firePropertyChange(PROPERTY_COMPONENT_KEY, old, this.componentKey);
 	}
 
+	@Override
 	public Object clone()
 	{
 		JRDesignComponentElement clone = (JRDesignComponentElement) super.clone();
@@ -159,6 +168,7 @@ public class JRDesignComponentElement extends JRDesignElement implements JRCompo
 		if (component instanceof JRCloneable)
 		{
 			clone.component = (Component) ((JRCloneable) component).clone();
+			clone.setComponentContext();
 		}
 		else if (component != null)
 		{

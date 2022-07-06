@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ package net.sf.jasperreports.engine;
  * This class provides default empty implementations for scriptlet events. It is a convenience class that users
  * can extend when not all methods need to be implemented.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDefaultScriptlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDefaultScriptlet extends JRAbstractScriptlet
 {
@@ -43,81 +42,61 @@ public class JRDefaultScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforeReportInit() throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterReportInit() throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforePageInit() throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterPageInit() throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforeColumnInit() throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterColumnInit() throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforeGroupInit(String groupName) throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterGroupInit(String groupName) throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforeDetailEval() throws JRScriptletException
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterDetailEval() throws JRScriptletException
 	{
 	}

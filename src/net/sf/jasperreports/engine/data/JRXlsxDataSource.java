@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,6 +30,8 @@ import java.io.InputStream;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.repo.RepositoryContext;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -42,8 +44,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
  * in each row (these indices start with 0). To avoid this situation, users can either specify a collection of column 
  * names or set a flag to read the column names from the first row of the XLSX file.
  *
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRXlsxDataSource.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class JRXlsxDataSource extends AbstractPoiXlsDataSource
 {
@@ -85,9 +86,13 @@ public class JRXlsxDataSource extends AbstractPoiXlsDataSource
 	 */
 	public JRXlsxDataSource(JasperReportsContext jasperReportsContext, String location) throws JRException, IOException
 	{
-		super(jasperReportsContext, location);
+		this(SimpleRepositoryContext.of(jasperReportsContext), location);
 	}
 
+	public JRXlsxDataSource(RepositoryContext context, String location) throws JRException, IOException
+	{
+		super(context, location);
+	}
 	
 	/**
 	 * @see #JRXlsxDataSource(JasperReportsContext, String)
@@ -98,9 +103,7 @@ public class JRXlsxDataSource extends AbstractPoiXlsDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Workbook loadWorkbook(InputStream inputStream) throws IOException
 	{
 		return new XSSFWorkbook(inputStream);

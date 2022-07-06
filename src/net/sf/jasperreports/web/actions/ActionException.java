@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import net.sf.jasperreports.web.JRInteractiveException;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: ActionException.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ActionException extends JRInteractiveException 
 {
@@ -36,5 +35,23 @@ public class ActionException extends JRInteractiveException
 
 	public ActionException(String message) {
 		super(message);
+	}
+
+	public ActionException(Throwable t) {
+		super(t);
+	}
+
+	public ActionException(String message, Throwable t) {
+		super(message, t);
+	}
+	
+	public ActionException(String messageKey, Object[] args, Throwable t)
+	{
+		super(messageKey, args, t);
+	}
+
+	public ActionException(String messageKey, Object[] args)
+	{
+		super(messageKey, args);
 	}
 }

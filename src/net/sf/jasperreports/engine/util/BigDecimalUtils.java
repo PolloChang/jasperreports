@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 
 import org.apache.commons.logging.Log;
@@ -32,7 +33,6 @@ import org.apache.commons.logging.LogFactory;
  * Utility methods for {@link BigDecimal} handling.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BigDecimalUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class BigDecimalUtils
 {
@@ -53,9 +53,10 @@ public final class BigDecimalUtils
 		{
 			Class<?> handlerClass = Class.forName(
 					"net.sf.jasperreports.engine.util.Java15BigDecimalHandler");
-			handler = (BigDecimalHandler) handlerClass.newInstance();
+			handler = (BigDecimalHandler) handlerClass.getDeclaredConstructor().newInstance();
 		}
-		catch (Exception e)
+		catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException 
+			| IllegalAccessException | InstantiationException e)
 		{
 			if (log.isDebugEnabled())
 			{

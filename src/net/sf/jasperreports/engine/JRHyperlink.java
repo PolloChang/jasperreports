@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -169,8 +169,9 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
  * hyperlink parameters and other information supplied at export time.
  * <p/>
  * To handle custom hyperlinks in the built-in Swing viewer, one needs to register a
- * hyperlink listener by calling <code>addHyperlinkListener(listener)</code> on the
- * {@link net.sf.jasperreports.view.JRViewer} component. The listener is an
+ * hyperlink listener by calling 
+ * {@link net.sf.jasperreports.swing.JRViewerPanel#addHyperlinkListener(net.sf.jasperreports.view.JRHyperlinkListener) addHyperlinkListener(JRHyperlinkListener)} on the
+ * {@link net.sf.jasperreports.swing.JRViewerPanel} component. The listener is an
  * implementation of the {@link net.sf.jasperreports.view.JRHyperlinkListener}
  * interface. When a report hyperlink gets clicked, the listener queries the hyperlink type
  * and performs the desired actions.
@@ -194,16 +195,9 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
  * @see net.sf.jasperreports.engine.export.JRHyperlinkTargetProducerFactory
  * @see net.sf.jasperreports.view.JRHyperlinkListener
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRHyperlink.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRHyperlink extends JRCloneable
 {
-
-
-	/**
-	 * @deprecated Replaced by {@link #getHyperlinkTypeValue()}.
-	 */
-	public byte getHyperlinkType();
 
 
 	/**

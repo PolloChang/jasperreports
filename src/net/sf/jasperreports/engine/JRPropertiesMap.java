@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -48,7 +48,6 @@ import org.apache.commons.logging.LogFactory;
  * is the same as the order in which the properties were added.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPropertiesMap.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPropertiesMap implements Serializable, Cloneable
 {
@@ -56,6 +55,11 @@ public class JRPropertiesMap implements Serializable, Cloneable
 	
 	private static final Log log = LogFactory.getLog(JRPropertiesMap.class);
 	
+	/**
+	 * @deprecated no longer used, {@link #setProperty(String, String)} now uses 
+	 * the actual property name for the change event
+	 */
+	@Deprecated
 	public static final String PROPERTY_VALUE = "value";
 	
 	private Map<String, String> propertiesMap;
@@ -104,8 +108,8 @@ public class JRPropertiesMap implements Serializable, Cloneable
 	private void init()
 	{
 		// start with small collections
-		propertiesMap = new HashMap<String, String>(4, 0.75f);
-		propertiesList = new ArrayList<String>(2);
+		propertiesMap = new HashMap<>(4, 0.75f);
+		propertiesList = new ArrayList<>(2);
 	}
 
 	
@@ -125,7 +129,7 @@ public class JRPropertiesMap implements Serializable, Cloneable
 			}
 			else
 			{
-				LinkedHashSet<String> namesSet = new LinkedHashSet<String>();
+				LinkedHashSet<String> namesSet = new LinkedHashSet<>();
 				collectPropertyNames(namesSet);
 				names = namesSet.toArray(new String[namesSet.size()]);
 			}
@@ -242,7 +246,7 @@ public class JRPropertiesMap implements Serializable, Cloneable
 
 		if (hasEventSupport())
 		{
-			getEventSupport().firePropertyChange(PROPERTY_VALUE, old, value);
+			getEventSupport().firePropertyChange(propName, old, value);
 		}
 	}
 	
@@ -257,8 +261,14 @@ public class JRPropertiesMap implements Serializable, Cloneable
 		//FIXME base properties?
 		if (hasOwnProperty(propName))
 		{
+			String old = getOwnProperty(propName);
 			propertiesList.remove(propName);
 			propertiesMap.remove(propName);
+
+			if (hasEventSupport())
+			{
+				getEventSupport().firePropertyRemove(propName, old);
+			}
 		}
 	}
 	
@@ -274,15 +284,14 @@ public class JRPropertiesMap implements Serializable, Cloneable
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone()
 	{
 		return this.cloneProperties();
 	}
 	
 	
+	@Override
 	public String toString()
 	{
 		return propertiesMap == null ? "" : propertiesMap.toString();
@@ -296,8 +305,8 @@ public class JRPropertiesMap implements Serializable, Cloneable
 		if (propertiesList == null && propertiesMap != null)// an instance from an old version has been deserialized
 		{
 			//recreate the properties list and map
-			propertiesList = new ArrayList<String>(propertiesMap.keySet());
-			propertiesMap = new HashMap<String, String>(propertiesMap);
+			propertiesList = new ArrayList<>(propertiesMap.keySet());
+			propertiesMap = new HashMap<>(propertiesMap);
 		}
 	}
 	

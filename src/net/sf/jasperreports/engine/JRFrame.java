@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,19 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.design.JRDesignFrame;
+import net.sf.jasperreports.engine.type.BorderSplitType;
+import net.sf.jasperreports.properties.PropertyConstants;
+
 
 
 /**
  * An abstract representation of a report elements container.
  * <p>
  * A frame is a report element that contains sub elements.
- * It has a backgroud, a border and it stretches to accommodate its content.
+ * It has a background, a border and it stretches to accommodate its content.
  * It is usually helpful when a common background and/or common border must 
  * be put around a group of elements.
  * <p>
@@ -43,8 +49,48 @@ package net.sf.jasperreports.engine;
  * Frames can be nested into one another to any depth.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFrame.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRFrame extends JRElement, JRElementGroup, JRBoxContainer
 {
+	
+	/**
+	 * A property that provides the default border split type for frames.
+	 * 
+	 * <p>
+	 * The property can be set at report and global/context levels.
+	 * The property value should be one of the names of the {@link BorderSplitType} enum,
+	 * that is NoBorders or DrawBorders.
+	 * By default {@link BorderSplitType#NO_BORDERS} is used.
+	 * </p>
+	 * 
+	 * @see #getBorderSplitType()
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = "NoBorders",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_0_0,
+			valueType = BorderSplitType.class
+			)
+	String PROPERTY_BORDER_SPLIT_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "frame.border.split.type";
+	
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = "false",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.FRAME},
+			sinceVersion = PropertyConstants.VERSION_6_13_0,
+			valueType = Boolean.class
+			)
+	String PROPERTY_FRAME_WIDTH_STRETCH_DISABLED = 
+			JRPropertiesUtil.PROPERTY_PREFIX + "legacy.frame.width.stretch.disabled";
+	
+	/**
+	 * Determines how should the frames borders behave when the frame splits on two pages.
+	 * 
+	 * @return the border split type
+	 * @see JRFrame#PROPERTY_BORDER_SPLIT_TYPE
+	 * @see JRDesignFrame#setBorderSplitType(BorderSplitType)
+	 */
+	BorderSplitType getBorderSplitType();
+
 }

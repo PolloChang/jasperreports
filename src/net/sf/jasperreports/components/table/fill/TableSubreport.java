@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,6 @@ import net.sf.jasperreports.engine.type.OverflowType;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableSubreport extends ElementDecorator implements JRSubreport
 {
@@ -89,68 +88,62 @@ public class TableSubreport extends ElementDecorator implements JRSubreport
 		}
 	}
 
+	@Override
 	public JRExpression getConnectionExpression()
 	{
 		return datasetRun.getConnectionExpression();
 	}
 
+	@Override
 	public JRExpression getDataSourceExpression()
 	{
 		return datasetRun.getDataSourceExpression();
 	}
 
+	@Override
 	public JRExpression getExpression()
 	{
 		// no report expression
 		return null;
 	}
 
+	@Override
 	public JRSubreportParameter[] getParameters()
 	{
 		return parameters;
 	}
 
+	@Override
 	public JRExpression getParametersMapExpression()
 	{
 		return datasetRun.getParametersMapExpression();
 	}
 
+	@Override
 	public JRSubreportReturnValue[] getReturnValues()
 	{
 		return returnValues;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public Boolean isOwnUsingCache()
-	{
-		return false;
-	}
-
+	@Override
 	public Boolean getUsingCache()
 	{
 		return Boolean.FALSE;
 	}
 
+	@Override
 	public Boolean isRunToBottom()
 	{
 		return false;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public boolean isUsingCache()
-	{
-		return false;
-	}
-
+	@Override
 	public void setRunToBottom(Boolean runToBottom)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public void setUsingCache(Boolean isUsingCache)
 	{
 		throw new UnsupportedOperationException();

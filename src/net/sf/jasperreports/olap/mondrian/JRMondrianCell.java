@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import net.sf.jasperreports.olap.result.JROlapCell;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMondrianCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRMondrianCell implements JROlapCell
 {
@@ -41,21 +40,25 @@ public class JRMondrianCell implements JROlapCell
 		this.cell = cell;
 	}
 
+	@Override
 	public String getFormattedValue()
 	{
 		return cell.getFormattedValue();
 	}
 
+	@Override
 	public Object getValue()
 	{
 		return cell.getValue();
 	}
 
+	@Override
 	public boolean isError()
 	{
 		return cell.isError();
 	}
 
+	@Override
 	public boolean isNull()
 	{
 		return cell.isNull();

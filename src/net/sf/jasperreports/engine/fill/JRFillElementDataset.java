@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.util.Locale;
 import java.util.TimeZone;
 
 import net.sf.jasperreports.engine.JRDatasetRun;
@@ -30,6 +31,7 @@ import net.sf.jasperreports.engine.JRElementDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRGroup;
+import net.sf.jasperreports.engine.type.DatasetResetTypeEnum;
 import net.sf.jasperreports.engine.type.IncrementTypeEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
 
@@ -45,7 +47,6 @@ import net.sf.jasperreports.engine.type.ResetTypeEnum;
  * evaluate and increment the dataset.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillElementDataset.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRFillObjectFactory#registerElementDataset(JRFillElementDataset)
  */
 public abstract class JRFillElementDataset implements JRElementDataset
@@ -77,7 +78,7 @@ public abstract class JRFillElementDataset implements JRElementDataset
 		factory.put(dataset, this);
 
 		parent = dataset;
-		filler = factory.getFiller();
+		filler = factory.getFiller();//FIXMEBOOK
 		
 		resetGroup = factory.getGroup(dataset.getResetGroup());
 		incrementGroup = factory.getGroup(dataset.getIncrementGroup());
@@ -85,6 +86,18 @@ public abstract class JRFillElementDataset implements JRElementDataset
 		datasetRun = factory.getDatasetRun(dataset.getDatasetRun());
 	}
 
+	protected JRFillElementDataset(JRFillElementDataset dataset, JRFillCloneFactory factory)
+	{
+		parent = dataset.parent;
+		filler = dataset.filler;
+		
+		resetGroup = dataset.resetGroup;
+		incrementGroup = dataset.incrementGroup;
+		
+		datasetRun = new JRFillDatasetRun(dataset.datasetRun, factory);
+	}
+	
+	
 	protected void setBand(JRFillBand band)
 	{
 		if (datasetRun != null)
@@ -94,37 +107,51 @@ public abstract class JRFillElementDataset implements JRElementDataset
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getDatasetResetType()}.
 	 */
+	@Override
 	public ResetTypeEnum getResetTypeValue()
 	{
 		return parent.getResetTypeValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public DatasetResetTypeEnum getDatasetResetType()
+	{
+		return parent.getDatasetResetType();
+	}
+		
+	@Override
 	public IncrementTypeEnum getIncrementTypeValue()
 	{
 		return parent.getIncrementTypeValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getResetGroup()
 	{
 		return resetGroup;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getIncrementGroup()
 	{
 		return incrementGroup;
 	}
 		
+	/**
+	 *
+	 */
+	protected JRBaseFiller getFiller()
+	{
+		return filler;
+	}
+
+	protected Locale getLocale()
+	{
+		return filler.getLocale();
+	}
+	
 	/**
 	 *
 	 */
@@ -169,7 +196,7 @@ public abstract class JRFillElementDataset implements JRElementDataset
 		else
 		{
 			Boolean evaluated = (Boolean) calculator.evaluate(incrementWhenExpression);
-			increment = evaluated != null && evaluated.booleanValue();
+			increment = evaluated != null && evaluated;
 		}
 	}
 
@@ -218,6 +245,7 @@ public abstract class JRFillElementDataset implements JRElementDataset
 	protected abstract void customIncrement();
 
 
+	@Override
 	public JRDatasetRun getDatasetRun()
 	{
 		return datasetRun;
@@ -248,14 +276,13 @@ public abstract class JRFillElementDataset implements JRElementDataset
 	}
 
 
+	@Override
 	public JRExpression getIncrementWhenExpression()
 	{
 		return parent.getIncrementWhenExpression();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

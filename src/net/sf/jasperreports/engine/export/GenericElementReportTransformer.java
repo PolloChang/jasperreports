@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
@@ -35,15 +37,11 @@ import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * A utility class that applies {@link GenericElementTransformer GenericElementTransformers}
  * to a filled report.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: GenericElementReportTransformer.java 7199 2014-08-27 13:58:10Z teodord $
  * @see GenericElementTransformer
  */
 public final class GenericElementReportTransformer
@@ -64,26 +62,17 @@ public final class GenericElementReportTransformer
 			this.report = report;
 		}
 
+		@Override
 		public JasperReportsContext getJasperReportsContext()
 		{
 			return jasperReportsContext;
 		}
 
+		@Override
 		public JasperPrint getReport()
 		{
 			return report;
 		}
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #transformGenericElements(JasperReportsContext, JasperPrint, String)}.
-	 */
-	public static void transformGenericElements(
-		JasperPrint report, 
-		String transformerExportKey
-		)
-	{
-		transformGenericElements(DefaultJasperReportsContext.getInstance(), report, transformerExportKey);
 	}
 
 	/**

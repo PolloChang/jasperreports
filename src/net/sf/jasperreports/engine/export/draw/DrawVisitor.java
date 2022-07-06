@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,15 +37,20 @@ import net.sf.jasperreports.engine.JRBreak;
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRElementGroup;
 import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRReport;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.convert.ConvertVisitor;
 import net.sf.jasperreports.engine.convert.ReportConverter;
+import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.UniformElementVisitor;
+import net.sf.jasperreports.export.Graphics2DReportConfiguration;
+import net.sf.jasperreports.renderers.RenderersCache;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DrawVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DrawVisitor extends UniformElementVisitor
 {
@@ -54,23 +59,26 @@ public class DrawVisitor extends UniformElementVisitor
 	protected PrintDrawVisitor drawVisitor;
 	
 	/**
-	 * @deprecated Replaced by {@link #DrawVisitor(ReportConverter, Graphics2D)}.
-	 */
-	public DrawVisitor(JRReport report, Graphics2D grx)
-	{
-		this(new ReportConverter(report, true), grx);
-
-		setTextRenderer(report);
-	}
-
-	/**
 	 *
 	 */
 	public DrawVisitor(ReportConverter reportConverter, Graphics2D grx)
 	{
 		this.convertVisitor = new ConvertVisitor(reportConverter);
-		this.drawVisitor = new PrintDrawVisitor(reportConverter.getJasperReportsContext());
-		setTextRenderer(reportConverter.getReport());
+		
+		JasperReportsContext jasperReportsContext = reportConverter.getJasperReportsContext();
+		JRReport report = reportConverter.getReport();
+		JRPropertiesUtil propUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
+		
+		this.drawVisitor = 
+			new PrintDrawVisitor(
+				jasperReportsContext,
+				new RenderersCache(jasperReportsContext),
+				propUtil.getBooleanProperty(report, Graphics2DReportConfiguration.MINIMIZE_PRINTER_JOB_SIZE, true),
+				propUtil.getBooleanProperty(report, JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT, false),
+				propUtil.getBooleanProperty(report, JRPrintText.PROPERTY_AWT_INDENT_FIRST_LINE, true),
+				propUtil.getBooleanProperty(report, JRPrintText.PROPERTY_AWT_JUSTIFY_LAST_LINE, false)
+				);
+		
 		setGraphics2D(grx);
 		this.drawVisitor.setClip(true);
 	}
@@ -87,17 +95,6 @@ public class DrawVisitor extends UniformElementVisitor
 		drawVisitor.setGraphics2D(grx);
 	}
 
-	/**
-	 *
-	 */
-	public void setTextRenderer(JRReport report)
-	{
-		drawVisitor.setTextRenderer(report);
-	}
-
-	/**
-	 *
-	 */
 	@Override
 	public void visitBreak(JRBreak breakElement)
 	{
@@ -116,9 +113,7 @@ public class DrawVisitor extends UniformElementVisitor
 		return new Offset(-element.getX(), -element.getY());
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void visitElementGroup(JRElementGroup elementGroup)
 	{
 		//nothing to draw. elements are drawn individually.

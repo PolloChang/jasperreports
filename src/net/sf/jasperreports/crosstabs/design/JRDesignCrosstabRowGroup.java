@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.JRConstants;
  * Crosstab row group implementation to be used for report designing.
  *  
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstabRowGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCrosstabRowGroup extends JRDesignCrosstabGroup implements JRCrosstabRowGroup
 {
@@ -52,6 +51,7 @@ public class JRDesignCrosstabRowGroup extends JRDesignCrosstabGroup implements J
 		super();
 	}
 
+	@Override
 	public CrosstabRowPositionEnum getPositionValue()
 	{
 		return positionValue;
@@ -71,6 +71,7 @@ public class JRDesignCrosstabRowGroup extends JRDesignCrosstabGroup implements J
 		getEventSupport().firePropertyChange(PROPERTY_POSITION, old, this.positionValue);
 	}
 
+	@Override
 	public int getWidth()
 	{
 		return width;
@@ -90,6 +91,7 @@ public class JRDesignCrosstabRowGroup extends JRDesignCrosstabGroup implements J
 		getEventSupport().firePropertyChange(PROPERTY_WIDTH, old, this.width);
 	}
 
+	@Override
 	public void setHeader(JRDesignCellContents header)
 	{
 		super.setHeader(header);
@@ -99,6 +101,7 @@ public class JRDesignCrosstabRowGroup extends JRDesignCrosstabGroup implements J
 						getName(), null));
 	}
 
+	@Override
 	public void setTotalHeader(JRDesignCellContents totalHeader)
 	{
 		super.setTotalHeader(totalHeader);
@@ -108,6 +111,7 @@ public class JRDesignCrosstabRowGroup extends JRDesignCrosstabGroup implements J
 						getName(), null));
 	}
 
+	@Override
 	void setParent(JRDesignCrosstab parent)
 	{
 		super.setParent(parent);
@@ -130,6 +134,7 @@ public class JRDesignCrosstabRowGroup extends JRDesignCrosstabGroup implements J
 	 */
 	private byte position;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

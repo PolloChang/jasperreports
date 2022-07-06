@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,12 +29,17 @@ import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Graphics2DRenderable;
+import net.sf.jasperreports.renderers.RenderToImageAwareRenderable;
+import net.sf.jasperreports.renderers.WrappingRenderToImageDataRenderer;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRWrappingSvgRenderer.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link WrappingRenderToImageDataRenderer}.
  */
-public class JRWrappingSvgRenderer extends JRAbstractSvgRenderer
+public class JRWrappingSvgRenderer extends JRAbstractSvgRenderer implements Graphics2DRenderable, DimensionRenderable, RenderToImageAwareRenderable
 {
 
 	/**
@@ -64,25 +69,8 @@ public class JRWrappingSvgRenderer extends JRAbstractSvgRenderer
 		this.backcolor = backcolor;
 	}
 
-	
-	/**
-	 * @deprecated Replaced by {@link #JRWrappingSvgRenderer(Renderable, Dimension2D, Color)}.
-	 */
-	public JRWrappingSvgRenderer(
-		JRRenderable renderer, 
-		Dimension2D elementDimension,
-		Color backcolor
-		)
-	{
-		this.renderer = RenderableUtil.getWrappingRenderable(renderer);
-		this.elementDimension = elementDimension;
-		this.backcolor = backcolor;
-	}
 
-
-	/**
-	 *
-	 */
+	@Override
 	public Dimension2D getDimension(JasperReportsContext jasperReportsContext)
 	{
 		Dimension2D imageDimension = null;
@@ -105,43 +93,20 @@ public class JRWrappingSvgRenderer extends JRAbstractSvgRenderer
 		return imageDimension;
 	}
 
-
-	/**
-	 * @deprecated Replaced by {@link #getDimension(JasperReportsContext)}.
-	 */
-	public Dimension2D getDimension()
-	{
-		return getDimension(DefaultJasperReportsContext.getInstance());
-	}
-
-
-	/**
-	 *
-	 */
+	@Override
 	public Color getBackcolor()
 	{
 		return backcolor;
 	}
 
-
-	/**
-	 *
-	 */
+	@Override
 	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) throws JRException
 	{
 		renderer.render(jasperReportsContext, grx, rectangle);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
-	 */
-	public void render(Graphics2D grx, Rectangle2D rectangle) throws JRException
-	{
-		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);
-	}
-
 	@Override
-	protected int getImageDataDPI(JasperReportsContext jasperReportsContext)
+	public int getImageDataDPI(JasperReportsContext jasperReportsContext)
 	{
 		if (renderer instanceof JRAbstractSvgRenderer)
 		{
@@ -151,7 +116,8 @@ public class JRWrappingSvgRenderer extends JRAbstractSvgRenderer
 		return super.getImageDataDPI(jasperReportsContext);
 	}
 
-	protected Graphics2D createGraphics(BufferedImage bi)
+	@Override
+	public Graphics2D createGraphics(BufferedImage bi)
 	{
 		if (renderer instanceof JRAbstractSvgRenderer)
 		{
@@ -160,5 +126,4 @@ public class JRWrappingSvgRenderer extends JRAbstractSvgRenderer
 		
 		return super.createGraphics(bi);
 	}
-
 }

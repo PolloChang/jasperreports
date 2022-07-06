@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import org.olap4j.metadata.Hierarchy;
 
 /**
  * @author swood
- * @version $Id: Olap4jResultAxis.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Olap4jResultAxis implements JROlapResultAxis
 {
@@ -52,24 +51,26 @@ public class Olap4jResultAxis implements JROlapResultAxis
 			Olap4jFactory factory)
 	{
 		List<Position> positions = axis.getPositions();
-		this.tuples = new ArrayList<Olap4jTuple>(positions.size());
+		this.tuples = new ArrayList<>(positions.size());
 		for (Iterator<Position> it = positions.iterator(); it.hasNext(); )
 		{
 			tuples.add(new Olap4jTuple(it.next(), factory));
 		}
 		
-		this.hierarchies = new ArrayList<Olap4jHierarchy>(axisHierarchies.size());
+		this.hierarchies = new ArrayList<>(axisHierarchies.size());
 		for (Iterator<Hierarchy> it = axisHierarchies.iterator(); it.hasNext(); )
 		{
 			hierarchies.add(new Olap4jHierarchy(it.next()));
 		}
 	}
 
+	@Override
 	public JROlapHierarchy[] getHierarchiesOnAxis()
 	{
 		return ensureHierarchyArray();
 	}
 
+	@Override
 	public JROlapMemberTuple getTuple(int index)
 	{
 		if (index < 0 || index >= tuples.size())
@@ -80,6 +81,7 @@ public class Olap4jResultAxis implements JROlapResultAxis
 		return tuples.get(index);
 	}
 
+	@Override
 	public int getTupleCount()
 	{
 		return tuples.size();

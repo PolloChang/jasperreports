@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.export.HtmlResourceHandler;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: WebHtmlResourceHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class WebHtmlResourceHandler implements HtmlResourceHandler
 {
@@ -48,9 +47,7 @@ public class WebHtmlResourceHandler implements HtmlResourceHandler
 		this.pathPattern = pathPattern;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getResourcePath(String id)
 	{
 		if (pathPattern == null)
@@ -60,9 +57,7 @@ public class WebHtmlResourceHandler implements HtmlResourceHandler
 		return MessageFormat.format(pathPattern, new Object[]{id});
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void handleResource(String id, byte[] data)
 	{
 		//nothing to do

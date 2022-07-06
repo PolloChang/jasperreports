@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,6 @@ package net.sf.jasperreports.engine.design;
 
 import java.io.File;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 
@@ -33,7 +32,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * Base class that can be used by single source file compilers to implement multiple compilation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRAbstractSingleClassCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractSingleClassCompiler extends JRAbstractClassCompiler
 {
@@ -45,14 +43,7 @@ public abstract class JRAbstractSingleClassCompiler extends JRAbstractClassCompi
 		super(jasperReportsContext);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JRAbstractSingleClassCompiler(JasperReportsContext)}. 
-	 */
-	public JRAbstractSingleClassCompiler()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
+	@Override
 	public String compileClasses(File[] sourceFiles, String classpath) throws JRException
 	{
 		if (sourceFiles.length == 1)
@@ -60,13 +51,17 @@ public abstract class JRAbstractSingleClassCompiler extends JRAbstractClassCompi
 			return compileClass(sourceFiles[0], classpath);
 		}
 		
-		StringBuffer errors = new StringBuffer();
+		StringBuilder errors = new StringBuilder();
 		for (int i = 0; i < sourceFiles.length; ++i)
 		{
-			errors.append(compileClass(sourceFiles[i], classpath));
+			String classErrors = compileClass(sourceFiles[i], classpath);
+			if (classErrors != null)
+			{
+				errors.append(classErrors);
+			}
 		}
 		
-		return errors.toString();
+		return errors.length() > 0 ? errors.toString() : null;
 	}
 	
 }

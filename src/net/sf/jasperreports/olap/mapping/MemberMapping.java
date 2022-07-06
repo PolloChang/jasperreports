@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import java.util.Iterator;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: MemberMapping.java 7199 2014-08-27 13:58:10Z teodord $
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class MemberMapping implements Mapping
@@ -52,6 +51,7 @@ public class MemberMapping implements Mapping
 		return property;
 	}
 
+	@Override
 	public Iterator memberMappings()
 	{
 		return new SingleIt(member);
@@ -68,11 +68,13 @@ public class MemberMapping implements Mapping
 			first = true;
 		}
 		
+		@Override
 		public void remove()
 		{
 			throw new UnsupportedOperationException();
 		}
 
+		@Override
 		public boolean hasNext()
 		{
 			boolean next = first;
@@ -80,6 +82,7 @@ public class MemberMapping implements Mapping
 			return next;
 		}
 
+		@Override
 		public Object next()
 		{
 			return o;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,20 +27,15 @@ import net.sf.jasperreports.engine.JRParagraph;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.export.LengthUtil;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.type.TabStopAlignEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-
-import java.awt.font.TextAttribute;
-import java.text.AttributedCharacterIterator;
-import java.util.Map;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParagraphStyle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParagraphStyle extends Style
 {
@@ -83,30 +78,43 @@ public class ParagraphStyle extends Style
 	/**
 	 *
 	 */
-	public ParagraphStyle(WriterHelper styleWriter, JRPrintText text)
+	public ParagraphStyle(WriterHelper styleWriter, JRPrintText text, boolean isIgnoreTextFormatting)
 	{
 		super(styleWriter);
 		
-		horizontalAlignment = getHorizontalAlignment(text.getHorizontalAlignmentValue(), text.getVerticalAlignmentValue(), text.getRotationValue());
-		verticalAlignment = getVerticalAlignment(text.getHorizontalAlignmentValue(), text.getVerticalAlignmentValue(), text.getRotationValue());
+		horizontalAlignment = getHorizontalAlignment(
+				text.getHorizontalTextAlign(), 
+				text.getVerticalTextAlign(), 
+				(isIgnoreTextFormatting ? RotationEnum.NONE : text.getRotationValue()));
+		verticalAlignment = getVerticalAlignment(
+				text.getHorizontalTextAlign(), 
+				text.getVerticalTextAlign(), 
+				(isIgnoreTextFormatting ? RotationEnum.NONE : text.getRotationValue()));
 		
-		switch(text.getRotationValue())
+		if(isIgnoreTextFormatting)
 		{
-			case LEFT:
+			textRotation = "0";
+		}
+		else 
+		{
+			switch(text.getRotationValue())
 			{
-				textRotation = "90";
-				break;
-			}
-			case RIGHT:
-			{
-				textRotation = "270";
-				break;
-			}
-			case UPSIDE_DOWN://FIXMEODT possible?
-			case NONE:
-			default:
-			{
-				textRotation = "0";
+				case LEFT:
+				{
+					textRotation = "90";
+					break;
+				}
+				case RIGHT:
+				{
+					textRotation = "270";
+					break;
+				}
+				case UPSIDE_DOWN://FIXMEODT possible?
+				case NONE:
+				default:
+				{
+					textRotation = "0";
+				}
 			}
 		}
 
@@ -123,8 +131,8 @@ public class ParagraphStyle extends Style
 	 *
 	 */
 	public static String getVerticalAlignment(
-		HorizontalAlignEnum horizontalAlignment, 
-		VerticalAlignEnum verticalAlignment, 
+		HorizontalTextAlignEnum horizontalAlignment, 
+		VerticalTextAlignEnum verticalAlignment, 
 		RotationEnum rotation
 		)
 	{
@@ -171,6 +179,7 @@ public class ParagraphStyle extends Style
 					case MIDDLE :
 						return VERTICAL_ALIGN_MIDDLE;
 					case TOP :
+					case JUSTIFIED :
 					default :
 						return VERTICAL_ALIGN_TOP;
 				}
@@ -182,8 +191,8 @@ public class ParagraphStyle extends Style
 	 *
 	 */
 	public static String getHorizontalAlignment(
-		HorizontalAlignEnum horizontalAlignment, 
-		VerticalAlignEnum verticalAlignment, 
+		HorizontalTextAlignEnum horizontalAlignment, 
+		VerticalTextAlignEnum verticalAlignment, 
 		RotationEnum rotation
 		)
 	{
@@ -198,6 +207,7 @@ public class ParagraphStyle extends Style
 					case MIDDLE :
 						return HORIZONTAL_ALIGN_CENTER;
 					case TOP :
+					case JUSTIFIED :
 					default :
 						return HORIZONTAL_ALIGN_LEFT;
 				}
@@ -211,6 +221,7 @@ public class ParagraphStyle extends Style
 					case MIDDLE :
 						return HORIZONTAL_ALIGN_CENTER;
 					case TOP :
+					case JUSTIFIED :
 					default :
 						return HORIZONTAL_ALIGN_RIGHT;
 				}
@@ -252,13 +263,11 @@ public class ParagraphStyle extends Style
 		}
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getId()
 	{
-		StringBuffer sbuffer = new StringBuffer();
-		sbuffer.append(verticalAlignment).append("|").append(horizontalAlignment)
+		StringBuilder sb = new StringBuilder();
+		sb.append(verticalAlignment).append("|").append(horizontalAlignment)
 			.append("|").append(runDirection).append("|").append(textRotation)
 			.append("|").append(paragraph.getLineSpacing().getName())
 			.append("|").append(paragraph.getLineSpacingSize())
@@ -273,16 +282,14 @@ public class ParagraphStyle extends Style
 			for (int i = 0; i < tabStops.length; i++)
 			{
 				TabStop tabStop = tabStops[i];
-				sbuffer.append("|").append(tabStop.getPosition()).append("|").append(tabStop.getAlignment().getName());
+				sb.append("|").append(tabStop.getPosition()).append("|").append(tabStop.getAlignment().getName());
 			}
 		}
 		
-		return sbuffer.toString();
+		return sb.toString();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void write(String paragraphStyleName)
 	{
 		styleWriter.write("<style:style style:name=\"" + paragraphStyleName + "\"");
@@ -290,12 +297,6 @@ public class ParagraphStyle extends Style
 		styleWriter.write("<style:paragraph-properties");
 		switch (paragraph.getLineSpacing())
 		{
-			case SINGLE:
-			default:
-			{
-				styleWriter.write(" fo:line-height=\"100%\"");
-				break;
-			}
 			case ONE_AND_HALF:
 			{
 				styleWriter.write(" fo:line-height=\"150%\"");
@@ -308,12 +309,12 @@ public class ParagraphStyle extends Style
 			}
 			case AT_LEAST:
 			{
-				styleWriter.write(" style:line-height-at-least=\"" + LengthUtil.inch(paragraph.getLineSpacingSize()) + "in\"");
+				styleWriter.write(" style:line-height-at-least=\"" + LengthUtil.inchFloor4Dec(paragraph.getLineSpacingSize()) + "in\"");
 				break;
 			}
 			case FIXED:
 			{
-				styleWriter.write(" fo:line-height=\"" + LengthUtil.inch(paragraph.getLineSpacingSize()) + "in\"");
+				styleWriter.write(" fo:line-height=\"" + LengthUtil.inchFloor4Dec(paragraph.getLineSpacingSize()) + "in\"");
 				break;
 			}
 			case PROPORTIONAL:
@@ -321,14 +322,24 @@ public class ParagraphStyle extends Style
 				styleWriter.write(" fo:line-height=\"" + (100 * paragraph.getLineSpacingSize()) + "%\"");
 				break;
 			}
+			case SINGLE:
+			default:
+			{
+				styleWriter.write(" fo:line-height=\"100%\"");
+				break;
+			}
 		}
+//		styleWriter.write(" fo:line-height=\"" + pLineHeight + "\"");
+//		styleWriter.write(" style:line-spacing=\"" + pLineSpacing + "\"");
 		styleWriter.write(" fo:text-align=\"" + horizontalAlignment + "\"");
 
-		styleWriter.write(" fo:text-indent=\"" + LengthUtil.inch(paragraph.getFirstLineIndent()) + "in\"");
-		styleWriter.write(" fo:margin-left=\"" + LengthUtil.inch(paragraph.getLeftIndent()) + "in\"");
-		styleWriter.write(" fo:margin-right=\"" + LengthUtil.inch(paragraph.getRightIndent()) + "in\"");
-		styleWriter.write(" fo:margin-top=\"" + LengthUtil.inch(paragraph.getSpacingBefore()) + "in\"");
-		styleWriter.write(" fo:margin-bottom=\"" + LengthUtil.inch(paragraph.getSpacingAfter()) + "in\"");
+//		styleWriter.write(" fo:keep-together=\"" + pKeepTogether + "\"");
+		styleWriter.write(" fo:text-indent=\"" + LengthUtil.inchFloor4Dec(paragraph.getFirstLineIndent()) + "in\"");
+		styleWriter.write(" fo:margin-left=\"" + LengthUtil.inchFloor4Dec(paragraph.getLeftIndent()) + "in\"");
+		styleWriter.write(" fo:margin-right=\"" + LengthUtil.inchFloor4Dec(paragraph.getRightIndent()) + "in\"");
+		styleWriter.write(" fo:margin-top=\"" + LengthUtil.inchFloor4Dec(paragraph.getSpacingBefore()) + "in\"");
+		styleWriter.write(" fo:margin-bottom=\"" + LengthUtil.inchFloor4Dec(paragraph.getSpacingAfter()) + "in\"");
+//		styleWriter.write(" fo:background-color=\"#" + pBackGroundColor + "\"");
 		styleWriter.write(" style:vertical-align=\"" + verticalAlignment + "\"");
 		if (runDirection != null)
 		{
@@ -343,7 +354,7 @@ public class ParagraphStyle extends Style
 			for (int i = 0; i < tabStops.length; i++)
 			{
 				TabStop tabStop = tabStops[i];
-				styleWriter.write("<style:tab-stop style:type=\"" + getTabStopAlignment(tabStop.getAlignment()) + "\" style:position=\"" + LengthUtil.inch(tabStop.getPosition()) + "in\"/>");
+				styleWriter.write("<style:tab-stop style:type=\"" + getTabStopAlignment(tabStop.getAlignment()) + "\" style:position=\"" + LengthUtil.inchFloor4Dec(tabStop.getPosition()) + "in\"/>");
 			}
 			styleWriter.write("</style:tab-stops>");
 		}
@@ -353,87 +364,12 @@ public class ParagraphStyle extends Style
 		styleWriter.write(" style:text-rotation-angle=\"" + textRotation + "\"");
 		styleWriter.write(">\n");
 		styleWriter.write("</style:text-properties>\n");
-
-		styleWriter.write("</style:style>\n");
-	}
-
-	public void write(String fontName, String paragraphStyleName)
-	{
-
-		styleWriter.write("<style:style style:name=\"" + paragraphStyleName + "\"");
-		styleWriter.write(" style:family=\"paragraph\">\n");
-		styleWriter.write("<style:paragraph-properties");
-		switch (paragraph.getLineSpacing())
-		{
-			case SINGLE:
-			default:
-			{
-				styleWriter.write(" fo:line-height=\"100%\"");
-				break;
-			}
-			case ONE_AND_HALF:
-			{
-				styleWriter.write(" fo:line-height=\"150%\"");
-				break;
-			}
-			case DOUBLE:
-			{
-				styleWriter.write(" fo:line-height=\"200%\"");
-				break;
-			}
-			case AT_LEAST:
-			{
-				styleWriter.write(" style:line-height-at-least=\"" + LengthUtil.inch(paragraph.getLineSpacingSize()) + "in\"");
-				break;
-			}
-			case FIXED:
-			{
-				styleWriter.write(" fo:line-height=\"" + LengthUtil.inch(paragraph.getLineSpacingSize()) + "in\"");
-				break;
-			}
-			case PROPORTIONAL:
-			{
-				styleWriter.write(" fo:line-height=\"" + (100 * paragraph.getLineSpacingSize()) + "%\"");
-				break;
-			}
-		}
-		styleWriter.write(" fo:text-align=\"" + horizontalAlignment + "\"");
-
-		styleWriter.write(" fo:text-indent=\"" + LengthUtil.inch(paragraph.getFirstLineIndent()) + "in\"");
-		styleWriter.write(" fo:margin-left=\"" + LengthUtil.inch(paragraph.getLeftIndent()) + "in\"");
-		styleWriter.write(" fo:margin-right=\"" + LengthUtil.inch(paragraph.getRightIndent()) + "in\"");
-		styleWriter.write(" fo:margin-top=\"" + LengthUtil.inch(paragraph.getSpacingBefore()) + "in\"");
-		styleWriter.write(" fo:margin-bottom=\"" + LengthUtil.inch(paragraph.getSpacingAfter()) + "in\"");
-		styleWriter.write(" style:vertical-align=\"" + verticalAlignment + "\"");
-		if (runDirection != null)
-		{
-			styleWriter.write(" style:writing-mode=\"" + runDirection + "\"");
-		}
-		styleWriter.write(">\n");
-
-		TabStop[] tabStops = paragraph.getTabStops();
-		if (tabStops != null && tabStops.length > 0)
-		{
-			styleWriter.write("<style:tab-stops>");
-			for (int i = 0; i < tabStops.length; i++)
-			{
-				TabStop tabStop = tabStops[i];
-				styleWriter.write("<style:tab-stop style:type=\"" + getTabStopAlignment(tabStop.getAlignment()) + "\" style:position=\"" + LengthUtil.inch(tabStop.getPosition()) + "in\"/>");
-			}
-			styleWriter.write("</style:tab-stops>");
-		}
-
-		styleWriter.write("</style:paragraph-properties>\n");
-		styleWriter.write("<style:text-properties");
-		styleWriter.write(" style:text-rotation-angle=\"" + textRotation + "\"");
-
-		if(!fontName.equals("") && fontName!= null){
-			styleWriter.write(" style:font-name=\"" + fontName + "\" ");
-			styleWriter.write(" style:font-name-asian=\"" + fontName + "\" ");
-		}
-
-		styleWriter.write(">\n");
-		styleWriter.write("</style:text-properties>\n");
+		
+//		styleWriter.write("<style:properties");
+//		styleWriter.write(" style:rotation-align=\"" + rotationAlignment + "\"");
+//		styleWriter.write(">\n");
+//		styleWriter.write("</style:properties>\n");
+//
 
 		styleWriter.write("</style:style>\n");
 	}

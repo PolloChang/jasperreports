@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
@@ -48,14 +50,10 @@ import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.JRCsvDataSource;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * CSV query executer implementation.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JRCsvQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCsvQueryExecuter extends JRAbstractQueryExecuter 
 {
@@ -71,22 +69,21 @@ public class JRCsvQueryExecuter extends JRAbstractQueryExecuter
 		JasperReportsContext jasperReportsContext,
 		JRDataset dataset, 
 		Map<String, ? extends JRValueParameter> parametersMap
-		) 
+		)
 	{
-		super(jasperReportsContext, dataset, parametersMap);
+		this(SimpleQueryExecutionContext.of(jasperReportsContext), dataset, parametersMap);
 	}
-
-	/**
-	 * @deprecated Replaced by {@link #JRCsvQueryExecuter(JasperReportsContext, JRDataset, Map)}. 
-	 */
+	
 	protected JRCsvQueryExecuter(
+		QueryExecutionContext context,
 		JRDataset dataset, 
 		Map<String, ? extends JRValueParameter> parametersMap
 		) 
 	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
+		super(context, dataset, parametersMap);
 	}
 
+	@Override
 	public JRDataSource createDatasource() throws JRException {
 		String csvCharset = getStringParameterOrProperty(JRCsvQueryExecuterFactory.CSV_ENCODING);
 		
@@ -122,9 +119,9 @@ public class JRCsvQueryExecuter extends JRAbstractQueryExecuter
 							String csvSource = getStringParameterOrProperty(JRCsvQueryExecuterFactory.CSV_SOURCE);
 							if (csvSource != null) {
 								if (csvCharset != null) {
-									datasource = new JRCsvDataSource(getJasperReportsContext(), csvSource, csvCharset);
+									datasource = new JRCsvDataSource(getRepositoryContext(), csvSource, csvCharset);
 								} else {
-									datasource = new JRCsvDataSource(getJasperReportsContext(), csvSource);
+									datasource = new JRCsvDataSource(getRepositoryContext(), csvSource);
 								}
 							} else {
 								if (log.isWarnEnabled()){
@@ -143,7 +140,7 @@ public class JRCsvQueryExecuter extends JRAbstractQueryExecuter
 			List<String> columnNamesList = null;
 			String columnNames = getStringParameterOrProperty(JRCsvQueryExecuterFactory.CSV_COLUMN_NAMES);
 			if(columnNames != null) {
-				columnNamesList = new ArrayList<String>();
+				columnNamesList = new ArrayList<>();
 				columnNamesList.add(columnNames);
 			} else {
 				String[] columnNamesArray = (String[]) getParameterValue(JRCsvQueryExecuterFactory.CSV_COLUMN_NAMES_ARRAY, true);
@@ -152,7 +149,7 @@ public class JRCsvQueryExecuter extends JRAbstractQueryExecuter
 				} else {
 					List<PropertySuffix> properties = getPropertiesUtil().getAllProperties(dataset, JRCsvQueryExecuterFactory.CSV_COLUMN_NAMES);
 					if (properties != null && !properties.isEmpty()) {
-						columnNamesList = new ArrayList<String>();
+						columnNamesList = new ArrayList<>();
 						for(int i = 0; i < properties.size(); i++) {
 							String property = properties.get(i).getValue();
 							columnNamesList.add(property);
@@ -161,7 +158,7 @@ public class JRCsvQueryExecuter extends JRAbstractQueryExecuter
 						JRField[] fields = dataset.getFields();
 						if (fields != null && fields.length > 0)
 						{
-							columnNamesList = new ArrayList<String>();
+							columnNamesList = new ArrayList<>();
 							for (int i = 0; i < fields.length; i++)
 							{
 								columnNamesList.add(fields[i].getName());
@@ -172,7 +169,7 @@ public class JRCsvQueryExecuter extends JRAbstractQueryExecuter
 			}
 
 			if (columnNamesList != null && columnNamesList.size() > 0) {
-				List<String> splitColumnNamesList = new ArrayList<String>();
+				List<String> splitColumnNamesList = new ArrayList<>();
 				for(int i = 0; i < columnNamesList.size(); i++) {
 					String names = columnNamesList.get(i);
 					for(String token: names.split(",")){
@@ -212,29 +209,39 @@ public class JRCsvQueryExecuter extends JRAbstractQueryExecuter
 			}
 			
 			String recordDelimiter = getStringParameterOrProperty(JRCsvQueryExecuterFactory.CSV_RECORD_DELIMITER);
-			if (recordDelimiter != null) {
+			if (recordDelimiter != null && recordDelimiter.length() > 0) {
 				datasource.setRecordDelimiter(recordDelimiter);
 			}
 			
 			datasource.setUseFirstRowAsHeader(getBooleanParameterOrProperty(JRCsvQueryExecuterFactory.CSV_USE_FIRST_ROW_AS_HEADER, false));
 			
-			Locale csvLocale = (Locale) getParameterValue(JRParameter.REPORT_LOCALE, true);
+			Locale csvLocale = (Locale) getParameterValue(JRCsvQueryExecuterFactory.CSV_LOCALE, true);
 			if (csvLocale != null) {
 				datasource.setLocale(csvLocale);
 			} else {
 				String csvLocaleCode = getStringParameterOrProperty(JRCsvQueryExecuterFactory.CSV_LOCALE_CODE);
 				if (csvLocaleCode != null) {
 					datasource.setLocale(csvLocaleCode);
+				} else {
+					csvLocale = (Locale) getParameterValue(JRParameter.REPORT_LOCALE, true);
+					if (csvLocale != null) { //this is never null at this point, actually
+						datasource.setLocale(csvLocale);
+					}
 				}
 			}
 			
-			TimeZone csvTimezone = (TimeZone) getParameterValue(JRParameter.REPORT_TIME_ZONE, true);
+			TimeZone csvTimezone = (TimeZone) getParameterValue(JRCsvQueryExecuterFactory.CSV_TIMEZONE, true);
 			if (csvTimezone != null) {
 				datasource.setTimeZone(csvTimezone);
 			} else {
 				String csvTimezoneId = getStringParameterOrProperty(JRCsvQueryExecuterFactory.CSV_TIMEZONE_ID);
 				if (csvTimezoneId != null) {
 					datasource.setTimeZone(csvTimezoneId);
+				} else {
+					csvTimezone = (TimeZone) getParameterValue(JRParameter.REPORT_TIME_ZONE, true);
+					if (csvTimezone != null) { //this is never null at this point, actually
+						datasource.setTimeZone(csvTimezone);
+					}
 				}
 			}
 		}
@@ -242,12 +249,14 @@ public class JRCsvQueryExecuter extends JRAbstractQueryExecuter
 		return datasource;
 	}
 
+	@Override
 	public void close() {
 		if(datasource != null){
 			datasource.close();
 		}
 	}
 
+	@Override
 	public boolean cancelQuery() throws JRException {
 		return false;
 	}

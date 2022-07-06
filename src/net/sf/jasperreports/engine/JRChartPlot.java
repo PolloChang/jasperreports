@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,15 +30,12 @@ import java.util.SortedSet;
 import net.sf.jasperreports.charts.JRCategoryAxisFormat;
 import net.sf.jasperreports.charts.type.PlotOrientationEnum;
 
-import org.jfree.chart.plot.PlotOrientation;
-
 
 /**
  * Chart plots define chart appearance and display details such as colors, legend or labels. Each plot may have different
  * characteristics, depending on the chart type it belongs to. This is the superinterface for all plots and contains common
  * properties.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRChartPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRChartPlot extends JRCloneable
 {
@@ -69,19 +66,9 @@ public interface JRChartPlot extends JRCloneable
 
 
 	/**
-	 * @deprecated Replaced by {@link #getOrientationValue()}.
-	 */
-	public PlotOrientation getOrientation();
-	
-	/**
 	 * Gets the plot orientation (horizontal or vertical).
 	 */
 	public PlotOrientationEnum getOrientationValue();
-	
-	/**
-	 * @deprecated Replaced by {@link #setOrientation(PlotOrientationEnum)}.
-	 */
-	public void setOrientation(PlotOrientation orientation);
 
 	/**
 	 * Sets the plot orientation (horizontal or vertical).
@@ -162,7 +149,7 @@ public interface JRChartPlot extends JRCloneable
 	{
 		/**
 		 * Returns the series order that this color applies to.  The series order is relative to
-		 * the series order of all other <code>JRSeriesColor</code>s defined for this plot.  The
+		 * the series order of all other {@link JRSeriesColor}s defined for this plot.  The
 		 * relative ordering defines the order of the colors in the series.
 		 */
 		public int getSeriesOrder();

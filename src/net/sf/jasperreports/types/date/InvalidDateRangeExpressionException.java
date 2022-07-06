@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,11 +30,11 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * <p>Indicates that expression for date rang was invalid</p>
  *
  * @author Sergey Prilukin
- * @version $Id: InvalidDateRangeExpressionException.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class InvalidDateRangeExpressionException extends JRRuntimeException 
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_EXPRESSION = "date.range.invalid.expression";
 
 	private String expression;
 
@@ -45,7 +45,9 @@ public class InvalidDateRangeExpressionException extends JRRuntimeException
 
 	public InvalidDateRangeExpressionException(String expression) 
 	{
-		super(String.format("Invalid date range expression: %s", expression));
+		super(
+			EXCEPTION_MESSAGE_KEY_INVALID_EXPRESSION, 
+			new Object[] {String.format("%s", expression)});
 		this.expression = expression;
 	}
 

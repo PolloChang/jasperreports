@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,6 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -34,22 +37,20 @@ import net.sf.jasperreports.engine.JRPrintElementContainer;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.component.BaseFillComponent;
+import net.sf.jasperreports.engine.fill.JRFillCloneFactory;
+import net.sf.jasperreports.engine.fill.JRFillCloneable;
 import net.sf.jasperreports.engine.fill.JRFillDataset;
 import net.sf.jasperreports.engine.fill.JRFillExpressionEvaluator;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 import net.sf.jasperreports.engine.fill.JRTemplateFrame;
 import net.sf.jasperreports.engine.fill.JRTemplatePrintFrame;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * Base fill list component implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseFillList.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public abstract class BaseFillList extends BaseFillComponent
+public abstract class BaseFillList extends BaseFillComponent implements JRFillCloneable
 {
 	
 	private static final Log log = LogFactory.getLog(BaseFillList.class);
@@ -57,7 +58,7 @@ public abstract class BaseFillList extends BaseFillComponent
 	protected final int contentsHeight;
 	protected final FillDatasetRun datasetRun;
 	
-	protected Map<JRStyle, JRTemplateFrame> printFrameTemplates = new HashMap<JRStyle, JRTemplateFrame>();
+	protected Map<JRStyle, JRTemplateFrame> printFrameTemplates = new HashMap<>();
 	protected JRTemplatePrintFrame printFrame;
 	protected boolean filling;
 	protected boolean fillStarted;
@@ -70,10 +71,20 @@ public abstract class BaseFillList extends BaseFillComponent
 		this.datasetRun = new FillDatasetRun(component.getDatasetRun(), factory);
 	}
 
+	protected BaseFillList(BaseFillList list, JRFillCloneFactory factory)
+	{
+		super(list, factory);
+		
+		this.contentsHeight = list.contentsHeight;
+		this.datasetRun = new FillDatasetRun(list.datasetRun, factory);
+		this.printFrameTemplates = list.printFrameTemplates;//share the templates among clones
+	}
+
 	protected JRFillExpressionEvaluator createDatasetExpressionEvaluator()
 	{
 		return new JRFillExpressionEvaluator()
 		{
+			@Override
 			public Object evaluate(JRExpression expression,
 					byte evaluationType) throws JRException
 			{
@@ -81,6 +92,7 @@ public abstract class BaseFillList extends BaseFillComponent
 						expression, evaluationType);
 			}
 
+			@Override
 			public JRFillDataset getFillDataset()
 			{
 				return datasetRun.getDataset();
@@ -88,6 +100,7 @@ public abstract class BaseFillList extends BaseFillComponent
 		};
 	}
 
+	@Override
 	public void evaluate(byte evaluation) throws JRException
 	{
 		if (filling)
@@ -128,12 +141,14 @@ public abstract class BaseFillList extends BaseFillComponent
 		return frameTemplate;
 	}
 
+	@Override
 	public JRPrintElement fill()
 	{
 		printFrame.setY(fillContext.getElementPrintY());
 		return printFrame;
 	}
 
+	@Override
 	public void rewind()
 	{
 		try
@@ -176,6 +191,7 @@ public abstract class BaseFillList extends BaseFillComponent
 			this.initialContainerHeight = container.getHeight();
 		}
 		
+		@Override
 		public void addElement(JRPrintElement element)
 		{
 			if (xOffset > 0)
@@ -187,16 +203,19 @@ public abstract class BaseFillList extends BaseFillComponent
 			container.addElement(element);
 		}
 
+		@Override
 		public List<JRPrintElement> getElements()
 		{
 			return container.getElements();
 		}
 
+		@Override
 		public int getHeight()
 		{
 			throw new UnsupportedOperationException();
 		}
 
+		@Override
 		public void setHeight(int height)
 		{
 			int newHeight = initialContainerHeight + height;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import net.sf.jasperreports.engine.JRExpressionChunk;
  * Composite expression chunk visitor.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CompositeExpressionChunkVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CompositeExpressionChunkVisitor implements ExpressionChunkVisitor 
 {

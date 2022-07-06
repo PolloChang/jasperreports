@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,12 +41,13 @@ import net.sf.jasperreports.engine.util.Pair;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ParameterTypeSelectorClauseFunction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 {
 	
 	private static final Log log = LogFactory.getLog(ParameterTypeSelectorClauseFunction.class);
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_PARAMETER_TYPE_SELECTOR_CLAUSE_IMPLEMENTATION_NOT_FOUND = "query.parameter.type.selector.clause.implementation.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_PARAMETER_TYPE_SELECTOR_CLAUSE_REQUIRED_TOKEN_NOT_FOUND = "query.parameter.type.selector.clause.required.token.not.found";
 	
 	private static final String CONTEXT_KEY_FUNCTION_PER_TYPES_CACHE = 
 			"net.sf.jasperreports.engine.query.ParameterTypeSelectorClauseFunction.cache";
@@ -61,7 +62,7 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 	@Override
 	public void apply(JRClauseTokens clauseTokens, JRQueryClauseContext queryContext)
 	{
-		List<Class<?>> parameterTypes = new ArrayList<Class<?>>(parameterPositions.length);
+		List<Class<?>> parameterTypes = new ArrayList<>(parameterPositions.length);
 		for (int position : parameterPositions)
 		{
 			Class<?> parameterType = determineParameterType(clauseTokens,
@@ -72,8 +73,10 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 		JRClauseFunction function = getForParameterTypes(clauseTokens, queryContext, parameterTypes);
 		if (function == null)
 		{
-			throw new JRRuntimeException("No clause function implementation found for clause " + clauseTokens.getClauseId()
-					+ " and parameter types " + parameterTypes);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_PARAMETER_TYPE_SELECTOR_CLAUSE_IMPLEMENTATION_NOT_FOUND,
+					new Object[]{clauseTokens.getClauseId(), parameterTypes});
 		}
 		
 		function.apply(clauseTokens, queryContext);
@@ -85,8 +88,10 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 		String parameterName = clauseTokens.getToken(parameterPosition);
 		if (parameterName == null)
 		{
-			throw new JRRuntimeException("Required token at position " + parameterPosition 
-					+ " for query clause " + clauseTokens.getClauseId() + " not found");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_PARAMETER_TYPE_SELECTOR_CLAUSE_IMPLEMENTATION_NOT_FOUND,
+					new Object[]{parameterPosition, clauseTokens.getClauseId()});
 		}
 		
 		// the method throws an exception if it doesn't find the parameter, 
@@ -142,12 +147,12 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 			JRQueryClauseContext queryContext)
 	{
 		@SuppressWarnings("unchecked")
-		Map<Object, JRClauseFunction> cache = (Map<Object, JRClauseFunction>) queryContext.getJasperReportsContext().getValue(
+		Map<Object, JRClauseFunction> cache = (Map<Object, JRClauseFunction>) queryContext.getJasperReportsContext().getOwnValue(
 				CONTEXT_KEY_FUNCTION_PER_TYPES_CACHE);
 		if (cache == null)
 		{
 			// we need a concurrent map as the context and cache might be used by several threads
-			cache = new ConcurrentHashMap<Object, JRClauseFunction>();
+			cache = new ConcurrentHashMap<>();
 			
 			// we don't need to handle race conditions here as it's a lightweight cache
 			queryContext.getJasperReportsContext().setValue(CONTEXT_KEY_FUNCTION_PER_TYPES_CACHE, cache);
@@ -176,8 +181,7 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 			typesKey = parameterTypes;
 		}
 		
-		Pair<String, String> clauseKey = new Pair<String, String>(
-				queryContext.getCanonicalQueryLanguage(), clauseTokens.getClauseId());
+		Pair<String, String> clauseKey = new Pair<>(queryContext.getCanonicalQueryLanguage(), clauseTokens.getClauseId());
 		return new Pair<Pair<String, String>, Object>(clauseKey, typesKey);
 	}
 
@@ -196,7 +200,7 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 		// fetch extensions
 		List<ParameterTypesClauseFunctionBundle> functionsBundles = queryContext.getJasperReportsContext().getExtensions(
 				ParameterTypesClauseFunctionBundle.class);
-		List<Pair<List<Class<?>>, JRClauseFunction>> candidateFunctions = new ArrayList<Pair<List<Class<?>>,JRClauseFunction>>();
+		List<Pair<List<Class<?>>, JRClauseFunction>> candidateFunctions = new ArrayList<>();
 		for (ParameterTypesClauseFunctionBundle functionsBundle : functionsBundles)
 		{
 			Collection<? extends ParameterTypesClauseFunction> functions = functionsBundle.getTypeFunctions(queryLanguage, clauseId);
@@ -215,8 +219,7 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 									+ " for types " + supportedTypes);
 						}
 						
-						Pair<List<Class<?>>, JRClauseFunction> candidate = 
-								new Pair<List<Class<?>>, JRClauseFunction>(supportedTypes, function);
+						Pair<List<Class<?>>, JRClauseFunction> candidate = new Pair<>(supportedTypes, function);
 						candidateFunctions.add(candidate);
 					}
 				}
@@ -255,7 +258,7 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 			List<Class<?>> parameterTypes)
 	{
 		Collection<Class<?>> functionTypes = typesFunction.getSupportedTypes();
-		List<Class<?>> supportedTypes = new ArrayList<Class<?>>(parameterTypes.size());
+		List<Class<?>> supportedTypes = new ArrayList<>(parameterTypes.size());
 		for (Class<?> paramType : parameterTypes)
 		{
 			Class<?> supportedType = findSupportedType(functionTypes, paramType);
@@ -292,6 +295,7 @@ public class ParameterTypeSelectorClauseFunction implements JRClauseFunction
 
 final class TypesCandidateComparator implements Comparator<Pair<List<Class<?>>, JRClauseFunction>>
 {
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_PARAMETER_TYPE_SELECTOR_CANDIDATE_TYPE_SIZE_MISMATCH = "query.parameter.type.selector.candidate.type.size.mismatch";
 
 	protected static final TypesCandidateComparator INSTANCE = new TypesCandidateComparator();
 	
@@ -309,7 +313,10 @@ final class TypesCandidateComparator implements Comparator<Pair<List<Class<?>>, 
 		// should not happen, but checking
 		if (types1.size() != types2.size())
 		{
-			throw new JRRuntimeException("Candidate types sizes do not match: " + types1.size() + " vs " + types2.size());
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_PARAMETER_TYPE_SELECTOR_CANDIDATE_TYPE_SIZE_MISMATCH,
+					new Object[]{types1.size(), types2.size()});
 		}
 		
 		// perform a lexicographical comparison by comparing each type sequentially until we find a difference

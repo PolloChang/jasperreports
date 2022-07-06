@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.collections4.map.ReferenceMap;
+
 import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.crosstabs.fill.JRFillCrosstabObjectFactory;
 import net.sf.jasperreports.crosstabs.type.CrosstabColumnPositionEnum;
@@ -46,18 +48,18 @@ import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRStyleSetter;
+import net.sf.jasperreports.engine.export.HtmlExporter;
 import net.sf.jasperreports.engine.type.ModeEnum;
-
-import org.apache.commons.collections.map.ReferenceMap;
 
 /**
  * Crosstab cell contents filler.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillCellContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillCellContents extends JRFillElementContainer implements JRCellContents, JRStyleSetter
 {
+	public static final String EXCEPTION_MESSAGE_KEY_CANNOT_SHRINK_CONTENTS = "fill.cell.contents.cannot.shrink.contents";
+
 	private final Map<StretchedContents,JRFillCellContents> transformedContentsCache;
 	private final Map<BoxContents,JRFillCellContents> boxContentsCache;
 	private final JRClonePool clonePool;
@@ -86,7 +88,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 	private JRStyle initStyle;
 	private int prepareStretchHeight;
 	
-	private Map<String, String> printProperties = new HashMap<String, String>();
+	private Map<String, String> printProperties = new HashMap<>();
 
 	public JRFillCellContents(JRBaseFiller filler, JRCellContents cell, String cellType, 
 			JRFillCrosstabObjectFactory factory)
@@ -118,14 +120,14 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		this.originProvider = factory.getParentOriginProvider();
 		setElementOriginProvider(this.originProvider);
 		
-		transformedContentsCache = new ReferenceMap();
-		boxContentsCache = new HashMap<BoxContents,JRFillCellContents>();
+		transformedContentsCache = new ReferenceMap<>();
+		boxContentsCache = new HashMap<>();
 		clonePool = new JRClonePool(this, true, true);
 	}
 
 	private void initTemplatesMap()
 	{
-		templateFrames = new HashMap<JRStyle,JRTemplateFrame>();
+		templateFrames = new HashMap<>();
 	}
 
 	protected JRFillCellContents(JRFillCellContents cellContents, JRFillCloneFactory factory)
@@ -153,21 +155,20 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		
 		this.originProvider = cellContents.originProvider;
 		
-		transformedContentsCache = new ReferenceMap();
-		boxContentsCache = new HashMap<BoxContents,JRFillCellContents>();
+		transformedContentsCache = new ReferenceMap<>();
+		boxContentsCache = new HashMap<>();
 		clonePool = new JRClonePool(this, true, true);
 		
 		verticalPositionType = cellContents.verticalPositionType;
 	}
-
+	
+	@Override
 	public Color getBackcolor()
 	{
 		return parentCell.getBackcolor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
@@ -183,27 +184,17 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		initTemplatesMap();
 	}
 	
+	@Override
 	public int getHeight()
 	{
 		return height;
 	}
 	
 	
+	@Override
 	public int getWidth()
 	{
 		return width;
-	}
-	
-	
-	protected void setHeight(int height)
-	{
-		this.height = height;
-	}
-	
-	
-	protected void setWidth(int width)
-	{
-		this.width = width;
 	}
 	
 	
@@ -214,9 +205,9 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 			return this;
 		}
 		
-		boolean copyLeft = left && lineBox.getLeftPen().getLineWidth().floatValue() <= 0f && lineBox.getRightPen().getLineWidth().floatValue() > 0f;
-		boolean copyRight = right && lineBox.getRightPen().getLineWidth().floatValue() <= 0f && lineBox.getLeftPen().getLineWidth().floatValue() > 0f;
-		boolean copyTop = top && lineBox.getTopPen().getLineWidth().floatValue() <= 0f && lineBox.getBottomPen().getLineWidth().floatValue() > 0f;
+		boolean copyLeft = left && lineBox.getLeftPen().getLineWidth() <= 0f && lineBox.getRightPen().getLineWidth() > 0f;
+		boolean copyRight = right && lineBox.getRightPen().getLineWidth() <= 0f && lineBox.getLeftPen().getLineWidth() > 0f;
+		boolean copyTop = top && lineBox.getTopPen().getLineWidth() <= 0f && lineBox.getBottomPen().getLineWidth() > 0f;
 		
 		if (!(copyLeft || copyRight || copyTop))
 		{
@@ -267,10 +258,14 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		
 		if (newHeight < getHeight() || newWidth < getWidth())
 		{
-			throw new JRException("Cannot shrink cell contents.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_SHRINK_CONTENTS,  
+					(Object[])null 
+					);
 		}
 		
-		Object key = new StretchedContents(newWidth, newHeight, xPosition, yPosition);
+		StretchedContents key = new StretchedContents(newWidth, newHeight, xPosition, yPosition);
 		
 		JRFillCellContents transformedCell = transformedContentsCache.get(key);
 		if (transformedCell == null)
@@ -278,7 +273,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 			transformedCell = (JRFillCellContents) createClone();
 			transformedCell.transform(newWidth, newHeight, xPosition, yPosition);
 			
-			transformedContentsCache.put((StretchedContents)key, transformedCell);
+			transformedContentsCache.put(key, transformedCell);
 		}
 		
 		return transformedCell;
@@ -314,6 +309,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 			case STRETCH:
 				scaleX = ((double) newWidth) / width;
 				break;
+			default:
 		}
 		
 		double scaleY =  -1d;
@@ -329,6 +325,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 			case STRETCH:
 				scaleY = ((double) newHeight) / height;
 				break;
+			default:
 		}
 		
 		transformElements(getElements(), scaleX, offsetX, scaleY, offsetY);
@@ -393,9 +390,17 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 	
 	protected JRPrintFrame fill() throws JRException
 	{
-		stretchElements();
-		moveBandBottomElements();
-		removeBlankElements();
+		if (isLegacyElementStretchEnabled())
+		{
+			stretchElements();
+			moveBandBottomElements();
+			removeBlankElements();
+		}
+		else
+		{
+			stretchElementsToContainer();
+			moveBandBottomElements();
+		}
 
 		JRTemplatePrintFrame printCell = new JRTemplatePrintFrame(getTemplateFrame(), printElementOriginator);
 		//printCell.setUUID();
@@ -529,6 +534,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 			hashCode = hash;
 		}
 
+		@Override
 		public boolean equals(Object obj)
 		{
 			if (obj == this)
@@ -542,6 +548,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 				b.left == left && b.right == right && b.top == top;
 		}
 
+		@Override
 		public int hashCode()
 		{
 			return hashCode;
@@ -566,11 +573,12 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 			
 			int hash = newHeight;
 			hash = 31*hash + newWidth;
-			hash = 31*hash + xPosition.getValue();
-			hash = 31*hash + yPosition.getValue();
+			hash = 31*hash + xPosition.ordinal();
+			hash = 31*hash + yPosition.ordinal();
 			hashCode = hash;
 		}
 		
+		@Override
 		public boolean equals(Object o)
 		{
 			if (o == this)
@@ -585,25 +593,33 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 				s.xPosition == xPosition && s.yPosition == yPosition;
 		}
 		
+		@Override
 		public int hashCode()
 		{
 			return hashCode;
 		}
 	}
 
+	@Override
 	protected int getContainerHeight()
 	{
 		return getHeight() - getTopPadding() - getBottomPadding();
 	}
+
+	@Override
+	protected int getActualContainerHeight()
+	{
+		return getContainerHeight(); 
+	}
 	
 	protected int getTopPadding()
 	{
-		return lineBox == null ? 0 : lineBox.getTopPadding().intValue();
+		return lineBox == null ? 0 : lineBox.getTopPadding();
 	}
 	
 	protected int getBottomPadding()
 	{
-		return lineBox == null ? 0 : lineBox.getBottomPadding().intValue();
+		return lineBox == null ? 0 : lineBox.getBottomPadding();
 	}
 
 	public JRFillCloneable createClone()
@@ -612,6 +628,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		return createClone(factory);
 	}
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillCellContents(this, factory);
@@ -665,6 +682,7 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 	}
 
 
+	@Override
 	protected void evaluate(byte evaluation) throws JRException
 	{
 		printProperties.clear();
@@ -673,11 +691,13 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		super.evaluate(evaluation);
 	}
 
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return defaultStyleProvider;
 	}
 
+	@Override
 	public JRStyle getStyle()
 	{
 		JRStyle crtStyle = initStyle;
@@ -699,52 +719,58 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		return evalStyle;
 	}
 
+	@Override
 	protected void initConditionalStyles()
 	{
 		super.initConditionalStyles();
 		collectConditionalStyle(initStyle);
 	}
 
+	@Override
 	public ModeEnum getModeValue()
 	{
 		return parentCell.getModeValue();
 	}
 
+	@Override
 	public String getStyleNameReference()
 	{
 		return null;
 	}
 
+	@Override
 	public void setStyle(JRStyle style)
 	{
 		this.initStyle = style;
 		collectConditionalStyle(style);
 	}
 
+	@Override
 	public void setStyleNameReference(String name)
 	{
 		throw new UnsupportedOperationException("Style name references not allowed at fill time");
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return parentCell.getDefaultLineColor();
 	}
 	
+	@Override
 	public boolean hasProperties()
 	{
 		return parentCell.hasProperties();
 	}
 
 	// not doing anything with the properties at fill time
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return parentCell.getPropertiesMap();
 	}
 	
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
@@ -765,6 +791,20 @@ public class JRFillCellContents extends JRFillElementContainer implements JRCell
 		// assuming that the element is not deep and that it does not bring new conditional styles
 		element.setConditionalStylesContainer(this);
 		element.setOriginProvider(originProvider);
+	}
+	
+	protected void addHtmlClass(String className)
+	{
+		String originalClasses = printProperties.get(HtmlExporter.PROPERTY_HTML_CLASS);
+		String newClasses = originalClasses == null ? className : (originalClasses + " " + className);
+		setPrintProperty(HtmlExporter.PROPERTY_HTML_CLASS, newClasses);
+	}
+
+	@Override
+	public boolean isSplitTypePreventInhibited(boolean isTopLevelCall)
+	{
+		//FIXME implement logic
+		return false;
 	}
 
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,26 +23,25 @@
  */
 package net.sf.jasperreports.export.parameters;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.export.WriterExporterOutput;
+import net.sf.jasperreports.util.StringBufferWriter;
 
 
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParametersWriterExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParametersWriterExporterOutput extends AbstractParametersExporterOutput implements WriterExporterOutput
 {
@@ -58,7 +57,7 @@ public class ParametersWriterExporterOutput extends AbstractParametersExporterOu
 	 */
 	public ParametersWriterExporterOutput(
 		JasperReportsContext jasperReportsContext,
-		Map<JRExporterParameter, Object> parameters,
+		Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters,
 		JasperPrint jasperPrint
 		)
 	{
@@ -72,18 +71,17 @@ public class ParametersWriterExporterOutput extends AbstractParametersExporterOu
 		
 		toClose = false;
 	
-		StringBuffer sb = (StringBuffer)parameters.get(JRExporterParameter.OUTPUT_STRING_BUFFER);
+		StringBuffer sb = (StringBuffer)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_STRING_BUFFER);
 		if (sb != null)
 		{
-			writer = new StringBufferWrapperWriter(sb);
-			toClose = true;
+			writer = new StringBufferWriter(sb);
 		}
 		else
 		{
-			writer = (Writer)parameters.get(JRExporterParameter.OUTPUT_WRITER);
+			writer = (Writer)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_WRITER);
 			if (writer == null)
 			{
-				OutputStream os = (OutputStream)parameters.get(JRExporterParameter.OUTPUT_STREAM);
+				OutputStream os = (OutputStream)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_STREAM);
 				if (os != null)
 				{
 					try
@@ -97,23 +95,26 @@ public class ParametersWriterExporterOutput extends AbstractParametersExporterOu
 				}
 				else
 				{
-					File destFile = (File)parameters.get(JRExporterParameter.OUTPUT_FILE);
+					File destFile = (File)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_FILE);
 					if (destFile == null)
 					{
-						String fileName = (String)parameters.get(JRExporterParameter.OUTPUT_FILE_NAME);
+						String fileName = (String)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_FILE_NAME);
 						if (fileName != null)
 						{
 							destFile = new File(fileName);
 						}
 						else
 						{
-							throw new JRRuntimeException("No output specified for the exporter.");
+							throw 
+								new JRRuntimeException(
+									EXCEPTION_MESSAGE_KEY_NO_OUTPUT_SPECIFIED,
+									(Object[])null);
 						}
 					}
 
 					try
 					{
-						os = new FileOutputStream(destFile);
+						os = new BufferedOutputStream(new FileOutputStream(destFile));
 						writer = new OutputStreamWriter(os, getEncoding());
 						toClose = true;
 					}
@@ -133,30 +134,24 @@ public class ParametersWriterExporterOutput extends AbstractParametersExporterOu
 	{
 		encoding = 
 			getParameterResolver().getStringParameterOrDefault(
-				JRExporterParameter.CHARACTER_ENCODING, 
+				net.sf.jasperreports.engine.JRExporterParameter.CHARACTER_ENCODING, 
 				PROPERTY_CHARACTER_ENCODING
 				);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getEncoding()
 	{
 		return encoding;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Writer getWriter()
 	{
 		return writer;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void close()
 	{
 		if (toClose)
@@ -169,26 +164,5 @@ public class ParametersWriterExporterOutput extends AbstractParametersExporterOu
 			{
 			}
 		}
-	}
-}
-
-class StringBufferWrapperWriter extends StringWriter
-{
-	private final StringBuffer sb;
-	
-	public StringBufferWrapperWriter(StringBuffer sb)
-	{
-		super();
-		this.sb = sb;
-	}
-
-	@Override
-	public void close() throws IOException
-	{
-		super.close();
-		
-		// this preserves existing functionality
-		// implementing a writer that directly writes to sb might be better
-		sb.append(toString());
 	}
 }

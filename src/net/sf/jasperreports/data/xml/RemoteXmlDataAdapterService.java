@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,20 +30,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.query.JRXPathQueryExecuterFactory;
-import net.sf.jasperreports.engine.util.JRXmlUtils;
-import net.sf.jasperreports.repo.RepositoryUtil;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.w3c.dom.Document;
 
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.ParameterContributorContext;
+import net.sf.jasperreports.engine.query.JRXPathQueryExecuterFactory;
+import net.sf.jasperreports.engine.util.JRXmlUtils;
+import net.sf.jasperreports.repo.RepositoryUtil;
+
 /**
+ * @deprecated Replaced by {@link XmlDataAdapterService}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RemoteXmlDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RemoteXmlDataAdapterService extends XmlDataAdapterService
 {
@@ -55,19 +54,11 @@ public class RemoteXmlDataAdapterService extends XmlDataAdapterService
 	 * 
 	 */
 	public RemoteXmlDataAdapterService(
-		JasperReportsContext jasperReportsContext,
+		ParameterContributorContext paramContribContext,
 		RemoteXmlDataAdapter remoteXmlDataAdapter
 		) 
 	{
-		super(jasperReportsContext, remoteXmlDataAdapter);
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #RemoteXmlDataAdapterService(JasperReportsContext, RemoteXmlDataAdapter)}. 
-	 */
-	public RemoteXmlDataAdapterService(RemoteXmlDataAdapter remoteXmlDataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), remoteXmlDataAdapter);
+		super(paramContribContext, remoteXmlDataAdapter);
 	}
 	
 	public RemoteXmlDataAdapter getRemoteXmlDataAdapter() 
@@ -150,7 +141,7 @@ public class RemoteXmlDataAdapterService extends XmlDataAdapterService
 			}
 		}
 		catch (Exception e) {
-			throw new JRException(e.getMessage());
+			throw new JRException(e);
 		} finally {
 
 			if (is != null) {

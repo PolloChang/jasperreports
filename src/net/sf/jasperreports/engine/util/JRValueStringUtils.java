@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,10 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
-
-import org.w3c.tools.codec.Base64Decoder;
-import org.w3c.tools.codec.Base64Encoder;
-import org.w3c.tools.codec.Base64FormatException;
+import net.sf.jasperreports.util.Base64Util;
 
 
 /**
@@ -66,7 +63,6 @@ import org.w3c.tools.codec.Base64FormatException;
  * </p>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRValueStringUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRValueStringUtils
 {
@@ -77,6 +73,9 @@ public final class JRValueStringUtils
 		
 		Object deserialize(String data);
 	}
+	
+	public static final String EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA = "util.value.string.error.parsing.data";
+	public static final String EXCEPTION_MESSAGE_KEY_VALUE_NOT_SERIALIZABLE = "util.value.string.value.not.serializable";
 	
 	private static final Map<String,ValueSerializer> serializers;
 	private static final ValueSerializer defaultSerializer;
@@ -156,7 +155,7 @@ public final class JRValueStringUtils
 	
 	private static Map<String,ValueSerializer> getSerializers()
 	{
-		Map<String,ValueSerializer> map = new HashMap<String,ValueSerializer>();
+		Map<String,ValueSerializer> map = new HashMap<>();
 		map.put(java.lang.String.class.getName(), new StringSerializer());
 		map.put(java.lang.Character.class.getName(), new CharacterSerializer());
 		map.put(java.lang.Boolean.class.getName(), new BooleanSerializer());
@@ -177,11 +176,13 @@ public final class JRValueStringUtils
 	
 	protected static class StringSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			return data;
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return (String) value;
@@ -191,24 +192,34 @@ public final class JRValueStringUtils
 	
 	protected static class CharacterSerializer implements ValueSerializer
 	{
+		public static final String EXCEPTION_MESSAGE_KEY_SINGLE_CHARACTER_EXPECTED = "util.character.serializer.single.character.expected";
+
+		@Override
 		public Object deserialize(String data)
 		{
 			if (data.length() != 1)
 			{
-				throw new JRRuntimeException("Character data \"" + data + "\" should be exactly one character long");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_SINGLE_CHARACTER_EXPECTED,
+						new Object[]{data});
 			}
-			return new Character(data.charAt(0));
+			return data.charAt(0);
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
-			return String.valueOf(new char[]{((Character) value).charValue()});
+			return String.valueOf(new char[]{(Character) value});
 		}
 	}
 	
 	
 	protected static class BooleanSerializer implements ValueSerializer
 	{
+		public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_DATA = "util.boolean.serializer.unknown.data";
+
+		@Override
 		public Object deserialize(String data)
 		{
 			if (data.equals("true"))
@@ -219,18 +230,23 @@ public final class JRValueStringUtils
 			{
 				return Boolean.FALSE;
 			}
-			throw new JRRuntimeException("Unkown boolean data \"" + data + "\"");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNKNOWN_DATA,
+					new Object[]{data});
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
-			return ((Boolean) value).booleanValue() ? "true" : "false";
+			return ((Boolean) value) ? "true" : "false";
 		}
 	}
 	
 	
 	protected static class ByteSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -239,10 +255,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing Byte data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Byte", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return ((Byte) value).toString();
@@ -252,6 +273,7 @@ public final class JRValueStringUtils
 	
 	protected static class ShortSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -260,10 +282,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing Short data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Short", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return ((Short) value).toString();
@@ -273,6 +300,7 @@ public final class JRValueStringUtils
 	
 	protected static class IntegerSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -281,10 +309,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing Integer data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Integer", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return ((Integer) value).toString();
@@ -294,6 +327,7 @@ public final class JRValueStringUtils
 	
 	protected static class LongSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -302,10 +336,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing Long data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Long", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return ((Long) value).toString();
@@ -315,6 +354,7 @@ public final class JRValueStringUtils
 	
 	protected static class FloatSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -323,10 +363,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing Float data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Float", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return ((Float) value).toString();
@@ -336,6 +381,7 @@ public final class JRValueStringUtils
 	
 	protected static class DoubleSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -344,10 +390,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing Double data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Double", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return ((Double) value).toString();
@@ -357,6 +408,7 @@ public final class JRValueStringUtils
 	
 	protected static class BigIntegerSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -365,10 +417,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing BigInteger data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"BigInteger", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return ((java.math.BigInteger) value).toString();
@@ -378,6 +435,7 @@ public final class JRValueStringUtils
 	
 	protected static class BigDecimalSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -386,10 +444,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing BigDecimal data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"BigDecimal", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return ((java.math.BigDecimal) value).toString();
@@ -399,6 +462,7 @@ public final class JRValueStringUtils
 	
 	protected static class DateSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -408,10 +472,15 @@ public final class JRValueStringUtils
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("Error parsing Date data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Date", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			return Long.toString(((java.util.Date) value).getTime());
@@ -421,6 +490,7 @@ public final class JRValueStringUtils
 	
 	protected static class TimestampSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -429,10 +499,15 @@ public final class JRValueStringUtils
 			}
 			catch (IllegalArgumentException e)
 			{
-				throw new JRRuntimeException("Error parsing Timestamp data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Timestamp", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			java.sql.Timestamp timestamp = (java.sql.Timestamp) value;
@@ -443,6 +518,7 @@ public final class JRValueStringUtils
 	
 	protected static class TimeSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
@@ -451,10 +527,15 @@ public final class JRValueStringUtils
 			}
 			catch (IllegalArgumentException e)
 			{
-				throw new JRRuntimeException("Error parsing Time data \"" + data + "\"", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_ERROR_PARSING_DATA,
+						new Object[]{"Time", data},
+						e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			java.sql.Time timestamp = (java.sql.Time) value;
@@ -465,33 +546,26 @@ public final class JRValueStringUtils
 	
 	protected static class DefaultSerializer implements ValueSerializer
 	{
+		@Override
 		public Object deserialize(String data)
 		{
 			try
 			{
 				ByteArrayInputStream dataIn = new ByteArrayInputStream(data.getBytes());
 				ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-				Base64Decoder dec = new Base64Decoder(dataIn, bytesOut);
-				dec.process();
+				Base64Util.decode(dataIn, bytesOut);
 				
 				ByteArrayInputStream bytesIn = new ByteArrayInputStream(bytesOut.toByteArray());
 				ObjectInputStream objectIn = new ObjectInputStream(bytesIn);
 				return objectIn.readObject();
 			}
-			catch (IOException e)
-			{
-				throw new JRRuntimeException(e);
-			}
-			catch (ClassNotFoundException e)
-			{
-				throw new JRRuntimeException(e);
-			}
-			catch (Base64FormatException e)
+			catch (IOException | ClassNotFoundException e)
 			{
 				throw new JRRuntimeException(e);
 			}
 		}
 
+		@Override
 		public String serialize(Object value)
 		{
 			try
@@ -504,14 +578,17 @@ public final class JRValueStringUtils
 				ByteArrayInputStream bytesIn = new ByteArrayInputStream(bytesOut.toByteArray());
 				ByteArrayOutputStream dataOut = new ByteArrayOutputStream();				
 				
-				Base64Encoder enc = new Base64Encoder(bytesIn, dataOut);
-				enc.process();
+				Base64Util.encode(bytesIn, dataOut);
 				
 				return new String(dataOut.toByteArray(), "UTF-8");
 			}
 			catch (NotSerializableException e)
 			{
-				throw new JRRuntimeException("Value is not serializable", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_VALUE_NOT_SERIALIZABLE,
+						(Object[])null,
+						e);
 			}
 			catch (IOException e)
 			{

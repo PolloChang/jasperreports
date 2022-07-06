@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,6 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.URLStreamHandlerFactory;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +42,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 
 import net.sf.jasperreports.engine.DatasetFilter;
+import net.sf.jasperreports.engine.DatasetPropertyExpression;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractScriptlet;
 import net.sf.jasperreports.engine.JRConstants;
@@ -67,21 +67,28 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 import net.sf.jasperreports.engine.type.SortOrderEnum;
+import net.sf.jasperreports.engine.util.CloneStore;
 import net.sf.jasperreports.engine.util.ContextClassLoaderObjectInputStream;
-import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.FormatFactory;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 import net.sf.jasperreports.engine.util.JRQueryExecuterUtils;
 
 /**
- * Implementation of {@link net.sf.jasperreports.engine.JRDataset JRDataset} to be used for report desing.
+ * Implementation of {@link net.sf.jasperreports.engine.JRDataset JRDataset} to be used for report design.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignDataset extends JRBaseDataset
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_GROUP = "design.dataset.duplicate.group";
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_FIELD = "design.dataset.duplicate.field";
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_PARAMETER = "design.dataset.duplicate.parameter";
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_SCRIPTLET = "design.dataset.duplicate.scriptlet";
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_SORT_FIELD = "design.dataset.duplicate.sort.field";
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_VARIABLE = "design.dataset.duplicate.variable";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_BUILTIN_PARAMETER_TYPE = "design.dataset.unknown.builtin.parameter.type";
 
 	public static final String PROPERTY_FIELDS = "fields";
 
@@ -105,6 +112,8 @@ public class JRDesignDataset extends JRBaseDataset
 	
 	public static final String PROPERTY_VARIABLES = "variables";
 	
+	public static final String PROPERTY_PROPERTY_EXPRESSIONS = "propertyExpressions";
+
 	private transient JasperReportsContext jasperReportsContext;
 
 	private boolean ownUUID;
@@ -112,46 +121,50 @@ public class JRDesignDataset extends JRBaseDataset
 	/**
 	 * Scriptlets mapped by name.
 	 */
-	protected Map<String, JRScriptlet> scriptletsMap = new HashMap<String, JRScriptlet>();
-	protected List<JRScriptlet> scriptletsList = new ArrayList<JRScriptlet>();
+	protected Map<String, JRScriptlet> scriptletsMap = new HashMap<>();
+	protected List<JRScriptlet> scriptletsList = new ArrayList<>();
 
 	/**
 	 * Parameters mapped by name.
 	 */
-	protected Map<String, JRParameter> parametersMap = new HashMap<String, JRParameter>();
-	protected List<JRParameter> parametersList = new ArrayList<JRParameter>();
+	protected Map<String, JRParameter> parametersMap = new HashMap<>();
+	protected List<JRParameter> parametersList = new ArrayList<>();
 
 	/**
 	 * Fields mapped by name.
 	 */
-	protected Map<String, JRField> fieldsMap = new HashMap<String, JRField>();
-	protected List<JRField> fieldsList = new ArrayList<JRField>();
+	protected Map<String, JRField> fieldsMap = new HashMap<>();
+	protected List<JRField> fieldsList = new ArrayList<>();
 
 
 	/**
 	 * Sort fields mapped by name.
 	 */
-	protected Map<String, JRSortField> sortFieldsMap = new HashMap<String, JRSortField>();
-	protected List<JRSortField> sortFieldsList = new ArrayList<JRSortField>();
+	protected Map<String, JRSortField> sortFieldsMap = new HashMap<>();
+	protected List<JRSortField> sortFieldsList = new ArrayList<>();
 
 
 	/**
 	 * Variables mapped by name.
 	 */
-	protected Map<String, JRVariable> variablesMap = new HashMap<String, JRVariable>();
-	protected List<JRVariable> variablesList = new ArrayList<JRVariable>();
+	protected Map<String, JRVariable> variablesMap = new HashMap<>();
+	protected List<JRVariable> variablesList = new ArrayList<>();
 
 
 	/**
 	 * Groups mapped by name.
 	 */
-	protected Map<String, JRGroup> groupsMap = new HashMap<String, JRGroup>();
-	protected List<JRGroup> groupsList = new ArrayList<JRGroup>();
+	protected Map<String, JRGroup> groupsMap = new HashMap<>();
+	protected List<JRGroup> groupsList = new ArrayList<>();
 
+	private List<DatasetPropertyExpression> propertyExpressions = new ArrayList<>();
+
+	
 	private class QueryLanguageChangeListener implements PropertyChangeListener, Serializable
 	{
 		private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
+		@Override
 		public void propertyChange(PropertyChangeEvent evt)
 		{
 			queryLanguageChanged((String) evt.getOldValue(), (String) evt.getNewValue());
@@ -164,7 +177,6 @@ public class JRDesignDataset extends JRBaseDataset
 	/**
 	 * An array containing the built-in parameters that can be found and used in any report dataset.
 	 */
-	@SuppressWarnings("deprecation")
 	private static final Object[] BUILT_IN_PARAMETERS = new Object[] { 
 		JRParameter.REPORT_CONTEXT, ReportContext.class, 
 		JRParameter.REPORT_PARAMETERS_MAP, java.util.Map.class, 
@@ -179,8 +191,6 @@ public class JRDesignDataset extends JRBaseDataset
 		JRParameter.REPORT_TIME_ZONE, TimeZone.class, 
 		JRParameter.REPORT_FORMAT_FACTORY, FormatFactory.class, 
 		JRParameter.REPORT_CLASS_LOADER, ClassLoader.class,
-		JRParameter.REPORT_URL_HANDLER_FACTORY, URLStreamHandlerFactory.class,
-		JRParameter.REPORT_FILE_RESOLVER, FileResolver.class,
 		JRParameter.REPORT_TEMPLATES, Collection.class,
 		JRParameter.SORT_FIELDS, List.class,
 		JRParameter.FILTER, DatasetFilter.class
@@ -229,6 +239,8 @@ public class JRDesignDataset extends JRBaseDataset
 		try 
 		{
 			addVariable(createPageNumberVariable());
+			addVariable(createMasterCurrentPageVariable());
+			addVariable(createMasterTotalPagesVariable());
 			addVariable(createColumnNumberVariable());
 			addVariable(createReportCountVariable());
 			addVariable(createPageCountVariable());
@@ -274,7 +286,7 @@ public class JRDesignDataset extends JRBaseDataset
 		variable.setSystemDefined(true);
 		expression = new JRDesignExpression();
 		//expression.setValueClass(Integer.class);
-		//expression.setText("($V{COLUMN_NUMBER} != null)?(Integer.valueOf($V{COLUMN_NUMBER}.intValue() + 1)):(Integer.valueOf(1))");
+		//expression.setText("$V{COLUMN_NUMBER} == null ? 1 : ($V{COLUMN_NUMBER} + 1)");
 		expression.setText("new java.lang.Integer(1)");
 		variable.setInitialValueExpression(expression);
 		return variable;
@@ -291,9 +303,31 @@ public class JRDesignDataset extends JRBaseDataset
 		variable.setSystemDefined(true);
 		JRDesignExpression expression = new JRDesignExpression();
 		//expression.setValueClass(Integer.class);
-		//expression.setText("($V{PAGE_NUMBER} != null)?(Integer.valueOf($V{PAGE_NUMBER}.intValue() + 1)):(Integer.valueOf(1))");
+		//expression.setText("$V{PAGE_NUMBER} == null ? 1 : ($V{PAGE_NUMBER} + 1)");
 		expression.setText("new java.lang.Integer(1)");
 		variable.setInitialValueExpression(expression);
+		return variable;
+	}
+
+	private static JRDesignVariable createMasterCurrentPageVariable()
+	{
+		JRDesignVariable variable = new JRDesignVariable();
+		variable.setName(JRVariable.MASTER_CURRENT_PAGE);
+		variable.setValueClass(Integer.class);
+		variable.setResetType(ResetTypeEnum.REPORT);
+		variable.setCalculation(CalculationEnum.SYSTEM);
+		variable.setSystemDefined(true);
+		return variable;
+	}
+
+	private static JRDesignVariable createMasterTotalPagesVariable()
+	{
+		JRDesignVariable variable = new JRDesignVariable();
+		variable.setName(JRVariable.MASTER_TOTAL_PAGES);
+		variable.setValueClass(Integer.class);
+		variable.setResetType(ResetTypeEnum.REPORT);
+		variable.setCalculation(CalculationEnum.SYSTEM);
+		variable.setSystemDefined(true);
 		return variable;
 	}
 
@@ -336,9 +370,10 @@ public class JRDesignDataset extends JRBaseDataset
 			}
 			else
 			{
-				throw new JRRuntimeException("Unknown builtin parameter type " + parameterType 
-						+ " of class " + parameterType.getClass().getName()
-						+ ". Expecint java.lang.Class or java.lang.String");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_BUILTIN_PARAMETER_TYPE,
+						new Object[]{parameterType, parameterType.getClass().getName()});
 			}
 			
 			parameter.setSystemDefined(true);
@@ -412,6 +447,7 @@ public class JRDesignDataset extends JRBaseDataset
 
 	
 	
+	@Override
 	public JRScriptlet[] getScriptlets()
 	{
 		JRScriptlet[] scriptletsArray = new JRScriptlet[scriptletsList.size()];
@@ -467,7 +503,10 @@ public class JRDesignDataset extends JRBaseDataset
 	{
 		if (scriptletsMap.containsKey(scriptlet.getName()))
 		{
-			throw new JRException("Duplicate declaration of scriptlet : " + scriptlet.getName());
+			throw 
+			new JRException(
+				EXCEPTION_MESSAGE_KEY_DUPLICATE_SCRIPTLET,
+				new Object[]{scriptlet.getName()});
 		}
 
 		JRDesignParameter scriptletParameter = new JRDesignParameter();
@@ -523,6 +562,7 @@ public class JRDesignDataset extends JRBaseDataset
 	}
 
 	
+	@Override
 	public JRParameter[] getParameters()
 	{
 		JRParameter[] parametersArray = new JRParameter[parametersList.size()];
@@ -578,7 +618,10 @@ public class JRDesignDataset extends JRBaseDataset
 	{
 		if (parametersMap.containsKey(parameter.getName()))
 		{
-			throw new JRException("Duplicate declaration of parameter : " + parameter.getName());
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_PARAMETER,
+					new Object[]{parameter.getName()});
 		}
 
 		parametersList.add(index, parameter);
@@ -674,6 +717,7 @@ public class JRDesignDataset extends JRBaseDataset
 	}
 
 	
+	@Override
 	public JRField[] getFields()
 	{
 		JRField[] fieldsArray = new JRField[fieldsList.size()];
@@ -729,7 +773,10 @@ public class JRDesignDataset extends JRBaseDataset
 	{
 		if (fieldsMap.containsKey(field.getName()))
 		{
-			throw new JRException("Duplicate declaration of field : " + field.getName());
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_FIELD,
+					new Object[]{field.getName()});
 		}
 
 		fieldsList.add(index, field);
@@ -775,6 +822,7 @@ public class JRDesignDataset extends JRBaseDataset
 	}
 
 	
+	@Override
 	public JRSortField[] getSortFields()
 	{
 		JRSortField[] sortFieldsArray = new JRSortField[sortFieldsList.size()];
@@ -831,7 +879,10 @@ public class JRDesignDataset extends JRBaseDataset
 		String sortFieldKey = getSortFieldKey(sortField);
 		if (sortFieldsMap.containsKey(sortFieldKey))
 		{
-			throw new JRException("Duplicate declaration of sort field : " + sortField.getName());
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_SORT_FIELD,
+					new Object[]{sortField.getName()});
 		}
 
 		sortFieldsList.add(index, sortField);
@@ -877,6 +928,7 @@ public class JRDesignDataset extends JRBaseDataset
 	}
 
 	
+	@Override
 	public JRVariable[] getVariables()
 	{
 		JRVariable[] variablesArray = new JRVariable[variablesList.size()];
@@ -962,7 +1014,10 @@ public class JRDesignDataset extends JRBaseDataset
 	{
 		if (variablesMap.containsKey(variable.getName()))
 		{
-			throw new JRException("Duplicate declaration of variable : " + variable.getName());
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_VARIABLE,
+					new Object[]{variable.getName()});
 		}
 
 		if (system)
@@ -1027,6 +1082,7 @@ public class JRDesignDataset extends JRBaseDataset
 	}
 
 	
+	@Override
 	public JRGroup[] getGroups()
 	{
 		JRGroup[] groupsArray = new JRGroup[groupsList.size()];
@@ -1082,7 +1138,10 @@ public class JRDesignDataset extends JRBaseDataset
 	{
 		if (groupsMap.containsKey(group.getName()))
 		{
-			throw new JRException("Duplicate declaration of group : " + group.getName());
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_GROUP,
+					new Object[]{group.getName()});
 		}
 
 		JRDesignVariable countVariable = new JRDesignVariable();
@@ -1198,6 +1257,7 @@ public class JRDesignDataset extends JRBaseDataset
 	{
 		Collections.sort(parametersList, new Comparator<JRParameter>()
 				{
+					@Override
 					public int compare(JRParameter p1, JRParameter p2)
 					{
 //						JRParameter p1 = (JRParameter) o1;
@@ -1216,7 +1276,7 @@ public class JRDesignDataset extends JRBaseDataset
 		{
 			String parameterName = (String) builtinParameters[i];
 			JRParameter parameter = parametersMap.get(parameterName);
-			if (parameter.isSystemDefined())
+			if (parameter != null && parameter.isSystemDefined())
 			{
 				removeParameter(parameter);
 			}
@@ -1235,8 +1295,92 @@ public class JRDesignDataset extends JRBaseDataset
 		//TODO event
 		getPropertiesMap().setProperty(propName, value);
 	}
+
+
+	/**
+	 * Add a dynamic/expression-based property.
+	 * 
+	 * @param propertyExpression the property to add
+	 * @see #getPropertyExpressions()
+	 */
+	public void addPropertyExpression(DatasetPropertyExpression propertyExpression)
+	{
+		propertyExpressions.add(propertyExpression);
+		getEventSupport().fireCollectionElementAddedEvent(PROPERTY_PROPERTY_EXPRESSIONS, 
+				propertyExpression, propertyExpressions.size() - 1);
+	}
+
+	/**
+	 * Remove a property expression.
+	 * 
+	 * @param propertyExpression the property expression to remove
+	 * @see #addPropertyExpression(DatasetPropertyExpression)
+	 */
+	public void removePropertyExpression(DatasetPropertyExpression propertyExpression)
+	{
+		int idx = propertyExpressions.indexOf(propertyExpression);
+		if (idx >= 0)
+		{
+			propertyExpressions.remove(idx);
+			
+			getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_PROPERTY_EXPRESSIONS, 
+					propertyExpression, idx);
+		}
+	}
 	
+	/**
+	 * Remove a property expression.
+	 * 
+	 * @param name the name of the property to remove
+	 * @return the removed property expression (if found)
+	 */
+	public DatasetPropertyExpression removePropertyExpression(String name)
+	{
+		DatasetPropertyExpression removed = null;
+		for (ListIterator<DatasetPropertyExpression> it = propertyExpressions.listIterator(); it.hasNext();)
+		{
+			DatasetPropertyExpression prop = it.next();
+			if (name.equals(prop.getName()))
+			{
+				removed = prop;
+				int idx = it.previousIndex();
+				
+				it.remove();
+				getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_PROPERTY_EXPRESSIONS, 
+						removed, idx);
+				break;
+			}
+		}
+		return removed;
+	}
 	
+	/**
+	 * Returns the list of property expressions.
+	 * 
+	 * @return the list of property expressions ({@link DatasetPropertyExpression} instances)
+	 * @see #addPropertyExpression(DatasetPropertyExpression)
+	 */
+	public List<DatasetPropertyExpression> getPropertyExpressionsList()
+	{
+		return propertyExpressions;
+	}
+	
+	@Override
+	public DatasetPropertyExpression[] getPropertyExpressions()
+	{
+		DatasetPropertyExpression[] props;
+		if (propertyExpressions.isEmpty())
+		{
+			props = null;
+		}
+		else
+		{
+			props = propertyExpressions.toArray(new DatasetPropertyExpression[propertyExpressions.size()]);
+		}
+		return props;
+	}
+
+
 	/**
 	 * Sets the dataset filter expression.
 	 * <p>
@@ -1272,13 +1416,18 @@ public class JRDesignDataset extends JRBaseDataset
 		
 		if (sortFieldsMap == null)
 		{
-			sortFieldsMap = new HashMap<String, JRSortField>();
+			sortFieldsMap = new HashMap<>();
 		}
 		if (sortFieldsList == null)
 		{
-			sortFieldsList = new ArrayList<JRSortField>();
+			sortFieldsList = new ArrayList<>();
 		}
 		
+		if (propertyExpressions == null)
+		{
+			propertyExpressions = new ArrayList<>();
+		}
+
 		@SuppressWarnings("resource")
 		ContextClassLoaderObjectInputStream cclois = 
 			in instanceof ContextClassLoaderObjectInputStream ? (ContextClassLoaderObjectInputStream)in : null;
@@ -1290,19 +1439,25 @@ public class JRDesignDataset extends JRBaseDataset
 		{
 			jasperReportsContext = cclois.getJasperReportsContext();
 		}
+		
+		//the listener is serialized, but not added to the query.
+		//serializing the listener does not make much sense, it could have been easily recreated.
+		addQueryLanguageListener();
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignDataset clone = (JRDesignDataset)super.clone();
 		
+		//recreate and register the query language listener
+		clone.queryLanguageChangeListener = clone.new QueryLanguageChangeListener();
+		clone.addQueryLanguageListener();
+		
 		if (parametersList != null)
 		{
-			clone.parametersList = new ArrayList<JRParameter>(parametersList.size());
-			clone.parametersMap = new HashMap<String, JRParameter>(parametersList.size());
+			clone.parametersList = new ArrayList<>(parametersList.size());
+			clone.parametersMap = new HashMap<>(parametersList.size());
 			for(int i = 0; i < parametersList.size(); i++)
 			{
 				JRParameter parameter = JRCloneUtils.nullSafeClone(parametersList.get(i));
@@ -1313,8 +1468,8 @@ public class JRDesignDataset extends JRBaseDataset
 		
 		if (fieldsList != null)
 		{
-			clone.fieldsList = new ArrayList<JRField>(fieldsList.size());
-			clone.fieldsMap = new HashMap<String, JRField>(fieldsList.size());
+			clone.fieldsList = new ArrayList<>(fieldsList.size());
+			clone.fieldsMap = new HashMap<>(fieldsList.size());
 			for(int i = 0; i < fieldsList.size(); i++)
 			{
 				JRField field = JRCloneUtils.nullSafeClone(fieldsList.get(i));
@@ -1325,8 +1480,8 @@ public class JRDesignDataset extends JRBaseDataset
 		
 		if (sortFieldsList != null)
 		{
-			clone.sortFieldsList = new ArrayList<JRSortField>(sortFieldsList.size());
-			clone.sortFieldsMap = new HashMap<String, JRSortField>(sortFieldsList.size());
+			clone.sortFieldsList = new ArrayList<>(sortFieldsList.size());
+			clone.sortFieldsMap = new HashMap<>(sortFieldsList.size());
 			for(int i = 0; i < sortFieldsList.size(); i++)
 			{
 				JRSortField sortField = JRCloneUtils.nullSafeClone(sortFieldsList.get(i));
@@ -1335,13 +1490,15 @@ public class JRDesignDataset extends JRBaseDataset
 			}
 		}
 		
+		CloneStore cloneStore = new CloneStore();
+		
 		if (variablesList != null)
 		{
-			clone.variablesList = new ArrayList<JRVariable>(variablesList.size());
-			clone.variablesMap = new HashMap<String, JRVariable>(variablesList.size());
+			clone.variablesList = new ArrayList<>(variablesList.size());
+			clone.variablesMap = new HashMap<>(variablesList.size());
 			for(int i = 0; i < variablesList.size(); i++)
 			{
-				JRVariable variable = JRCloneUtils.nullSafeClone(variablesList.get(i));
+				JRVariable variable = cloneStore.clone(variablesList.get(i));
 				clone.variablesList.add(variable);
 				clone.variablesMap.put(variable.getName(), variable);
 			}
@@ -1349,17 +1506,27 @@ public class JRDesignDataset extends JRBaseDataset
 		
 		if (groupsList != null)
 		{
-			clone.groupsList = new ArrayList<JRGroup>(groupsList.size());
-			clone.groupsMap = new HashMap<String, JRGroup>(groupsList.size());
+			clone.groupsList = new ArrayList<>(groupsList.size());
+			clone.groupsMap = new HashMap<>(groupsList.size());
 			for(int i = 0; i < groupsList.size(); i++)
 			{
-				JRGroup group = JRCloneUtils.nullSafeClone(groupsList.get(i));
+				JRGroup group = cloneStore.clone(groupsList.get(i));
 				clone.groupsList.add(group);
 				clone.groupsMap.put(group.getName(), group);
 			}
 		}
+
+		clone.propertyExpressions = JRCloneUtils.cloneList(propertyExpressions);
 		
 		return clone;
+	}
+	
+	private void addQueryLanguageListener()
+	{
+		if (query instanceof JRDesignQuery)
+		{
+			((JRDesignQuery) query).addPropertyChangeListener(JRDesignQuery.PROPERTY_LANGUAGE, queryLanguageChangeListener);
+		}
 	}
 	
 }

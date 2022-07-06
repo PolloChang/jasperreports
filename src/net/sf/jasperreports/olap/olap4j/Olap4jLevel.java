@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import net.sf.jasperreports.olap.result.JROlapHierarchyLevel;
 
 /**
  * @author swood
- * @version $Id: Olap4jLevel.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Olap4jLevel implements JROlapHierarchyLevel
 {
@@ -42,11 +41,13 @@ public class Olap4jLevel implements JROlapHierarchyLevel
 		this.level = level;
 	}
 
+	@Override
 	public int getDepth()
 	{
 		return level.getDepth();
 	}
 
+	@Override
 	public String getName()
 	{
 		return level.getName();

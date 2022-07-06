@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,11 +25,15 @@ package net.sf.jasperreports.engine.query;
 
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.Designated;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * XPath query executer factory.
@@ -38,10 +42,12 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * query executers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXPathQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRXPathQueryExecuterFactory extends AbstractQueryExecuterFactory
+public class JRXPathQueryExecuterFactory extends AbstractQueryExecuterFactory implements Designated
 {
+	
+	public static final String QUERY_EXECUTER_NAME = "net.sf.jasperreports.query.executer:XPATH";
+	
 	/**
 	 * Built-in parameter holding the value of the org.w3c.dom.Document used to run the XPath query.
 	 */
@@ -60,6 +66,12 @@ public class JRXPathQueryExecuterFactory extends AbstractQueryExecuterFactory
 	/**
 	 * Built-in parameter/property holding the value of the <code>java.lang.String</code> source to be used for obtaining the XML data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_4_7_1
+			)
 	public static final String XML_SOURCE = JRPropertiesUtil.PROPERTY_PREFIX + "xml.source";
 	
 	/**
@@ -70,6 +82,12 @@ public class JRXPathQueryExecuterFactory extends AbstractQueryExecuterFactory
 	/**
 	 * Property holding the value of the date format pattern to be used when parsing the XML data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_4_6_0
+			)
 	public static final String PROPERTY_XML_DATE_PATTERN = JRPropertiesUtil.PROPERTY_PREFIX + "xml.date.pattern";
 
 	/**
@@ -80,6 +98,12 @@ public class JRXPathQueryExecuterFactory extends AbstractQueryExecuterFactory
 	/**
 	 * Property holding the value of the number format pattern to be used when parsing the XLS data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_4_6_0
+			)
 	public static final String PROPERTY_XML_NUMBER_PATTERN = JRPropertiesUtil.PROPERTY_PREFIX + "xml.number.pattern";
 	
 	/**
@@ -103,22 +127,42 @@ public class JRXPathQueryExecuterFactory extends AbstractQueryExecuterFactory
 		XML_TIME_ZONE, "java.util.TimeZone",
 		};
 
+	@Override
 	public Object[] getBuiltinParameters()
 	{
 		return XPATH_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
 		Map<String,? extends JRValueParameter> parameters
 		) throws JRException
 	{
-		return new JRXPathQueryExecuter(jasperReportsContext, dataset, parameters);
+		return createQueryExecuter(SimpleQueryExecutionContext.of(jasperReportsContext), 
+				dataset, parameters);
 	}
 
+	@Override
+	public JRQueryExecuter createQueryExecuter(
+		QueryExecutionContext context, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parameters
+		) throws JRException
+	{
+		return new JRXPathQueryExecuter(context, dataset, parameters);
+	}
+
+	@Override
 	public boolean supportsQueryParameterType(String className)
 	{
 		return true;
+	}
+
+	@Override
+	public String getDesignation()
+	{
+		return QUERY_EXECUTER_NAME;
 	}
 }

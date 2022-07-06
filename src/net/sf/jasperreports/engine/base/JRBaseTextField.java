@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,15 +38,14 @@ import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
+import net.sf.jasperreports.engine.type.TextAdjustEnum;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * This class is used for representing a text field.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseTextField.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 {
@@ -58,11 +57,12 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	public static final String PROPERTY_STRETCH_WITH_OVERFLOW = "isStretchWithOverflow";
+	public static final String PROPERTY_TEXT_ADJUST = "textAdjust";
 
 	/**
 	 *
 	 */
-	protected boolean isStretchWithOverflow;
+	protected TextAdjustEnum textAdjust = TextAdjustEnum.CUT_TEXT;
 	protected EvaluationTimeEnum evaluationTimeValue = EvaluationTimeEnum.NOW;
 	protected String pattern;
 	protected Boolean isBlankWhenNull;
@@ -77,6 +77,7 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 	protected JRExpression expression;
 	protected JRExpression patternExpression;
 	protected JRExpression anchorNameExpression;
+	protected JRExpression bookmarkLevelExpression;
 	protected JRExpression hyperlinkReferenceExpression;
 	protected JRExpression hyperlinkWhenExpression;
 	protected JRExpression hyperlinkAnchorExpression;
@@ -96,7 +97,7 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 	{
 		super(textField, factory);
 		
-		isStretchWithOverflow = textField.isStretchWithOverflow();
+		textAdjust = textField.getTextAdjust();
 		evaluationTimeValue = textField.getEvaluationTimeValue();
 		pattern = textField.getOwnPattern();
 		isBlankWhenNull = textField.isOwnBlankWhenNull();
@@ -108,6 +109,7 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		expression = factory.getExpression(textField.getExpression());
 		patternExpression = factory.getExpression(textField.getPatternExpression());
 		anchorNameExpression = factory.getExpression(textField.getAnchorNameExpression());
+		bookmarkLevelExpression = factory.getExpression(textField.getBookmarkLevelExpression());
 		hyperlinkReferenceExpression = factory.getExpression(textField.getHyperlinkReferenceExpression());
 		hyperlinkWhenExpression = factory.getExpression(textField.getHyperlinkWhenExpression());
 		hyperlinkAnchorExpression = factory.getExpression(textField.getHyperlinkAnchorExpression());
@@ -118,47 +120,60 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getTextAdjust()}.
 	 */
+	@Override
 	public boolean isStretchWithOverflow()
 	{
-		return this.isStretchWithOverflow;
+		return getTextAdjust() == TextAdjustEnum.STRETCH_HEIGHT;
 	}
 		
 	/**
-	 *
+	 * @deprecated Replaced by {@link #setTextAdjust(TextAdjustEnum)}.
 	 */
+	@Override
 	public void setStretchWithOverflow(boolean isStretchWithOverflow)
 	{
-		boolean old = this.isStretchWithOverflow;
-		this.isStretchWithOverflow = isStretchWithOverflow;
-		getEventSupport().firePropertyChange(PROPERTY_STRETCH_WITH_OVERFLOW, old, this.isStretchWithOverflow);
+		boolean old = this.textAdjust == TextAdjustEnum.STRETCH_HEIGHT;
+		
+		setTextAdjust(isStretchWithOverflow ? TextAdjustEnum.STRETCH_HEIGHT : TextAdjustEnum.CUT_TEXT);
+		
+		getEventSupport().firePropertyChange(PROPERTY_STRETCH_WITH_OVERFLOW, old, isStretchWithOverflow);
+	}
+
+	@Override
+	public TextAdjustEnum getTextAdjust()
+	{
+		return this.textAdjust;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public void setTextAdjust(TextAdjustEnum textAdjust)
+	{
+		TextAdjustEnum old = this.textAdjust;
+		this.textAdjust = textAdjust;
+		getEventSupport().firePropertyChange(PROPERTY_TEXT_ADJUST, old, this.textAdjust);
+	}
+		
+	@Override
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
 		return this.evaluationTimeValue;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getPattern()
 	{
-		return JRStyleResolver.getPattern(this);
+		return getStyleResolver().getPattern(this);
 	}
 		
+	@Override
 	public String getOwnPattern()
 	{
 		return this.pattern;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPattern(String pattern)
 	{
 		Object old = this.pattern;
@@ -166,25 +181,19 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_PATTERN, old, this.pattern);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isBlankWhenNull()
 	{
-		return JRStyleResolver.isBlankWhenNull(this);
+		return getStyleResolver().isBlankWhenNull(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isOwnBlankWhenNull()
 	{
 		return isBlankWhenNull;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setBlankWhenNull(Boolean isBlank)
 	{
 		Object old = this.isBlankWhenNull;
@@ -192,12 +201,10 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_BLANK_WHEN_NULL, old, this.isBlankWhenNull);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setBlankWhenNull(boolean isBlank)
 	{
-		setBlankWhenNull(isBlank ? Boolean.TRUE : Boolean.FALSE);
+		setBlankWhenNull((Boolean)isBlank);
 	}
 
 	/**
@@ -208,134 +215,119 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		return getHyperlinkTypeValue().getValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTypeEnum getHyperlinkTypeValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTypeValue(this);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public byte getHyperlinkTarget()
 	{
 		return JRHyperlinkHelper.getHyperlinkTarget(this);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getEvaluationGroup()
 	{
 		return this.evaluationGroup;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getExpression()
 	{
 		return this.expression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getPatternExpression()
 	{
 		return this.patternExpression;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getAnchorNameExpression()
 	{
 		return this.anchorNameExpression;
 	}
+	
+	@Override
+	public JRExpression getBookmarkLevelExpression()
+	{
+		return this.bookmarkLevelExpression;
+	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkReferenceExpression()
 	{
 		return this.hyperlinkReferenceExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkWhenExpression()
 	{
 		return this.hyperlinkWhenExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return this.hyperlinkAnchorExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkPageExpression()
 	{
 		return this.hyperlinkPageExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitTextField(this);
 	}
 
 
+	@Override
 	public int getBookmarkLevel()
 	{
 		return bookmarkLevel;
 	}
 
 
+	@Override
 	public String getLinkType()
 	{
 		return linkType;
 	}
 
+	@Override
 	public String getLinkTarget()
 	{
 		return linkTarget;
 	}
 
 
+	@Override
 	public JRHyperlinkParameter[] getHyperlinkParameters()
 	{
 		return hyperlinkParameters;
 	}
 	
 
+	@Override
 	public JRExpression getHyperlinkTooltipExpression()
 	{
 		return hyperlinkTooltipExpression;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseTextField clone = (JRBaseTextField)super.clone();
@@ -343,6 +335,7 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		clone.expression = JRCloneUtils.nullSafeClone(expression);
 		clone.patternExpression = JRCloneUtils.nullSafeClone(patternExpression);
 		clone.anchorNameExpression = JRCloneUtils.nullSafeClone(anchorNameExpression);
+		clone.bookmarkLevelExpression = JRCloneUtils.nullSafeClone(bookmarkLevelExpression);
 		clone.hyperlinkReferenceExpression = JRCloneUtils.nullSafeClone(hyperlinkReferenceExpression);
 		clone.hyperlinkWhenExpression = JRCloneUtils.nullSafeClone(hyperlinkWhenExpression);
 		clone.hyperlinkAnchorExpression = JRCloneUtils.nullSafeClone(hyperlinkAnchorExpression);
@@ -367,7 +360,12 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 	 * @deprecated
 	 */
 	private byte evaluationTime;
+	/**
+	 * @deprecated
+	 */
+	private boolean isStretchWithOverflow;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -385,6 +383,11 @@ public class JRBaseTextField extends JRBaseTextElement implements JRTextField
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
 			evaluationTimeValue = EvaluationTimeEnum.getByValue(evaluationTime);
+		}
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_6_11_0)
+		{
+			textAdjust = isStretchWithOverflow ? TextAdjustEnum.STRETCH_HEIGHT : TextAdjustEnum.CUT_TEXT;
 		}
 	}
 }

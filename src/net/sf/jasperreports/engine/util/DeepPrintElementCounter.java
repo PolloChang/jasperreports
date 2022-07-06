@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -33,7 +34,6 @@ import net.sf.jasperreports.engine.JRPrintFrame;
  * {@link JRPrintFrame} containers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DeepPrintElementCounter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 //we need a mutable integer argument, using AtomicInteger
 public class DeepPrintElementCounter extends UniformPrintElementVisitor<AtomicInteger>
@@ -49,13 +49,39 @@ public class DeepPrintElementCounter extends UniformPrintElementVisitor<AtomicIn
 	 */
 	public static int count(JRPrintElement element)
 	{
+		return count(element, INSTANCE);
+	}
+	
+	protected static int count(JRPrintElement element, UniformPrintElementVisitor<AtomicInteger> counter)
+	{
 		if (element == null)
 		{
 			return 0;
 		}
 		
 		AtomicInteger count = new AtomicInteger(0);
-		element.accept(INSTANCE, count);
+		element.accept(counter, count);
+		return count.get();
+	}
+	
+	public static int count(Collection<? extends JRPrintElement> elements)
+	{
+		return count(elements, INSTANCE);
+	}
+	
+	protected static int count(Collection<? extends JRPrintElement> elements, 
+			UniformPrintElementVisitor<AtomicInteger> counter)
+	{
+		if (elements == null || elements.isEmpty())
+		{
+			return 0;
+		}
+		
+		AtomicInteger count = new AtomicInteger(0);
+		for (JRPrintElement element : elements)
+		{
+			element.accept(counter, count);
+		}
 		return count.get();
 	}
 	

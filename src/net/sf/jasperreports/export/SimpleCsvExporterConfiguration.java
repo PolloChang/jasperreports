@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,12 +26,15 @@ package net.sf.jasperreports.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleCsvExporterConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleCsvExporterConfiguration extends SimpleExporterConfiguration implements CsvExporterConfiguration
 {
 	private String fieldDelimiter;	
+	private String fieldEnclosure;	
 	private String recordDelimiter;	
+	private Boolean forceFieldEnclosure;	
+	private Boolean isWriteBOM;	
+	private Boolean escapeFormula;	
 
 	/**
 	 * 
@@ -40,9 +43,7 @@ public class SimpleCsvExporterConfiguration extends SimpleExporterConfiguration 
 	{
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getFieldDelimiter()
 	{
 		return fieldDelimiter;
@@ -56,9 +57,21 @@ public class SimpleCsvExporterConfiguration extends SimpleExporterConfiguration 
 		this.fieldDelimiter = fieldDelimiter;
 	}
 	
+	@Override
+	public String getFieldEnclosure()
+	{
+		return fieldEnclosure;
+	}
+	
 	/**
 	 * 
 	 */
+	public void setFieldEnclosure(String fieldEnclosure)
+	{
+		this.fieldEnclosure = fieldEnclosure;
+	}
+	
+	@Override
 	public String getRecordDelimiter()
 	{
 		return recordDelimiter;
@@ -71,4 +84,46 @@ public class SimpleCsvExporterConfiguration extends SimpleExporterConfiguration 
 	{
 		this.recordDelimiter = recordDelimiter;
 	}
+	
+	@Override
+	public Boolean isWriteBOM()
+	{
+		return isWriteBOM;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setWriteBOM(Boolean isWriteBOM)
+	{
+		this.isWriteBOM = isWriteBOM;
+	}
+	
+	@Override
+	public Boolean getForceFieldEnclosure()
+	{
+		return forceFieldEnclosure;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setForceFieldEnclosure(Boolean forceFieldEnclosure)
+	{
+		this.forceFieldEnclosure = forceFieldEnclosure;
+	}
+	
+	@Override
+	public Boolean getEscapeFormula()
+	{
+		return escapeFormula;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setEscapeFormula(Boolean escapeFormula)
+	{
+		this.escapeFormula = escapeFormula;
+	}	
 }

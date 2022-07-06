@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * An evaluation time during the report fill process.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JREvaluationTime.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JREvaluationTime implements Serializable
 {
@@ -61,6 +60,11 @@ public final class JREvaluationTime implements Serializable
 	 */
 	public static final JREvaluationTime EVALUATION_TIME_NOW = new JREvaluationTime(EvaluationTimeEnum.NOW, null, null);
 	
+
+	/**
+	 * Evaluation time corresponding to {@link EvaluationTimeEnum#MASTER EvaluationTimeEnum.MASTER}.
+	 */
+	public static final JREvaluationTime EVALUATION_TIME_MASTER = new JREvaluationTime(EvaluationTimeEnum.MASTER, null, null);
 	
 	/**
 	 * Returns the evaluation time corresponding to
@@ -111,6 +115,9 @@ public final class JREvaluationTime implements Serializable
 			case REPORT:
 				evaluationTime = EVALUATION_TIME_REPORT;
 				break;
+			case MASTER:
+				evaluationTime = EVALUATION_TIME_MASTER;
+				break;
 			case PAGE:
 				evaluationTime = EVALUATION_TIME_PAGE;
 				break;
@@ -154,13 +161,14 @@ public final class JREvaluationTime implements Serializable
 
 	private int computeHash()
 	{
-		int hashCode = type.getValue();
+		int hashCode = type.ordinal();
 		hashCode = 31*hashCode + (groupName == null ? 0 : groupName.hashCode());
 		hashCode = 31*hashCode + bandId;
 		return hashCode;
 	}
 
 
+	@Override
 	public boolean equals(Object obj)
 	{
 		if (obj == this)
@@ -182,6 +190,7 @@ public final class JREvaluationTime implements Serializable
 				case BAND:
 					eq = bandId == e.bandId;
 					break;
+				default:
 			}
 		}
 		
@@ -189,6 +198,7 @@ public final class JREvaluationTime implements Serializable
 	}
 
 
+	@Override
 	public int hashCode()
 	{
 		return hash;

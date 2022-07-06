@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.export.ooxml;
 
 import java.io.Writer;
+import java.util.Map;
 
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStringUtil;
@@ -31,11 +32,11 @@ import net.sf.jasperreports.engine.util.JRStringUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxWorkbookHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxWorkbookHelper extends BaseHelper
 {
-	StringBuffer definedNames;
+	StringBuilder definedNames;
+	
 	/**
 	 * 
 	 */
@@ -47,7 +48,7 @@ public class XlsxWorkbookHelper extends BaseHelper
 	/**
 	 * 
 	 */
-	public XlsxWorkbookHelper(JasperReportsContext jasperReportsContext, Writer writer, StringBuffer definedNames)
+	public XlsxWorkbookHelper(JasperReportsContext jasperReportsContext, Writer writer, StringBuilder definedNames)
 	{
 		super(jasperReportsContext, writer);
 		this.definedNames = definedNames;
@@ -62,7 +63,7 @@ public class XlsxWorkbookHelper extends BaseHelper
 		write("<workbook\n");
 		write(" xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"\n");
 		write(" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">\n");
-		write("<workbookPr filterPrivacy=\"1\"/>\n");
+		write("<workbookPr filterPrivacy=\"1\" codeName=\"ThisWorkbook\"/>\n");
 		write("<sheets>\n");
 	}
 	
@@ -70,9 +71,11 @@ public class XlsxWorkbookHelper extends BaseHelper
 	/**
 	 * 
 	 */
-	public void exportSheet(int index, String name)
+	public void exportSheet(int index, String name, Map<String, Integer> sheetMapping)
 	{
-		write("  <sheet name=\"" + JRStringUtil.xmlEncode(name) + "\" sheetId=\"" + index + "\" r:id=\"rId" + index + "\"/>\n");
+		String sheetName = JRStringUtil.xmlEncode(name);
+		sheetMapping.put(sheetName, index-1);
+		write("  <sheet name=\"" + sheetName + "\" sheetId=\"" + index + "\" r:id=\"rId" + index + "\"/>\n");
 	}
 	
 

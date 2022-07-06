@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,10 @@
  */
 package net.sf.jasperreports.engine.type;
 
-import net.sf.jasperreports.engine.JRConstants;
-
 
 /**
+ * @deprecated Replaced by {@link HorizontalTextAlignEnum} and {@link HorizontalImageAlignEnum}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: HorizontalAlignEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public enum HorizontalAlignEnum implements JREnum
 {
@@ -55,7 +53,6 @@ public enum HorizontalAlignEnum implements JREnum
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient byte value;
 	private final transient String name;
 
@@ -65,25 +62,19 @@ public enum HorizontalAlignEnum implements JREnum
 		this.name = name;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Byte getValueByte()
 	{
-		return new Byte(value);
+		return value;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public final byte getValue()
 	{
 		return value;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -110,7 +101,43 @@ public enum HorizontalAlignEnum implements JREnum
 	 */
 	public static HorizontalAlignEnum getByValue(byte value)
 	{
-		return getByValue(new Byte(value));
+		return getByValue((Byte)value);
+	}
+	
+	/**
+	 *
+	 */
+	public static HorizontalTextAlignEnum getHorizontalTextAlignEnum(HorizontalAlignEnum horizontalAlignment)
+	{
+		return horizontalAlignment == null ? null : HorizontalTextAlignEnum.getByName(horizontalAlignment.getName());
+	}
+	
+	/**
+	 *
+	 */
+	public static HorizontalImageAlignEnum getHorizontalImageAlignEnum(HorizontalAlignEnum horizontalAlignment)
+	{
+		if (horizontalAlignment == JUSTIFIED)
+		{
+			return HorizontalImageAlignEnum.LEFT;
+		}
+		return horizontalAlignment == null ? null : HorizontalImageAlignEnum.getByName(horizontalAlignment.getName());
+	}
+	
+	/**
+	 *
+	 */
+	public static HorizontalAlignEnum getHorizontalAlignEnum(HorizontalTextAlignEnum horizontalTextAlign)
+	{
+		return horizontalTextAlign == null ? null : HorizontalAlignEnum.getByName(horizontalTextAlign.getName());
 	}
 
+	/**
+	 *
+	 */
+	public static HorizontalAlignEnum getHorizontalAlignEnum(HorizontalImageAlignEnum horizontalImageAlign)
+	{
+		return horizontalImageAlign == null ? null : HorizontalAlignEnum.getByName(horizontalImageAlign.getName());
+	}
+	
 }

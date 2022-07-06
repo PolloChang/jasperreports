@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,14 +32,11 @@ import net.sf.jasperreports.charts.type.PlotOrientationEnum;
 import net.sf.jasperreports.engine.JRChart;
 import net.sf.jasperreports.engine.JRChartPlot;
 import net.sf.jasperreports.engine.JRExpressionCollector;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
-
-import org.jfree.chart.plot.PlotOrientation;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillChartPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillChartPlot implements JRChartPlot
 {
@@ -77,95 +74,67 @@ public class JRFillChartPlot implements JRChartPlot
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRChart getChart()
 	{
 		return chart;
 	}
-	
+
 	/**
 	 *
 	 */
+	protected StyleResolver getStyleResolver() 
+	{
+		return getChart().getDefaultStyleProvider().getStyleResolver();
+	}
+
+	@Override
 	public Color getBackcolor()
 	{
-		return JRStyleResolver.getBackcolor(this);
+		return getStyleResolver().getBackcolor(this);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnBackcolor()
 	{
 		return parent.getOwnBackcolor();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setBackcolor(Color backcolor)
 	{
 	}
 
-	/**
-	 * @deprecated Replaed by {@link #getOrientationValue()}.
-	 */
-	public PlotOrientation getOrientation()
-	{
-		return getOrientationValue().getOrientation();
-	}
-	
-	/**
-	 *
-	 */
+	@Override
 	public PlotOrientationEnum getOrientationValue()
 	{
 		return parent.getOrientationValue();
 	}
-	
-	/**
-	 * @deprecated Replaced by {@link #setOrientation(PlotOrientationEnum)}.
-	 */
-	public void setOrientation(PlotOrientation orientation)
-	{
-		setOrientation(PlotOrientationEnum.getByValue(orientation));
-	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setOrientation(PlotOrientationEnum orientation)
 	{
 		throw new UnsupportedOperationException();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public Float getBackgroundAlphaFloat()
 	{
 		return parent.getBackgroundAlphaFloat();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setBackgroundAlpha(Float BackgroundAlpha)
 	{
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Float getForegroundAlphaFloat()
 	{
 		return parent.getForegroundAlphaFloat();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setForegroundAlpha(Float foregroundAlpha)
 	{
 	}
@@ -173,6 +142,7 @@ public class JRFillChartPlot implements JRChartPlot
 	/**
 	 * @deprecated Replaced by {@link JRCategoryAxisFormat#getCategoryAxisTickLabelRotation()}.
 	 */
+	@Override
 	public Double getLabelRotationDouble()
 	{
 		return parent.getLabelRotationDouble();
@@ -181,6 +151,7 @@ public class JRFillChartPlot implements JRChartPlot
 	/**
 	 * @deprecated Replaced by {@link JRCategoryAxisFormat#setCategoryAxisTickLabelRotation(Double)}.
 	 */
+	@Override
 	public void setLabelRotation(Double labelRotation)
 	{
 		throw new UnsupportedOperationException();
@@ -190,6 +161,7 @@ public class JRFillChartPlot implements JRChartPlot
 	 * Returns a list of all the defined series colors.  Every entry in the list is of type JRChartPlot.JRSeriesColor.
 	 * If there are no defined series colors this method will return an empty list, not null. 
 	 */
+	@Override
 	public SortedSet<JRSeriesColor> getSeriesColors()
 	{
 		return parent.getSeriesColors();
@@ -198,6 +170,7 @@ public class JRFillChartPlot implements JRChartPlot
 	/**
 	 * Removes all defined series colors.
 	 */
+	@Override
 	public void clearSeriesColors()
 	{
 	}
@@ -205,33 +178,29 @@ public class JRFillChartPlot implements JRChartPlot
 	/**
 	 * Adds the specified series color to the plot.
 	 */
+	@Override
 	public void addSeriesColor(JRSeriesColor seriesColor)
 	{
 	}
 
+	@Override
 	public void setSeriesColors(Collection<JRSeriesColor> colors)
 	{
 		// NOOP
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone(JRChart parentChart) 
 	{
 		throw new UnsupportedOperationException();

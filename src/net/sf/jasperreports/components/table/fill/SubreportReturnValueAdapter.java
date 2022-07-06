@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,25 +25,24 @@ package net.sf.jasperreports.components.table.fill;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRSubreportReturnValue;
-import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.VariableReturnValue;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SubreportReturnValueAdapter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SubreportReturnValueAdapter implements JRSubreportReturnValue
 {
 	
-	private final ReturnValue returnValue;
+	private final VariableReturnValue returnValue;
 	
-	public SubreportReturnValueAdapter(ReturnValue returnValue)
+	public SubreportReturnValueAdapter(VariableReturnValue returnValue)
 	{
 		this.returnValue = returnValue;
 	}
 
 	@Override
-	public String getSubreportVariable()
+	public String getFromVariable()
 	{
 		return returnValue.getFromVariable();
 	}
@@ -55,7 +54,7 @@ public class SubreportReturnValueAdapter implements JRSubreportReturnValue
 	}
 
 	@Override
-	public CalculationEnum getCalculationValue()
+	public CalculationEnum getCalculation()
 	{
 		return returnValue.getCalculation();
 	}

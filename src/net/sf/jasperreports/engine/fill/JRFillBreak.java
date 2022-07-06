@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,9 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRBreak;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpressionCollector;
@@ -30,13 +33,9 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.type.BreakTypeEnum;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillBreak.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillBreak extends JRFillElement implements JRBreak
 {
@@ -62,9 +61,7 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public int getWidth()
 	{
 		int width;
@@ -80,23 +77,20 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 		return width;
 	}
 
+	@Override
 	public BreakTypeEnum getTypeValue()
 	{
 		return ((JRBreak)parent).getTypeValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setType(BreakTypeEnum type)
 	{
 		throw new UnsupportedOperationException();
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void evaluate(
 		byte evaluation
 		) throws JRException
@@ -111,9 +105,7 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected JRPrintElement fill()
 	{
 		return null;
@@ -130,6 +122,7 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 //		return printLine;
 	}
 
+	@Override
 	protected JRTemplateElement createElementTemplate()
 	{
 		// not called
@@ -137,48 +130,39 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitBreak(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void resolveElement (JRPrintElement element, byte evaluation)
 	{
 		// nothing
 	}
 
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillBreak(this, factory);
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void rewind()
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected boolean prepare(
 		int availableHeight,
 		boolean isOverflow
@@ -211,7 +195,7 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 		
 		if (isToPrint)
 		{
-			boolean paginationIgnored = filler.getFillContext().isIgnorePagination();
+			boolean paginationIgnored = filler.isIgnorePagination();
 			if (getTypeValue() == BreakTypeEnum.COLUMN)
 			{
 				//column break
@@ -223,9 +207,9 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 						log.trace("unpaginated report, column break not triggered");
 					}
 				}
-				else if (!filler.isFirstColumnBand || band.firstYElement != null)
+				else if (!filler.isFirstColumnBand || band.atLeastOneElementIsToPrint)
 				{
-					setStretchHeight(availableHeight - getRelativeY());
+					setPrepareHeight(availableHeight - getRelativeY());
 				}
 			}
 			else
@@ -246,7 +230,7 @@ public class JRFillBreak extends JRFillElement implements JRBreak
 					
 					if (apply)
 					{
-						setStretchHeight(availableHeight - getRelativeY());
+						setPrepareHeight(availableHeight - getRelativeY());
 						filler.columnIndex = filler.columnCount - 1;
 					}
 				}

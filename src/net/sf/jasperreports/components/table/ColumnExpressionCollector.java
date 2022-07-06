@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.JRExpressionCollector;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ColumnExpressionCollector.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ColumnExpressionCollector implements ColumnVisitor<Void>
 {
@@ -55,6 +54,7 @@ public class ColumnExpressionCollector implements ColumnVisitor<Void>
 		}
 	}
 	
+	@Override
 	public Void visitColumn(Column column)
 	{
 		mainCollector.collectPropertyExpressions(column.getPropertyExpressions());
@@ -71,6 +71,7 @@ public class ColumnExpressionCollector implements ColumnVisitor<Void>
 		return null;
 	}
 
+	@Override
 	public Void visitColumnGroup(ColumnGroup columnGroup)
 	{
 		mainCollector.collectPropertyExpressions(columnGroup.getPropertyExpressions());
@@ -98,7 +99,7 @@ public class ColumnExpressionCollector implements ColumnVisitor<Void>
 		}
 	}
 	
-	protected void collectCell(Cell cell)
+	protected void collectCell(BaseCell cell)
 	{
 		if (cell == null)
 		{

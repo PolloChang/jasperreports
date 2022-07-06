@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,18 +39,18 @@ import net.sf.jasperreports.engine.JRRewindableDataSource;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTableModelDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTableModelDataSource implements JRRewindableDataSource
 {
 	
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_COLUMN_NAME = "data.table.model.unknown.column.name";
 
 	/**
 	 *
 	 */
 	private TableModel tableModel;
 	private int index = -1;
-	private HashMap<String, Integer> columnNames = new HashMap<String, Integer>();
+	private HashMap<String, Integer> columnNames = new HashMap<>();
 	
 
 	/**
@@ -62,17 +62,15 @@ public class JRTableModelDataSource implements JRRewindableDataSource
 		
 		if (this.tableModel != null)
 		{
-			for(int i = 0; i < tableModel.getColumnCount(); i++)
+			for (int i = 0; i < tableModel.getColumnCount(); i++)
 			{
-				this.columnNames.put(tableModel.getColumnName(i), Integer.valueOf(i));
+				this.columnNames.put(tableModel.getColumnName(i), i);
 			}
 		}
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean next()
 	{
 		this.index++;
@@ -86,9 +84,7 @@ public class JRTableModelDataSource implements JRRewindableDataSource
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(JRField jrField) throws JRException
 	{
 		String fieldName = jrField.getName();
@@ -97,7 +93,7 @@ public class JRTableModelDataSource implements JRRewindableDataSource
 		
 		if (columnIndex != null)
 		{
-			return this.tableModel.getValueAt(index, columnIndex.intValue());
+			return this.tableModel.getValueAt(index, columnIndex);
 		}
 		else if (fieldName.startsWith("COLUMN_"))
 		{
@@ -105,14 +101,15 @@ public class JRTableModelDataSource implements JRRewindableDataSource
 		}
 		else
 		{
-			throw new JRException("Unknown column name : " + fieldName);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_UNKNOWN_COLUMN_NAME,
+					new Object[]{fieldName});
 		}
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void moveFirst()
 	{
 		this.index = -1;

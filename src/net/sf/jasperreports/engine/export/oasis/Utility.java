@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,7 @@
  * 
  * Contributors:
  * Majid Ali Khan - majidkk@users.sourceforge.net
- * Frank Sch�nheit - Frank.Schoenheit@Sun.COM
+ * Frank Schönheit - Frank.Schoenheit@Sun.COM
  */
 package net.sf.jasperreports.engine.export.oasis;
 
@@ -36,10 +36,18 @@ import java.util.StringTokenizer;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: Utility.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class Utility 
 {
+
+//	public static String getIndent(int i) 
+//	{
+//		String indent = "";
+//		for (int j=0; j<i; j++) {
+//			indent += " ";
+//		}
+//		return indent;
+//	}
 	
 	protected static String replaceNewLineWithLineBreak(String source)
 	{
@@ -47,7 +55,7 @@ public final class Utility
 		
 		if (source != null)
 		{
-			StringBuffer sbuffer = new StringBuffer();
+			StringBuilder sb = new StringBuilder();
 			StringTokenizer tkzer = new StringTokenizer(source, "\n\t", true);
 			String token = null;
 			while(tkzer.hasMoreTokens())
@@ -55,19 +63,19 @@ public final class Utility
 				token = tkzer.nextToken();
 				if ("\n".equals(token))
 				{
-					sbuffer.append("<text:line-break/>");
+					sb.append("<text:line-break/>");
 				}
 				else if ("\t".equals(token))
 				{
-					sbuffer.append("<text:tab/>");
+					sb.append("<text:tab/>");
 				}
 				else
 				{
-					sbuffer.append(token);
+					sb.append(token);
 				}
 			}
 			
-			str = sbuffer.toString();
+			str = sb.toString();
 		}
 		
 		return str;

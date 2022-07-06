@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,11 +43,11 @@ import net.sf.jasperreports.engine.design.JRVerifier;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableCompiler implements ComponentCompiler
 {
 
+	@Override
 	public void collectExpressions(Component component,
 			JRExpressionCollector collector)
 	{
@@ -61,8 +61,20 @@ public class TableCompiler implements ComponentCompiler
 		ColumnExpressionCollector columnCollector = new ColumnExpressionCollector(
 				collector, datasetCollector);
 		columnCollector.collectColumns(table.getColumns());
+		
+		RowExpressionCollector rowCollector = new RowExpressionCollector(datasetCollector);
+		rowCollector.collectRow(table.getTableHeader());
+		rowCollector.collectRow(table.getTableFooter());
+		rowCollector.collectGroupRows(table.getGroupHeaders());
+		rowCollector.collectGroupRows(table.getGroupFooters());
+		rowCollector.collectRow(table.getColumnHeader());
+		rowCollector.collectRow(table.getColumnFooter());
+		rowCollector.collectRow(table.getDetail());
+		
+		columnCollector.collectCell(table.getNoData());
 	}
 
+	@Override
 	public Component toCompiledComponent(Component component,
 			JRBaseObjectFactory baseFactory)
 	{
@@ -70,6 +82,7 @@ public class TableCompiler implements ComponentCompiler
 		return new StandardTable(table, baseFactory);
 	}
 
+	@Override
 	public void verify(Component component, JRVerifier verifier)
 	{
 		TableComponent table = (TableComponent) component;
@@ -93,7 +106,23 @@ public class TableCompiler implements ComponentCompiler
 		{
 			if (!detectLoops(verifier, columns))
 			{
-				verifyColumns(table, verifier);
+				String subdataset = datasetRun == null ? null : datasetRun.getDatasetName();
+				if (subdataset != null)
+				{
+					verifier.pushSubdatasetContext(subdataset);
+				}
+				try
+				{
+					verifyColumns(table, verifier);
+				}
+				finally
+				{
+					if (subdataset != null)
+					{
+						verifier.popSubdatasetContext();
+					}
+				}
+				
 				verifyColumnHeights(table, verifier);
 			}
 		}
@@ -101,7 +130,7 @@ public class TableCompiler implements ComponentCompiler
 
 	protected boolean detectLoops(JRVerifier verifier, List<BaseColumn> columns)
 	{
-		Set<BaseColumn> parents = new HashSet<BaseColumn>();
+		Set<BaseColumn> parents = new HashSet<>();
 		return detectLoops(verifier, columns, parents);
 	}
 
@@ -120,11 +149,13 @@ public class TableCompiler implements ComponentCompiler
 			{
 				loop = column.visitColumn(new ColumnVisitor<Boolean>()
 				{
+					@Override
 					public Boolean visitColumn(Column column)
 					{
 						return false;
 					}
 
+					@Override
 					public Boolean visitColumnGroup(ColumnGroup columnGroup)
 					{
 						parents.add(columnGroup);
@@ -149,12 +180,14 @@ public class TableCompiler implements ComponentCompiler
 	{
 		ColumnVisitor<Void> columnVerifier = new ColumnVisitor<Void>()
 		{
+			@Override
 			public Void visitColumn(Column column)
 			{
 				verifyColumn(table, column, verifier);
 				return null;
 			}
 
+			@Override
 			public Void visitColumnGroup(ColumnGroup columnGroup)
 			{
 				verifyBaseColumn(table, columnGroup, verifier);
@@ -227,7 +260,7 @@ public class TableCompiler implements ComponentCompiler
 	{
 		if (cells != null)
 		{
-			Set<String> groupNames = new HashSet<String>();
+			Set<String> groupNames = new HashSet<>();
 			for (GroupCell groupCell : cells)
 			{
 				String groupName = groupCell.getGroupName();
@@ -250,7 +283,7 @@ public class TableCompiler implements ComponentCompiler
 								datasetRun.getDatasetName());
 						if (dataset != null && dataset.getGroupsMap().get(groupName) == null)
 						{
-							verifier.addBrokenRule("No group named " + groupName 
+							verifier.addBrokenRule("No group named \"" + groupName 
 									+ "\" found in subdataset " + datasetRun.getDatasetName(), 
 									groupCell);
 						}
@@ -288,10 +321,10 @@ public class TableCompiler implements ComponentCompiler
 			JRElement[] elements = cell.getElements();
 			if (elements != null && elements.length > 0)
 			{
-				int topPadding = cell.getLineBox().getTopPadding().intValue();
-				int leftPadding = cell.getLineBox().getLeftPadding().intValue();
-				int bottomPadding = cell.getLineBox().getBottomPadding().intValue();
-				int rightPadding = cell.getLineBox().getRightPadding().intValue();
+				int topPadding = cell.getLineBox().getTopPadding();
+				int leftPadding = cell.getLineBox().getLeftPadding();
+				int bottomPadding = cell.getLineBox().getBottomPadding();
+				int rightPadding = cell.getLineBox().getRightPadding();
 
 				int avlblWidth = width - leftPadding - rightPadding;
 				int avlblHeight = height - topPadding - bottomPadding;
@@ -356,6 +389,7 @@ public class TableCompiler implements ComponentCompiler
 				return column.getTableHeader();
 			}
 
+			@Override
 			public String getCellName()
 			{
 				return "table header";
@@ -370,6 +404,7 @@ public class TableCompiler implements ComponentCompiler
 				return column.getTableFooter();
 			}
 
+			@Override
 			public String getCellName()
 			{
 				return "table footer";
@@ -398,6 +433,7 @@ public class TableCompiler implements ComponentCompiler
 								return column.getGroupHeader(groupName);
 							}
 
+							@Override
 							public String getCellName()
 							{
 								return "group " + groupName + " header";
@@ -412,6 +448,7 @@ public class TableCompiler implements ComponentCompiler
 								return column.getGroupFooter(groupName);
 							}
 
+							@Override
 							public String getCellName()
 							{
 								return "group " + groupName + " footer";
@@ -430,6 +467,7 @@ public class TableCompiler implements ComponentCompiler
 				return column.getColumnHeader();
 			}
 
+			@Override
 			public String getCellName()
 			{
 				return "column header";
@@ -444,6 +482,7 @@ public class TableCompiler implements ComponentCompiler
 				return column.getColumnFooter();
 			}
 
+			@Override
 			public String getCellName()
 			{
 				return "column footer";
@@ -452,16 +491,19 @@ public class TableCompiler implements ComponentCompiler
 		
 		verifyColumnHeights(table, verifier, new ColumnCellSelector()
 		{
+			@Override
 			public Cell getCell(Column column)
 			{
 				return column.getDetailCell();
 			}
 
+			@Override
 			public Cell getCell(ColumnGroup group)
 			{
 				return null;
 			}
 			
+			@Override
 			public String getCellName()
 			{
 				return "detail";
@@ -472,11 +514,13 @@ public class TableCompiler implements ComponentCompiler
 	protected abstract class BaseColumnCellSelector implements ColumnCellSelector
 	{
 
+		@Override
 		public Cell getCell(Column column)
 		{
 			return getCell((BaseColumn) column);
 		}
 
+		@Override
 		public Cell getCell(ColumnGroup group)
 		{
 			return getCell((BaseColumn) group);
@@ -489,7 +533,7 @@ public class TableCompiler implements ComponentCompiler
 			JRVerifier verifier, 
 			final ColumnCellSelector cellSelector)
 	{
-		final List<List<Cell>> tableCellRows = new ArrayList<List<Cell>>();
+		final List<List<Cell>> tableCellRows = new ArrayList<>();
 		
 		ColumnVisitor<Void> cellCollector = new ColumnVisitor<Void>()
 		{
@@ -502,12 +546,13 @@ public class TableCompiler implements ComponentCompiler
 				{
 					for (int i = currentRowCount; i <= rowIdx; i++)
 					{
-						tableCellRows.add(new ArrayList<Cell>());
+						tableCellRows.add(new ArrayList<>());
 					}
 				}
 				return tableCellRows.get(rowIdx);
 			}
 			
+			@Override
 			public Void visitColumn(Column column)
 			{
 				Cell cell = cellSelector.getCell(column);
@@ -518,6 +563,7 @@ public class TableCompiler implements ComponentCompiler
 				return null;
 			}
 
+			@Override
 			public Void visitColumnGroup(ColumnGroup columnGroup)
 			{
 				Cell cell = cellSelector.getCell(columnGroup);
@@ -550,7 +596,7 @@ public class TableCompiler implements ComponentCompiler
 		
 		boolean validRowHeights = true;
 		
-		List<Integer> rowHeights = new ArrayList<Integer>(tableCellRows.size());
+		List<Integer> rowHeights = new ArrayList<>(tableCellRows.size());
 		for (int rowIdx = 0; rowIdx < tableCellRows.size(); ++rowIdx)
 		{
 			Integer rowHeight = null;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,27 +23,27 @@
  */
 package net.sf.jasperreports.components.barcode4j;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.base.JRBasePrintImage;
 import net.sf.jasperreports.engine.component.ComponentDesignConverter;
 import net.sf.jasperreports.engine.convert.ReportConverter;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.renderers.Renderable;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeDesignConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeDesignConverter implements ComponentDesignConverter
 {
 
 	private static final Log log = LogFactory.getLog(BarcodeDesignConverter.class);
 	
+	@Override
 	public JRPrintElement convert(ReportConverter reportConverter,
 			JRComponentElement element)
 	{
@@ -53,7 +53,7 @@ public class BarcodeDesignConverter implements ComponentDesignConverter
 		printImage.setScaleImage(ScaleImageEnum.RETAIN_SHAPE);
 		
 		Renderable barcodeImage = evaluateBarcode(reportConverter, element);
-		printImage.setRenderable(barcodeImage);
+		printImage.setRenderer(barcodeImage);
 		
 		return printImage;
 	}

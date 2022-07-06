@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.repo;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -33,26 +32,32 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReportContext;
+import net.sf.jasperreports.engine.util.JRLoader;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RepositoryUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class RepositoryUtil
 {
-	private AtomicReference<List<RepositoryService>> repositoryServices = new AtomicReference<List<RepositoryService>>();
+	public static final String EXCEPTION_MESSAGE_KEY_BYTE_DATA_LOADING_ERROR = "repo.byte.data.loading.error";
+	public static final String EXCEPTION_MESSAGE_KEY_BYTE_DATA_NOT_FOUND = "repo.byte.data.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_INPUT_STREAM_NOT_FOUND = "repo.input.stream.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_REPORT_NOT_FOUND = "repo.report.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_RESOURCET_NOT_FOUND = "repo.resource.not.found";
+	
+	private AtomicReference<List<RepositoryService>> repositoryServices = new AtomicReference<>();
 	
 
-	private JasperReportsContext jasperReportsContext;
+	private RepositoryContext context;
 
 
 	/**
 	 *
 	 */
-	private RepositoryUtil(JasperReportsContext jasperReportsContext)//FIXMECONTEXT try to reuse utils as much as you can
+	private RepositoryUtil(RepositoryContext context)//FIXMECONTEXT try to reuse utils as much as you can
 	{
-		this.jasperReportsContext = jasperReportsContext;
+		this.context = context;
 	}
 	
 	
@@ -61,7 +66,12 @@ public final class RepositoryUtil
 	 */
 	public static RepositoryUtil getInstance(JasperReportsContext jasperReportsContext)
 	{
-		return new RepositoryUtil(jasperReportsContext);
+		return getInstance(SimpleRepositoryContext.of(jasperReportsContext));
+	}
+	
+	public static RepositoryUtil getInstance(RepositoryContext repositoryContext)
+	{
+		return new RepositoryUtil(repositoryContext);
 	}
 	
 	
@@ -76,7 +86,7 @@ public final class RepositoryUtil
 			return cachedServices;
 		}
 		
-		List<RepositoryService> services = jasperReportsContext.getExtensions(RepositoryService.class);
+		List<RepositoryService> services = context.getJasperReportsContext().getExtensions(RepositoryService.class);
 		
 		// set if not already set
 		if (repositoryServices.compareAndSet(null, services))
@@ -96,7 +106,7 @@ public final class RepositoryUtil
 	{
 		JasperReport jasperReport = null;
 		
-		JasperDesignCache cache = JasperDesignCache.getInstance(jasperReportsContext, reportContext);
+		JasperDesignCache cache = JasperDesignCache.getInstance(context.getJasperReportsContext(), reportContext);
 		if (cache != null)
 		{
 			jasperReport = cache.getJasperReport(location);
@@ -107,7 +117,10 @@ public final class RepositoryUtil
 			ReportResource resource = getResourceFromLocation(location, ReportResource.class);
 			if (resource == null)
 			{
-				throw new JRException("Report not found at : " + location);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_REPORT_NOT_FOUND,
+						new Object[]{location});
 			}
 
 			jasperReport = resource.getReport();
@@ -133,7 +146,7 @@ public final class RepositoryUtil
 		{
 			for (RepositoryService service : services)
 			{
-				resource = service.getResource(location, resourceType);
+				resource = service.getResource(context, location, resourceType);
 				if (resource != null)
 				{
 					break;
@@ -142,7 +155,10 @@ public final class RepositoryUtil
 		}
 		if (resource == null)
 		{
-			throw new JRException("Resource not found at : " + location);//FIXMEREPO decide whether to return null or throw exception; check everywhere
+			throw 
+			new JRException(
+				EXCEPTION_MESSAGE_KEY_RESOURCET_NOT_FOUND,
+				new Object[]{location});	//FIXMEREPO decide whether to return null or throw exception; check everywhere
 		}
 		return resource;
 	}
@@ -156,7 +172,10 @@ public final class RepositoryUtil
 		InputStream is = findInputStream(location);
 		if (is == null)
 		{
-			throw new JRException("Input stream not found at : " + location);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_INPUT_STREAM_NOT_FOUND,
+					new Object[]{location});
 		}
 		return is;
 	}
@@ -173,7 +192,7 @@ public final class RepositoryUtil
 		{
 			for (RepositoryService service : services)
 			{
-				inputStreamResource = service.getResource(location, InputStreamResource.class);
+				inputStreamResource = service.getResource(context, location, InputStreamResource.class);
 				if (inputStreamResource != null)
 				{
 					break;
@@ -189,57 +208,48 @@ public final class RepositoryUtil
 	 */
 	public byte[] getBytesFromLocation(String location) throws JRException
 	{
-		InputStream is = findInputStream(location);
-		
-		if (is == null)
+		try (InputStream is = findInputStream(location))
 		{
-			throw new JRException("Byte data not found at : " + location);
-		}
-
-		ByteArrayOutputStream baos = null;
-
-		try
-		{
-			baos = new ByteArrayOutputStream();
-
-			byte[] bytes = new byte[10000];
-			int ln = 0;
-			while ((ln = is.read(bytes)) > 0)
+			if (is == null)
 			{
-				baos.write(bytes, 0, ln);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_BYTE_DATA_NOT_FOUND,
+						new Object[]{location});
 			}
-
-			baos.flush();
+	
+			return JRLoader.readBytes(is);
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Error loading byte data from : " + location, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_BYTE_DATA_LOADING_ERROR,
+					new Object[]{location},
+					e);
 		}
-		finally
+	}
+	
+	public ResourceInfo getResourceInfo(String location)
+	{
+		ResourceInfo resourceInfo = null;
+		List<RepositoryService> services = getServices();
+		if (services != null)
 		{
-			if (baos != null)
+			for (RepositoryService service : services)
 			{
-				try
+				resourceInfo = service.getResourceInfo(context, location);
+				if (resourceInfo != null)
 				{
-					baos.close();
-				}
-				catch(IOException e)
-				{
-				}
-			}
-
-			if (is != null)
-			{
-				try
-				{
-					is.close();
-				}
-				catch(IOException e)
-				{
+					break;
 				}
 			}
 		}
-
-		return baos.toByteArray();
+		return resourceInfo;
+	}
+	
+	public RepositoryContext getRepositoryContext()
+	{
+		return context;
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,48 +23,12 @@
  */
 package net.sf.jasperreports.engine;
 
-import net.sf.jasperreports.engine.type.CalculationEnum;
 
 /**
  * A value copied from a subdataset into a variable of the parent report.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ReturnValue.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface ReturnValue extends JRCloneable
+public interface ReturnValue extends VariableReturnValue
 {
-
-	/**
-	 * Returns the name of the variable whose value should be copied.
-	 * 
-	 * @return the name of the variable whose value should be copied.
-	 */
-	public String getFromVariable();
-
-	/**
-	 * Returns the name of the report variable where the value should be copied.
-	 * 
-	 * @return the name of the report variable where the value should be copied.
-	 */
-	public String getToVariable();
-
-	/**
-	 * Returns the calculation type.
-	 * <p>
-	 * When copying the value from, a formula can be applied such that sum,
-	 * maximum, average and so on can be computed.
-	 * 
-	 * @return the calculation type.
-	 */
-	public CalculationEnum getCalculation();
-	
-	/**
-	 * Returns the incrementer factory class name.
-	 * <p>
-	 * The factory will be used to increment the value of the report variable
-	 * with the returned value.
-	 * 
-	 * @return the incrementer factory class name.
-	 */
-	public String getIncrementerFactoryClassName();
 }

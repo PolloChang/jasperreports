@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base read-only implementation for crosstab row and column groups.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstabGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRBaseCrosstabGroup implements JRCrosstabGroup, Serializable, CrosstabBaseCloneable
 {
@@ -56,6 +55,7 @@ public abstract class JRBaseCrosstabGroup implements JRCrosstabGroup, Serializab
 	
 	protected JRCellContents header;
 	protected JRCellContents totalHeader;
+	protected Boolean mergeHeaderCells;
 
 	protected JRVariable variable;
 	
@@ -73,48 +73,60 @@ public abstract class JRBaseCrosstabGroup implements JRCrosstabGroup, Serializab
 		
 		this.header = factory.getCell(group.getHeader());
 		this.totalHeader = factory.getCell(group.getTotalHeader());
+		this.mergeHeaderCells = group.getMergeHeaderCells();
 		
 		this.variable = factory.getVariable(group.getVariable());
 	}
 	
+	@Override
 	public String getName()
 	{
 		return name;
 	}
 
+	@Override
 	public JRCrosstabBucket getBucket()
 	{
 		return bucket;
 	}
 
+	@Override
 	public CrosstabTotalPositionEnum getTotalPositionValue()
 	{
 		return totalPositionValue;
 	}
 
+	@Override
 	public boolean hasTotal()
 	{
 		return totalPositionValue != CrosstabTotalPositionEnum.NONE;
 	}
 
+	@Override
 	public JRCellContents getHeader()
 	{
 		return header;
 	}
 
+	@Override
 	public JRCellContents getTotalHeader()
 	{
 		return totalHeader;
 	}
 
+	@Override
 	public JRVariable getVariable()
 	{
 		return variable;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
+	public Boolean getMergeHeaderCells()
+	{
+		return mergeHeaderCells;
+	}
+
+	@Override
 	public Object clone() 
 	{
 		JRBaseCrosstabGroup clone = null;
@@ -152,6 +164,7 @@ public abstract class JRBaseCrosstabGroup implements JRCrosstabGroup, Serializab
 	 */
 	private byte totalPosition;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

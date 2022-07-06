@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,15 +23,20 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertyExpression;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillField.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillField implements JRField
 {
@@ -41,6 +46,10 @@ public class JRFillField implements JRField
 	 *
 	 */
 	protected JRField parent;
+	protected JRFillExpressionEvaluator expressionEvaluator;
+	protected List<JRPropertyExpression> propertyExpressions;
+	protected JRPropertiesMap staticProperties;
+	protected JRPropertiesMap mergedProperties;
 
 	/**
 	 *
@@ -62,43 +71,44 @@ public class JRFillField implements JRField
 		factory.put(field, this);
 
 		parent = field;
+
+		expressionEvaluator = factory.getExpressionEvaluator();
+
+		staticProperties = field.hasProperties() ? field.getPropertiesMap().cloneProperties() : null;
+		mergedProperties = staticProperties;
+
+		JRPropertyExpression[] fieldPropertyExpressions = field.getPropertyExpressions();
+		propertyExpressions = 
+			fieldPropertyExpressions == null 
+			? new ArrayList<>(0)
+			: new ArrayList<>(Arrays.asList(fieldPropertyExpressions));
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return parent.getName();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getDescription()
 	{
 		return parent.getDescription();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setDescription(String description)
 	{
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Class<?> getValueClass()
 	{
 		return parent.getValueClass();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getValueClassName()
 	{
 		return parent.getValueClassName();
@@ -195,26 +205,70 @@ public class JRFillField implements JRField
 	}
 
 	
+	@Override
 	public boolean hasProperties()
 	{
-		return parent.hasProperties();
+		return mergedProperties != null && mergedProperties.hasProperties();
 	}
 
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
-		return parent.getPropertiesMap();
+		return mergedProperties;
 	}
 
 	
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
 	}
+
 	
+	@Override
+	public JRPropertyExpression[] getPropertyExpressions()
+	{
+		return propertyExpressions.toArray(new JRPropertyExpression[propertyExpressions.size()]);
+	}
+
+
 	/**
 	 *
 	 */
+	protected void evaluateProperties() throws JRException
+	{
+		if (propertyExpressions.isEmpty())
+		{
+			mergedProperties = staticProperties;
+		}
+		else
+		{
+			JRPropertiesMap dynamicProperties = new JRPropertiesMap();
+			
+			for (JRPropertyExpression prop : propertyExpressions)
+			{
+				String value = (String) evaluateExpression(prop.getValueExpression());
+				//if (value != null) //is the null value significant for some field properties?
+				{
+					dynamicProperties.setProperty(prop.getName(), value);
+				}
+			}
+			
+			mergedProperties = dynamicProperties.cloneProperties();
+			mergedProperties.setBaseProperties(staticProperties);
+		}
+	}
+
+	/**
+	 *
+	 */
+	protected final Object evaluateExpression(JRExpression expression) throws JRException
+	{
+		return expressionEvaluator.evaluate(expression, JRExpression.EVALUATION_DEFAULT);
+	}
+
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

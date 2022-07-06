@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,8 +23,6 @@
  */
 package net.sf.jasperreports.engine;
 
-import java.util.List;
-
 /**
  * Print element container interface.
  * <p>
@@ -32,9 +30,8 @@ import java.util.List;
  * to collect the generated print elements.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPrintElementContainer.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRPrintElementContainer
+public interface JRPrintElementContainer extends JRPrintElementListContainer
 {
 	/**
 	 * Returns the height of the container.
@@ -50,20 +47,9 @@ public interface JRPrintElementContainer
 	 * @param height the height
 	 */
 	public void setHeight(int height);
-
 	
-	/**
-	 * Returns the list of {@link JRPrintElement elements} of the container.
-	 * 
-	 * @return the list of elements
-	 */
-	public List<JRPrintElement> getElements();
-	
-	
-	/**
-	 * Adds an element to the container.
-	 * 
-	 * @param element the element to add
-	 */
-	public void addElement(JRPrintElement element);
+	default void setContentsWidth(int width)
+	{
+		//NOOP
+	}
 }

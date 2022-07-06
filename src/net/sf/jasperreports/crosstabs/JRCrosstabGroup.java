@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.JRVariable;
  * Base interface for crosstab row and column groups.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCrosstabGroup extends JRCloneable
 {
@@ -137,4 +136,19 @@ public interface JRCrosstabGroup extends JRCloneable
 	 * @return whether the group has a total row/column
 	 */
 	public boolean hasTotal();
+	
+	/**
+	 * Determines whether the header cell of this group spans across all entries in the group,
+	 * or whether the header cell repeats for each sub group entry.
+	 * <p>
+	 * If the header cell is set to repeat, the sub group should not have a total row/column.
+	 * </p>
+	 * <p>
+	 * By default the header cell spans across all entries that are part of the group.
+	 * </p>
+	 * 
+	 * @return whether the header cell should span across entries in the group; if <code>null</code>
+	 * the default will apply
+	 */
+	public Boolean getMergeHeaderCells();
 }

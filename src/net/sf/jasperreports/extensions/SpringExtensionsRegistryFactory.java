@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,15 +25,16 @@ package net.sf.jasperreports.extensions;
 
 import java.net.URL;
 
-import net.sf.jasperreports.engine.JRPropertiesMap;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.util.JRLoader;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.UrlResource;
+
+import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.util.JRLoader;
 
 /**
  * A {@link ExtensionsRegistryFactory} which works by loading a Spring beans XML
@@ -41,7 +42,7 @@ import org.springframework.core.io.UrlResource;
  *
  * <p>
  * The factory requires a property named
- * <code>net.sf.jasperreports.extension.&lt;registry ID&gt;.spring.beans.resource</code>
+ * {@link net.sf.jasperreports.extensions.DefaultExtensionsRegistry#PROPERTY_REGISTRY_PREFIX net.sf.jasperreports.extension.&lt;registry_id&gt;.spring.beans.resource}
  * to be present in the properties map passed to
  * {@link #createRegistry(String, JRPropertiesMap)}.
  * The value of this property must resolve to a resource name which is loaded
@@ -52,7 +53,6 @@ import org.springframework.core.io.UrlResource;
  * {@link SpringExtensionsRegistry} instance which will use the bean factory.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SpringExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SpringExtensionsRegistryFactory implements
 		ExtensionsRegistryFactory
@@ -60,6 +60,8 @@ public class SpringExtensionsRegistryFactory implements
 	
 	private static final Log log = LogFactory.getLog(
 			SpringExtensionsRegistryFactory.class);
+	public static final String EXCEPTION_MESSAGE_KEY_NO_SPRING_RESOURCE_SET = "extensions.no.spring.resource.set";
+	public static final String EXCEPTION_MESSAGE_KEY_SPRING_RESOURCE_NOT_FOUND = "extensions.spring.resource.not.found";
 	
 	/**
 	 * The suffix of the property that gives the Spring beans XML resource name.
@@ -67,6 +69,7 @@ public class SpringExtensionsRegistryFactory implements
 	public static final String PROPERTY_SUFFIX_SPRING_BEANS_RESOURCE = 
 		".spring.beans.resource";
 
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId,
 			JRPropertiesMap properties)
 	{
@@ -82,14 +85,19 @@ public class SpringExtensionsRegistryFactory implements
 		String resource = properties.getProperty(resourceProp);
 		if (resource == null)
 		{
-			throw new JRRuntimeException("No Spring resource property set");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NO_SPRING_RESOURCE_SET,
+					(Object[])null);
 		}
 		
 		URL resourceLocation = JRLoader.getResource(resource);
 		if (resourceLocation == null)
 		{
-			throw new JRRuntimeException("Could not find Spring resource " 
-					+ resource + " for extensions registry " + registryId);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_SPRING_RESOURCE_NOT_FOUND,
+					new Object[]{resource, registryId});
 		}
 		
 		if (log.isDebugEnabled())
@@ -98,7 +106,10 @@ public class SpringExtensionsRegistryFactory implements
 					+ registryId + " using "+ resourceLocation);
 		}
 		
-		return new XmlBeanFactory(new UrlResource(resourceLocation));
+		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+		reader.loadBeanDefinitions(new UrlResource(resourceLocation));
+		return beanFactory;
 	}
 
 }

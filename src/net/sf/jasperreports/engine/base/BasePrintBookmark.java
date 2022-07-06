@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.PrintBookmark;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: BasePrintBookmark.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BasePrintBookmark implements PrintBookmark, Serializable
 {
@@ -52,26 +51,40 @@ public class BasePrintBookmark implements PrintBookmark, Serializable
 	private String label;
 	private final int pageIndex;
 	private String elementAddress;
+	
+	// we're keeping the level here to have it in BookmarkHelper.appendBookmarks
+	// not adding to the PrintBookmark interface for now
+	private int level;
 
 	public List<PrintBookmark> bookmarks;
 
 	public BasePrintBookmark(String label, int pageIndex, String elementAddress)
 	{
+		this(label, pageIndex, elementAddress, 0);
+	}
+
+	public BasePrintBookmark(String label, int pageIndex, String elementAddress,
+			int level)
+	{
 		this.label = label;
 		this.pageIndex = pageIndex;
 		this.elementAddress = elementAddress;
+		this.level = level;
 	}
 	
+	@Override
 	public String getLabel()
 	{
 		return label;
 	}
 	
+	@Override
 	public int getPageIndex()
 	{
 		return pageIndex;
 	}
 	
+	@Override
 	public String getElementAddress()
 	{
 		return elementAddress;
@@ -81,11 +94,12 @@ public class BasePrintBookmark implements PrintBookmark, Serializable
 	{
 		if (bookmarks == null)
 		{
-			bookmarks = new ArrayList<PrintBookmark>();
+			bookmarks = new ArrayList<>();
 		}
 		bookmarks.add(child);
 	}
 	
+	@Override
 	public List<PrintBookmark> getBookmarks()
 	{
 		return bookmarks;
@@ -94,5 +108,10 @@ public class BasePrintBookmark implements PrintBookmark, Serializable
 	public void setLabel(String label)
 	{
 		this.label = label;
+	}
+
+	public int getLevel()
+	{
+		return level;
 	}
 }

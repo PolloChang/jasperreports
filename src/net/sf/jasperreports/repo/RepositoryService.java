@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.repo;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RepositoryService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface RepositoryService
 {
@@ -44,4 +43,16 @@ public interface RepositoryService
 	 * 
 	 */
 	public <K extends Resource> K getResource(String uri, Class<K> resourceType);
+	
+	public default <K extends Resource> K getResource(RepositoryContext context, 
+			String uri, Class<K> resourceType)
+	{
+		return getResource(uri, resourceType);
+	}
+	
+	public default ResourceInfo getResourceInfo(RepositoryContext context, String location)
+	{
+		return null;
+	}
+	
 }

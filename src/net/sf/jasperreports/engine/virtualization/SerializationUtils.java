@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,10 +31,10 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SerializationUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SerializationUtils
 {
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_INT_BYTE_READ = "engine.virtualization.utils.invalid.int.byte.read";
 
 	public static void writeIntCompressed(ObjectOutput out, int value)
 			throws IOException
@@ -108,7 +108,10 @@ public class SerializationUtils
 		if (b1 != 0xF0)
 		{
 			// should not happen
-			throw new JRRuntimeException("Invalid int byte read " + Integer.toHexString(b1));
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_INVALID_INT_BYTE_READ,
+					new Object[]{Integer.toHexString(b1)});
 		}
 		
 		int b2 = in.readUnsignedByte();

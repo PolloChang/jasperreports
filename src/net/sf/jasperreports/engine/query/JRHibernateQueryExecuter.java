@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.engine.query;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +33,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.hibernate.Hibernate;
+import org.hibernate.Query;
+import org.hibernate.ScrollMode;
+import org.hibernate.ScrollableResults;
+import org.hibernate.Session;
+import org.hibernate.type.Type;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
@@ -44,46 +54,76 @@ import net.sf.jasperreports.engine.data.JRHibernateListDataSource;
 import net.sf.jasperreports.engine.data.JRHibernateScrollDataSource;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.hibernate.Hibernate;
-import org.hibernate.Query;
-import org.hibernate.ScrollMode;
-import org.hibernate.ScrollableResults;
-import org.hibernate.Session;
-import org.hibernate.type.Type;
-
 /**
  * HQL query executer that uses Hibernate 3.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRHibernateQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 {
 	private static final Log log = LogFactory.getLog(JRHibernateQueryExecuter.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_QUERY_RUN_TYPE = "query.hibernate.unknown.query.run.type";
+	public static final String EXCEPTION_MESSAGE_KEY_UNRESOLVED_TYPE_CONSTANT = "query.hibernate.unresolved.type.constant";
 
-	protected static final String CANONICAL_LANGUAGE = "HQL";
+	public static final String CANONICAL_LANGUAGE = "HQL";
 	
 	private static final Map<Class<?>,Type> hibernateTypeMap;
 	
 	static
 	{
-		hibernateTypeMap = new HashMap<Class<?>,Type>();
-		hibernateTypeMap.put(Boolean.class, Hibernate.BOOLEAN);
-		hibernateTypeMap.put(Byte.class, Hibernate.BYTE);
-		hibernateTypeMap.put(Double.class, Hibernate.DOUBLE);
-		hibernateTypeMap.put(Float.class, Hibernate.FLOAT);
-		hibernateTypeMap.put(Integer.class, Hibernate.INTEGER);
-		hibernateTypeMap.put(Long.class, Hibernate.LONG);
-		hibernateTypeMap.put(Short.class, Hibernate.SHORT);
-		hibernateTypeMap.put(java.math.BigDecimal.class, Hibernate.BIG_DECIMAL);
-		hibernateTypeMap.put(java.math.BigInteger.class, Hibernate.BIG_INTEGER);
-		hibernateTypeMap.put(Character.class, Hibernate.CHARACTER);
-		hibernateTypeMap.put(String.class, Hibernate.STRING);
-		hibernateTypeMap.put(java.util.Date.class, Hibernate.DATE);
-		hibernateTypeMap.put(java.sql.Timestamp.class, Hibernate.TIMESTAMP);
-		hibernateTypeMap.put(java.sql.Time.class, Hibernate.TIME);
+		Class<?> typeConstantsClass;
+		try
+		{
+			typeConstantsClass = Class.forName("org.hibernate.type.StandardBasicTypes", true, Hibernate.class.getClassLoader());
+		}
+		catch (ClassNotFoundException e)
+		{
+			typeConstantsClass = Hibernate.class;
+		}
+		
+		if (log.isDebugEnabled())
+		{
+			log.debug("Hibernate type constants class is " + typeConstantsClass);
+		}
+		
+		hibernateTypeMap = new HashMap<>();
+		hibernateTypeMap.put(Boolean.class, loadTypeConstant(typeConstantsClass, "BOOLEAN"));
+		hibernateTypeMap.put(Byte.class, loadTypeConstant(typeConstantsClass, "BYTE"));
+		hibernateTypeMap.put(Double.class, loadTypeConstant(typeConstantsClass, "DOUBLE"));
+		hibernateTypeMap.put(Float.class, loadTypeConstant(typeConstantsClass, "FLOAT"));
+		hibernateTypeMap.put(Integer.class, loadTypeConstant(typeConstantsClass, "INTEGER"));
+		hibernateTypeMap.put(Long.class, loadTypeConstant(typeConstantsClass, "LONG"));
+		hibernateTypeMap.put(Short.class, loadTypeConstant(typeConstantsClass, "SHORT"));
+		hibernateTypeMap.put(java.math.BigDecimal.class, loadTypeConstant(typeConstantsClass, "BIG_DECIMAL"));
+		hibernateTypeMap.put(java.math.BigInteger.class, loadTypeConstant(typeConstantsClass, "BIG_INTEGER"));
+		hibernateTypeMap.put(Character.class, loadTypeConstant(typeConstantsClass, "CHARACTER"));
+		hibernateTypeMap.put(String.class, loadTypeConstant(typeConstantsClass, "STRING"));
+		hibernateTypeMap.put(java.util.Date.class, loadTypeConstant(typeConstantsClass, "DATE"));
+		hibernateTypeMap.put(java.sql.Timestamp.class, loadTypeConstant(typeConstantsClass, "TIMESTAMP"));
+		hibernateTypeMap.put(java.sql.Time.class, loadTypeConstant(typeConstantsClass, "TIME"));
+	}
+	
+	private static final Type loadTypeConstant(Class<?> typeConstantsClass, String name)
+	{
+		try
+		{
+			Field constant = typeConstantsClass.getField(name);
+			if (!Modifier.isStatic(constant.getModifiers())
+					|| !Type.class.isAssignableFrom(constant.getType()))
+			{
+				throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNRESOLVED_TYPE_CONSTANT,
+					new Object[]{name, typeConstantsClass.getName()});
+			}
+			Type type = (Type) constant.get(null);
+			return type;
+		}
+		catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+		{
+			throw new JRRuntimeException(e);
+		}
 	}
 
 	private final Integer reportMaxCount;
@@ -120,14 +160,6 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 	}
 	
 	
-	/**
-	 * @deprecated Replaced by {@link #JRHibernateQueryExecuter(JasperReportsContext, JRDataset, Map)}. 
-	 */
-	public JRHibernateQueryExecuter(JRDataset dataset, Map<String, ? extends JRValueParameter> parameters)
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parameters);
-	}
-
 	@Override
 	protected String getCanonicalQueryLanguage()
 	{
@@ -140,6 +172,7 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 	 * {@link JRHibernateIterateDataSource JRHibernateIterateDataSource} or
 	 * {@link JRHibernateScrollDataSource JRHibernateScrollDataSource}, depending on the 
 	 */
+	@Override
 	public JRDataSource createDatasource() throws JRException
 	{
 		JRDataSource datasource = null;
@@ -182,8 +215,11 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 			}
 			catch (NumberFormatException e)
 			{
-				throw new JRRuntimeException("The " + JRHibernateQueryExecuterFactory.PROPERTY_HIBERNATE_QUERY_LIST_PAGE_SIZE +
-						" property must be numerical.", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_NUMERIC_TYPE_REQUIRED,
+						new Object[]{JRHibernateQueryExecuterFactory.PROPERTY_HIBERNATE_QUERY_LIST_PAGE_SIZE},
+						e);
 			}
 		}
 		else if (runType.equals(JRHibernateQueryExecuterFactory.VALUE_HIBERNATE_QUERY_RUN_TYPE_ITERATE))
@@ -196,10 +232,14 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 		}
 		else
 		{
-			throw new JRRuntimeException("Unknown value for the " + JRHibernateQueryExecuterFactory.PROPERTY_HIBERNATE_QUERY_RUN_TYPE +
-					" property.  Possible values are " + JRHibernateQueryExecuterFactory.VALUE_HIBERNATE_QUERY_RUN_TYPE_LIST + ", " +
-					JRHibernateQueryExecuterFactory.VALUE_HIBERNATE_QUERY_RUN_TYPE_ITERATE + " and " +
-					JRHibernateQueryExecuterFactory.VALUE_HIBERNATE_QUERY_RUN_TYPE_SCROLL + ".");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNKNOWN_QUERY_RUN_TYPE,
+					new Object[]{
+						JRHibernateQueryExecuterFactory.PROPERTY_HIBERNATE_QUERY_RUN_TYPE,
+						JRHibernateQueryExecuterFactory.VALUE_HIBERNATE_QUERY_RUN_TYPE_LIST,
+						JRHibernateQueryExecuterFactory.VALUE_HIBERNATE_QUERY_RUN_TYPE_ITERATE,
+						JRHibernateQueryExecuterFactory.VALUE_HIBERNATE_QUERY_RUN_TYPE_SCROLL});
 		}
 		
 		return resDatasource;
@@ -252,7 +292,7 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 		
 		if (!parameterNames.isEmpty())
 		{
-			Set<String> namesSet = new HashSet<String>();
+			Set<String> namesSet = new HashSet<>();
 			
 			for (Iterator<String> iter = parameterNames.iterator(); iter.hasNext();)
 			{
@@ -310,6 +350,7 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 	/**
 	 * Closes the scrollable result when <em>scroll</em> execution type is used.
 	 */
+	@Override
 	public synchronized void close()
 	{
 		closeScrollableResults();
@@ -337,6 +378,7 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 	}
 
 	
+	@Override
 	public synchronized boolean cancelQuery() throws JRException
 	{
 		if (queryRunning)
@@ -348,6 +390,7 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 		return false;
 	}
 
+	@Override
 	protected String getParameterReplacement(String parameterName)
 	{
 		return ':' + getHqlParameterName(parameterName);
@@ -424,7 +467,7 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 	{
 		if (reportMaxCount != null)
 		{
-			query.setMaxResults(reportMaxCount.intValue());
+			query.setMaxResults(reportMaxCount);
 		}
 	}
 	
@@ -438,9 +481,9 @@ public class JRHibernateQueryExecuter extends JRAbstractQueryExecuter
 	 */
 	public List<?> list(int firstIndex, int resultCount)
 	{
-		if (reportMaxCount != null && firstIndex + resultCount > reportMaxCount.intValue())
+		if (reportMaxCount != null && firstIndex + resultCount > reportMaxCount)
 		{
-			resultCount = reportMaxCount.intValue() - firstIndex;
+			resultCount = reportMaxCount - firstIndex;
 		}
 		
 		query.setFirstResult(firstIndex);

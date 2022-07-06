@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,11 @@ package net.sf.jasperreports.engine.base;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
+import net.sf.jasperreports.engine.ExpressionReturnValue;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
@@ -42,7 +46,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * summary, page header, page footer, last page footer, column header and column footer.
  * @see JRBaseSection
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseBand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEventsSupport
 {
@@ -56,7 +59,7 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 	/**
 	 *
 	 */
-	public static final String PROPERTY_SPLIT_TYPE = "splitType";
+	public static final String PROPERTY_splitType = "splitType";
 
 	/**
 	 *
@@ -70,6 +73,7 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 	protected JRExpression printWhenExpression;
 	
 	private JRPropertiesMap propertiesMap;
+	protected List<ExpressionReturnValue> returnValues;
 	
 
 	/**
@@ -84,57 +88,66 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 
 		printWhenExpression = factory.getExpression(band.getPrintWhenExpression());
 		this.propertiesMap = JRPropertiesMap.getPropertiesClone(band);
+
+		List<ExpressionReturnValue> bandReturnValues = band.getReturnValues();
+		if (bandReturnValues != null && !bandReturnValues.isEmpty())
+		{
+			this.returnValues = new ArrayList<>(bandReturnValues.size());
+			for (ExpressionReturnValue bandReturnValue : bandReturnValues)
+			{
+				BaseExpressionReturnValue returnValue = factory.getReturnValue(bandReturnValue);
+				this.returnValues.add(returnValue);
+			}
+		}
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public int getHeight()
 	{
 		return height;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public SplitTypeEnum getSplitTypeValue()
 	{
 		return splitTypeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setSplitType(SplitTypeEnum splitTypeValue)
 	{
 		SplitTypeEnum old = this.splitTypeValue;
 		this.splitTypeValue = splitTypeValue;
-		getEventSupport().firePropertyChange(JRBaseBand.PROPERTY_SPLIT_TYPE, old, this.splitTypeValue);
+		getEventSupport().firePropertyChange(JRBaseBand.PROPERTY_splitType, old, this.splitTypeValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getPrintWhenExpression()
 	{
 		return this.printWhenExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public List<ExpressionReturnValue> getReturnValues()
+	{
+		return returnValues == null ? null : Collections.unmodifiableList(returnValues);
+	}
+
+	@Override
 	public Object clone() 
 	{
 		JRBaseBand clone = (JRBaseBand)super.clone();
 		clone.printWhenExpression = JRCloneUtils.nullSafeClone(printWhenExpression);
 		clone.propertiesMap = JRPropertiesMap.getPropertiesClone(this);
+		clone.returnValues = JRCloneUtils.cloneList(returnValues);
 		clone.eventSupport = null;
 		return clone;
 	}
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -161,6 +174,7 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 	 */
 	private Byte splitType;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -178,11 +192,13 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 		}
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		if (propertiesMap == null)
@@ -192,6 +208,7 @@ public class JRBaseBand extends JRBaseElementGroup implements JRBand, JRChangeEv
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;

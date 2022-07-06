@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,8 +34,7 @@ import net.sf.jasperreports.engine.query.JRQueryExecuter;
 
 
 /**
- * @author Michael G�nther (m.guenther at users.sourceforge.net)
- * @version $Id: JRXmlaQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Michael Günther (m.guenther at users.sourceforge.net)
  */
 public class JRXmlaQueryExecuterFactory extends AbstractQueryExecuterFactory
 {
@@ -59,11 +58,13 @@ public class JRXmlaQueryExecuterFactory extends AbstractQueryExecuterFactory
 		PARAMETER_XMLA_PASSWORD, "java.lang.String",
 	};
 
+	@Override
 	public Object[] getBuiltinParameters()
 	{
 		return XMLA_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
@@ -73,6 +74,7 @@ public class JRXmlaQueryExecuterFactory extends AbstractQueryExecuterFactory
 		return new JRXmlaQueryExecuter(jasperReportsContext, dataset, parameters);
 	}
 
+	@Override
 	public boolean supportsQueryParameterType(String className)
 	{
 		return true;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -52,7 +52,9 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
@@ -64,20 +66,21 @@ import net.sf.jasperreports.olap.JRMdxQueryExecuterFactory;
 import net.sf.jasperreports.olap.JROlapDataSource;
 import net.sf.jasperreports.olap.result.JROlapResult;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 
 /**
  * @author Michael Gunther (m.guenther at users.sourceforge.net)
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
  * @author swood
- * @version $Id: JRXmlaQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 {
 
 	private static final Log log = LogFactory.getLog(JRXmlaQueryExecuter.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_XMLA_CANNOT_RETRIEVE_ELEMENT = "data.olap.xmla.cannot.retrieve.element";
+	public static final String EXCEPTION_MESSAGE_KEY_MESSAGE_CALL_FAILED = "data.olap.xmla.message.call.failed";
+	public static final String EXCEPTION_MESSAGE_KEY_XMLA_NO_LEVEL_NAME = "data.olap.xmla.no.level.name";
+	public static final String EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT = "data.olap.xmla.null.element";
 	
 	private static final String SLICER_AXIS_NAME = "SlicerAxis";
 	private static final String MDD_URI = "urn:schemas-microsoft-com:xml-analysis:mddataset";
@@ -110,20 +113,13 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 		parseQuery();
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JRXmlaQueryExecuter(JasperReportsContext, JRDataset, Map)}.
-	 */
-	public JRXmlaQueryExecuter(JRDataset dataset, Map<String, ? extends JRValueParameter> parametersMap)
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
-	}
-
 	@Override
 	protected String getCanonicalQueryLanguage()
 	{
 		return JRMdxQueryExecuterFactory.CANONICAL_LANGUAGE;
 	}
 
+	@Override
 	protected String getParameterReplacement(String parameterName)
 	{
 		return String.valueOf(getParameterValue(parameterName));
@@ -143,11 +139,7 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			xmlaResult = new JRXmlaResult();
 			parseResult(resultMessage);
 		}
-		catch (MalformedURLException e)
-		{
-			throw new JRRuntimeException(e);
-		}
-		catch (SOAPException e)
+		catch (MalformedURLException | SOAPException e)
 		{
 			throw new JRRuntimeException(e);
 		}
@@ -155,6 +147,7 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 		return xmlaResult;
 	}
 	
+	@Override
 	public JRDataSource createDatasource() throws JRException
 	{
 		getResult();
@@ -192,11 +185,13 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 		return soapUrl;
 	}
 
+	@Override
 	public boolean cancelQuery() throws JRException
 	{
 		return false;
 	}
 
+	@Override
 	public void close()
 	{
 		if (connection != null)
@@ -220,11 +215,7 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			SOAPConnectionFactory scf = SOAPConnectionFactory.newInstance();
 			return scf.createConnection();
 		}
-		catch (UnsupportedOperationException e)
-		{
-			throw new JRRuntimeException(e);
-		}
-		catch (SOAPException e)
+		catch (UnsupportedOperationException | SOAPException e)
 		{
 			throw new JRRuntimeException(e);
 		}
@@ -274,7 +265,7 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			// <AxisFormat>TupleFormat</AxisFormat>
 			// </PropertyList>
 			// </Properties>
-			Map<String, String> paraList = new HashMap<String, String>();
+			Map<String, String> paraList = new HashMap<>();
 			String datasource = (String) getParameterValue(JRXmlaQueryExecuterFactory.PARAMETER_XMLA_DATASOURCE);
 			paraList.put("DataSourceInfo", datasource);
 			String catalog = (String) getParameterValue(JRXmlaQueryExecuterFactory.PARAMETER_XMLA_CATALOG);
@@ -333,7 +324,11 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 		}
 		catch (SOAPException e)
 		{
-			throw new JRRuntimeException("Message-Call failed.", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_MESSAGE_CALL_FAILED,
+					(Object[])null,
+					e);
 		}
 	}
 
@@ -370,13 +365,19 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			Object eObj = responseElements.next();
 			if (eObj == null)
 			{
-				throw new JRRuntimeException("ExecuteResponse Element is null.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT,
+						new Object[]{"ExecuteResponse"});
 			}
 			eElement = (SOAPElement) eObj;
 		}
 		else
 		{
-			throw new JRRuntimeException("Could not retrieve ExecuteResponse Element.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_XMLA_CANNOT_RETRIEVE_ELEMENT,
+					new Object[]{"ExecuteResponse"});
 		}
 
 		// Get the return-Node
@@ -388,7 +389,10 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			Object eObj = returnElements.next();
 			if (eObj == null)
 			{
-				throw new JRRuntimeException("return Element is null.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT,
+						new Object[]{"return"});
 			}
 			returnElement = (SOAPElement) eObj;
 		}
@@ -402,13 +406,19 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 				Object eObj = returnElements.next();
 				if (eObj == null)
 				{
-					throw new JRRuntimeException("return Element is null.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT,
+							new Object[]{"return"});
 				}
 				returnElement = (SOAPElement) eObj;
 			}
 			else
 			{
-				throw new JRRuntimeException("Could not retrieve return Element.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_CANNOT_RETRIEVE_ELEMENT,
+						new Object[]{"return"});
 			}
 		}
 
@@ -421,13 +431,19 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			Object eObj = rootElements.next();
 			if (eObj == null)
 			{
-				throw new JRRuntimeException("root Element is null.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT,
+						new Object[]{"root"});
 			}
 			rootElement = (SOAPElement) eObj;
 		}
 		else
 		{
-			throw new JRRuntimeException("Could not retrieve root Element.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_XMLA_CANNOT_RETRIEVE_ELEMENT,
+					new Object[]{"root"});
 		}
 		// Get the OlapInfo-Node
 		Name olapInfoName = soapEnvelope.createName("OlapInfo", "", MDD_URI);
@@ -438,13 +454,19 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			Object eObj = olapInfoElements.next();
 			if (eObj == null)
 			{
-				throw new JRRuntimeException("OlapInfo Element is null.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT,
+						new Object[]{"OlapInfo"});
 			}
 			olapInfoElement = (SOAPElement) eObj;
 		}
 		else
 		{
-			throw new JRRuntimeException("Could not retrieve OlapInfo Element.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_XMLA_CANNOT_RETRIEVE_ELEMENT,
+					new Object[]{"OlapInfo"});
 		}
 
 		parseOLAPInfoElement(olapInfoElement);
@@ -458,13 +480,19 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			Object eObj = axesElements.next();
 			if (eObj == null)
 			{
-				throw new JRRuntimeException("Axes Element is null");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT,
+						new Object[]{"Axes"});
 			}
 			axesElement = (SOAPElement) eObj;
 		}
 		else
 		{
-			throw new JRRuntimeException("Could not retrieve Axes Element.");
+			throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_XMLA_CANNOT_RETRIEVE_ELEMENT,
+				new Object[]{"Axes"});
 		}
 
 		parseAxesElement(axesElement);
@@ -478,20 +506,26 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			Object eObj = cellDataElements.next();
 			if (eObj == null)
 			{
-				throw new JRRuntimeException("CellData element is null");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT,
+						new Object[]{"CellData"});
 			}
 			cellDataElement = (SOAPElement) eObj;
 		}
 		else
 		{
-			throw new JRRuntimeException("Could not retrieve CellData Element.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_XMLA_CANNOT_RETRIEVE_ELEMENT,
+					new Object[]{"CellData"});
 		}
 		parseCellDataElement(cellDataElement);
 	}
 
 	protected void handleResultFault(SOAPFault fault)
 	{
-		StringBuffer errorMsg = new StringBuffer();
+		StringBuilder errorMsg = new StringBuilder();
 		errorMsg.append("XML/A fault: ");
 		
 		String faultString = fault.getFaultString();
@@ -533,13 +567,19 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 			Object axesObj = axesInfoElements.next();
 			if (axesObj == null)
 			{
-				throw new JRRuntimeException("AxisInfo Element is null.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_NULL_ELEMENT,
+						new Object[]{"AxesInfo"});
 			}
 			axesElement = (SOAPElement) axesObj;
 		}
 		else
 		{
-			throw new JRRuntimeException("Could not retrieve AxesInfo Element.");
+			throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_XMLA_CANNOT_RETRIEVE_ELEMENT,
+				new Object[]{"AxesInfo"});
 		}
 		
 		parseAxesInfoElement(axesElement);
@@ -637,15 +677,14 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 				String valueType = valueElement.getAttribute("xsi:type");
 				if (valueType.equals("xsd:int"))
 				{
-					value = new Long(valueElement.getValue());
+					value = Long.valueOf(valueElement.getValue());
 				}
-				else if (valueType.equals("xsd:double"))
+				else if (
+					valueType.equals("xsd:double")
+					|| valueType.equals("xsd:decimal")
+					)
 				{
-					value = new Double(valueElement.getValue());
-				}
-				else if (valueType.equals("xsd:decimal"))
-				{
-					value = new Double(valueElement.getValue());
+					value = Double.valueOf(valueElement.getValue());
 				}
 				else
 				{
@@ -671,7 +710,7 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 	{
 		SOAPElement errorElem = (SOAPElement) errorElems.next();
 		
-		StringBuffer errorMsg = new StringBuffer();
+		StringBuilder errorMsg = new StringBuilder();
 		errorMsg.append("Cell error: ");
 		
 		Iterator<?> descriptionElems = errorElem.getChildElements(sf.createName("Description", "", MDD_URI));
@@ -772,7 +811,10 @@ public class JRXmlaQueryExecuter extends JRAbstractQueryExecuter
 					}
 					else
 					{
-						throw new JRRuntimeException("No level name for: " + levelUniqueName);
+						throw 
+							new JRRuntimeException(
+								EXCEPTION_MESSAGE_KEY_XMLA_NO_LEVEL_NAME,
+								new Object[]{levelUniqueName});
 					}
 				}
 			}

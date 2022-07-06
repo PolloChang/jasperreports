@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -63,8 +63,8 @@ package net.sf.jasperreports.engine;
  * easily overcome restrictions of field-naming conventions when retrieving the field values
  * from the data source:
  * <pre>
- *   &lt;field name="PersonName" class="java.lang.String" isForPrompting="true"&gt;
- *     &lt;fieldDesciption>PERSON NAME&lt;/fieldDesciption&gt;
+ *   &lt;field name="PersonName" class="java.lang.String"
+ *     &lt;fieldDesciption&gt;PERSON NAME&lt;/fieldDesciption&gt;
  *   &lt;/field&gt;</pre>
  * The field description is less important than in previous versions of the library because
  * now even the field's name accepts dots, spaces, and other special characters.
@@ -76,7 +76,6 @@ package net.sf.jasperreports.engine;
  * additional information can be leveraged by query executer or data source
  * implementations.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRField.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRField extends JRPropertiesHolder, JRCloneable
 {
@@ -107,5 +106,12 @@ public interface JRField extends JRPropertiesHolder, JRCloneable
 	 */
 	public String getValueClassName();
 		
+	/**
+	 * Returns the list of dynamic/expression-based properties for this field.
+	 * 
+	 * @return an array containing the expression-based properties of this field
+	 */
+	public JRPropertyExpression[] getPropertyExpressions();
+
 
 }

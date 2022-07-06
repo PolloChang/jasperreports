@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.poi.ss.usermodel.Workbook;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
@@ -36,15 +39,10 @@ import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.JRXlsxDataSource;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.poi.ss.usermodel.Workbook;
-
 /**
  * XLS query executer implementation.
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRXlsxQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class JRXlsxQueryExecuter extends AbstractXlsQueryExecuter 
 {
@@ -60,19 +58,22 @@ public class JRXlsxQueryExecuter extends AbstractXlsQueryExecuter
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
 		Map<String,? extends JRValueParameter> parametersMap
+		)
+	{
+		this(SimpleQueryExecutionContext.of(jasperReportsContext), 
+				dataset, parametersMap);
+	}
+	
+	protected JRXlsxQueryExecuter(
+		QueryExecutionContext context, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parametersMap
 		) 
 	{
-		super(jasperReportsContext, dataset, parametersMap);
+		super(context, dataset, parametersMap);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JRXlsxQueryExecuter(JasperReportsContext, JRDataset, Map)}.
-	 */
-	protected JRXlsxQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
-	}
-
+	@Override
 	public JRDataSource createDatasource() throws JRException {
 		try {
 			@SuppressWarnings("deprecation")
@@ -109,7 +110,7 @@ public class JRXlsxQueryExecuter extends AbstractXlsQueryExecuter
 							xlsxSource = getStringParameterOrProperty(AbstractXlsQueryExecuterFactory.XLS_SOURCE);
 						}
 						if (xlsxSource != null) {
-							datasource = new JRXlsxDataSource(getJasperReportsContext(), xlsxSource);
+							datasource = new JRXlsxDataSource(getRepositoryContext(), xlsxSource);//TODO
 						} else {
 							if (log.isWarnEnabled()){
 								log.warn("No XLS source was provided.");

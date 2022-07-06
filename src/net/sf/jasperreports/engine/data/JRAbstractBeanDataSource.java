@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,19 +23,43 @@
  */
 package net.sf.jasperreports.engine.data;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.beanutils.NestedNullException;
+import org.apache.commons.beanutils.PropertyUtils;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRewindableDataSource;
-
-import org.apache.commons.beanutils.PropertyUtils;
+import net.sf.jasperreports.engine.query.JRHibernateQueryExecuterFactory;
+import net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractBeanDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractBeanDataSource implements JRRewindableDataSource
 {
+	
+	public static final String EXCEPTION_MESSAGE_KEY_BEAN_FIELD_VALUE_NOT_RETRIEVED = "data.bean.field.value.not.retrieved";
+
+	/**
+	 * Property specifying the JavaBean property name for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {JRHibernateQueryExecuterFactory.QUERY_EXECUTER_NAME, 
+					JRJpaQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+	)
+	public static final String PROPERTY_JAVABEAN_FIELD_PROPERTY = JRPropertiesUtil.PROPERTY_PREFIX + "javabean.field.property";
 	
 	/**
 	 * Field mapping that produces the current bean.
@@ -50,36 +74,57 @@ public abstract class JRAbstractBeanDataSource implements JRRewindableDataSource
 	 */
 	protected PropertyNameProvider propertyNameProvider;
 
-	protected static final PropertyNameProvider FIELD_NAME_PROPERTY_NAME_PROVIDER =
-		new PropertyNameProvider()
+	protected static class DefaultPropertyNameProvider implements PropertyNameProvider
+	{
+		private boolean isUseFieldDescription;
+		private Map<String, String> fieldPropertyNames = new HashMap<>();
+		
+		public DefaultPropertyNameProvider(boolean isUseFieldDescription)
 		{
-			public String getPropertyName(JRField field) 
-			{
-				return field.getName();
-			}
-		};
+			this.isUseFieldDescription = isUseFieldDescription;
+		}
+		
+		@Override
+		public String getPropertyName(JRField field) 
+		{
+			String fieldPropertyName = null;
 
-	protected static final PropertyNameProvider FIELD_DESCRIPTION_PROPERTY_NAME_PROVIDER =
-		new PropertyNameProvider()
-		{
-			public String getPropertyName(JRField field) 
+			if (fieldPropertyNames.containsKey(field.getName()))
 			{
-				if (field.getDescription() == null)
+				fieldPropertyName = fieldPropertyNames.get(field.getName());
+			}
+			else
+			{
+				if (field.hasProperties())
 				{
-					return field.getName();
+					fieldPropertyName = field.getPropertiesMap().getProperty(PROPERTY_JAVABEAN_FIELD_PROPERTY);
 				}
-				return field.getDescription();
+				
+				if (fieldPropertyName == null)
+				{
+					if (isUseFieldDescription && field.getDescription() != null)
+					{
+						fieldPropertyName = field.getDescription();
+					}
+					else
+					{
+						fieldPropertyName = field.getName();
+					}
+				}
+				
+				fieldPropertyNames.put(field.getName(), fieldPropertyName);
 			}
-		};
-
+			
+			return fieldPropertyName;
+		}
+	}
+		
 	/**
 	 *
 	 */
 	public JRAbstractBeanDataSource(boolean isUseFieldDescription)
 	{
-		propertyNameProvider = isUseFieldDescription ? 
-				FIELD_DESCRIPTION_PROPERTY_NAME_PROVIDER : 
-				FIELD_NAME_PROPERTY_NAME_PROVIDER;
+		propertyNameProvider = new DefaultPropertyNameProvider(isUseFieldDescription);
 	}
 	
 
@@ -110,25 +155,17 @@ public abstract class JRAbstractBeanDataSource implements JRRewindableDataSource
 			{
 				value = PropertyUtils.getProperty(bean, propertyName);
 			}
-			catch (java.lang.IllegalAccessException e)
+			catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e)
 			{
-				throw new JRException("Error retrieving field value from bean : " + propertyName, e);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_BEAN_FIELD_VALUE_NOT_RETRIEVED,
+						new Object[]{propertyName}, 
+						e);
 			}
-			catch (java.lang.reflect.InvocationTargetException e)
+			catch (NestedNullException e)
 			{
-				throw new JRException("Error retrieving field value from bean : " + propertyName, e);
-			}
-			catch (java.lang.NoSuchMethodException e)
-			{
-				throw new JRException("Error retrieving field value from bean : " + propertyName, e);
-			}
-			catch (IllegalArgumentException e)
-			{
-				//FIXME replace with NestedNullException when upgrading to BeanUtils 1.7
-				if (!e.getMessage().startsWith("Null property value for ")) 
-				{
-					throw e;
-				}
+				// deliberately to be ignored
 			}
 		}
 

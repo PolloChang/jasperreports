@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,11 +40,10 @@ import net.sf.jasperreports.engine.export.JRXmlExporter;
 import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleReportExportConfiguration;
-import net.sf.jasperreports.export.SimpleWriterExporterOutput;
+import net.sf.jasperreports.export.SimpleXmlExporterOutput;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XmlServlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XmlServlet extends BaseHttpServlet
 {
@@ -58,9 +57,7 @@ public class XmlServlet extends BaseHttpServlet
 	public static final String PAGE_INDEX_REQUEST_PARAMETER = "page";
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public void service(
 		HttpServletRequest request,
 		HttpServletResponse response
@@ -113,7 +110,7 @@ public class XmlServlet extends BaseHttpServlet
 		}
 		
 		Boolean isBuffered = Boolean.valueOf(request.getParameter(BaseHttpServlet.BUFFERED_OUTPUT_REQUEST_PARAMETER));
-		if (isBuffered.booleanValue())
+		if (isBuffered)
 		{
 			FileBufferedOutputStream fbos = new FileBufferedOutputStream();
 			JRXmlExporter exporter = getExporter();
@@ -127,7 +124,7 @@ public class XmlServlet extends BaseHttpServlet
 			{
 				configuration.setEndPageIndex(endPageIndex);
 			}
-			exporter.setExporterOutput(new SimpleWriterExporterOutput(fbos));
+			exporter.setExporterOutput(new SimpleXmlExporterOutput(fbos));
 
 			try 
 			{
@@ -200,7 +197,7 @@ public class XmlServlet extends BaseHttpServlet
 			}
 			
 			OutputStream outputStream = response.getOutputStream();
-			exporter.setExporterOutput(new SimpleWriterExporterOutput(outputStream));
+			exporter.setExporterOutput(new SimpleXmlExporterOutput(outputStream));
 
 			try 
 			{

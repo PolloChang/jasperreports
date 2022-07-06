@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,6 @@ import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 /**
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortComponentFill.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortComponentFill extends BaseFillComponent {
 
@@ -69,6 +68,7 @@ public class SortComponentFill extends BaseFillComponent {
 		return sortComponent.getEvaluationTime() == EvaluationTimeEnum.NOW;
 	}
 	
+	@Override
 	public void evaluate(byte evaluation) throws JRException
 	{
 		if (isEvaluateNow())
@@ -82,12 +82,14 @@ public class SortComponentFill extends BaseFillComponent {
 	}
 	
 	
+	@Override
 	public JRPrintElement fill()
 	{
 		printElement.setY(fillContext.getElementPrintY());
 		return printElement;
 	}
 
+	@Override
 	public FillPrepareResult prepare(int availableHeight)
 	{
 		FillPrepareResult result = null;
@@ -132,6 +134,7 @@ public class SortComponentFill extends BaseFillComponent {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public void evaluateDelayedElement(JRPrintElement element, byte evaluation) throws JRException
 	{
 		evaluateSortComponent(evaluation);
@@ -148,13 +151,13 @@ public class SortComponentFill extends BaseFillComponent {
 		if (sortComponent.getSymbolFont() != null ) {
 			printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_FONT_SIZE, String.valueOf(sortComponent.getSymbolFont().getFontsize()));
 		} 
-		if (sortComponent.getHandlerHorizontalAlign() != null) 
+		if (sortComponent.getHandlerHorizontalImageAlign() != null) 
 		{
-			printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalAlign().getName());
+			printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalImageAlign().getName());
 		}
-		if (sortComponent.getHandlerVerticalAlign() != null) 
+		if (sortComponent.getHandlerVerticalImageAlign() != null) 
 		{
-			printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalAlign().getName());
+			printElement.setParameterValue(SortElement.PARAMETER_SORT_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalImageAlign().getName());
 		}
 		
 		FilterTypesEnum filterType = getFilterType();

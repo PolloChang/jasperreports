@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,20 @@
  */
 package net.sf.jasperreports.search;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.JRConstants;
+
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: LuceneSpansInfo.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class LuceneSpansInfo implements SpansInfo{
+public class LuceneSpansInfo implements SpansInfo, Serializable {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	private Map<String, List<HitTermInfo>> hitTermsInfo;
 	private Map<String, Integer> hitTermsPerPage;
@@ -40,13 +44,13 @@ public class LuceneSpansInfo implements SpansInfo{
 
 	public LuceneSpansInfo(int termsPerQuery) {
 		this.termsPerQuery = termsPerQuery;
-		this.hitTermsInfo = new LinkedHashMap<String, List<HitTermInfo>>();
-		this.hitTermsPerPage = new LinkedHashMap<String, Integer>();
+		this.hitTermsInfo = new LinkedHashMap<>();
+		this.hitTermsPerPage = new LinkedHashMap<>();
 	}
 
 	public void addTermInfo(String key, HitTermInfo hitTermInfo) {
 		if (!hitTermsInfo.containsKey(key)) {
-			hitTermsInfo.put(key, new ArrayList<HitTermInfo>());
+			hitTermsInfo.put(key, new ArrayList<>());
 		}
 
 		if (!hitTermsPerPage.containsKey(hitTermInfo.getPageNo())) {

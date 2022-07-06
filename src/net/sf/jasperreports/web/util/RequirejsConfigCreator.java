@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,17 +29,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: RequirejsConfigCreator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RequirejsConfigCreator
 {
@@ -69,7 +66,7 @@ public class RequirejsConfigCreator
 		configRoot.put("baseUrl", contextPath);
 		
 		ObjectNode configPaths = objectMapper.createObjectNode();
-		configRoot.put("paths", configPaths);
+		configRoot.set("paths", configPaths);
 
 		setModuleMappings(jrContext, contextPath, configPaths);
 		runContributors(jrContext, contextPath, configRoot);
@@ -106,7 +103,7 @@ public class RequirejsConfigCreator
 	{
 		String configString = toConfigString(configRoot);
 		
-		Map<String, Object> contextMap = new HashMap<String, Object>();
+		Map<String, Object> contextMap = new HashMap<>();
 		contextMap.put("config", configString);
 		
 		// going through a template so that the final output is somewhat customizable
@@ -120,14 +117,6 @@ public class RequirejsConfigCreator
 		try
 		{
 			objectMapper.writeValue(outWriter, configRoot);
-		}
-		catch (JsonGenerationException e)
-		{
-			throw new JRRuntimeException(e);
-		}
-		catch (JsonMappingException e)
-		{
-			throw new JRRuntimeException(e);
 		}
 		catch (IOException e)
 		{

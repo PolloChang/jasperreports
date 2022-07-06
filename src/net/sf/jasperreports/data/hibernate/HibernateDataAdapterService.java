@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,21 +30,19 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Properties;
 
-import net.sf.jasperreports.data.AbstractDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.query.JRHibernateQueryExecuterFactory;
-import net.sf.jasperreports.engine.util.JRClassLoader;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import net.sf.jasperreports.data.AbstractClasspathAwareDataAdapterService;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.ParameterContributorContext;
+import net.sf.jasperreports.engine.query.JRHibernateQueryExecuterFactory;
+import net.sf.jasperreports.engine.util.JRClassLoader;
+
 /**
  * @author Veaceslov Chicu (schicu@users.sourceforge.net)
- * @version $Id: HibernateDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class HibernateDataAdapterService extends AbstractDataAdapterService {
+public class HibernateDataAdapterService extends AbstractClasspathAwareDataAdapterService {
 	private static final Log log = LogFactory
 			.getLog(HibernateDataAdapterService.class);
 	private Object session;
@@ -52,17 +50,9 @@ public class HibernateDataAdapterService extends AbstractDataAdapterService {
 	/**
 	 * 
 	 */
-	public HibernateDataAdapterService(JasperReportsContext jasperReportsContext, HibernateDataAdapter jsonDataAdapter) 
+	public HibernateDataAdapterService(ParameterContributorContext paramContribContext, HibernateDataAdapter jsonDataAdapter) 
 	{
-		super(jasperReportsContext, jsonDataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #HibernateDataAdapterService(JasperReportsContext, HibernateDataAdapter)}.
-	 */
-	public HibernateDataAdapterService(HibernateDataAdapter jsonDataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), jsonDataAdapter);
+		super(paramContribContext, jsonDataAdapter);
 	}
 
 	public HibernateDataAdapter getHibernateDataAdapter() {
@@ -74,11 +64,20 @@ public class HibernateDataAdapterService extends AbstractDataAdapterService {
 			throws JRException {
 		HibernateDataAdapter hbmDA = getHibernateDataAdapter();
 		if (hbmDA != null) {
+			ClassLoader oldThreadClassLoader = Thread.currentThread().getContextClassLoader();
+			
 			try {
-				Class<?> clazz = JRClassLoader
-						.loadClassForRealName("org.hibernate.cfg.Configuration");
+				Thread.currentThread().setContextClassLoader(getClassLoader(oldThreadClassLoader));		
+				
+				Class<?> clazz = null;
+				if (!hbmDA.isUseAnnotation()) {
+					clazz = JRClassLoader.loadClassForRealName("org.hibernate.cfg.Configuration");
+				}
+				else {
+					clazz = JRClassLoader.loadClassForRealName("org.hibernate.cfg.AnnotationConfiguration");
+				}
 				if (clazz != null) {
-					Object configure = clazz.newInstance();
+					Object configure = clazz.getDeclaredConstructor().newInstance();
 					if (configure != null) {
 						String xmlFileName = hbmDA.getXMLFileName();
 						if (xmlFileName != null && !xmlFileName.isEmpty()) {
@@ -98,24 +97,7 @@ public class HibernateDataAdapterService extends AbstractDataAdapterService {
 									propHibernate.getClass()).invoke(configure,
 									propHibernate);
 						}
-						if (hbmDA.isUseAnnotation()) {
-							try {// this one is optional
-								Class<?> anclazz = JRClassLoader
-										.loadClassForRealName("org.hibernate.cfg.AnnotationConfiguration");
-								Object conf = anclazz.newInstance();
-								conf.getClass()
-										.getMethod("configure", new Class[] {})
-										.invoke(conf, new Object[] {});
-
-								clazz.getMethod("setProperty", String.class,
-										String.class)
-										.invoke(configure,
-												"hibernate.connection.provider_class",
-												"com.jaspersoft.ireport.designer.connection.HibernateConnectionProvider");
-							} catch (Exception e) {
-								e.printStackTrace();
-							}
-						}
+						
 
 						Object bsf = clazz.getMethod("buildSessionFactory",
 								new Class[] {}).invoke(configure,
@@ -131,22 +113,12 @@ public class HibernateDataAdapterService extends AbstractDataAdapterService {
 										session);
 					}
 				}
-			} catch (IOException e) {
+			} catch (IOException | ClassNotFoundException | InstantiationException 
+				| IllegalAccessException | IllegalArgumentException | SecurityException 
+				| InvocationTargetException | NoSuchMethodException e) {
 				throw new JRException(e);
-			} catch (ClassNotFoundException e) {
-				throw new JRException(e);
-			} catch (InstantiationException e) {
-				throw new JRException(e);
-			} catch (IllegalAccessException e) {
-				throw new JRException(e);
-			} catch (IllegalArgumentException e) {
-				throw new JRException(e);
-			} catch (SecurityException e) {
-				throw new JRException(e);
-			} catch (InvocationTargetException e) {
-				throw new JRException(e);
-			} catch (NoSuchMethodException e) {
-				throw new JRException(e);
+			} finally {
+				Thread.currentThread().setContextClassLoader(oldThreadClassLoader);
 			}
 		}
 	}

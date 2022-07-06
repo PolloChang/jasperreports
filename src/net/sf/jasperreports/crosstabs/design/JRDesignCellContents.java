@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,14 +38,12 @@ import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.base.JRBaseStyle;
 import net.sf.jasperreports.engine.design.JRDesignElementGroup;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
 
 /**
  * Implementation of {@link net.sf.jasperreports.crosstabs.JRCellContents JRCellContents} used for
  * report design.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCellContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCellContents extends JRDesignElementGroup implements JRCellContents
 {
@@ -81,6 +79,7 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 		lineBox = new JRBaseLineBox(this);
 	}
 	
+	@Override
 	public Color getBackcolor()
 	{
 		return backcolor;
@@ -100,12 +99,14 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_BACKCOLOR, old, this.backcolor);
 	}
 
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
 	}
 	
 	
+	@Override
 	public int getHeight()
 	{
 		return height;
@@ -127,6 +128,7 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 		this.height = height;
 	}
 
+	@Override
 	public int getWidth()
 	{
 		return width;
@@ -144,11 +146,13 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 		this.width = width;
 	}
 
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return defaultStyleProvider;
 	}
 
+	@Override
 	public JRStyle getStyle()
 	{
 		return style;
@@ -170,6 +174,7 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 		getEventSupport().firePropertyChange(PROPERTY_STYLE, old, this.style);
 	}
 
+	@Override
 	public ModeEnum getModeValue()
 	{
 		return modeValue;
@@ -188,6 +193,7 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_MODE, old, this.modeValue);
 	}
 
+	@Override
 	public String getStyleNameReference()
 	{
 		return styleNameReference;
@@ -221,17 +227,13 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 		this.origin = origin;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return Color.black;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignCellContents clone = (JRDesignCellContents) super.clone();
@@ -249,11 +251,8 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 	 * @deprecated
 	 */
 	private Byte mode;
-	/**
-	 * @deprecated
-	 */
-	private net.sf.jasperreports.engine.JRBox box;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -264,23 +263,15 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 			
 			mode = null;
 		}
-
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setBoxToLineBox(
-				box,
-				lineBox
-				);
-			box = null;
-		}
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		if (propertiesMap == null)
@@ -290,6 +281,7 @@ public class JRDesignCellContents extends JRDesignElementGroup implements JRCell
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;

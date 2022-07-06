@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,25 +33,12 @@ import net.sf.jasperreports.extensions.ExtensionsRegistryFactory;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: WebResourceHandlersExtensionRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class WebResourceHandlersExtensionRegistryFactory implements ExtensionsRegistryFactory {
 
 	protected static List<?> getResourceHandlers() {
-		List<WebResourceHandler> extensions = new ArrayList<WebResourceHandler>();
+		List<WebResourceHandler> extensions = new ArrayList<>();
 
-		JiveWebResourceHandler jiveHandler = new JiveWebResourceHandler("net.sf.jasperreports.components.headertoolbar.messages");
-		jiveHandler.addMapping("jive.templates.tmpl", "net/sf/jasperreports/components/headertoolbar/resources/require/jive.templates.tmpl");
-		jiveHandler.addMapping("jive.vm.css", "net/sf/jasperreports/components/headertoolbar/resources/jive.vm.css");
-		jiveHandler.addMapping("jive.sort.vm.css", "net/sf/jasperreports/components/sort/resources/jive.sort.vm.css");
-		jiveHandler.addMapping("jive.filterDialog.tmpl", "net/sf/jasperreports/components/sort/resources/jive.filterDialog.tmpl");
-		jiveHandler.addMapping("jive.i18n.tmpl", "net/sf/jasperreports/components/headertoolbar/resources/require/jive.i18n.tmpl");
-
-		// crosstab resources
-		jiveHandler.addMapping("jive.crosstab.templates.styles.css", "net/sf/jasperreports/crosstabs/interactive/jive.crosstab.templates.styles.css");
-
-		extensions.add(jiveHandler);
-		
 		ImageWebResourceHandler imageHandler = new ImageWebResourceHandler();
 		extensions.add(imageHandler);
 		

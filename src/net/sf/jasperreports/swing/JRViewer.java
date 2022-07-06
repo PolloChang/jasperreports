@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,17 +40,19 @@ import java.util.ResourceBundle;
 
 import javax.swing.JOptionPane;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRViewer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 {
@@ -60,13 +62,20 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 	 * Maximum size (in pixels) of a buffered image that would be used by {@link JRViewer JRViewer} to render a report page.
 	 * <p>
 	 * If rendering a report page would require an image larger than this threshold
-	 * (i.e. image width x image height > maximum size), the report page will be rendered directly on the viewer component.
+	 * (i.e. image width x image height &gt; maximum size), the report page will be rendered directly on the viewer component.
 	 * </p>
 	 * <p>
 	 * If this property is zero or negative, buffered images will never be user to render a report page.
 	 * By default, this property is set to 0.
 	 * </p>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_OTHER,
+			defaultValue = "0",
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_1_2_8,
+			valueType = Integer.class
+			)
 	public static final String VIEWER_RENDER_BUFFER_MAX_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "viewer.render.buffer.max.size";
 
 	protected JRViewerController viewerContext;
@@ -232,15 +241,6 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 
 
 	/**
-	 * @deprecated Replaced by {@link #initViewerContext(JasperReportsContext, Locale, ResourceBundle)}.
-	 */
-	protected void initViewerContext(Locale locale, ResourceBundle resBundle)
-	{
-		initViewerContext(DefaultJasperReportsContext.getInstance(), locale, resBundle);
-	}
-
-	
-	/**
 	 *
 	 */
 	protected void initViewerContext(JasperReportsContext jasperReportsContext, Locale locale, ResourceBundle resBundle)
@@ -365,8 +365,8 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 			lblStatus.setText(
 				MessageFormat.format(
 					getBundleString("page"),
-					new Object[]{Integer.valueOf(viewerContext.getPageIndex() + 1), 
-						Integer.valueOf(viewerContext.getPageCount())}
+					new Object[]{viewerContext.getPageIndex() + 1, 
+						viewerContext.getPageCount()}
 					)
 				);
 		}
@@ -376,6 +376,7 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 		}
 	}
 	
+	@Override
 	public void viewerEvent(JRViewerEvent event)
 	{
 		switch (event.getCode())
@@ -386,6 +387,7 @@ public class JRViewer extends javax.swing.JPanel implements JRViewerListener
 		case JRViewerEvent.EVENT_REPORT_LOAD_FAILED:
 			JOptionPane.showMessageDialog(this, getBundleString("error.loading"));
 			break;
+		default:
 		}
 	}
 

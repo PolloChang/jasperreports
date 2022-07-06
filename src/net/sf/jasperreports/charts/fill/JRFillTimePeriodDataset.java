@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -50,10 +50,11 @@ import org.jfree.data.time.TimePeriodValuesCollection;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRFillTimePeriodDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTimePeriodDataset
 {
+
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME = "charts.time.period.dataset.series.null.name";
 
 	/**
 	 * 
@@ -88,11 +89,13 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 		}
 	}
 
+	@Override
 	public JRTimePeriodSeries[] getSeries()
 	{
 		return timePeriodSeries;
 	}
 
+	@Override
 	protected void customInitialize()
 	{
 		seriesNames = null;
@@ -101,6 +104,7 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 		itemHyperlinks = null;
 	}
 
+	@Override
 	protected void customEvaluate(JRCalculator calculator)
 			throws JRExpressionEvalException
 	{
@@ -113,16 +117,17 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 		}
 	}
 
+	@Override
 	protected void customIncrement()
 	{
 		if (timePeriodSeries != null && timePeriodSeries.length > 0)
 		{
 			if (seriesNames == null)
 			{
-				seriesNames = new ArrayList<Comparable<?>>();
-				seriesMap = new HashMap<Comparable<?>, TimePeriodValues>();
-				labelsMap = new HashMap<Comparable<?>, Map<TimePeriod, String>>();
-				itemHyperlinks = new HashMap<Comparable<?>, Map<TimePeriod, JRPrintHyperlink>>();
+				seriesNames = new ArrayList<>();
+				seriesMap = new HashMap<>();
+				labelsMap = new HashMap<>();
+				itemHyperlinks = new HashMap<>();
 			}
 
 			for (int i = 0; i < timePeriodSeries.length; i++)
@@ -132,7 +137,11 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 				Comparable<?> seriesName = crtTimePeriodSeries.getSeries();
 				if (seriesName == null)
 				{
-					throw new JRRuntimeException("Time period series name is null.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME,  
+							(Object[])null 
+							);
 				}
 
 				TimePeriodValues timePeriodValues = seriesMap.get(seriesName);
@@ -156,7 +165,7 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 					Map<TimePeriod, String> seriesLabels = labelsMap.get(seriesName);
 					if (seriesLabels == null)
 					{
-						seriesLabels = new HashMap<TimePeriod, String>();
+						seriesLabels = new HashMap<>();
 						labelsMap.put(seriesName, seriesLabels);
 					}
 					
@@ -168,7 +177,7 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 					Map<TimePeriod, JRPrintHyperlink> seriesLinks = itemHyperlinks.get(seriesName);
 					if (seriesLinks == null)
 					{
-						seriesLinks = new HashMap<TimePeriod, JRPrintHyperlink>();
+						seriesLinks = new HashMap<>();
 						itemHyperlinks.put(seriesName, seriesLinks);
 					}
 					
@@ -178,6 +187,7 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 		}
 	}
 
+	@Override
 	public Dataset getCustomDataset()
 	{
 		TimePeriodValuesCollection dataset = new TimePeriodValuesCollection();
@@ -192,25 +202,19 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 		return dataset;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public byte getDatasetType()
 	{
 		return JRChartDataset.TIMEPERIOD_DATASET;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object getLabelGenerator()
 	{
-		return new TimePeriodDatasetLabelGenerator(labelsMap);
+		return new TimePeriodDatasetLabelGenerator(labelsMap, getLocale());
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
@@ -237,6 +241,7 @@ public class JRFillTimePeriodDataset extends JRFillChartDataset implements JRTim
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

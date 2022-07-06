@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ package net.sf.jasperreports.engine;
  * 
  * @see net.sf.jasperreports.engine.JRHyperlink
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAnchor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRAnchor
 {
@@ -49,6 +48,13 @@ public interface JRAnchor
 	 * Returns an expression whose value represents the anchor name.
 	 */
 	public JRExpression getAnchorNameExpression();
+	
+	
+	/**
+	 * Returns an expression whose value represents the bookmark level (starting from 1) corresponding to this anchor. 
+	 * When the expression is set and its value is not null, it will override the value of the bookmarkLevel attribute.
+	 */
+	public JRExpression getBookmarkLevelExpression();
 
 	
 	/**

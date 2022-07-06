@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,25 +26,23 @@ package net.sf.jasperreports.engine;
 import java.util.Locale;
 import java.util.MissingResourceException;
 
+import net.sf.jasperreports.engine.util.MessageProvider;
 import net.sf.jasperreports.engine.util.MessageUtil;
-
 
 
 /**
  * General purpose JasperReports exception.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRException.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRException extends Exception
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
-	public static final String ERROR_MESSAGES_BUNDLE = "jasperreports_messages";
+	public static final String EXCEPTION_MESSAGES_BUNDLE = "jasperreports_messages";
+	public static final String EXCEPTION_MESSAGE_KEY_PREFIX = "net.sf.jasperreports.exception.";
 	
-	private Object[] args;
 	private String messageKey;
-	private String localizedMessage;
-	private boolean hasLocalizedMessage;
+	private Object[] args;
 
 
 	/**
@@ -77,12 +75,22 @@ public class JRException extends Exception
 	/**
 	 *
 	 */
-	public JRException(String messageKey, Object[] args, JasperReportsContext jasperReportsContext, Locale locale)
+	public JRException(String messageKey, Object[] args, Throwable t)
+	{
+		super(messageKey, t);
+		this.messageKey = messageKey;
+		this.args = args;
+	}
+
+
+	/**
+	 *
+	 */
+	public JRException(String messageKey, Object... args)
 	{
 		super(messageKey);
 		this.messageKey = messageKey;
 		this.args = args;
-		this.localizedMessage = resolveMessage(messageKey, args, jasperReportsContext, locale);
 	}
 
 
@@ -104,21 +112,22 @@ public class JRException extends Exception
 	}
 
 
-	/**
-	 *
-	 */
-	public boolean hasLocalizedMessage()
-	{
-		return hasLocalizedMessage;
-	}
-
-
 	@Override
 	public String getMessage()
 	{
-		if (hasLocalizedMessage)
+		return getMessage(null, null);
+	}
+
+
+	public String getMessage(JasperReportsContext jasperReportsContext, Locale locale)
+	{
+		if (messageKey != null)
 		{
-			return localizedMessage;
+			return 
+				resolveMessage(
+					jasperReportsContext == null ? DefaultJasperReportsContext.getInstance() : jasperReportsContext, 
+					locale == null ? Locale.getDefault() : locale
+					);
 		}
 		return super.getMessage();
 	}
@@ -127,21 +136,30 @@ public class JRException extends Exception
 	/**
 	 *
 	 */
-	protected String resolveMessage(String messageKey, Object[] args, JasperReportsContext jasperReportsContext, Locale locale)
+	protected String resolveMessage(JasperReportsContext jasperReportsContext, Locale locale)
 	{
 		if (messageKey != null)
 		{
 			try
 			{
-				hasLocalizedMessage = true;
-				return MessageUtil.getInstance(jasperReportsContext).getMessageProvider(ERROR_MESSAGES_BUNDLE).getMessage(messageKey, args, locale);
+				String bundleName = getMessageBundleName();
+				MessageProvider messageProvider = MessageUtil.getInstance(jasperReportsContext).getMessageProvider(bundleName);
+				return messageProvider.getMessage(getMessageKeyPrefix() + messageKey, args, locale);
 			}
 			catch (MissingResourceException e)
 			{
 			}
 		}
-		hasLocalizedMessage = false;
 		return messageKey;
 	}
 
+	protected String getMessageBundleName()
+	{
+		return EXCEPTION_MESSAGES_BUNDLE;
+	}
+	
+	protected String getMessageKeyPrefix()
+	{
+		return EXCEPTION_MESSAGE_KEY_PREFIX;
+	}
 }

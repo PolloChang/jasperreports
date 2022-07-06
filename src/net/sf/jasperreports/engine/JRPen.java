@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -48,19 +48,18 @@ import net.sf.jasperreports.engine.type.LineStyleEnum;
  * Can be accessed using the {@link #getLineColor()} method.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPen.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRPen
 {
 
-	public static final Float LINE_WIDTH_0 = new Float(0f);
-	public static final Float LINE_WIDTH_1 = new Float(1f);
+	public static final Float LINE_WIDTH_0 = 0f;
+	public static final Float LINE_WIDTH_1 = 1f;
 
 
 	/**
-	 * 
+	 *
 	 */
-	public JRStyleContainer getStyleContainer();
+	public JRPenContainer getPenContainer();
 
 	/**
 	 * 
@@ -80,8 +79,6 @@ public interface JRPen
 	 * Sets the line width.
 	 * @param lineWidth the line width
 	 */
-	public void setLineWidth(float lineWidth);
-
 	public void setLineWidth(Float lineWidth);
 
 	/**

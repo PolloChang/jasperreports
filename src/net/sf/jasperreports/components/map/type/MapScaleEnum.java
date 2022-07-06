@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,64 +23,41 @@
  */
 package net.sf.jasperreports.components.map.type;
 
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.type.EnumUtil;
-import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapScaleEnum.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
-public enum MapScaleEnum implements JREnum
+public enum MapScaleEnum implements NamedEnum
 {
 	/**
 	 * 
 	 */
-	ONE((byte)0, "1"),
+	ONE("1"),
 
 	/**
 	 * 
 	 */
-	TWO((byte)1, "2"),
+	TWO("2"),
 
 	/**
 	 * 
 	 */
-	FOUR((byte)2, "4");
+	FOUR("4");
 
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-	private final transient byte value;
 	private final transient String name;
 
-	private MapScaleEnum(byte value, String name)
+	private MapScaleEnum(String name)
 	{
-		this.value = value;
 		this.name = name;
 	}
 
-	/**
-	 *
-	 */
-	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
-	{
-		return value;
-	}
-	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -91,23 +68,6 @@ public enum MapScaleEnum implements JREnum
 	 */
 	public static MapScaleEnum getByName(String name)
 	{
-		return (MapScaleEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
-	
-	/**
-	 *
-	 */
-	public static MapScaleEnum getByValue(Byte value)
-	{
-		return (MapScaleEnum)EnumUtil.getByValue(values(), value);
-	}
-	
-	/**
-	 *
-	 */
-	public static MapScaleEnum getByValue(byte value)
-	{
-		return getByValue(new Byte(value));
-	}
-	
 }

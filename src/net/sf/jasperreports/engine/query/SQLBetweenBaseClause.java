@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,11 +43,14 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * </ul> 
  * </p>
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: SQLBetweenBaseClause.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public abstract class SQLBetweenBaseClause implements JRClauseFunction
 {
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_BETWEEN_CLAUSE_DB_COLUMN_TOKEN_MISSING = "query.between.clause.db.column.token.missing";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_BETWEEN_CLAUSE_LEFT_PARAMETER_TOKEN_MISSING = "query.between.clause.left.parameter.token.missing";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_BETWEEN_CLAUSE_NAME_TOKEN_MISSING = "query.between.clause.name.token.missing";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_BETWEEN_CLAUSE_RIGHT_PARAMETER_TOKEN_MISSING = "query.between.clause.right.parameter.token.missing";
 	
 	protected static final int POSITION_CLAUSE_ID = 0;
 	protected static final int POSITION_DB_COLUMN = 1;
@@ -71,20 +74,20 @@ public abstract class SQLBetweenBaseClause implements JRClauseFunction
 	 * <p>
 	 * The method constructs one of the following clauses:
 	 * <ul>
-	 * <li><code>(column > ? AND column < ?)</code> if the clause ID is <code>BETWEEN</code></li>
-	 * <li><code>(column >= ? AND column < ?)</code> if the clause ID is <code>[BETWEEN</code></li>
-	 * <li><code>(column > ? AND column <= ?)</code> if the clause ID is <code>BETWEEN]</code></li>
-	 * <li><code>(column >= ? AND column <= ?)</code> if the clause ID is <code>[BETWEEN]</code></li>
+	 * <li><code>(column &gt; ? AND column &lt; ?)</code> if the clause ID is <code>BETWEEN</code></li>
+	 * <li><code>(column &gt;= ? AND column &lt; ?)</code> if the clause ID is <code>[BETWEEN</code></li>
+	 * <li><code>(column &gt; ? AND column &lt;= ?)</code> if the clause ID is <code>BETWEEN]</code></li>
+	 * <li><code>(column &gt;= ? AND column &lt;= ?)</code> if the clause ID is <code>[BETWEEN]</code></li>
 	 * </ul> 
 	 * If the left member value is null, one of the following clauses will be generated:
 	 * <ul>
-	 * <li><code>column < ?</code> if the clause ID is <code>BETWEEN</code> or <code>BETWEEN</code></li>
-	 * <li><code>column <= ?</code> if the clause ID is <code>BETWEEN]</code> or <code>[BETWEEN]</code></li>
+	 * <li><code>column &lt; ?</code> if the clause ID is <code>BETWEEN</code> or <code>BETWEEN</code></li>
+	 * <li><code>column &lt;= ?</code> if the clause ID is <code>BETWEEN]</code> or <code>[BETWEEN]</code></li>
 	 * </ul> 
 	 * If the right member value is null, one of the following clauses will be generated:
 	 * <ul>
-	 * <li><code>column > ?</code> if the clause ID is <code>BETWEEN</code> or <code>BETWEEN]</code></li>
-	 * <li><code>column >= ?</code> if the clause ID is <code>[BETWEEN</code> or <code>[BETWEEN]</code></li>
+	 * <li><code>column &gt; ?</code> if the clause ID is <code>BETWEEN</code> or <code>BETWEEN]</code></li>
+	 * <li><code>column &gt;= ?</code> if the clause ID is <code>[BETWEEN</code> or <code>[BETWEEN]</code></li>
 	 * </ul> 
 	 * If the both left and right member values are null, the method generates a SQL clause that 
 	 * will always evaluate to true (e.g. <code>0 = 0</code>).
@@ -92,6 +95,7 @@ public abstract class SQLBetweenBaseClause implements JRClauseFunction
 	 * @param clauseTokens
 	 * @param queryContext
 	 */
+	@Override
 	public void apply(JRClauseTokens clauseTokens, JRQueryClauseContext queryContext)
 	{
 		String clauseId = clauseTokens.getToken(POSITION_CLAUSE_ID);
@@ -101,22 +105,34 @@ public abstract class SQLBetweenBaseClause implements JRClauseFunction
 
 		if (clauseId == null)
 		{
-			throw new JRRuntimeException("Missing clause name token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_BETWEEN_CLAUSE_NAME_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		if (col == null)
 		{
-			throw new JRRuntimeException("SQL LESS/GREATER clause missing DB column token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_BETWEEN_CLAUSE_DB_COLUMN_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		if (leftParam == null)
 		{
-			throw new JRRuntimeException("SQL LESS/GREATER clause missing left parameter token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_BETWEEN_CLAUSE_LEFT_PARAMETER_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		if (rightParam == null)
 		{
-			throw new JRRuntimeException("SQL LESS/GREATER clause missing right parameter token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_BETWEEN_CLAUSE_RIGHT_PARAMETER_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		ClauseFunctionParameterHandler leftParamHandler = createParameterHandler(queryContext, clauseId, leftParam, true);

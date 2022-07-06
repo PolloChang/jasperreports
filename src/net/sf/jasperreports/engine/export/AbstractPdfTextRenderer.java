@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,18 +23,19 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import java.text.AttributedCharacterIterator;
+
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
-
-import com.lowagie.text.Element;
-import com.lowagie.text.pdf.PdfContentByte;
+import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.StyledTextListWriter;
+import net.sf.jasperreports.export.pdf.PdfProducer;
+import net.sf.jasperreports.export.pdf.PdfTextAlignment;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractPdfTextRenderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractPdfTextRenderer extends AbstractTextRenderer
 {
@@ -42,27 +43,42 @@ public abstract class AbstractPdfTextRenderer extends AbstractTextRenderer
 	 * 
 	 */
 	protected JRPdfExporter pdfExporter;
-	protected PdfContentByte pdfContentByte;
-	protected int horizontalAlignment;
+	protected PdfProducer pdfProducer;
+	protected JRPdfExporterTagHelper tagHelper;
+	protected PdfTextAlignment horizontalAlignment;
 	protected float leftOffsetFactor;
 	protected float rightOffsetFactor;
 
 	
 	/**
-	 * @deprecated Replaced by {@link #AbstractPdfTextRenderer(JasperReportsContext, boolean)}.
+	 * @deprecated Replaced by {@link #AbstractPdfTextRenderer(JasperReportsContext, boolean, boolean, boolean)}.
 	 */
-	public AbstractPdfTextRenderer(boolean ignoreMissingFont)
+	public AbstractPdfTextRenderer(
+		JasperReportsContext jasperReportsContext, 
+		boolean ignoreMissingFont
+		)
 	{
-		this(DefaultJasperReportsContext.getInstance(), ignoreMissingFont);
+		this(jasperReportsContext, ignoreMissingFont, true, false);
 	}
 	
 	
 	/**
 	 * 
 	 */
-	public AbstractPdfTextRenderer(JasperReportsContext jasperReportsContext, boolean ignoreMissingFont)
+	public AbstractPdfTextRenderer(
+		JasperReportsContext jasperReportsContext, 
+		boolean ignoreMissingFont,
+		boolean defaultIndentFirstLine,
+		boolean defaultJustifyLastLine
+		)
 	{
-		super(jasperReportsContext, false, ignoreMissingFont);
+		super(
+			jasperReportsContext, 
+			false, 
+			ignoreMissingFont, 
+			defaultIndentFirstLine, 
+			defaultJustifyLastLine
+			);
 	}
 	
 	
@@ -71,25 +87,28 @@ public abstract class AbstractPdfTextRenderer extends AbstractTextRenderer
 	 */
 	public void initialize(
 		JRPdfExporter pdfExporter, 
-		PdfContentByte pdfContentByte,
-		JRPrintText text,
+		PdfProducer pdfProducer,
+		JRPdfExporterTagHelper tagHelper,
+		JRPrintText text, 
+		JRStyledText styledText, 
 		int offsetX,
 		int offsetY
 		)
 	{
 		this.pdfExporter = pdfExporter;
-		this.pdfContentByte = pdfContentByte;
+		this.pdfProducer = pdfProducer;
+		this.tagHelper = tagHelper;
 		
-		horizontalAlignment = Element.ALIGN_LEFT;
+		horizontalAlignment = PdfTextAlignment.LEFT;
 		leftOffsetFactor = 0f;
 		rightOffsetFactor = 0f;
 		
 		//FIXMETAB 0.2f was a fair approximation
-		switch (text.getHorizontalAlignmentValue())
+		switch (text.getHorizontalTextAlign())
 		{
 			case JUSTIFIED :
 			{
-				horizontalAlignment = Element.ALIGN_JUSTIFIED_ALL;
+				horizontalAlignment = PdfTextAlignment.JUSTIFIED;
 				leftOffsetFactor = 0f;
 				rightOffsetFactor = 0f;
 				break;
@@ -98,11 +117,11 @@ public abstract class AbstractPdfTextRenderer extends AbstractTextRenderer
 			{
 				if (text.getRunDirectionValue() == RunDirectionEnum.LTR)
 				{
-					horizontalAlignment = Element.ALIGN_RIGHT;
+					horizontalAlignment = PdfTextAlignment.RIGHT;
 				}
 				else
 				{
-					horizontalAlignment = Element.ALIGN_LEFT;
+					horizontalAlignment =  PdfTextAlignment.LEFT;
 				}
 				leftOffsetFactor = -0.2f;
 				rightOffsetFactor = 0f;
@@ -110,7 +129,7 @@ public abstract class AbstractPdfTextRenderer extends AbstractTextRenderer
 			}
 			case CENTER :
 			{
-				horizontalAlignment = Element.ALIGN_CENTER;
+				horizontalAlignment = PdfTextAlignment.CENTER;
 				leftOffsetFactor = -0.1f;
 				rightOffsetFactor = 0.1f;
 				break;
@@ -120,11 +139,11 @@ public abstract class AbstractPdfTextRenderer extends AbstractTextRenderer
 			{
 				if (text.getRunDirectionValue() == RunDirectionEnum.LTR)
 				{
-					horizontalAlignment = Element.ALIGN_LEFT;
+					horizontalAlignment = PdfTextAlignment.LEFT;
 				}
 				else
 				{
-					horizontalAlignment = Element.ALIGN_RIGHT;
+					horizontalAlignment = PdfTextAlignment.RIGHT;
 				}
 				leftOffsetFactor = 0f;
 				rightOffsetFactor = 0.2f;
@@ -132,6 +151,35 @@ public abstract class AbstractPdfTextRenderer extends AbstractTextRenderer
 			}
 		}
 
-		super.initialize(text, offsetX, offsetY);
+		super.initialize(text, styledText, offsetX, offsetY);
+	}
+	
+	@Override
+	protected StyledTextListWriter getListWriter()
+	{
+		return tagHelper.getListWriter();
+	}
+	
+	public abstract boolean addActualText();
+	
+	 @Override
+	protected void renderParagraph(
+		AttributedCharacterIterator allParagraphs, 
+		int paragraphStart,
+		String paragraphText
+		) 
+	 {
+		if (addActualText())
+		{
+			tagHelper.startText(paragraphText, text.getLinkType() != null);
+		}
+		else
+		{
+			tagHelper.startText(text.getLinkType() != null);
+		}
+		
+		super.renderParagraph(allParagraphs, paragraphStart, paragraphText);
+		
+		tagHelper.endText();
 	}
 }

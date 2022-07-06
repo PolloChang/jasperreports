@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,6 +38,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
@@ -58,10 +63,8 @@ import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
-import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.ElementGridCell;
@@ -78,22 +81,34 @@ import net.sf.jasperreports.engine.export.JRXmlExporter;
 import net.sf.jasperreports.engine.export.LengthUtil;
 import net.sf.jasperreports.engine.export.OccupiedGridCell;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZipEntry;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
-import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
+import net.sf.jasperreports.engine.type.ScaleImageEnum;
+import net.sf.jasperreports.engine.util.ExifOrientationEnum;
+import net.sf.jasperreports.engine.util.ImageUtil;
+import net.sf.jasperreports.engine.util.ImageUtil.Insets;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 import net.sf.jasperreports.engine.util.JRTextAttribute;
+import net.sf.jasperreports.engine.util.JRTypeSniffer;
+import net.sf.jasperreports.engine.util.Pair;
+import net.sf.jasperreports.engine.util.StyledTextWriteContext;
 import net.sf.jasperreports.export.DocxExporterConfiguration;
 import net.sf.jasperreports.export.DocxReportConfiguration;
+import net.sf.jasperreports.export.ExportInterruptedException;
 import net.sf.jasperreports.export.ExporterInputItem;
 import net.sf.jasperreports.export.OutputStreamExporterOutput;
 import net.sf.jasperreports.export.ReportExportConfiguration;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
@@ -109,22 +124,21 @@ import org.apache.commons.logging.LogFactory;
  * <li>Forcing the use of nested tables to render the content of frame elements using either
  * the {@link net.sf.jasperreports.export.DocxReportConfiguration#isFramesAsNestedTables() isFramesAsNestedTables()} 
  * exporter configuration flag or its corresponding exporter hint called
- * <code>net.sf.jasperreports.export.docx.frames.as.nested.tables</code>.</li>
+ * {@link net.sf.jasperreports.export.DocxReportConfiguration#PROPERTY_FRAMES_AS_NESTED_TABLES net.sf.jasperreports.export.docx.frames.as.nested.tables}.</li>
  * <li>Allowing table rows to adjust their height if more text is typed into their cells using
  * the Word editor. This is controlled using either the
  * {@link net.sf.jasperreports.export.DocxReportConfiguration#isFlexibleRowHeight() isFlexibleRowHeight()} 
  * exporter configuration flag, or its corresponding exporter hint called
- * <code>net.sf.jasperreports.export.docx.flexible.row.height</code>.</li>
+ * {@link net.sf.jasperreports.export.DocxReportConfiguration#PROPERTY_FLEXIBLE_ROW_HEIGHT net.sf.jasperreports.export.docx.flexible.row.height}.</li>
  * <li>Ignoring hyperlinks in generated documents if they are not intended for the DOCX output format. This can be 
  * customized using either the 
  * {@link net.sf.jasperreports.export.DocxReportConfiguration#isIgnoreHyperlink() isIgnoreHyperlink()} 
  * exporter configuration flag, or its corresponding exporter hint called
- * <code>net.sf.jasperreports.export.docx.ignore.hyperlinks</code></li>
+ * {@link net.sf.jasperreports.export.DocxReportConfiguration#PROPERTY_IGNORE_HYPERLINK net.sf.jasperreports.export.docx.ignore.hyperlink}</li>
  * </ul>
  * 
  * @see net.sf.jasperreports.export.DocxReportConfiguration
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRDocxExporter.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, DocxExporterConfiguration, OutputStreamExporterOutput, JRDocxExporterContext>
 {
@@ -136,18 +150,22 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	 */
 	public static final String DOCX_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "docx";
 	
-	protected static final String DOCX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.docx.";
-
-	/**
-	 * @deprecated Replaced by {@link DocxReportConfiguration#PROPERTY_IGNORE_HYPERLINK}.
-	 */
-	public static final String PROPERTY_IGNORE_HYPERLINK = DocxReportConfiguration.PROPERTY_IGNORE_HYPERLINK;
+	public static final String EXCEPTION_MESSAGE_KEY_COLUMN_COUNT_OUT_OF_RANGE = "export.docx.column.count.out.of.range";
+	
+	public static final String DOCX_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.docx.";
 
 	/**
 	 * This property is used to mark text elements as being hidden either for printing or on-screen display.
 	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_HIDDEN_TEXT = JRPropertiesUtil.PROPERTY_PREFIX + "export.docx.hidden.text";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.TEXT_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_7_6,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_HIDDEN_TEXT = DOCX_EXPORTER_PROPERTIES_PREFIX + "hidden.text";
 
 	/**
 	 *
@@ -168,7 +186,8 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	protected DocxDocumentHelper docHelper;
 	protected Writer docWriter;
 
-	protected Map<String, String> rendererToImagePathMap;
+	protected Map<String, Pair<String, ExifOrientationEnum>> rendererToImagePathMap;
+	protected RenderersCache renderersCache;
 //	protected Map imageMaps;
 
 	protected int reportIndex;
@@ -178,8 +197,10 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	protected int tableIndex;
 	protected boolean startPage;
 	protected String invalidCharReplacement;
+	protected PrintPageFormat pageFormat;
+	protected JRGridLayout pageGridLayout;
 
-	protected LinkedList<Color> backcolorStack = new LinkedList<Color>();
+	protected LinkedList<Color> backcolorStack = new LinkedList<>();
 	protected Color backcolor;
 
 	protected DocxRunHelper runHelper;
@@ -191,6 +212,11 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	protected String pageAnchor;
 	
 	protected DocxRelsHelper relsHelper;
+	protected PropsAppHelper appHelper;
+	protected PropsCoreHelper coreHelper;
+	protected DocxFontHelper docxFontHelper;
+	protected DocxFontTableHelper docxFontTableHelper;
+	protected DocxFontTableRelsHelper docxFontTableRelsHelper;
 	
 	boolean emptyPageState;
 	
@@ -204,6 +230,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 			this.tableHelper = tableHelper;
 		}
 		
+		@Override
 		public DocxTableHelper getTableHelper()
 		{
 			return tableHelper;
@@ -231,27 +258,21 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<DocxExporterConfiguration> getConfigurationInterface()
 	{
 		return DocxExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<DocxReportConfiguration> getItemConfigurationInterface()
 	{
 		return DocxReportConfiguration.class;
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	protected void ensureOutput()
 	{
@@ -267,9 +288,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public void exportReport() throws JRException
 	{
 		/*   */
@@ -303,7 +322,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	{
 		super.initExport();
 
-		rendererToImagePathMap = new HashMap<String,String>();
+		rendererToImagePathMap = new HashMap<>();//FIXMEIMAGE why this is reset at export and not report; are there any others?
 //		imageMaps = new HashMap();
 //		hyperlinksMap = new HashMap();
 	}
@@ -314,7 +333,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	{
 		super.initReport();
 		
-		if(jasperPrint.hasProperties() && jasperPrint.getPropertiesMap().containsProperty(JRXmlExporter.PROPERTY_REPLACE_INVALID_CHARS))
+		if (jasperPrint.hasProperties() && jasperPrint.getPropertiesMap().containsProperty(JRXmlExporter.PROPERTY_REPLACE_INVALID_CHARS))
 		{
 			// allows null values for the property
 			invalidCharReplacement = jasperPrint.getProperty(JRXmlExporter.PROPERTY_REPLACE_INVALID_CHARS);
@@ -332,6 +351,8 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 				filter, 
 				!configuration.isFramesAsNestedTables()
 				);
+
+		renderersCache = new RenderersCache(getJasperReportsContext());
 	}
 
 	
@@ -350,13 +371,59 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		relsHelper = new DocxRelsHelper(jasperReportsContext, docxZip.getRelsEntry().getWriter());
 		relsHelper.exportHeader();
 		
+		appHelper = new PropsAppHelper(jasperReportsContext, docxZip.getAppEntry().getWriter());
+		coreHelper = new PropsCoreHelper(jasperReportsContext, docxZip.getCoreEntry().getWriter());
+
+		appHelper.exportHeader();
+			
+		DocxExporterConfiguration configuration = getCurrentConfiguration();
+
+		String application = configuration.getMetadataApplication();
+		if( application == null )
+		{
+			application = "JasperReports Library version " + Package.getPackage("net.sf.jasperreports.engine").getImplementationVersion();
+		}
+		appHelper.exportProperty(PropsAppHelper.PROPERTY_APPLICATION, application);
+
+		coreHelper.exportHeader();
+		
+		String title = configuration.getMetadataTitle();
+		if (title != null)
+		{
+			coreHelper.exportProperty(PropsCoreHelper.PROPERTY_TITLE, title);
+		}
+		String subject = configuration.getMetadataSubject();
+		if (subject != null)
+		{
+			coreHelper.exportProperty(PropsCoreHelper.PROPERTY_SUBJECT, subject);
+		}
+		String author = configuration.getMetadataAuthor();
+		if (author != null)
+		{
+			coreHelper.exportProperty(PropsCoreHelper.PROPERTY_CREATOR, author);
+		}
+		String keywords = configuration.getMetadataKeywords();
+		if (keywords != null)
+		{
+			coreHelper.exportProperty(PropsCoreHelper.PROPERTY_KEYWORDS, keywords);
+		}
+
 		List<ExporterInputItem> items = exporterInput.getItems();
+
+		boolean isEmbedFonts = Boolean.TRUE.equals(configuration.isEmbedFonts());
+		
+		docxFontHelper = 
+			new DocxFontHelper(
+				jasperReportsContext, 
+				docxZip,
+				isEmbedFonts
+				);
 
 		DocxStyleHelper styleHelper = 
 			new DocxStyleHelper(
-				jasperReportsContext,
-				docxZip.getStylesEntry().getWriter(), 
-				getExporterKey()
+				this,
+				docxZip.getStylesEntry().getWriter(),
+				docxFontHelper
 				);
 		styleHelper.export(exporterInput);
 		styleHelper.close();
@@ -366,11 +433,21 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 				jasperReportsContext,
 				docxZip.getSettingsEntry().getWriter()
 				);
-		settingsHelper.export(jasperPrint);
+		settingsHelper.export(jasperPrint, isEmbedFonts);
 		settingsHelper.close();
 
-		runHelper = new DocxRunHelper(jasperReportsContext, docWriter, getExporterKey());
+		docxFontTableHelper = new DocxFontTableHelper(jasperReportsContext, docxZip.getFontTableEntry().getWriter());
+		docxFontTableHelper.exportHeader();
 		
+		docxFontTableRelsHelper = new DocxFontTableRelsHelper(jasperReportsContext, docxZip.getFontTableRelsEntry().getWriter());
+		docxFontTableRelsHelper.exportHeader();
+		
+		
+		runHelper = new DocxRunHelper(jasperReportsContext, docWriter, docxFontHelper);
+		
+		pageFormat = null;
+		PrintPageFormat oldPageFormat = null;
+
 		for(reportIndex = 0; reportIndex < items.size(); reportIndex++)
 		{
 			ExporterInputItem item = items.get(reportIndex);
@@ -392,17 +469,31 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 				{
 					if (Thread.interrupted())
 					{
-						throw new JRException("Current thread interrupted.");
+						throw new ExportInterruptedException();
 					}
 
 					page = pages.get(pageIndex);
 
+					pageFormat = jasperPrint.getPageFormat(pageIndex);
+					
+					if (oldPageFormat != null && oldPageFormat != pageFormat)
+					{
+						docHelper.exportSection(oldPageFormat, pageGridLayout, false);
+					}
+					
 					exportPage(page);
+
+					oldPageFormat = pageFormat;
 				}
 			}
 		}
 		
-		docHelper.exportFooter(jasperPrint);
+		if (oldPageFormat != null)
+		{
+			docHelper.exportSection(oldPageFormat, pageGridLayout, true);
+		}
+
+		docHelper.exportFooter();
 		docHelper.close();
 
 //		if ((hyperlinksMap != null && hyperlinksMap.size() > 0))
@@ -417,8 +508,21 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 //		}
 
 		relsHelper.exportFooter();
-
 		relsHelper.close();
+
+		appHelper.exportFooter();
+		appHelper.close();
+
+		coreHelper.exportFooter();
+		coreHelper.close();
+		
+		docxFontHelper.exportFonts();
+
+		docxFontTableHelper.exportFooter();
+		docxFontTableHelper.close();
+
+		docxFontTableRelsHelper.exportFooter();
+		docxFontTableRelsHelper.close();
 
 		docxZip.zipEntries(os);
 
@@ -435,19 +539,19 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		pageAnchor = JR_PAGE_ANCHOR_PREFIX + reportIndex + "_" + (pageIndex + 1);
 		
 		ReportExportConfiguration configuration = getCurrentItemConfiguration();
-		
-		JRGridLayout layout =
+
+		pageGridLayout =
 			new JRGridLayout(
 				nature,
 				page.getElements(),
-				jasperPrint.getPageWidth(),
-				jasperPrint.getPageHeight(),
+				pageFormat.getPageWidth(),
+				pageFormat.getPageHeight(),
 				configuration.getOffsetX() == null ? 0 : configuration.getOffsetX(), 
 				configuration.getOffsetY() == null ? 0 : configuration.getOffsetY(),
 				null //address
 				);
 
-		exportGrid(layout, null);
+		exportGrid(pageGridLayout, null);
 		
 		JRExportProgressMonitor progressMonitor = configuration.getProgressMonitor();
 		if (progressMonitor != null)
@@ -470,19 +574,25 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		int rowCount = grid.getRowCount();
 		if (rowCount > 0 && grid.getColumnCount() > 63)
 		{
-			throw new JRException("The DOCX format does not support more than 63 columns in a table.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_COLUMN_COUNT_OUT_OF_RANGE,  
+					new Object[]{grid.getColumnCount()} 
+					);
 		}
 		
 		// an empty page is encountered; 
 		// if it's the first one in a series of consecutive empty pages, emptyPageState == false, otherwise emptyPageState == true
-		if(rowCount == 0 && (pageIndex < endPageIndex || !emptyPageState))
+		if (rowCount == 0 && (pageIndex < endPageIndex || !emptyPageState))
 		{
 			tableHelper = 
 					new DocxTableHelper(
 						jasperReportsContext,
 						docWriter, 
 						xCuts,
-						false
+						false,
+						pageFormat,
+						frameIndex
 						);
 			int maxReportIndex = exporterInput.getItems().size() - 1;
 			
@@ -491,11 +601,6 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 					(pageIndex > startPageIndex && pageIndex < endPageIndex && !emptyPageState)
 					||(reportIndex < maxReportIndex && pageIndex == endPageIndex);
 			tableHelper.getParagraphHelper().exportEmptyPage(pageAnchor, bookmarkIndex, twice);
-			tableHelper.exportSection(
-					reportIndex < maxReportIndex && pageIndex == endPageIndex, 
-					jasperPrint.getPageWidth(), 
-					jasperPrint.getPageHeight()
-					);
 			bookmarkIndex++;
 			emptyPageState = true;
 			return;
@@ -506,7 +611,9 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 					jasperReportsContext,
 					docWriter, 
 					xCuts,
-					frameIndex == null && (reportIndex != 0 || pageIndex != startPageIndex)
+					frameIndex == null && (reportIndex != 0 || pageIndex != startPageIndex),
+					pageFormat,
+					frameIndex
 					);
 
 		tableHelper.exportHeader();
@@ -519,6 +626,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 			//int emptyCellWidth = 0;
 
 			boolean allowRowResize = false;
+			int maxTopPadding = 0; //for some strange reason, the top margin applies to all cells in the row
 			int maxBottomPadding = 0; //for some strange reason, the bottom margin affects the row height; subtracting it here
 			GridRow gridRow = grid.getRow(row);
 			int rowSize = gridRow.size();
@@ -526,13 +634,25 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 			{
 				JRExporterGridCell gridCell = gridRow.get(col);
 				JRLineBox box = gridCell.getBox();
-				if (
-					box != null 
-					&& box.getBottomPadding() != null 
-					&& maxBottomPadding < box.getBottomPadding().intValue()
-					)
+				if (box != null)
 				{
-					maxBottomPadding = box.getBottomPadding().intValue();
+					Integer topPadding = box.getTopPadding() + Math.round(box.getTopPen().getLineWidth());
+					if (
+						topPadding != null 
+						&& maxTopPadding < topPadding
+						)
+					{
+						maxTopPadding = topPadding;
+					}
+
+					Integer bottomPadding = box.getBottomPadding();
+					if (
+						bottomPadding != null 
+						&& maxBottomPadding < bottomPadding
+						)
+					{
+						maxBottomPadding = bottomPadding;
+					}
 				}
 				
 				allowRowResize = 
@@ -544,8 +664,14 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 							)
 						);
 			}
+			tableHelper.setRowMaxTopPadding(maxTopPadding);
+
 			int rowHeight = gridLayout.getRowHeight(row) - maxBottomPadding;
-			
+			if (row == 0 && frameIndex == null)
+			{
+				rowHeight -= Math.min(rowHeight, pageFormat.getTopMargin());
+			}
+
 			tableHelper.exportRowHeader(
 				rowHeight,
 				allowRowResize
@@ -566,14 +692,14 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 					OccupiedGridCell occupiedGridCell = (OccupiedGridCell)gridCell;
 					ElementGridCell elementGridCell = (ElementGridCell)occupiedGridCell.getOccupier();
 					tableHelper.exportOccupiedCells(elementGridCell, startPage, bookmarkIndex, pageAnchor);
-					if(startPage)
+					if (startPage)
 					{
 						// increment the bookmarkIndex for the first cell in the sheet, due to page anchor creation
 						bookmarkIndex++;
 					}
 					col += elementGridCell.getColSpan() - 1;
 				}
-				else if(gridCell.getType() == JRExporterGridCell.TYPE_ELEMENT_CELL)
+				else if (gridCell.getType() == JRExporterGridCell.TYPE_ELEMENT_CELL)
 				{
 					if (emptyCellColSpan > 0)
 					{
@@ -620,7 +746,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 					emptyCellColSpan++;
 					//emptyCellWidth += gridCell.getWidth();
 					tableHelper.exportEmptyCell(gridCell, 1, startPage, bookmarkIndex, pageAnchor);
-					if(startPage)
+					if (startPage)
 					{
 						// increment the bookmarkIndex for the first cell in the sheet, due to page anchor creation
 						bookmarkIndex++;
@@ -637,11 +763,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 			tableHelper.exportRowFooter();
 		}
 
-		tableHelper.exportFooter(
-			frameIndex == null && reportIndex != exporterInput.getItems().size() - 1 && pageIndex == endPageIndex , 
-			jasperPrint.getPageWidth(), 
-			jasperPrint.getPageHeight()
-			);
+		tableHelper.exportFooter();
 		// if a non-empty page was exported, the series of previous empty pages is ended
 		emptyPageState = false;
 	}
@@ -685,7 +807,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		
 		tableHelper.getCellHelper().exportHeader(line, gridCell);
 		tableHelper.getParagraphHelper().exportEmptyParagraph(startPage, bookmarkIndex, pageAnchor);
-		if(startPage)
+		if (startPage)
 		{
 			// increment the bookmarkIndex for the first cell in the sheet, due to page anchor creation
 			bookmarkIndex++;
@@ -709,7 +831,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		
 		tableHelper.getCellHelper().exportHeader(rectangle, gridCell);
 		tableHelper.getParagraphHelper().exportEmptyParagraph(startPage, bookmarkIndex, pageAnchor);
-		if(startPage)
+		if (startPage)
 		{
 			// increment the bookmarkIndex for the first cell in the sheet, due to page anchor creation
 			bookmarkIndex++;
@@ -733,7 +855,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		
 		tableHelper.getCellHelper().exportHeader(ellipse, gridCell);
 		tableHelper.getParagraphHelper().exportEmptyParagraph(startPage, bookmarkIndex, pageAnchor);
-		if(startPage)
+		if (startPage)
 		{
 			// increment the bookmarkIndex for the first cell in the sheet, due to page anchor creation
 			bookmarkIndex++;
@@ -769,7 +891,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		docHelper.write("     <w:p>\n");
 
 		tableHelper.getParagraphHelper().exportProps(text);
-		if(startPage)
+		if (startPage)
 		{
 			insertBookmark(pageAnchor, docHelper);
 		}
@@ -779,15 +901,28 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		}
 
 		boolean startedHyperlink = startHyperlink(text, true);
+		boolean isNewLineAsParagraph = false;
+		if (HorizontalTextAlignEnum.JUSTIFIED.equals(text.getHorizontalTextAlign()))
+		{
+			if (text.hasProperties() && text.getPropertiesMap().containsProperty(DocxReportConfiguration.PROPERTY_NEW_LINE_AS_PARAGRAPH))
+			{
+				isNewLineAsParagraph = getPropertiesUtil().getBooleanProperty(text, DocxReportConfiguration.PROPERTY_NEW_LINE_AS_PARAGRAPH, false);
+			}
+			else
+			{
+				isNewLineAsParagraph = getCurrentItemConfiguration().isNewLineAsParagraph();
+			}
+		}
 
 		if (textLength > 0)
 		{
 			exportStyledText(
-				text.getStyle(), 
+				getCurrentJasperPrint().getDefaultStyleProvider().getStyleResolver().getBaseStyle(text), 
 				styledText, 
 				getTextLocale(text),
 				getPropertiesUtil().getBooleanProperty(text, PROPERTY_HIDDEN_TEXT, false),
-				startedHyperlink
+				startedHyperlink, 
+				isNewLineAsParagraph
 				);
 		}
 
@@ -805,8 +940,10 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	/**
 	 *
 	 */
-	protected void exportStyledText(JRStyle style, JRStyledText styledText, Locale locale, boolean hiddenText, boolean startedHyperlink)
+	protected void exportStyledText(JRStyle style, JRStyledText styledText, Locale locale, boolean hiddenText, boolean startedHyperlink, boolean isNewLineJustified)
 	{
+		StyledTextWriteContext context = new StyledTextWriteContext();
+		
 		Color elementBackcolor = null;
 		Map<AttributedCharacterIterator.Attribute, Object> globalAttributes = styledText.getGlobalAttributes();
 		if (globalAttributes != null)
@@ -823,31 +960,46 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		while(runLimit < styledText.length() && (runLimit = iterator.getRunLimit()) <= styledText.length())
 		{
 			Map<Attribute,Object> attributes = iterator.getAttributes();
-			
-			boolean localHyperlink = false;
 
-			if (!startedHyperlink)
+			String runText = text.substring(iterator.getIndex(), runLimit);
+
+			context.next(attributes, runText);
+
+			if (context.listItemStartsWithNewLine() && !context.isListItemStart() && (context.isListItemEnd() || context.isListStart() || context.isListEnd()))
 			{
-				JRPrintHyperlink hyperlink = (JRPrintHyperlink)attributes.get(JRTextAttribute.HYPERLINK);
-				if (hyperlink != null)
-				{
-					localHyperlink = startHyperlink(hyperlink, true);
-				}
+				runText = runText.substring(1);
 			}
-			
-			runHelper.export(
-				style, 
-				iterator.getAttributes(), 
-				text.substring(iterator.getIndex(), runLimit),
-				locale,
-				hiddenText,
-				invalidCharReplacement,
-				elementBackcolor
-				);
-			
-			if (localHyperlink)
+
+			if (runText.length() > 0)
 			{
-				endHyperlink(true);
+				boolean localHyperlink = false;
+
+				if (!startedHyperlink)
+				{
+					JRPrintHyperlink hyperlink = (JRPrintHyperlink)attributes.get(JRTextAttribute.HYPERLINK);
+					if (hyperlink != null)
+					{
+						localHyperlink = startHyperlink(hyperlink, true);
+					}
+				}
+				
+				String bulletText = JRStyledTextUtil.getIndentedBulletText(context);
+				
+				runHelper.export(
+					style, 
+					attributes, 
+					(bulletText == null ? "" : bulletText) + runText,
+					locale,
+					hiddenText,
+					invalidCharReplacement,
+					elementBackcolor,
+					isNewLineJustified
+					);
+
+				if (localHyperlink)
+				{
+					endHyperlink(true);
+				}
 			}
 
 			iterator.setIndex(runLimit);
@@ -860,10 +1012,10 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	 */
 	public void exportImage(DocxTableHelper tableHelper, JRPrintImage image, JRExporterGridCell gridCell) throws JRException
 	{
-		int leftPadding = image.getLineBox().getLeftPadding().intValue();
-		int topPadding = image.getLineBox().getTopPadding().intValue();//FIXMEDOCX maybe consider border thickness
-		int rightPadding = image.getLineBox().getRightPadding().intValue();
-		int bottomPadding = image.getLineBox().getBottomPadding().intValue();
+		int leftPadding = image.getLineBox().getLeftPadding();
+		int topPadding = image.getLineBox().getTopPadding() + Math.round(image.getLineBox().getTopPen().getLineWidth()); // top border eats into cell space
+		int rightPadding = image.getLineBox().getRightPadding();
+		int bottomPadding = image.getLineBox().getBottomPadding();
 
 		int availableImageWidth = image.getWidth() - leftPadding - rightPadding;
 		availableImageWidth = availableImageWidth < 0 ? 0 : availableImageWidth;
@@ -873,300 +1025,368 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 
 		tableHelper.getCellHelper().exportHeader(image, gridCell);
 
-		docHelper.write("<w:p>");//FIXMEDOCX why is this here and not further down?
+		docHelper.write("<w:p>\n");//FIXMEDOCX why is this here and not further down?
+		tableHelper.getParagraphHelper().exportProps(image);
 
-		Renderable renderer = image.getRenderable();
+		Renderable renderer = image.getRenderer();
 
 		if (
-			renderer != null &&
-			availableImageWidth > 0 &&
-			availableImageHeight > 0
+			renderer != null
+			&& availableImageWidth > 0
+			&& availableImageHeight > 0
 			)
 		{
-			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
-			{
-				// Non-lazy image renderers are all asked for their image data at some point.
-				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
-			}
-		}
-		else
-		{
-			renderer = null;
-		}
-
-		if (renderer != null)
-		{
-			int width = availableImageWidth;
-			int height = availableImageHeight;
-
-			double normalWidth = availableImageWidth;
-			double normalHeight = availableImageHeight;
-
-			// Image load might fail.
-			Renderable tmpRenderer =
-				RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
-			// If renderer was replaced, ignore image dimension.
-			if (tmpRenderer == renderer && dimension != null)
-			{
-				normalWidth = dimension.getWidth();
-				normalHeight = dimension.getHeight();
-			}
-
-			double cropTop = 0;
-			double cropLeft = 0;
-			double cropBottom = 0;
-			double cropRight = 0;
+			InternalImageProcessor imageProcessor = 
+				new InternalImageProcessor(
+					image, 
+					gridCell,
+					availableImageWidth,
+					availableImageHeight
+					);
+				
+			InternalImageProcessorResult imageProcessorResult = null;
 			
-			switch (image.getScaleImageValue())
+			try
 			{
-				case FILL_FRAME :
+				imageProcessorResult = imageProcessor.process(renderer);
+			}
+			catch (Exception e)
+			{
+				Renderable onErrorRenderer = getRendererUtil().handleImageError(e, image.getOnErrorTypeValue());
+				if (onErrorRenderer != null)
 				{
-					width = availableImageWidth;
-					height = availableImageHeight;
-					break;
-				}
-				case CLIP :
-				{
-					if (normalWidth > availableImageWidth)
-					{
-						switch (image.getHorizontalAlignmentValue())
-						{
-							case RIGHT :
-							{
-								cropLeft = 65536 * (normalWidth - availableImageWidth) / normalWidth;
-								cropRight = 0;
-								break;
-							}
-							case CENTER :
-							{
-								cropLeft = 65536 * (- availableImageWidth + normalWidth) / normalWidth / 2;
-								cropRight = cropLeft;
-								break;
-							}
-							case LEFT :
-							default :
-							{
-								cropLeft = 0;
-								cropRight = 65536 * (normalWidth - availableImageWidth) / normalWidth;
-								break;
-							}
-						}
-						width = availableImageWidth;
-						cropLeft = cropLeft / 0.75d;
-						cropRight = cropRight / 0.75d;
-					}
-					else
-					{
-						width = (int)normalWidth;
-					}
-
-					if (normalHeight > availableImageHeight)
-					{
-						switch (image.getVerticalAlignmentValue())
-						{
-							case TOP :
-							{
-								cropTop = 0;
-								cropBottom = 65536 * (normalHeight - availableImageHeight) / normalHeight;
-								break;
-							}
-							case MIDDLE :
-							{
-								cropTop = 65536 * (normalHeight - availableImageHeight) / normalHeight / 2;
-								cropBottom = cropTop;
-								break;
-							}
-							case BOTTOM :
-							default :
-							{
-								cropTop = 65536 * (normalHeight - availableImageHeight) / normalHeight;
-								cropBottom = 0;
-								break;
-							}
-						}
-						height = availableImageHeight;
-						cropTop = cropTop / 0.75d;
-						cropBottom = cropBottom / 0.75d;
-					}
-					else
-					{
-						height = (int)normalHeight;
-					}
-
-					break;
-				}
-				case RETAIN_SHAPE :
-				default :
-				{
-					if (availableImageHeight > 0)
-					{
-						double ratio = normalWidth / normalHeight;
-
-						if( ratio > availableImageWidth / (double)availableImageHeight )
-						{
-							width = availableImageWidth;
-							height = (int)(width/ratio);
-
-						}
-						else
-						{
-							height = availableImageHeight;
-							width = (int)(ratio * height);
-						}
-					}
-				}
-			}
-
-			if(startPage)
-			{
-				insertBookmark(pageAnchor, docHelper);
-			}
-			if (image.getAnchorName() != null)
-			{
-				insertBookmark(image.getAnchorName(), docHelper);
-			}
-
-
-//			boolean startedHyperlink = startHyperlink(image,false);
-
-			docHelper.write("<w:r>\n"); 
-			docHelper.write("<w:drawing>\n");
-			docHelper.write("<wp:anchor distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" simplePos=\"0\" relativeHeight=\"0\" behindDoc=\"0\" locked=\"1\" layoutInCell=\"1\" allowOverlap=\"1\">");
-			docHelper.write("<wp:simplePos x=\"0\" y=\"0\"/>");
-			docHelper.write("<wp:positionH relativeFrom=\"column\"><wp:align>" + DocxParagraphHelper.getHorizontalAlignment(image.getHorizontalAlignmentValue()) + "</wp:align></wp:positionH>");
-			docHelper.write("<wp:positionV relativeFrom=\"line\"><wp:posOffset>0</wp:posOffset></wp:positionV>");
-//			docHelper.write("<wp:positionV relativeFrom=\"line\"><wp:align>" + CellHelper.getVerticalAlignment(new Byte(image.getVerticalAlignment())) + "</wp:align></wp:positionV>");
-			docHelper.write("<wp:extent cx=\"" + LengthUtil.emu(width) + "\" cy=\"" + LengthUtil.emu(height) + "\"/>\n");
-			docHelper.write("<wp:wrapNone/>");
-			int imageId = image.hashCode() > 0 ? image.hashCode() : -image.hashCode();
-			String rId = IMAGE_LINK_PREFIX + getElementIndex(gridCell);
-			docHelper.write("<wp:docPr id=\"" + imageId + "\" name=\"Picture\">\n");
-			if(getHyperlinkURL(image) != null)
-			{
-				docHelper.write("<a:hlinkClick xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" r:id=\"" + rId + "\"/>\n");
-			}
-			docHelper.write("</wp:docPr>\n");
-			docHelper.write("<a:graphic>\n");
-			docHelper.write("<a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">\n");
-			docHelper.write("<pic:pic>\n");
-			docHelper.write("<pic:nvPicPr><pic:cNvPr id=\"" + imageId + "\" name=\"Picture\"/><pic:cNvPicPr/></pic:nvPicPr>\n");
-			docHelper.write("<pic:blipFill>\n");
-
-			String imagePath = null;
-
-			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
-			{
-				imagePath = rendererToImagePathMap.get(renderer.getId());
-			}
-			else
-			{
-//				if (isLazy)//FIXMEDOCX learn how to link images
-//				{
-//					imagePath = ((JRImageRenderer)renderer).getImageLocation();
-//				}
-//				else
-//				{
-					JRPrintElementIndex imageIndex = getElementIndex(gridCell);
-
-					if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
-					{
-						renderer =
-							new JRWrappingSvgRenderer(
-								renderer,
-								new Dimension(image.getWidth(), image.getHeight()),
-								ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null
-								);
-					}
-
-					String mimeType = renderer.getImageTypeValue().getMimeType();
-					if (mimeType == null)
-					{
-						mimeType = ImageTypeEnum.JPEG.getMimeType();
-					}
-					String extension = mimeType.substring(mimeType.lastIndexOf('/') + 1);
-					String imageName = IMAGE_NAME_PREFIX + imageIndex.toString() + "." + extension;
-					
-					docxZip.addEntry(//FIXMEDOCX optimize with a different implementation of entry
-						new FileBufferedZipEntry(
-							"word/media/" + imageName,
-							renderer.getImageData(jasperReportsContext)
-							)
-						);
-					
-					relsHelper.exportImage(imageName);
-
-					imagePath = imageName;
-					//imagePath = "Pictures/" + imageName;
-//				}
-
-				rendererToImagePathMap.put(renderer.getId(), imagePath);
-			}
-
-			docHelper.write("<a:blip r:embed=\"" + imagePath + "\"/>");
-			docHelper.write("<a:srcRect");
-			if (cropLeft > 0)
-			{
-				docHelper.write(" l=\"" + (int)cropLeft + "\"");
-			}
-			if (cropTop > 0)
-			{
-				docHelper.write(" t=\"" + (int)cropTop + "\"");
-			}
-			if (cropRight > 0)
-			{
-				docHelper.write(" r=\"" + (int)cropRight + "\"");
-			}
-			if (cropBottom > 0)
-			{
-				docHelper.write(" b=\"" + (int)cropBottom + "\"");
-			}
-			docHelper.write("/>");
-			docHelper.write("<a:stretch><a:fillRect/></a:stretch>\n");
-			docHelper.write("</pic:blipFill>\n");
-			docHelper.write("<pic:spPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"" + LengthUtil.emu(width) + "\" cy=\"" + LengthUtil.emu(height) + "\"/>");
-			docHelper.write("</a:xfrm><a:prstGeom prst=\"rect\"></a:prstGeom></pic:spPr>\n");
-			docHelper.write("</pic:pic>\n");
-			docHelper.write("</a:graphicData>\n");
-			docHelper.write("</a:graphic>\n");
-			docHelper.write("</wp:anchor>\n");
-			docHelper.write("</w:drawing>\n");
-			docHelper.write("</w:r>"); 
-
-			String url =  getHyperlinkURL(image);
-
-			if(url != null)
-			{
-				String targetMode = "";
-				switch(image.getHyperlinkTypeValue())
-				{
-					case LOCAL_PAGE:
-					case LOCAL_ANCHOR:
-					{
-						relsHelper.exportImageLink(rId, "#"+url, targetMode);
-						break;
-					}
-					
-					case REMOTE_PAGE:
-					case REMOTE_ANCHOR:
-					case REFERENCE:
-					{
-						targetMode = " TargetMode=\"External\"";
-						relsHelper.exportImageLink(rId, url, targetMode);
-						break;
-					}
-					default:
-					{
-						break;
-					}
+					imageProcessorResult = imageProcessor.process(onErrorRenderer);
 				}
 			}
 			
-//			if(startedHyperlink)
-//			{
-//				endHyperlink(false);
-//			}
+			if (imageProcessorResult != null)
+			{
+				int renderWidth = availableImageWidth;
+				int renderHeight = availableImageHeight;
+				
+				float xoffset = 0;
+				float yoffset = 0;
+
+				double cropTop = 0;
+				double cropLeft = 0;
+				double cropBottom = 0;
+				double cropRight = 0;
+				
+				int angle = 0;
+				
+				switch (image.getScaleImageValue())
+				{
+					case FILL_FRAME :
+					{
+						switch (ImageUtil.getRotation(image.getRotation(), imageProcessorResult.exifOrientation))
+						{
+							case LEFT:
+								renderWidth = availableImageHeight;
+								renderHeight = availableImageWidth;
+								xoffset = (availableImageWidth - availableImageHeight) / 2;
+								yoffset = - (availableImageWidth - availableImageHeight) / 2;
+								angle = -90;
+								break;
+							case RIGHT:
+								renderWidth = availableImageHeight;
+								renderHeight = availableImageWidth;
+								xoffset = (availableImageWidth - availableImageHeight) / 2;
+								yoffset = - (availableImageWidth - availableImageHeight) / 2;
+								angle = 90;
+								break;
+							case UPSIDE_DOWN:
+								renderWidth = availableImageWidth;
+								renderHeight = availableImageHeight;
+								angle = 180;
+								break;
+							case NONE:
+							default:
+								renderWidth = availableImageWidth;
+								renderHeight = availableImageHeight;
+								angle = 0;
+								break;
+						}
+						break;
+					}
+					case CLIP :
+					{
+						double normalWidth = availableImageWidth;
+						double normalHeight = availableImageHeight;
+
+						Dimension2D dimension = imageProcessorResult.dimension;
+						if (dimension != null)
+						{
+							normalWidth = dimension.getWidth();
+							normalHeight = dimension.getHeight();
+						}
+
+						renderWidth = availableImageWidth;
+						renderHeight = availableImageHeight;
+
+						switch (ImageUtil.getRotation(image.getRotation(), imageProcessorResult.exifOrientation))
+						{
+							case LEFT:
+								if (dimension == null)
+								{
+									normalWidth = availableImageHeight;
+									normalHeight = availableImageWidth;
+								}
+								renderWidth = availableImageHeight;
+								renderHeight = availableImageWidth;
+								xoffset = (availableImageWidth - availableImageHeight) / 2;
+								yoffset = - (availableImageWidth - availableImageHeight) / 2;
+								cropLeft = ImageUtil.getXAlignFactor(image) * (availableImageHeight - normalWidth) / availableImageHeight;
+								cropRight = (1f - ImageUtil.getXAlignFactor(image)) * (availableImageHeight - normalWidth) / availableImageHeight;
+								cropTop = ImageUtil.getYAlignFactor(image) * (availableImageWidth - normalHeight) / availableImageWidth;
+								cropBottom = (1f - ImageUtil.getYAlignFactor(image)) * (availableImageWidth - normalHeight) / availableImageWidth;
+								angle = -90;
+								break;
+							case RIGHT:
+								if (dimension == null)
+								{
+									normalWidth = availableImageHeight;
+									normalHeight = availableImageWidth;
+								}
+								renderWidth = availableImageHeight;
+								renderHeight = availableImageWidth;
+								xoffset = (availableImageWidth - availableImageHeight) / 2;
+								yoffset = - (availableImageWidth - availableImageHeight) / 2;
+								cropLeft = ImageUtil.getXAlignFactor(image) * (availableImageHeight - normalWidth) / availableImageHeight;
+								cropRight = (1f - ImageUtil.getXAlignFactor(image)) * (availableImageHeight - normalWidth) / availableImageHeight;
+								cropTop = ImageUtil.getYAlignFactor(image) * (availableImageWidth - normalHeight) / availableImageWidth;
+								cropBottom = (1f - ImageUtil.getYAlignFactor(image)) * (availableImageWidth - normalHeight) / availableImageWidth;
+								angle = 90;
+								break;
+							case UPSIDE_DOWN:
+								cropLeft = ImageUtil.getXAlignFactor(image) * (availableImageWidth - normalWidth) / availableImageWidth;
+								cropRight = (1f - ImageUtil.getXAlignFactor(image)) * (availableImageWidth - normalWidth) / availableImageWidth;
+								cropTop = ImageUtil.getYAlignFactor(image) * (availableImageHeight - normalHeight) / availableImageHeight;
+								cropBottom = (1f - ImageUtil.getYAlignFactor(image)) * (availableImageHeight - normalHeight) / availableImageHeight;
+								angle = 180;
+								break;
+							case NONE:
+							default:
+								cropLeft = ImageUtil.getXAlignFactor(image) * (availableImageWidth - normalWidth) / availableImageWidth;
+								cropRight = (1f - ImageUtil.getXAlignFactor(image)) * (availableImageWidth - normalWidth) / availableImageWidth;
+								cropTop = ImageUtil.getYAlignFactor(image) * (availableImageHeight - normalHeight) / availableImageHeight;
+								cropBottom = (1f - ImageUtil.getYAlignFactor(image)) * (availableImageHeight - normalHeight) / availableImageHeight;
+								angle = 0;
+								break;
+						}
+
+						Insets exifCrop = ImageUtil.getExifCrop(image, imageProcessorResult.exifOrientation, cropTop, cropLeft, cropBottom, cropRight);
+						cropLeft = exifCrop.left;
+						cropRight = exifCrop.right;
+						cropTop = exifCrop.top;
+						cropBottom = exifCrop.bottom;
+
+						break;
+					}
+					case RETAIN_SHAPE :
+					default :
+					{
+						double normalWidth = availableImageWidth;
+						double normalHeight = availableImageHeight;
+
+						Dimension2D dimension = imageProcessorResult.dimension;
+						if (dimension != null)
+						{
+							normalWidth = dimension.getWidth();
+							normalHeight = dimension.getHeight();
+						}
+
+						double ratioX = 1d;
+						double ratioY = 1d;
+
+						double imageWidth = availableImageWidth;
+						double imageHeight = availableImageHeight;
+
+						switch (ImageUtil.getRotation(image.getRotation(), imageProcessorResult.exifOrientation))
+						{
+							case LEFT:
+								if (dimension == null)
+								{
+									normalWidth = availableImageHeight;
+									normalHeight = availableImageWidth;
+								}
+								renderWidth = availableImageHeight;
+								renderHeight = availableImageWidth;
+								ratioX = availableImageWidth / normalHeight;
+								ratioY = availableImageHeight / normalWidth;
+								ratioX = ratioX < ratioY ? ratioX : ratioY;
+								ratioY = ratioX;
+								imageWidth = (int)(normalHeight * ratioX);
+								imageHeight = (int)(normalWidth * ratioY);
+								xoffset = (availableImageWidth - availableImageHeight) / 2;
+								yoffset = - (availableImageWidth - availableImageHeight) / 2;
+								cropLeft = ImageUtil.getXAlignFactor(image) * (availableImageHeight - imageHeight) / availableImageHeight;
+								cropRight = (1f - ImageUtil.getXAlignFactor(image)) * (availableImageHeight - imageHeight) / availableImageHeight;
+								cropTop = ImageUtil.getYAlignFactor(image) * (availableImageWidth - imageWidth) / availableImageWidth;
+								cropBottom = (1f - ImageUtil.getYAlignFactor(image)) * (availableImageWidth - imageWidth) / availableImageWidth;
+								angle = -90;
+								break;
+							case RIGHT:
+								if (dimension == null)
+								{
+									normalWidth = availableImageHeight;
+									normalHeight = availableImageWidth;
+								}
+								renderWidth = availableImageHeight;
+								renderHeight = availableImageWidth;
+								ratioX = availableImageWidth / normalHeight;
+								ratioY = availableImageHeight / normalWidth;
+								ratioX = ratioX < ratioY ? ratioX : ratioY;
+								ratioY = ratioX;
+								imageWidth = (int)(normalHeight * ratioX);
+								imageHeight = (int)(normalWidth * ratioY);
+								xoffset = (availableImageWidth - availableImageHeight) / 2;
+								yoffset = - (availableImageWidth - availableImageHeight) / 2;
+								cropLeft = ImageUtil.getXAlignFactor(image) * (availableImageHeight - imageHeight) / availableImageHeight;
+								cropRight = (1f - ImageUtil.getXAlignFactor(image)) * (availableImageHeight - imageHeight) / availableImageHeight;
+								cropTop = ImageUtil.getYAlignFactor(image) * (availableImageWidth - imageWidth) / availableImageWidth;
+								cropBottom = (1f - ImageUtil.getYAlignFactor(image)) * (availableImageWidth - imageWidth) / availableImageWidth;
+								angle = 90;
+								break;
+							case UPSIDE_DOWN:
+								renderWidth = availableImageWidth;
+								renderHeight = availableImageHeight;
+								ratioX = availableImageWidth / normalWidth;
+								ratioY = availableImageHeight / normalHeight;
+								ratioX = ratioX < ratioY ? ratioX : ratioY;
+								ratioY = ratioX;
+								imageWidth = (int)(normalWidth * ratioX);
+								imageHeight = (int)(normalHeight * ratioY);
+								cropLeft = ImageUtil.getXAlignFactor(image) * (availableImageWidth - imageWidth) / availableImageWidth;
+								cropRight = (1f - ImageUtil.getXAlignFactor(image)) * (availableImageWidth - imageWidth) / availableImageWidth;
+								cropTop = ImageUtil.getYAlignFactor(image) * (availableImageHeight - imageHeight) / availableImageHeight;
+								cropBottom = (1f - ImageUtil.getYAlignFactor(image)) * (availableImageHeight - imageHeight) / availableImageHeight;
+								angle = 180;
+								break;
+							case NONE:
+							default:
+								renderWidth = availableImageWidth;
+								renderHeight = availableImageHeight;
+								ratioX = availableImageWidth / normalWidth;
+								ratioY = availableImageHeight / normalHeight;
+								ratioX = ratioX < ratioY ? ratioX : ratioY;
+								ratioY = ratioX;
+								imageWidth = (int)(normalWidth * ratioX);
+								imageHeight = (int)(normalHeight * ratioY);
+								cropLeft = ImageUtil.getXAlignFactor(image) * (availableImageWidth - imageWidth) / availableImageWidth;
+								cropRight = (1f - ImageUtil.getXAlignFactor(image)) * (availableImageWidth - imageWidth) / availableImageWidth;
+								cropTop = ImageUtil.getYAlignFactor(image) * (availableImageHeight - imageHeight) / availableImageHeight;
+								cropBottom = (1f - ImageUtil.getYAlignFactor(image)) * (availableImageHeight - imageHeight) / availableImageHeight;
+								angle = 0;
+								break;
+						}
+
+						Insets exifCrop = ImageUtil.getExifCrop(image, imageProcessorResult.exifOrientation, cropTop, cropLeft, cropBottom, cropRight);
+						cropLeft = exifCrop.left;
+						cropRight = exifCrop.right;
+						cropTop = exifCrop.top;
+						cropBottom = exifCrop.bottom;
+					}
+				}
+
+				if (startPage)
+				{
+					insertBookmark(pageAnchor, docHelper);
+				}
+				if (image.getAnchorName() != null)
+				{
+					insertBookmark(image.getAnchorName(), docHelper);
+				}
+
+
+//				boolean startedHyperlink = startHyperlink(image,false);
+
+				docHelper.write("<w:r>\n"); 
+				docHelper.write("<w:rPr/>\n"); 
+				docHelper.write("<w:drawing>\n");
+				docHelper.write("<wp:anchor distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" simplePos=\"0\" "
+					+ "relativeHeight=\"0\" behindDoc=\"0\" locked=\"0\" layoutInCell=\"1\" allowOverlap=\"1\">\n");
+				docHelper.write("<wp:simplePos x=\"0\" y=\"0\"/>\n");
+				docHelper.write("<wp:positionH relativeFrom=\"column\">\n");
+				docHelper.write("<wp:posOffset>" + LengthUtil.emu(xoffset) + "</wp:posOffset>\n");
+				docHelper.write("</wp:positionH>\n");
+				docHelper.write("<wp:positionV relativeFrom=\"paragraph\">\n");
+				docHelper.write("<wp:posOffset>" + LengthUtil.emu(yoffset + topPadding - tableHelper.getRowMaxTopPadding()) + "</wp:posOffset>\n");
+				docHelper.write("</wp:positionV>\n");
+				docHelper.write("<wp:extent cx=\"" + LengthUtil.emu(renderWidth) + "\" cy=\"" + LengthUtil.emu(renderHeight) + "\"/>\n");
+				docHelper.write("<wp:effectExtent l=\"0\" t=\"0\" r=\"0\" b=\"0\"/>\n");
+				docHelper.write("<wp:wrapNone/>\n");
+
+				int imageId = image.hashCode() > 0 ? image.hashCode() : -image.hashCode();
+				String rId = IMAGE_LINK_PREFIX + getElementIndex(gridCell);
+				docHelper.write("<wp:docPr id=\"" + imageId + "\" name=\"Picture\">\n");
+				if (getHyperlinkURL(image) != null)
+				{
+					docHelper.write("<a:hlinkClick xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" r:id=\"" + rId + "\"/>\n");
+				}
+				docHelper.write("</wp:docPr>\n");
+				docHelper.write("<a:graphic>\n");
+				docHelper.write("<a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">\n");
+				docHelper.write("<pic:pic>\n");
+				docHelper.write("<pic:nvPicPr><pic:cNvPr id=\"" + imageId + "\" name=\"Picture\"/><pic:cNvPicPr/></pic:nvPicPr>\n");
+				docHelper.write("<pic:blipFill>\n");
+
+				docHelper.write("<a:blip r:embed=\"" + imageProcessorResult.imagePath + "\"/>");
+				docHelper.write("<a:srcRect/>");
+				docHelper.write("<a:stretch><a:fillRect");
+				docHelper.write(" l=\"" + (int)(100000 * cropLeft) + "\"");
+				docHelper.write(" t=\"" + (int)(100000 * cropTop) + "\"");
+				docHelper.write(" r=\"" + (int)(100000 * cropRight) + "\"");
+				docHelper.write(" b=\"" + (int)(100000 * cropBottom) + "\"");
+				docHelper.write("/></a:stretch>\n");
+				docHelper.write("</pic:blipFill>\n");
+				docHelper.write("<pic:spPr>\n");
+				docHelper.write("  <a:xfrm rot=\"" + (60000 * angle) + "\">\n");
+				docHelper.write("    <a:off x=\"0\" y=\"0\"/>\n");
+				docHelper.write("    <a:ext cx=\"" + LengthUtil.emu(renderWidth) + "\" cy=\"" + LengthUtil.emu(renderHeight) + "\"/>");
+				docHelper.write("  </a:xfrm>\n");
+				docHelper.write("  <a:prstGeom prst=\"rect\"></a:prstGeom>\n");
+				docHelper.write("</pic:spPr>\n");
+				docHelper.write("</pic:pic>\n");
+				docHelper.write("</a:graphicData>\n");
+				docHelper.write("</a:graphic>\n");
+				docHelper.write("</wp:anchor>\n");
+				docHelper.write("</w:drawing>\n");
+				docHelper.write("</w:r>"); 
+
+				String url =  getHyperlinkURL(image);
+
+				if (url != null)
+				{
+					String targetMode = "";
+					switch(image.getHyperlinkTypeValue())
+					{
+						case LOCAL_PAGE:
+						case LOCAL_ANCHOR:
+						{
+							relsHelper.exportImageLink(rId, "#"+url.replaceAll("\\W", ""), targetMode);
+							break;
+						}
+						
+						case REMOTE_PAGE:
+						case REMOTE_ANCHOR:
+						case REFERENCE:
+						{
+							targetMode = " TargetMode=\"External\"";
+							relsHelper.exportImageLink(rId, url, targetMode);
+							break;
+						}
+						default:
+						{
+							break;
+						}
+					}
+				}
+				
+//				if (startedHyperlink)
+//				{
+//					endHyperlink(false);
+//				}
+			}
 		}
 
 		docHelper.write("</w:p>");
@@ -1174,6 +1394,129 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		tableHelper.getCellHelper().exportFooter();
 	}
 
+	private class InternalImageProcessor
+	{
+		private final JRPrintElement imageElement;
+		private final RenderersCache imageRenderersCache;
+		private final boolean needDimension; 
+		private final JRExporterGridCell cell;
+		private final int availableImageWidth;
+		private final int availableImageHeight;
+
+		protected InternalImageProcessor(
+			JRPrintImage imageElement,
+			JRExporterGridCell cell,
+			int availableImageWidth,
+			int availableImageHeight
+			)
+		{
+			this.imageElement = imageElement;
+			this.cell = cell;
+			this.imageRenderersCache = imageElement.isUsingCache() ? renderersCache : new RenderersCache(getJasperReportsContext());
+			this.needDimension = imageElement.getScaleImageValue() != ScaleImageEnum.FILL_FRAME; 
+			if (
+				imageElement.getRotation() == RotationEnum.LEFT
+				|| imageElement.getRotation() == RotationEnum.RIGHT
+				)
+			{
+				this.availableImageWidth = availableImageHeight;
+				this.availableImageHeight = availableImageWidth;
+			}
+			else
+			{
+				this.availableImageWidth = availableImageWidth;
+				this.availableImageHeight = availableImageHeight;
+			}
+		}
+		
+		private InternalImageProcessorResult process(Renderable renderer) throws JRException
+		{
+			if (renderer instanceof ResourceRenderer)
+			{
+				renderer = imageRenderersCache.getLoadedRenderer((ResourceRenderer)renderer);
+			}
+			
+			// check dimension first, to avoid caching renderers that might not be used eventually, due to their dimension errors 
+			Dimension2D dimension = null;
+			if (needDimension)
+			{
+				DimensionRenderable dimensionRenderer = imageRenderersCache.getDimensionRenderable(renderer);
+				dimension = dimensionRenderer == null ? null :  dimensionRenderer.getDimension(jasperReportsContext);
+			}
+			
+			ExifOrientationEnum exifOrientation = ExifOrientationEnum.NORMAL;
+			
+			String imagePath = null;
+
+//			if (image.isLazy()) //FIXMEDOCX learn how to link images				
+//			{
+//
+//			}
+//			else
+//			{
+				if (
+					renderer instanceof DataRenderable //we do not cache imagePath for non-data renderers because they render width different width/height each time
+					&& rendererToImagePathMap.containsKey(renderer.getId())
+					)
+				{
+					Pair<String, ExifOrientationEnum> imagePair = rendererToImagePathMap.get(renderer.getId());
+					imagePath = imagePair.first();
+					exifOrientation = imagePair.second();
+				}
+				else
+				{
+					JRPrintElementIndex imageIndex = getElementIndex(cell);
+
+					DataRenderable imageRenderer = 
+						getRendererUtil().getImageDataRenderable(
+							imageRenderersCache,
+							renderer,
+							new Dimension(availableImageWidth, availableImageHeight),
+							ModeEnum.OPAQUE == imageElement.getModeValue() ? imageElement.getBackcolor() : null
+							);
+
+					byte[] imageData = imageRenderer.getData(jasperReportsContext);
+					exifOrientation = ImageUtil.getExifOrientation(imageData);
+					String fileExtension = JRTypeSniffer.getImageTypeValue(imageData).getFileExtension();
+					String imageName = IMAGE_NAME_PREFIX + imageIndex.toString() + (fileExtension == null ? "" : ("." + fileExtension));
+					
+					docxZip.addEntry(//FIXMEDOCX optimize with a different implementation of entry
+						new FileBufferedZipEntry(
+							"word/media/" + imageName,
+							imageData
+							)
+						);
+					
+					relsHelper.exportImage(imageName);
+
+					imagePath = imageName;
+					//imagePath = "Pictures/" + imageName;
+
+					if (imageRenderer == renderer)
+					{
+						//cache imagePath only for true ImageRenderable instances because the wrapping ones render with different width/height each time
+						rendererToImagePathMap.put(renderer.getId(), new Pair<>(imagePath, exifOrientation));
+					}
+				}
+//			}
+
+			return new InternalImageProcessorResult(imagePath, dimension, exifOrientation);
+		}
+	}
+
+	private class InternalImageProcessorResult
+	{
+		protected final String imagePath;
+		protected final Dimension2D dimension;
+		protected final ExifOrientationEnum exifOrientation;
+		
+		protected InternalImageProcessorResult(String imagePath, Dimension2D dimension, ExifOrientationEnum exifOrientation)
+		{
+			this.imagePath = imagePath;
+			this.dimension = dimension;
+			this.exifOrientation = exifOrientation;
+		}
+	}
 
 	protected JRPrintElementIndex getElementIndex(JRExporterGridCell gridCell)
 	{
@@ -1187,7 +1530,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	}
 
 
-	/**
+	/*
 	 *
 	 *
 	protected void writeImageMap(String imageMapName, JRPrintHyperlink mainHyperlink, List imageMapAreas)
@@ -1221,7 +1564,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		int[] coords = area.getCoordinates();
 		if (coords != null && coords.length > 0)
 		{
-			StringBuffer coordsEnum = new StringBuffer(coords.length * 4);
+			StringBuilder coordsEnum = new StringBuilder(coords.length * 4);
 			coordsEnum.append(coords[0]);
 			for (int i = 1; i < coords.length; i++)
 			{
@@ -1261,6 +1604,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 			writer.write("\"");
 		}
 	}
+	*/
 
 
 	/**
@@ -1270,7 +1614,10 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	{
 		if (!imageName.startsWith(IMAGE_NAME_PREFIX))
 		{
-			throw new JRRuntimeException("Invalid image name: " + imageName);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_INVALID_IMAGE_NAME,
+					new Object[]{imageName});
 		}
 
 		return JRPrintElementIndex.parsePrintElementIndex(imageName.substring(IMAGE_NAME_PREFIX_LEGTH));
@@ -1360,57 +1707,6 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 		backcolor = backcolorStack.removeLast();
 	}
 
-
-//	private float getXAlignFactor(JRPrintImage image)
-//	{
-//		float xalignFactor = 0f;
-//		switch (image.getHorizontalAlignmentValue())
-//		{
-//			case RIGHT :
-//			{
-//				xalignFactor = 1f;
-//				break;
-//			}
-//			case CENTER :
-//			{
-//				xalignFactor = 0.5f;
-//				break;
-//			}
-//			case LEFT :
-//			default :
-//			{
-//				xalignFactor = 0f;
-//				break;
-//			}
-//		}
-//		return xalignFactor;
-//	}
-
-
-//	private float getYAlignFactor(JRPrintImage image)
-//	{
-//		float yalignFactor = 0f;
-//		switch (image.getVerticalAlignmentValue())
-//		{
-//			case BOTTOM :
-//			{
-//				yalignFactor = 1f;
-//				break;
-//			}
-//			case MIDDLE :
-//			{
-//				yalignFactor = 0.5f;
-//				break;
-//			}
-//			case TOP :
-//			default :
-//			{
-//				yalignFactor = 0f;
-//				break;
-//			}
-//		}
-//		return yalignFactor;
-//	}
 
 	protected boolean startHyperlink(JRPrintHyperlink link, boolean isText)
 	{
@@ -1511,7 +1807,7 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 					{
 						if (link.getHyperlinkAnchor() != null)
 						{
-							href = link.getHyperlinkAnchor();
+							href = link.getHyperlinkAnchor().replaceAll("\\W", "");
 						}
 						break;
 					}
@@ -1571,34 +1867,34 @@ public class JRDocxExporter extends JRAbstractExporter<DocxReportConfiguration, 
 	protected void insertBookmark(String bookmark, BaseHelper helper)
 	{
 		helper.write("<w:bookmarkStart w:id=\"" + bookmarkIndex);
-		helper.write("\" w:name=\"" + bookmark);
+		helper.write("\" w:name=\"" + (bookmark == null ? null : bookmark.replaceAll("\\W", "")));
 		helper.write("\"/><w:bookmarkEnd w:id=\"" + bookmarkIndex++);
 		helper.write("\"/>");
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	protected void ensureInput()
 	{
 		super.ensureInput();
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	protected JRStyledText getStyledText(JRPrintText textElement, boolean setBackcolor)
+	{
+		return styledTextUtil.getProcessedStyledText(textElement, 
+				setBackcolor ? allSelector : noBackcolorSelector, getExporterKey());
+	}
+
+	@Override
 	public String getExporterKey()
 	{
 		return DOCX_EXPORTER_KEY;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getExporterPropertiesPrefix()
 	{
 		return DOCX_EXPORTER_PROPERTIES_PREFIX;
 	}
-	
 }
 

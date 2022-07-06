@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,10 +33,11 @@ import net.sf.jasperreports.engine.data.IndexedDataSource;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ColumnValuesDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ColumnValuesDataSource implements JRRewindableDataSource, IndexedDataSource
 {
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_SNAPSHOT_FIELD_TYPE = "data.cache.invalid.snapshot.field.type";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_SUCH_SNAPSHOT_FIELD = "data.cache.no.such.snapshot.field";
 
 	private int size;
 	private int iteratorIndex;
@@ -49,7 +50,7 @@ public class ColumnValuesDataSource implements JRRewindableDataSource, IndexedDa
 			throw new IllegalArgumentException();
 		}
 		
-		iterators = new LinkedHashMap<String, ColumnValuesIterator>();
+		iterators = new LinkedHashMap<>();
 		
 		this.size = size;
 		for (int i = 0; i < fieldNames.length; i++)
@@ -65,6 +66,7 @@ public class ColumnValuesDataSource implements JRRewindableDataSource, IndexedDa
 		iteratorIndex = 0;
 	}
 	
+	@Override
 	public boolean next() throws JRException
 	{
 		if (iteratorIndex >= size)
@@ -81,25 +83,32 @@ public class ColumnValuesDataSource implements JRRewindableDataSource, IndexedDa
 		return true;
 	}
 
+	@Override
 	public Object getFieldValue(JRField field) throws DataSnapshotException
 	{
 		ColumnValuesIterator iterator = iterators.get(field.getName());
 		if (iterator == null)
 		{
-			throw new DataSnapshotException("Field " +  field.getName() + " not present in data snapshot");
+			throw 
+				new DataSnapshotException(
+					EXCEPTION_MESSAGE_KEY_NO_SUCH_SNAPSHOT_FIELD,
+					new Object[]{field.getName()});
 		}
 		
 		Object value = iterator.get();
 		
 		if (value != null && !field.getValueClass().isInstance(value))
 		{
-			throw new DataSnapshotException("Field " +  field.getName() + " of type " + field.getValueClassName()
-					+ " has snapshot value of type " + value.getClass().getName());
+			throw 
+				new DataSnapshotException(
+					EXCEPTION_MESSAGE_KEY_INVALID_SNAPSHOT_FIELD_TYPE,
+					new Object[]{field.getName(), field.getValueClassName(), value.getClass().getName()});
 		}
 		
 		return value;
 	}
 
+	@Override
 	public void moveFirst()
 	{
 		iteratorIndex = 0;
@@ -109,6 +118,7 @@ public class ColumnValuesDataSource implements JRRewindableDataSource, IndexedDa
 		}
 	}
 
+	@Override
 	public int getRecordIndex()
 	{
 		return iteratorIndex - 1;

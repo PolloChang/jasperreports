@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillLine.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillLine extends JRFillGraphicElement implements JRLine
 {
@@ -58,17 +57,13 @@ public class JRFillLine extends JRFillGraphicElement implements JRLine
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public LineDirectionEnum getDirectionValue()
 	{
 		return ((JRLine)this.parent).getDirectionValue();
 	}
 		
-	/**
-	 * 
-	 */
+	@Override
 	public void setDirection(LineDirectionEnum direction)
 	{
 		throw new UnsupportedOperationException();
@@ -82,6 +77,7 @@ public class JRFillLine extends JRFillGraphicElement implements JRLine
 		return (JRTemplateLine) getElementTemplate();
 	}
 
+	@Override
 	protected JRTemplateElement createElementTemplate()
 	{
 		return new JRTemplateLine(
@@ -92,9 +88,7 @@ public class JRFillLine extends JRFillGraphicElement implements JRLine
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void evaluate(
 		byte evaluation
 		) throws JRException
@@ -109,9 +103,7 @@ public class JRFillLine extends JRFillGraphicElement implements JRLine
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected JRPrintElement fill()
 	{
 		JRTemplatePrintLine printLine = new JRTemplatePrintLine(this.getJRTemplateLine(), printElementOriginator);
@@ -126,31 +118,26 @@ public class JRFillLine extends JRFillGraphicElement implements JRLine
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitLine(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void resolveElement (JRPrintElement element, byte evaluation)
 	{
 		// nothing
 	}
 
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillLine(this, factory);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,6 @@ import net.sf.jasperreports.engine.JRVisitor;
  * Abstract delegation visitor.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDelegationVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRDelegationVisitor implements JRVisitor
 {
@@ -71,71 +70,85 @@ public abstract class JRDelegationVisitor implements JRVisitor
 		return visitor;
 	}
 	
+	@Override
 	public void visitBreak(JRBreak breakElement)
 	{
 		visitor.visitBreak(breakElement);
 	}
 
+	@Override
 	public void visitChart(JRChart chart)
 	{
 		visitor.visitChart(chart);
 	}
 
+	@Override
 	public void visitCrosstab(JRCrosstab crosstab)
 	{
 		visitor.visitCrosstab(crosstab);
 	}
 
+	@Override
 	public void visitElementGroup(JRElementGroup elementGroup)
 	{
 		visitor.visitElementGroup(elementGroup);
 	}
 
+	@Override
 	public void visitEllipse(JREllipse ellipse)
 	{
 		visitor.visitEllipse(ellipse);
 	}
 
+	@Override
 	public void visitFrame(JRFrame frame)
 	{
 		visitor.visitFrame(frame);
 	}
 
+	@Override
 	public void visitImage(JRImage image)
 	{
 		visitor.visitImage(image);
 	}
 
+	@Override
 	public void visitLine(JRLine line)
 	{
 		visitor.visitLine(line);
 	}
 
+	@Override
 	public void visitRectangle(JRRectangle rectangle)
 	{
 		visitor.visitRectangle(rectangle);
 	}
 
+	@Override
 	public void visitStaticText(JRStaticText staticText)
 	{
 		visitor.visitStaticText(staticText);
 	}
 
+	@Override
 	public void visitSubreport(JRSubreport subreport)
 	{
 		visitor.visitSubreport(subreport);
 	}
 
+	@Override
 	public void visitTextField(JRTextField textField)
 	{
 		visitor.visitTextField(textField);
 	}
 
+	@Override
 	public void visitComponentElement(JRComponentElement componentElement)
 	{
 		visitor.visitComponentElement(componentElement);
 	}
 
+	@Override
 	public void visitGenericElement(JRGenericElement element)
 	{
 		visitor.visitGenericElement(element);

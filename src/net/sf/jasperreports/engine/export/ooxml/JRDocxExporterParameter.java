@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.engine.export.ooxml;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.export.DocxExporterConfiguration;
 import net.sf.jasperreports.export.DocxReportConfiguration;
 
@@ -31,9 +30,8 @@ import net.sf.jasperreports.export.DocxReportConfiguration;
 /**
  * @deprecated Replaced by {@link DocxExporterConfiguration}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDocxExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRDocxExporterParameter extends JRExporterParameter
+public class JRDocxExporterParameter extends net.sf.jasperreports.engine.JRExporterParameter
 {
 
 
@@ -53,21 +51,9 @@ public class JRDocxExporterParameter extends JRExporterParameter
 	
 
 	/**
-	 * @deprecated Replaced by {@link DocxReportConfiguration#PROPERTY_FRAMES_AS_NESTED_TABLES}.
-	 */
-	public static final String PROPERTY_FRAMES_AS_NESTED_TABLES = DocxReportConfiguration.PROPERTY_FRAMES_AS_NESTED_TABLES;
-	
-
-	/**
 	 * @deprecated Replaced by {@link DocxReportConfiguration#isFlexibleRowHeight()}.
 	 */
 	public static final JRDocxExporterParameter FLEXIBLE_ROW_HEIGHT = new JRDocxExporterParameter("Flexible Row Height");
-	
-
-	/**
-	 * @deprecated Replaced by {@link DocxReportConfiguration#PROPERTY_FLEXIBLE_ROW_HEIGHT}.
-	 */
-	public static final String PROPERTY_FLEXIBLE_ROW_HEIGHT = DocxReportConfiguration.PROPERTY_FLEXIBLE_ROW_HEIGHT;
 	
 
 }

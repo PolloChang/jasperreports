@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,12 +27,11 @@ package net.sf.jasperreports.engine;
  * Virtualization helper class.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRVirtualizationHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRVirtualizationHelper
 {
-	private static final ThreadLocal<JRVirtualizer> threadVirtualizer = new ThreadLocal<JRVirtualizer>();
-	private static final ThreadLocal<JasperReportsContext> threadJasperReportsContext = new ThreadLocal<JasperReportsContext>();
+	private static final ThreadLocal<JRVirtualizer> threadVirtualizer = new ThreadLocal<>();
+	private static final ThreadLocal<JasperReportsContext> threadJasperReportsContext = new ThreadLocal<>();
 
 	
 	/**
@@ -54,7 +53,7 @@ public final class JRVirtualizationHelper
 	 */
 	public static void clearThreadVirtualizer()
 	{
-		threadVirtualizer.set(null);
+		threadVirtualizer.remove();
 	}
 
 	
@@ -91,7 +90,7 @@ public final class JRVirtualizationHelper
 	 */
 	public static void clearThreadJasperReportsContext()
 	{
-		threadJasperReportsContext.set(null);
+		threadJasperReportsContext.remove();
 	}
 
 	

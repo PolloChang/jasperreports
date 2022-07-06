@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRBaseHighLowDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseHighLowDataset extends JRBaseChartDataset implements JRHighLowDataset
 {
@@ -84,42 +83,48 @@ public class JRBaseHighLowDataset extends JRBaseChartDataset implements JRHighLo
 	}
 
 
-
+	@Override
 	public JRExpression getSeriesExpression()
 	{
 		return seriesExpression;
 	}
 
 
+	@Override
 	public JRExpression getDateExpression()
 	{
 		return dateExpression;
 	}
 
 
+	@Override
 	public JRExpression getHighExpression()
 	{
 		return highExpression;
 	}
 
 
+	@Override
 	public JRExpression getLowExpression()
 	{
 		return lowExpression;
 	}
 
 
+	@Override
 	public JRExpression getOpenExpression()
 	{
 		return openExpression;
 	}
 
 
+	@Override
 	public JRExpression getCloseExpression()
 	{
 		return closeExpression;
 	}
 
+	@Override
 	public JRExpression getVolumeExpression()
 	{
 		return volumeExpression;
@@ -129,35 +134,34 @@ public class JRBaseHighLowDataset extends JRBaseChartDataset implements JRHighLo
 	/* (non-Javadoc)
 	 * @see net.sf.jasperreports.engine.JRChartDataset#getDatasetType()
 	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.HIGHLOW_DATASET;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 	
+	@Override
 	public JRHyperlink getItemHyperlink()
 	{
 		return itemHyperlink;
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseHighLowDataset clone = (JRBaseHighLowDataset)super.clone();

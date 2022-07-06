@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,32 +32,19 @@
 package net.sf.jasperreports.engine.convert;
 
 import net.sf.jasperreports.engine.JRElement;
-import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRImage;
 import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.JRPrintImage;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.base.JRBasePrintImage;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
-import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
-import net.sf.jasperreports.engine.util.JRImageLoader;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class ImageConverter extends ElementConverter
 {
-	private static final Log log = LogFactory.getLog(ImageConverter.class);
-
 	/**
 	 *
 	 */
@@ -78,9 +65,7 @@ public final class ImageConverter extends ElementConverter
 		return INSTANCE;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRPrintElement convert(ReportConverter reportConverter, JRElement element)
 	{
 		JRBasePrintImage printImage = new JRBasePrintImage(reportConverter.getDefaultStyleProvider());
@@ -92,77 +77,22 @@ public final class ImageConverter extends ElementConverter
 		
 		printImage.setAnchorName(JRExpressionUtil.getExpressionText(image.getAnchorNameExpression()));
 		printImage.setBookmarkLevel(image.getBookmarkLevel());
-		printImage.setHorizontalAlignment(image.getOwnHorizontalAlignmentValue());
-		printImage.setLazy(image.isLazy());
+		printImage.setHorizontalImageAlign(image.getOwnHorizontalImageAlign());
 		printImage.setLinkType(image.getLinkType());
 		printImage.setOnErrorType(OnErrorTypeEnum.ICON);
-		printImage.setVerticalAlignment(image.getOwnVerticalAlignmentValue());
-		printImage.setRenderable(getRenderable(reportConverter.getJasperReportsContext(), image, printImage));
+		printImage.setVerticalImageAlign(image.getOwnVerticalImageAlign());
+		
+		printImage.setRenderer(
+			ResourceRenderer.getInstance(
+				JRExpressionUtil.getSimpleExpressionText(image.getExpression()),
+				image.isLazy()
+				)
+			);
+
 		printImage.setScaleImage(image.getOwnScaleImageValue());
+		printImage.setRotation(image.getOwnRotation());
 		
 		return printImage;
-	}
-
-	/**
-	 * 
-	 */
-	private Renderable getRenderable(JasperReportsContext jasperReportsContext, JRImage imageElement, JRPrintImage printImage)
-	{
-		String location = JRExpressionUtil.getSimpleExpressionText(imageElement.getExpression());
-		if(location != null)
-		{
-			try
-			{
-				return RenderableUtil.getInstance(jasperReportsContext).getRenderable(location);
-				/*
-				byte[] imageData = JRLoader.loadBytesFromLocation(location); 
-				Image awtImage = JRImageLoader.loadImage(imageData);
-				if (awtImage == null)
-				{
-					printImage.setScaleImage(JRImage.SCALE_IMAGE_CLIP);
-					return 
-						JRImageRenderer.getInstance(
-							JRImageLoader.NO_IMAGE_RESOURCE, 
-							imageElement.getOnErrorType()
-							);
-				}
-				return JRImageRenderer.getInstance(imageData);
-				*/
-			}
-			catch (JRException e)
-			{
-				if (log.isDebugEnabled())
-				{
-					log.debug("Creating location renderer for converted image failed.", e);
-				}
-			}
-		}
-		
-		try
-		{
-			printImage.setScaleImage(ScaleImageEnum.CLIP);
-			return 
-				RenderableUtil.getInstance(jasperReportsContext).getRenderable(
-					JRImageLoader.NO_IMAGE_RESOURCE, 
-					imageElement.getOnErrorTypeValue()
-					);
-		}
-		catch (JRException e)
-		{
-			if (log.isDebugEnabled())
-			{
-				log.debug("Creating icon renderer for converted image failed.", e);
-			}
-		}
-		catch (JRRuntimeException e)
-		{
-			if (log.isDebugEnabled())
-			{
-				log.debug("Creating icon renderer for converted image failed.", e);
-			}
-		}
-		
-		return null;
 	}
 
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,10 +23,13 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.export.ooxml.JRPptxExporter;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -35,15 +38,32 @@ import net.sf.jasperreports.export.annotations.ExporterProperty;
  * @see JRPptxExporter
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PptxReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface PptxReportConfiguration extends ReportExportConfiguration
 {
 	/**
 	 * Property that provides a default value for the {@link #isIgnoreHyperlink()} export configuration flag.
 	 */
-	public static final String PROPERTY_IGNORE_HYPERLINK = JRPropertiesUtil.PROPERTY_PREFIX +  "export.pptx." + JRPrintHyperlink.PROPERTY_IGNORE_HYPERLINK_SUFFIX;
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.HYPERLINK},
+			sinceVersion = PropertyConstants.VERSION_5_1_2,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_IGNORE_HYPERLINK = JRPptxExporter.PPTX_EXPORTER_PROPERTIES_PREFIX + JRPrintHyperlink.PROPERTY_IGNORE_HYPERLINK_SUFFIX;
 	
+	/**
+	 * This property provides a default value for the {@link #getHideSlideMasterPages()} export configuration setting.
+	 * </p>
+	 * @see JRPropertiesUtil
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_8_0
+			)
+	public static final String PROPERTY_HIDE_SLIDE_MASTER_PAGES = JRPptxExporter.PPTX_EXPORTER_PROPERTIES_PREFIX + "hide.slide.master.pages";
+
 	/**
 	 * @see #PROPERTY_IGNORE_HYPERLINK
 	 */
@@ -52,4 +72,15 @@ public interface PptxReportConfiguration extends ReportExportConfiguration
 		booleanDefault=false
 		)
 	public Boolean isIgnoreHyperlink();
+	
+	/**
+	 * This properties specifies the report pages on which the background contents coming from the slide master should be hidden.
+	 * 
+	 * The value of the property should be a comma separated list of page numbers or page ranges. Page ranges are made of page numbers separated by a hyphen-minus character.
+	 * For example: 1, 3-5, 7
+	 * 
+	 * @see #PROPERTY_HIDE_SLIDE_MASTER_PAGES
+	 */
+	@ExporterProperty(PROPERTY_HIDE_SLIDE_MASTER_PAGES)
+	public String getHideSlideMasterPages();
 }

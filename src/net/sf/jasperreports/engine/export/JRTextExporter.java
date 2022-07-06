@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,7 @@ import java.util.StringTokenizer;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
+import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
@@ -40,6 +41,8 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
+import net.sf.jasperreports.export.ExportInterruptedException;
 import net.sf.jasperreports.export.ExporterInputItem;
 import net.sf.jasperreports.export.TextExporterConfiguration;
 import net.sf.jasperreports.export.TextReportConfiguration;
@@ -110,11 +113,14 @@ import net.sf.jasperreports.export.WriterExporterOutput;
  * @see net.sf.jasperreports.export.TextExporterConfiguration
  * @see net.sf.jasperreports.export.TextReportConfiguration
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRTextExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, TextExporterConfiguration, WriterExporterOutput, JRTextExporterContext>
 {
 	private static final String TXT_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.txt.";
+	public static final String EXCEPTION_MESSAGE_KEY_REQUIRED_POSITIVE_PAGE_OR_CHARACTER_WIDTH = "export.text.required.positive.page.or.character.width";
+	public static final String EXCEPTION_MESSAGE_KEY_CHARACTER_WIDTH_NEGATIVE = "export.text.character.width.negative";
+	public static final String EXCEPTION_MESSAGE_KEY_REQUIRED_POSITIVE_PAGE_OR_CHARACTER_HEIGHT = "export.text.required.positive.page.or.character.height";
+	public static final String EXCEPTION_MESSAGE_KEY_CHARACTER_HEIGHT_NEGATIVE = "export.text.character.height.negative";
 
 	protected Writer writer;
 	char[][] pageData;
@@ -124,6 +130,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 	protected float charHeight;
 	protected String pageSeparator;
 	protected String lineSeparator;
+	protected boolean isTrimLineRight;
 
 	protected static final String systemLineSeparator = System.getProperty("line.separator");
 
@@ -151,27 +158,21 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<TextExporterConfiguration> getConfigurationInterface()
 	{
 		return TextExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<TextReportConfiguration> getItemConfigurationInterface()
 	{
 		return TextReportConfiguration.class;
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	protected void ensureOutput()
 	{
@@ -187,9 +188,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public void exportReport() throws JRException
 	{
 		/*   */
@@ -208,7 +207,11 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Error writing to output writer : " + jasperPrint.getName(), e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_OUTPUT_WRITER_ERROR,
+					new Object[]{jasperPrint.getName()}, 
+					e);
 		}
 		finally
 		{
@@ -235,6 +238,8 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 		{
 			pageSeparator = systemLineSeparator + systemLineSeparator;
 		}
+
+		isTrimLineRight = configuration.isTrimLineRight();
 	}
 
 
@@ -249,7 +254,11 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 		charWidth = charWidthValue == null ? 0 : charWidthValue;
 		if (charWidth < 0)
 		{
-			throw new JRRuntimeException("Character width in pixels must be greater than zero.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CHARACTER_WIDTH_NEGATIVE,  
+					(Object[])null 
+					);
 		}
 		else if (charWidth == 0)
 		{
@@ -258,7 +267,11 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 			
 			if (pageWidthInChars <= 0)
 			{
-				throw new JRRuntimeException("Character width in pixels or page width in characters must be specified and must be greater than zero.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_REQUIRED_POSITIVE_PAGE_OR_CHARACTER_WIDTH,  
+						(Object[])null 
+						);
 			}
 			
 			charWidth = jasperPrint.getPageWidth() / (float)pageWidthInChars;
@@ -273,7 +286,11 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 		charHeight = charHeightValue == null ? 0 : charHeightValue; 
 		if (charHeight < 0)
 		{
-			throw new JRRuntimeException("Character height in pixels must be greater than zero.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CHARACTER_HEIGHT_NEGATIVE,  
+					(Object[])null 
+					);
 		}
 		else if (charHeight == 0)
 		{
@@ -281,7 +298,11 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 			pageHeightInChars = pageHeightInCharsValue == null ? 0 : pageHeightInCharsValue;
 			if (pageHeightInChars <= 0)
 			{
-				throw new JRRuntimeException("Character height in pixels or page height in characters must be specified and must be greater than zero.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_REQUIRED_POSITIVE_PAGE_OR_CHARACTER_HEIGHT,  
+						(Object[])null 
+						);
 			}
 
 			charHeight = jasperPrint.getPageHeight() / (float)pageHeightInChars;
@@ -313,17 +334,22 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 				int startPageIndex = (pageRange == null || pageRange.getStartPageIndex() == null) ? 0 : pageRange.getStartPageIndex();
 				int endPageIndex = (pageRange == null || pageRange.getEndPageIndex() == null) ? (pages.size() - 1) : pageRange.getEndPageIndex();
 
-				for(int i = startPageIndex; i <= endPageIndex; i++)
+				for(int pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++)
 				{
 					if (Thread.interrupted())
 					{
-						throw new JRException("Current thread interrupted.");
+						throw new ExportInterruptedException();
 					}
 
-					JRPrintPage page = pages.get(i);
+					JRPrintPage page = pages.get(pageIndex);
 
 					/*   */
 					exportPage(page);
+
+					if (reportIndex < items.size() - 1 || pageIndex < endPageIndex)
+					{
+						writer.write(pageSeparator);
+					}
 				}
 			}
 		}
@@ -349,12 +375,22 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 
 		exportElements(elements);
 
-		for (int i = 0; i < pageHeightInChars; i++) {
-			writer.write(pageData[i]);
+		for (int i = 0; i < pageHeightInChars; i++) 
+		{
+			int lineLength = pageWidthInChars;
+			if (isTrimLineRight)
+			{
+				int j = pageWidthInChars - 1;
+				while (j >= 0 && pageData[i][j] == ' ')
+				{
+					j--;
+				}
+				lineLength = j + 1;
+			}
+
+			writer.write(pageData[i], 0, lineLength);
 			writer.write(lineSeparator);
 		}
-
-		writer.write(pageSeparator);
 
 		JRExportProgressMonitor progressMonitor = getCurrentItemConfiguration().getProgressMonitor();
 		if (progressMonitor != null)
@@ -429,8 +465,8 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 		}
 
 		// uses an array of string buffers, since the maximum number of rows is already calculated
-		StringBuffer[] rows = new StringBuffer[rowSpan];
-		rows[0] = new StringBuffer();
+		StringBuilder[] rows = new StringBuilder[rowSpan];
+		rows[0] = new StringBuilder();
 		int rowIndex = 0;
 		int rowPosition = 0;
 		boolean isFirstLine = true;
@@ -449,7 +485,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 					break label;
 				}
 				rowPosition = 0;
-				rows[rowIndex] = new StringBuffer();
+				rows[rowIndex] = new StringBuilder();
 				line = lfTokenizer.nextToken();
 			}
 
@@ -474,7 +510,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 						break label;
 					}
 					rowPosition = 0;
-					rows[rowIndex] = new StringBuffer();
+					rows[rowIndex] = new StringBuilder();
 					//if this is the last empty line:
 					if(!lfTokenizer.hasMoreTokens() && line.equals("\n"))
 					{
@@ -503,7 +539,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 							break label;
 						}
 						rowPosition = 0;
-						rows[rowIndex] = new StringBuffer();
+						rows[rowIndex] = new StringBuilder();
 					}
 	
 					// situation: word is larger than remaining space on the current line
@@ -516,7 +552,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 							break label;
 						}
 						rowPosition = 0;
-						rows[rowIndex] = new StringBuffer();
+						rows[rowIndex] = new StringBuilder();
 					}
 	
 					// situation: the word is actually a space and it situated at the beginning of a new line
@@ -538,14 +574,14 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 					break;
 				}
 				rowPosition = 0;
-				rows[rowIndex] = new StringBuffer();
+				rows[rowIndex] = new StringBuilder();
 			}
 		}
 
 		int colOffset = 0;
 		int rowOffset = 0;
 
-		switch (element.getVerticalAlignmentValue())
+		switch (element.getVerticalTextAlign())
 		{
 			case BOTTOM :
 			{
@@ -557,6 +593,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 				rowOffset = (rowSpan - rowIndex) / 2;
 				break;
 			}
+			default :
 		}
 
 		for (int i = 0; i < rowIndex; i++) {
@@ -567,7 +604,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 				pos--;
 			}
 			line = line.substring(0, pos + 1);
-			switch (element.getHorizontalAlignmentValue())
+			switch (element.getHorizontalTextAlign())
 			{
 				case RIGHT :
 				{
@@ -590,6 +627,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 					}
 					break;
 				}
+				default :
 			}
 
 			char[] chars = line.toCharArray();
@@ -603,7 +641,7 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 	 */
 	private String justifyText(String s, int width)
 	{
-		StringBuffer justified = new StringBuffer();
+		StringBuilder justified = new StringBuilder();
 
 		StringTokenizer t = new StringTokenizer(s, " ");
 		int tokenCount = t.countTokens();
@@ -660,25 +698,26 @@ public class JRTextExporter extends JRAbstractExporter<TextReportConfiguration, 
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected JRStyledText getStyledText(JRPrintText textElement)
 	{
-		return styledTextUtil.getStyledText(textElement, noneSelector);
+		JRStyledText styledText = styledTextUtil.getStyledText(textElement, noneSelector);
+		
+		if (styledText != null && !JRCommonText.MARKUP_NONE.equals(textElement.getMarkup()))
+		{
+			styledText = JRStyledTextUtil.getBulletedText(styledText);
+		}
+
+		return styledText;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getExporterKey()
 	{
 		return null;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getExporterPropertiesPrefix()
 	{
 		return TXT_EXPORTER_PROPERTIES_PREFIX;

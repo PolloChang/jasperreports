@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,29 +23,36 @@
  */
 package net.sf.jasperreports.data.hibernate.spring;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
+
 import net.sf.jasperreports.data.AbstractDataAdapter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SpringHibernateDataAdapterImpl.java 7199 2014-08-27 13:58:10Z teodord $
  */
+
+@JsonRootName(value = "springHibernateDataAdapter")
 public class SpringHibernateDataAdapterImpl extends AbstractDataAdapter
 		implements SpringHibernateDataAdapter {
 	private String springConfig;
 	private String beanId;
 
+	@Override
 	public String getSpringConfig() {
 		return springConfig;
 	}
 
+	@Override
 	public void setSpringConfig(String springConfig) {
 		this.springConfig = springConfig;
 	}
 
+	@Override
 	public String getBeanId() {
 		return beanId;
 	}
 
+	@Override
 	public void setBeanId(String beanId) {
 		this.beanId = beanId;
 	}

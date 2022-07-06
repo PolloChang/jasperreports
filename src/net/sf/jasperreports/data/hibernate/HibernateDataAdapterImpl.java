@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,38 +23,47 @@
  */
 package net.sf.jasperreports.data.hibernate;
 
-import net.sf.jasperreports.data.AbstractDataAdapter;
+import com.fasterxml.jackson.annotation.JsonRootName;
+
+import net.sf.jasperreports.data.AbstractClasspathAwareDataAdapter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: HibernateDataAdapterImpl.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class HibernateDataAdapterImpl extends AbstractDataAdapter implements
+
+@JsonRootName(value = "hibernateDataAdapter")
+public class HibernateDataAdapterImpl extends AbstractClasspathAwareDataAdapter implements
 		HibernateDataAdapter {
 	private String xmlFile;
 	private String propertiesFile;
 	private boolean useAnnotation;
 
+	@Override
 	public String getXMLFileName() {
 		return xmlFile;
 	}
 
+	@Override
 	public void setXMLFileName(String fileName) {
 		this.xmlFile = fileName;
 	}
 
+	@Override
 	public String getPropertiesFileName() {
 		return propertiesFile;
 	}
 
+	@Override
 	public void setPropertiesFileName(String fileName) {
 		this.propertiesFile = fileName;
 	}
 
+	@Override
 	public boolean isUseAnnotation() {
 		return useAnnotation;
 	}
 
+	@Override
 	public void setUseAnnotation(boolean useAnnotation) {
 		this.useAnnotation = useAnnotation;
 	}

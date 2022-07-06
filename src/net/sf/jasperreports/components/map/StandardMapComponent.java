@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,6 +29,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.jasperreports.components.items.ItemData;
+import net.sf.jasperreports.components.items.StandardItemData;
 import net.sf.jasperreports.components.map.type.MapImageTypeEnum;
 import net.sf.jasperreports.components.map.type.MapScaleEnum;
 import net.sf.jasperreports.components.map.type.MapTypeEnum;
@@ -45,7 +47,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 /**
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StandardMapComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StandardMapComponent implements MapComponent, Serializable, JRChangeEventsSupport
 {
@@ -89,9 +90,9 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 	private MapImageTypeEnum imageType;
 
 	private OnErrorTypeEnum onErrorType;
-	private List<ItemData> markerDataList = new ArrayList<ItemData>();
-	private List<ItemData> pathStyleList = new ArrayList<ItemData>();
-	private List<ItemData> pathDataList = new ArrayList<ItemData>();
+	private List<ItemData> markerDataList = new ArrayList<>();
+	private List<ItemData> pathStyleList = new ArrayList<>();
+	private List<ItemData> pathDataList = new ArrayList<>();
 	
 	private transient JRPropertyChangeSupport eventSupport;
 
@@ -114,7 +115,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		List<ItemData> markerList = map.getMarkerDataList();
 		if(markerList != null && markerList.size() > 0)
 		{
-			this.markerDataList = new ArrayList<ItemData>();
+			this.markerDataList = new ArrayList<>();
 			for(ItemData markerData : markerList){
 				this.markerDataList.add(new StandardItemData(markerData, objectFactory));
 			}
@@ -123,7 +124,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		List<ItemData> styleList = map.getPathStyleList();
 		if(styleList != null && styleList.size() > 0)
 		{
-			this.pathStyleList = new ArrayList<ItemData>();
+			this.pathStyleList = new ArrayList<>();
 			for(ItemData pathStyle : styleList){
 				pathStyleList.add(new StandardItemData(pathStyle, objectFactory));
 			}
@@ -131,13 +132,14 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		List<ItemData> pathList = map.getPathDataList();
 		if(pathList != null && pathList.size() > 0)
 		{
-			this.pathDataList = new ArrayList<ItemData>();
+			this.pathDataList = new ArrayList<>();
 			for(ItemData pathData : pathList){
 				pathDataList.add(new StandardItemData(pathData, objectFactory));
 			}
 		}
 	}
 	
+	@Override
 	public JRExpression getLatitudeExpression()
 	{
 		return latitudeExpression;
@@ -150,6 +152,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		getEventSupport().firePropertyChange(PROPERTY_LATITUDE_EXPRESSION, old, this.latitudeExpression);
 	}
 
+	@Override
 	public JRExpression getLongitudeExpression()
 	{
 		return longitudeExpression;
@@ -162,6 +165,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		getEventSupport().firePropertyChange(PROPERTY_LONGITUDE_EXPRESSION, old, this.longitudeExpression);
 	}
 	
+	@Override
 	public JRExpression getAddressExpression()
 	{
 		return addressExpression;
@@ -174,6 +178,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		getEventSupport().firePropertyChange(PROPERTY_ADDRESS_EXPRESSION, old, this.addressExpression);
 	}
 
+	@Override
 	public JRExpression getZoomExpression()
 	{
 		return zoomExpression;
@@ -186,6 +191,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		getEventSupport().firePropertyChange(PROPERTY_ZOOM_EXPRESSION, old, this.zoomExpression);
 	}
 	
+	@Override
 	public JRExpression getLanguageExpression()
 	{
 		return languageExpression;
@@ -198,6 +204,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		getEventSupport().firePropertyChange(PROPERTY_LANGUAGE_EXPRESSION, old, this.languageExpression);
 	}
 
+	@Override
 	public EvaluationTimeEnum getEvaluationTime()
 	{
 		return evaluationTime;
@@ -210,6 +217,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		getEventSupport().firePropertyChange(PROPERTY_EVALUATION_TIME, old, this.evaluationTime);
 	}
 
+	@Override
 	public String getEvaluationGroup()
 	{
 		return evaluationGroup;
@@ -223,6 +231,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 				old, this.evaluationGroup);
 	}
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -236,6 +245,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		return eventSupport;
 	}
 	
+	@Override
 	public Object clone()
 	{
 		StandardMapComponent clone = null;
@@ -260,6 +270,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		return clone;
 	}
 
+	@Override
 	public MapTypeEnum getMapType() {
 		return mapType;
 	}
@@ -270,6 +281,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		getEventSupport().firePropertyChange(PROPERTY_MAP_TYPE, old, this.mapType);
 	}
 
+	@Override
 	public MapScaleEnum getMapScale() {
 		return mapScale;
 	}
@@ -280,6 +292,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 		getEventSupport().firePropertyChange(PROPERTY_MAP_SCALE, old, this.mapScale);
 	}
 	
+	@Override
 	public MapImageTypeEnum getImageType() {
 		return imageType;
 	}
@@ -293,6 +306,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 	/**
 	 * @deprecated Replaced by {@link #getMarkerDataList()}.
 	 */
+	@Override
 	public ItemData getMarkerData() {
 		return !markerDataList.isEmpty() ? markerDataList.get(0) : null;
 	}
@@ -305,6 +319,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 	}
 
 
+	@Override
 	public OnErrorTypeEnum getOnErrorType() {
 		return onErrorType;
 	}
@@ -319,6 +334,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 	/**
 	 * @deprecated Replaced by {@link #getMarkerData()}.
 	 */
+	@Override
 	public MarkerDataset getMarkerDataset() {
 		return markerDataset; //FIXMEMAP make dummy marker dataset
 	}
@@ -348,14 +364,14 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 	{
 		in.defaultReadObject();
 		
-		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_5_5_2) 	//FIXME: choose the correct value for version
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_5_5_2)
 		{
 			if (markerDataset != null)
 			{
 				if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_1_0){
 					markerData = StandardMarkerDataset.getItemData(markerDataset);
 				} else {
-					this.markerDataList = new ArrayList<ItemData>();
+					this.markerDataList = new ArrayList<>();
 					this.markerDataList.add(StandardMarkerDataset.getItemData(markerDataset));
 				}
 			}
@@ -363,7 +379,7 @@ public class StandardMapComponent implements MapComponent, Serializable, JRChang
 			
 			if (markerData != null)
 			{
-				this.markerDataList = new ArrayList<ItemData>();
+				this.markerDataList = new ArrayList<>();
 				this.markerDataList.add(markerData);
 			}
 			markerData = null;

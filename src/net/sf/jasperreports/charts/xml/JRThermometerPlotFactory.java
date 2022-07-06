@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,25 +35,20 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRThermometerPlotFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRThermometerPlotFactory extends JRBaseFactory
 {
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_VALUE_LOCATION = "charts.thermometer.plot.invalid.value.location";
+	
 	public static final String ELEMENT_thermometerPlot = "thermometerPlot";
 	public static final String ELEMENT_lowRange = "lowRange";
 	public static final String ELEMENT_mediumRange = "mediumRange";
 	public static final String ELEMENT_highRange = "highRange";
 
-	/**
-	 * @deprecated No longer used.
-	 */
-	public static final String ATTRIBUTE_showValueLines = "isShowValueLines";
 	public static final String ATTRIBUTE_valueLocation = "valueLocation";
 	public static final String ATTRIBUTE_mercuryColor = "mercuryColor";
 
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts) throws JRException
 	{
 		JRChart chart = (JRChart)digester.peek();
@@ -63,7 +58,10 @@ public class JRThermometerPlotFactory extends JRBaseFactory
 		ValueLocationEnum loc = ValueLocationEnum.getByName(atts.getValue(ATTRIBUTE_valueLocation));
 		if (loc == null)
 		{
-			throw new JRException("Invalid thermometer value location: " + location);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_INVALID_VALUE_LOCATION,
+					new Object[]{location});
 		}
 		else
 		{

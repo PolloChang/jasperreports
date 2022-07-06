@@ -1,7 +1,9 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2005 - 2014 Works, Inc. All rights reserved.
+ * Copyright (C) 2005 Works, Inc. All rights reserved.
  * http://www.works.com
+ * Copyright (C) 2005 - 2022 TIBCO Software Inc. All rights reserved.
+ * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
  * the following license terms apply:
@@ -39,21 +41,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.collections4.map.ReferenceMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRVirtualizable;
 import net.sf.jasperreports.engine.JRVirtualizer;
+import net.sf.jasperreports.engine.util.LocalVirtualizationSerializer;
 import net.sf.jasperreports.engine.util.VirtualizationSerializer;
-
-import org.apache.commons.collections.map.ReferenceMap;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 
 /**
  * Abstract base for LRU and serialization based virtualizer
  *
  * @author John Bindel
- * @version $Id: JRAbstractLRUVirtualizer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 {
@@ -88,8 +90,8 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		Cache(int maxSize)
 		{
 			this.maxSize = maxSize;
-			map = new LinkedHashMap<String, CacheReference>(16, 0.75f, true);
-			refQueue = new ReferenceQueue<JRVirtualizable>();
+			map = new LinkedHashMap<>(16, 0.75f, true);
+			refQueue = new ReferenceQueue<>();
 		}
 
 		protected JRVirtualizable getMapValue(CacheReference val)
@@ -156,7 +158,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 			}
 			
 			int candidateCount = map.size() - maxSize;
-			List<JRVirtualizable> candidates = new ArrayList<JRVirtualizable>();
+			List<JRVirtualizable> candidates = new ArrayList<>();
 			Iterator<Entry<String, CacheReference>> mapIterator = map.entrySet().iterator();
 			while (candidates.size() < candidateCount && mapIterator.hasNext())
 			{
@@ -201,17 +203,20 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 			final Iterator<CacheReference> valsIt = map.values().iterator();
 			return new Iterator<String>()
 			{
+				@Override
 				public boolean hasNext()
 				{
 					return valsIt.hasNext();
 				}
 
+				@Override
 				public String next()
 				{
 					CacheReference ref = valsIt.next();
 					return ref.getId();
 				}
 
+				@Override
 				public void remove()
 				{
 					valsIt.remove();
@@ -220,15 +225,15 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		}
 	}
 
-	protected final VirtualizationSerializer serializer = new VirtualizationSerializer();
+	protected final VirtualizationSerializer serializer;
 	
-	private final Cache pagedIn;
+	protected final Cache pagedIn;
 
-	private final ReferenceMap pagedOut;
+	protected final ReferenceMap<String, Object> pagedOut;
 
 	protected volatile WeakReference<JRVirtualizable> lastObjectRef;
-	protected ReferenceMap lastObjectMap;
-	protected ReferenceMap lastObjectSet;
+	protected ReferenceMap<JRVirtualizationContext, Object> lastObjectMap;
+	protected ReferenceMap<Object, Boolean> lastObjectSet;
 
 	private boolean readOnly;
 
@@ -239,12 +244,19 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 	 */
 	protected JRAbstractLRUVirtualizer(int maxSize)
 	{
+		this(new LocalVirtualizationSerializer(), maxSize);
+	}
+
+	protected JRAbstractLRUVirtualizer(VirtualizationSerializer serializer, int maxSize)
+	{
+		this.serializer = serializer;
+		
 		this.pagedIn = new Cache(maxSize);
-		this.pagedOut = new ReferenceMap(ReferenceMap.HARD, ReferenceMap.WEAK);
+		this.pagedOut = new ReferenceMap<>(ReferenceMap.ReferenceStrength.HARD, ReferenceMap.ReferenceStrength.WEAK);
 		this.lastObjectRef = null;
 
-		this.lastObjectMap = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.WEAK);
-		this.lastObjectSet = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.HARD);
+		this.lastObjectMap = new ReferenceMap<>(ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.WEAK);
+		this.lastObjectSet = new ReferenceMap<>(ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.HARD);
 	}
 
 	protected synchronized final boolean isPagedOut(String id)
@@ -275,7 +287,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		if (o != null && currentLast != o)
 		{
 			// lastObject is mostly an optimization, we don't care if we don't have atomic operations here
-			this.lastObjectRef = new WeakReference<JRVirtualizable>(o);
+			this.lastObjectRef = new WeakReference<>(o);
 			
 			synchronized (this)
 			{
@@ -330,11 +342,12 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		return readOnly || o.getContext().isReadOnly();
 	}
 
+	@Override
 	public void registerObject(JRVirtualizable o)
 	{
 		if (log.isDebugEnabled())
 		{
-			log.debug("registering " + o.getUID());
+			log.debug("registering " + o.getUID() + " with context " + o.getContext());
 		}
 		
 		synchronized (this)
@@ -425,6 +438,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		}
 	}
 
+	@Override
 	public void deregisterObject(JRVirtualizable o)
 	{
 		String uid = o.getUID();
@@ -483,6 +497,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		}
 	}
 
+	@Override
 	public void touch(JRVirtualizable o)
 	{
 		// If we just touched this object, don't touch it again.
@@ -500,6 +515,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		}
 	}
 
+	@Override
 	public void requestData(JRVirtualizable o)
 	{
 		String uid = o.getUID();
@@ -549,6 +565,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		}
 	}
 
+	@Override
 	public void clearData(JRVirtualizable o)
 	{
 		String uid = o.getUID();
@@ -564,6 +581,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		}
 	}
 
+	@Override
 	public void virtualizeData(JRVirtualizable o)
 	{
 		String uid = o.getUID();
@@ -599,6 +617,7 @@ public abstract class JRAbstractLRUVirtualizer implements JRVirtualizer
 		}
 	}
 
+	@Override
 	protected void finalize() throws Throwable //NOSONAR
 	{
 		cleanup();

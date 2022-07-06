@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,8 +34,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,16 +47,23 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FileBufferedOutputStream.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FileBufferedOutputStream extends OutputStream 
 {
 	
 	private static final Log log = LogFactory.getLog(FileBufferedOutputStream.class);
+	public static final String EXCEPTION_MESSAGE_KEY_OUTPUT_STREAM_ALREADY_CLOSED = "util.file.buffered.output.stream.already.closed";
 	
 	/**
 	 * Specifies the maximum in-memory buffer length that triggers the creation of a temporary file on disk to store further content sent to this output stream.  
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_OTHER,
+			defaultValue = "262144",
+			scopes = {PropertyScope.GLOBAL},
+			sinceVersion = PropertyConstants.VERSION_1_3_4,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_MEMORY_THRESHOLD = JRPropertiesUtil.PROPERTY_PREFIX + "file.buffer.os.memory.threshold";
 	//public static final int DEFAULT_MEMORY_THRESHOLD = 1 << 18;
 	public static final int INFINIT_MEMORY_THRESHOLD = -1;
@@ -70,9 +81,8 @@ public class FileBufferedOutputStream extends OutputStream
 	private boolean closed;
 	private boolean disposed;
 	
-	@SuppressWarnings("deprecation")
 	public FileBufferedOutputStream() {
-		this(JRProperties.getIntegerProperty(PROPERTY_MEMORY_THRESHOLD, INFINIT_MEMORY_THRESHOLD), DEFAULT_INITIAL_MEMORY_BUFFER_SIZE, DEFAULT_INPUT_BUFFER_LENGTH);
+		this(JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getIntegerProperty(PROPERTY_MEMORY_THRESHOLD, INFINIT_MEMORY_THRESHOLD), DEFAULT_INITIAL_MEMORY_BUFFER_SIZE, DEFAULT_INPUT_BUFFER_LENGTH);
 	}
 	
 	public FileBufferedOutputStream(int memoryThreshold) {
@@ -104,6 +114,7 @@ public class FileBufferedOutputStream extends OutputStream
 		}
 	}
 
+	@Override
 	public void write(int b) throws IOException {
 		checkClosed();
 		
@@ -136,6 +147,7 @@ public class FileBufferedOutputStream extends OutputStream
 		return fileOutput;
 	}
 
+	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
 		checkClosed();
 		
@@ -157,10 +169,14 @@ public class FileBufferedOutputStream extends OutputStream
 
 	public void checkClosed() {
 		if (closed) {
-			throw new JRRuntimeException("Output stream already closed.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_OUTPUT_STREAM_ALREADY_CLOSED,
+					(Object[])null);
 		}
 	}
 
+	@Override
 	public void close() throws IOException {
 		if (!closed && fileOutput != null) {
 			fileOutput.flush();
@@ -170,6 +186,7 @@ public class FileBufferedOutputStream extends OutputStream
 		closed = true;
 	}
 
+	@Override
 	public void flush() throws IOException {
 		if (fileOutput != null) {
 			fileOutput.flush();
@@ -235,6 +252,7 @@ public class FileBufferedOutputStream extends OutputStream
 		disposed = success;
 	}
 
+	@Override
 	protected void finalize() throws Throwable //NOSONAR 
 	{
 		dispose();
@@ -264,6 +282,7 @@ public class FileBufferedOutputStream extends OutputStream
 			fileInput = file == null ? null : new BufferedInputStream(new FileInputStream(file));
 		}
 		
+		@Override
 		public synchronized int read() throws IOException
 		{
 			int read;
@@ -283,6 +302,7 @@ public class FileBufferedOutputStream extends OutputStream
 			return read;
 		}
 		
+		@Override
 		public synchronized int read(byte b[], int off, int len) throws IOException
 		{
 			if (len <= 0)
@@ -319,6 +339,7 @@ public class FileBufferedOutputStream extends OutputStream
 			return read == 0 ? -1 : read;
 		}
 
+		@Override
 		public void close() throws IOException
 		{
 			if (fileInput != null)
@@ -327,6 +348,7 @@ public class FileBufferedOutputStream extends OutputStream
 			}
 		}
 
+		@Override
 		public synchronized int available() throws IOException
 		{
 			int available = memoryData.length - memoryIdx;
@@ -337,6 +359,7 @@ public class FileBufferedOutputStream extends OutputStream
 			return available;
 		}
 
+		@Override
 		public synchronized long skip(long n) throws IOException
 		{
 			if (n <= 0)

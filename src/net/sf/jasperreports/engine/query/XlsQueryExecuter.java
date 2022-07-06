@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,6 @@ import org.apache.poi.ss.usermodel.Workbook;
  * XLS query executer implementation.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: XlsQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsQueryExecuter extends AbstractXlsQueryExecuter {
 	
@@ -56,11 +55,22 @@ public class XlsQueryExecuter extends AbstractXlsQueryExecuter {
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
 		Map<String,? extends JRValueParameter> parametersMap
+		)
+	{
+		this(SimpleQueryExecutionContext.of(jasperReportsContext), 
+				dataset, parametersMap);
+	}
+	
+	protected XlsQueryExecuter(
+		QueryExecutionContext context, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parametersMap
 		) 
 	{
-		super(jasperReportsContext, dataset, parametersMap);
+		super(context, dataset, parametersMap);
 	}
 
+	@Override
 	public JRDataSource createDatasource() throws JRException {
 		XlsDataSource datasource = null;
 		try {
@@ -78,7 +88,7 @@ public class XlsQueryExecuter extends AbstractXlsQueryExecuter {
 					} else {
 						String xlsSource = getStringParameterOrProperty(AbstractXlsQueryExecuterFactory.XLS_SOURCE);
 						if (xlsSource != null) {
-							datasource = new XlsDataSource(getJasperReportsContext(), xlsSource);
+							datasource = new XlsDataSource(getRepositoryContext(), xlsSource);
 						} else {
 							if (log.isWarnEnabled()){
 								log.warn("No XLS source was provided.");

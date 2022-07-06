@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,10 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.type.BreakTypeEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -45,7 +48,6 @@ import net.sf.jasperreports.engine.type.BreakTypeEnum;
  * attribute available for this element (see {@link #getTypeValue()}). By default, page breaks are created.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBreak.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRBreak extends JRElement
 {
@@ -66,6 +68,12 @@ public interface JRBreak extends JRElement
 	 * The default behaviour is to ignore page breaks in non paginated reports.
 	 * </p>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = "ignore",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.BREAK_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_5_0_4
+			)
 	String PROPERTY_PAGE_BREAK_NO_PAGINATION = JRPropertiesUtil.PROPERTY_PREFIX + "page.break.no.pagination";
 	
 	/**

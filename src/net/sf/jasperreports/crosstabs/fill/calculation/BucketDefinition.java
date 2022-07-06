@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,11 @@ package net.sf.jasperreports.crosstabs.fill.calculation;
 
 import java.util.Comparator;
 
+import org.apache.commons.collections4.comparators.ComparableComparator;
+import org.apache.commons.collections4.comparators.ReverseComparator;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.crosstabs.fill.BucketOrderer;
 import net.sf.jasperreports.crosstabs.fill.calculation.BucketValueOrderDecorator.OrderPosition;
 import net.sf.jasperreports.crosstabs.type.CrosstabTotalPositionEnum;
@@ -32,21 +37,16 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.analytics.dataset.BucketOrder;
 
-import org.apache.commons.collections.comparators.ComparableComparator;
-import org.apache.commons.collections.comparators.ReverseComparator;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * Bucket definition.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BucketDefinition.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BucketDefinition
 {
 	
 	private static final Log log = LogFactory.getLog(BucketDefinition.class);
+	public static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_ORDER_TYPE = "crosstabs.calculation.unsupported.order.type";
 	
 	/**
 	 * Value type used for non-null values.
@@ -76,7 +76,9 @@ public class BucketDefinition
 	protected final Comparator<Object> bucketValueComparator;
 
 	protected final BucketOrderer orderer;
+	//FIXME totalPosition and mergeHeaderCells only apply to crosstabs
 	private final CrosstabTotalPositionEnum totalPosition;
+	private boolean mergeHeaderCells;
 
 	private final BucketOrder order;
 	
@@ -121,7 +123,7 @@ public class BucketDefinition
 			if (Comparable.class.isAssignableFrom(valueClass))
 			{
 				// using natural order
-				this.bucketValueComparator = ComparableComparator.getInstance();
+				this.bucketValueComparator = ComparableComparator.INSTANCE;
 			}
 			else
 			{
@@ -150,11 +152,11 @@ public class BucketDefinition
 			{
 				if (comparator == null)
 				{
-					orderComparator = new ReverseComparator();
+					orderComparator = new ReverseComparator<>();
 				}
 				else
 				{
-					orderComparator = new ReverseComparator(comparator);
+					orderComparator = new ReverseComparator<>(comparator);
 				}
 				break;
 			}
@@ -162,7 +164,7 @@ public class BucketDefinition
 			{
 				if (comparator == null)
 				{
-					orderComparator = ComparableComparator.getInstance();
+					orderComparator = ComparableComparator.INSTANCE;
 				}
 				else
 				{
@@ -172,7 +174,10 @@ public class BucketDefinition
 			}
 			case NONE:
 			default:
-				throw new JRRuntimeException("Unsupported order type " + order);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNSUPPORTED_ORDER_TYPE,
+						new Object[]{order});
 		}
 		return orderComparator;
 	}
@@ -223,6 +228,16 @@ public class BucketDefinition
 	public BucketOrder getOrder()
 	{
 		return order;
+	}
+
+	public boolean isMergeHeaderCells()
+	{
+		return mergeHeaderCells;
+	}
+
+	public void setMergeHeaderCells(boolean mergeHeaderCells)
+	{
+		this.mergeHeaderCells = mergeHeaderCells;
 	}
 
 
@@ -300,6 +315,7 @@ public class BucketDefinition
 			return value;
 		}
 		
+		@Override
 		public boolean equals (Object o)
 		{
 			if (o == null || !(o instanceof Bucket))
@@ -322,6 +338,7 @@ public class BucketDefinition
 			return v.type == VALUE_TYPE_VALUE && value.equals(v.value);
 		}
 		
+		@Override
 		public int hashCode()
 		{
 			int hash = type;
@@ -334,6 +351,7 @@ public class BucketDefinition
 			return hash;
 		}
 		
+		@Override
 		public String toString()
 		{
 			switch(type)
@@ -348,6 +366,7 @@ public class BucketDefinition
 			}
 		}
 
+		@Override
 		public int compareTo(Object o)
 		{
 			Bucket val = (Bucket) o;

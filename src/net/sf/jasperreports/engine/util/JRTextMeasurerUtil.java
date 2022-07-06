@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,10 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.util.Locale;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintText;
@@ -33,12 +37,12 @@ import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.fill.JRMeasuredText;
 import net.sf.jasperreports.engine.fill.JRTextMeasurer;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Text measurer utility class.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTextMeasurerUtil.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRTextMeasurer
  * @see JRTextMeasurerFactory
  */
@@ -91,12 +95,17 @@ public final class JRTextMeasurerUtil
 	 * 
 	 * @see JRTextMeasurerFactory
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = "net.sf.jasperreports.engine.fill.TextMeasurerFactory",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.TEXT_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_2_0_3
+			)
 	public static final String PROPERTY_TEXT_MEASURER_FACTORY = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "text.measurer.factory";
 	
-	@SuppressWarnings("deprecation")
-	private static final JRSingletonCache<net.sf.jasperreports.engine.fill.JRTextMeasurerFactory> cache = 
-			new JRSingletonCache<net.sf.jasperreports.engine.fill.JRTextMeasurerFactory>(net.sf.jasperreports.engine.fill.JRTextMeasurerFactory.class);
+	private static final JRSingletonCache<JRTextMeasurerFactory> cache = 
+			new JRSingletonCache<>(JRTextMeasurerFactory.class);
 	
 	/**
 	 * Creates a text measurer for a text object.
@@ -131,14 +140,6 @@ public final class JRTextMeasurerUtil
 	}
 	
 	/**
-	 * @deprecated Replaced by {@link #getFactory(JRPropertiesHolder)}.
-	 */
-	public net.sf.jasperreports.engine.fill.JRTextMeasurerFactory getTextMeasurerFactory(JRPropertiesHolder propertiesHolder)
-	{
-		return getFactory(propertiesHolder);
-	}
-
-	/**
 	 * Returns the text measurer factory given a set of properties.
 	 * 
 	 * @param propertiesHolder the properties holder
@@ -149,14 +150,7 @@ public final class JRTextMeasurerUtil
 		String factoryClass = getTextMeasurerFactoryClass(propertiesHolder);
 		try
 		{
-			@SuppressWarnings("deprecation")
-			net.sf.jasperreports.engine.fill.JRTextMeasurerFactory factory = cache.getCachedInstance(factoryClass);
-			if (factory instanceof JRTextMeasurerFactory)
-			{
-				return (JRTextMeasurerFactory)factory;
-			}
-			
-			return new WrappingTextMeasurerFactory(factory);
+			return cache.getCachedInstance(factoryClass);
 		}
 		catch (JRException e)
 		{
@@ -190,18 +184,21 @@ public final class JRTextMeasurerUtil
 		{
 			text = "";
 		}
+		Locale textLocale = JRStyledTextAttributeSelector.getTextLocale(printText);
 		JRStyledText styledText = 
 			JRStyledTextParser.getInstance().getStyledText(
 				noBackcolorSelector.getStyledTextAttributes(printText), 
 				text, 
 				JRCommonText.MARKUP_STYLED_TEXT.equals(printText.getMarkup()),//FIXMEMARKUP only static styled text appears on preview. no other markup
-				JRStyledTextAttributeSelector.getTextLocale(printText)
+				textLocale
 				);
-		
+
+		JRStyledText processedStyledText = styledTextUtil.resolveFonts(styledText, textLocale);
 		JRMeasuredText measuredText = textMeasurer.measure(
-				styledText, 
+				processedStyledText, 
 				0,
 				0,
+				true,
 				false
 				);
 		printText.setTextHeight(measuredText.getTextHeight() < printText.getHeight() ? measuredText.getTextHeight() : printText.getHeight());
@@ -219,27 +216,5 @@ public final class JRTextMeasurerUtil
 			printedText = text.substring(0, textEnd);
 		}
 		printText.setText(printedText);
-	}
-
-	/**
-	 * @deprecated To be removed.
-	 */
-	public static class WrappingTextMeasurerFactory implements JRTextMeasurerFactory
-	{
-		private net.sf.jasperreports.engine.fill.JRTextMeasurerFactory factory;
-		
-		public WrappingTextMeasurerFactory(net.sf.jasperreports.engine.fill.JRTextMeasurerFactory factory)
-		{
-			this.factory = factory;
-		}
-
-		public JRTextMeasurer createMeasurer(JRCommonText text) {
-			return factory.createMeasurer(text);
-		}
-
-		public JRTextMeasurer createMeasurer(
-				JasperReportsContext jasperReportsContext, JRCommonText text) {
-			return factory.createMeasurer(text);
-		}
 	}
 }

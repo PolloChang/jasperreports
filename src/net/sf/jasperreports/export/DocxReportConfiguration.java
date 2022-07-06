@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,15 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter;
 import net.sf.jasperreports.export.annotations.ExporterParameter;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -37,7 +40,6 @@ import net.sf.jasperreports.export.annotations.ExporterProperty;
  * @see JRDocxExporter
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface DocxReportConfiguration extends ReportExportConfiguration
 {
@@ -48,7 +50,14 @@ public interface DocxReportConfiguration extends ReportExportConfiguration
 	 * </p>
 	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_FRAMES_AS_NESTED_TABLES = JRPropertiesUtil.PROPERTY_PREFIX + "export.docx.frames.as.nested.tables";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.FRAME},
+			sinceVersion = PropertyConstants.VERSION_3_5_3,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_FRAMES_AS_NESTED_TABLES = JRDocxExporter.DOCX_EXPORTER_PROPERTIES_PREFIX + "frames.as.nested.tables";
 
 	/**
 	 * This property serves as default value for the {@link #isFlexibleRowHeight} export configuration setting.
@@ -57,17 +66,46 @@ public interface DocxReportConfiguration extends ReportExportConfiguration
 	 * </p>
 	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_FLEXIBLE_ROW_HEIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "export.docx.flexible.row.height";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_6_1,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_FLEXIBLE_ROW_HEIGHT = JRDocxExporter.DOCX_EXPORTER_PROPERTIES_PREFIX + "flexible.row.height";
+	
+	/**
+	 * This property serves as default value for the {@link #isNewLineAsParagraph()} export configuration setting.
+	 * <p>
+	 * The property itself defaults to <code>false</code>.
+	 * </p>
+	 * @see JRPropertiesUtil
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.TEXT_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_1_1,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_NEW_LINE_AS_PARAGRAPH = JRDocxExporter.DOCX_EXPORTER_PROPERTIES_PREFIX + "new.line.as.paragraph";
 
 	/**
 	 * Property that provides a default value for the {@link #isIgnoreHyperlink()} export configuration flag.
 	 */
-	public static final String PROPERTY_IGNORE_HYPERLINK = JRPropertiesUtil.PROPERTY_PREFIX + "export.docx." + JRPrintHyperlink.PROPERTY_IGNORE_HYPERLINK_SUFFIX;
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.HYPERLINK},
+			sinceVersion = PropertyConstants.VERSION_5_1_2,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_IGNORE_HYPERLINK = JRDocxExporter.DOCX_EXPORTER_PROPERTIES_PREFIX + JRPrintHyperlink.PROPERTY_IGNORE_HYPERLINK_SUFFIX;
 
 	/**
 	 * Indicates whether {@link JRPrintFrame frames} are to be exported as nested tables.
 	 * <p>
-	 * Is set to <code>false</code>, the frame contents will be integrated into the master/page table.
+	 * If set to <code>false</code>, the frame contents will be integrated into the master/page table.
 	 * </p>
 	 * @see #PROPERTY_FRAMES_AS_NESTED_TABLES
 	 */
@@ -85,20 +123,33 @@ public interface DocxReportConfiguration extends ReportExportConfiguration
 	/**
 	 * Indicates whether table rows can grow if more text is added into cells.
 	 * <p>
-	 * Is set to <code>false</code>, the table rows do not increase in height automatically and the user has to enlarge them manually.
+	 * If set to <code>false</code>, the table rows do not increase in height automatically and the user has to enlarge them manually.
 	 * </p>
 	 * @see #PROPERTY_FLEXIBLE_ROW_HEIGHT
 	 */
 	@SuppressWarnings("deprecation")
 	@ExporterParameter(
-		type=net.sf.jasperreports.engine.export.ooxml.JRDocxExporterParameter.class, 
-		name="FLEXIBLE_ROW_HEIGHT"
-		)
+			type=net.sf.jasperreports.engine.export.ooxml.JRDocxExporterParameter.class, 
+			name="FLEXIBLE_ROW_HEIGHT"
+			)
 	@ExporterProperty(
-		value=PROPERTY_FLEXIBLE_ROW_HEIGHT, 
+			value=PROPERTY_FLEXIBLE_ROW_HEIGHT, 
+			booleanDefault=false
+			)
+	public Boolean isFlexibleRowHeight();
+	
+	/**
+	 * Indicates whether the newline element present in a justified paragraph introduces a new justified paragraph. 
+	 * <p>
+	 * If set to <code>true</code>, the text line before the new paragraph will lose the justified alignment.
+	 * </p>
+	 * @see #PROPERTY_NEW_LINE_AS_PARAGRAPH
+	 */
+	@ExporterProperty(
+		value=PROPERTY_NEW_LINE_AS_PARAGRAPH, 
 		booleanDefault=false
 		)
-	public Boolean isFlexibleRowHeight();
+	public Boolean isNewLineAsParagraph();
 	
 	/**
 	 * @see #PROPERTY_IGNORE_HYPERLINK

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,31 +23,9 @@
  */
 package net.sf.jasperreports.charts.util;
 
-import java.awt.geom.Rectangle2D;
-
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JasperReportsContext;
-
-import org.jfree.chart.JFreeChart;
-
-
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractChartRenderableFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractChartRenderableFactory implements ChartRenderableFactory
 {
-	
-	/**
-	 * @deprecated Replaced by {@link #getRenderable(JasperReportsContext, JFreeChart, ChartHyperlinkProvider, Rectangle2D)}.
-	 */
-	public final net.sf.jasperreports.engine.JRRenderable getRenderer(
-		JFreeChart chart, 
-		ChartHyperlinkProvider chartHyperlinkProvider, 
-		Rectangle2D rectangle
-		)
-	{
-		return getRenderable(DefaultJasperReportsContext.getInstance(), chart, chartHyperlinkProvider, rectangle);
-	}
-
 }

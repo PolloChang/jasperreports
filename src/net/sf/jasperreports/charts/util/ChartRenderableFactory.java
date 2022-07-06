@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,23 +25,27 @@ package net.sf.jasperreports.charts.util;
 
 import java.awt.geom.Rectangle2D;
 
+import org.jfree.chart.JFreeChart;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-
-import org.jfree.chart.JFreeChart;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.renderers.Renderable;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ChartRenderableFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
-@SuppressWarnings("deprecation")
-public interface ChartRenderableFactory extends ChartRendererFactory
+public interface ChartRenderableFactory
 {
-	/**
-	 * 
-	 */
+	@Property(
+			name = "net.sf.jasperreports.chart.renderer.factory.{render_type}",
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_2_0_5
+			)
 	public static final String PROPERTY_CHART_RENDERER_FACTORY_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "chart.renderer.factory.";
 
 	public Renderable getRenderable(

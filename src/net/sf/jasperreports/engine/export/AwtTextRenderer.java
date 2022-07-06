@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,20 +25,25 @@ package net.sf.jasperreports.engine.export;
 
 import java.awt.Graphics2D;
 import java.awt.font.FontRenderContext;
+import java.awt.font.LineBreakMeasurer;
+import java.awt.font.TextLayout;
+import java.text.AttributedCharacterIterator;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AwtTextRenderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class AwtTextRenderer extends AbstractTextRenderer
 {
+	protected final JRStyledTextAttributeSelector noBackcolorSelector;
+	protected final JRStyledTextUtil styledTextUtil;
+	
 	/**
 	 * 
 	 */
@@ -46,21 +51,7 @@ public class AwtTextRenderer extends AbstractTextRenderer
 	
 	
 	/**
-	 * @deprecated Replaced by {@link #AwtTextRenderer(JasperReportsContext, boolean, boolean)}.
-	 */
-	public static AwtTextRenderer getInstance()
-	{
-		return 
-			new AwtTextRenderer(
-				DefaultJasperReportsContext.getInstance(),
-				JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(JRGraphics2DExporter.MINIMIZE_PRINTER_JOB_SIZE),
-				JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT)
-				);
-	}
-	
-	
-	/**
-	 * 
+	 * @deprecated Replaced by {@link #AwtTextRenderer(JasperReportsContext, boolean, boolean, boolean, boolean)}.
 	 */
 	public AwtTextRenderer(
 		JasperReportsContext jasperReportsContext,
@@ -68,19 +59,37 @@ public class AwtTextRenderer extends AbstractTextRenderer
 		boolean ignoreMissingFont
 		)
 	{
-		super(jasperReportsContext, isMinimizePrinterJobSize, ignoreMissingFont);
+		this(
+			jasperReportsContext, 
+			isMinimizePrinterJobSize, 
+			ignoreMissingFont,
+			true,
+			false
+			);
 	}
 	
 
 	/**
-	 * @deprecated Replaced by {@link #AwtTextRenderer(JasperReportsContext, boolean, boolean)}.
+	 * 
 	 */
 	public AwtTextRenderer(
+		JasperReportsContext jasperReportsContext,
 		boolean isMinimizePrinterJobSize,
-		boolean ignoreMissingFont
+		boolean ignoreMissingFont,
+		boolean defaultIndentFirstLine,
+		boolean defaultJustifyLastLine
 		)
 	{
-		this(DefaultJasperReportsContext.getInstance(), isMinimizePrinterJobSize, ignoreMissingFont);
+		super(
+			jasperReportsContext, 
+			isMinimizePrinterJobSize, 
+			ignoreMissingFont,
+			defaultIndentFirstLine,
+			defaultJustifyLastLine
+			);
+		
+		this.noBackcolorSelector = JRStyledTextAttributeSelector.getNoBackcolorSelector(jasperReportsContext);
+		styledTextUtil = JRStyledTextUtil.getInstance(jasperReportsContext);
 	}
 	
 
@@ -89,31 +98,80 @@ public class AwtTextRenderer extends AbstractTextRenderer
 	 */
 	public void initialize(Graphics2D grx, JRPrintText text, int offsetX, int offsetY)
 	{
+		JRStyledText styledText = styledTextUtil.getProcessedStyledText(text, noBackcolorSelector, null);
+		if (styledText == null)
+		{
+			return;
+		}
+		
 		this.grx = grx;
 		
-		super.initialize(text, offsetX, offsetY);
-	}
-		
-
-	/**
-	 * 
-	 */
-	public void draw()
-	{
-		TabSegment segment = segments.get(segmentIndex);
-		
-		segment.layout.draw(
-			grx,
-			x + drawPosX,// + leftPadding,
-			//y + topPadding + verticalAlignOffset + text.getLeadingOffset() + drawPosY
-			y + topPadding + verticalAlignOffset + drawPosY
-			);
+		super.initialize(text, styledText, offsetX, offsetY);
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
+	public void draw()
+	{
+		if (bulletChunk != null)
+		{
+			AttributedCharacterIterator bulletIterator = bulletChunk.getIterator();
+			LineBreakMeasurer lineMeasurer = new LineBreakMeasurer(bulletIterator, getFontRenderContext());//grx.getFontRenderContext()
+
+			TextLayout bulletLayout = 
+				lineMeasurer.nextLayout(
+					1000,
+					bulletIterator.getEndIndex(),
+					true
+					);
+			
+			bulletLayout.draw(
+				grx, 
+				x + drawPosX - bulletLayout.getVisibleAdvance() - 10, 
+				y + topPadding + verticalAlignOffset + drawPosY
+				);
+		}
+
+		TabSegment segment = segments.get(segmentIndex);
+		
+// this commented code is here to show that we could have clipped each segment individually,
+// but decided against this technique because it was producing too much clipping, for little benefit;
+// the rendering would have been closer to PDF one, where trailing spaces are not rendered, 
+// but more unlike the HTML, where trailing spaces are rendered and even participate to horizontal alignment;
+// the solution that was implemented is a compromise in the sense that it renders trailing spaces, 
+// but does not consider them for text alignment
+//
+//		Shape oldClip = grx.getClip();
+//		
+//		int clipX = Math.round(x + drawPosX);
+//		int clipY = Math.round(y + topPadding + verticalAlignOffset + drawPosY - lineHeight);
+//		int clipWidth = Math.round(x + drawPosX + segment.layout.getVisibleAdvance()) - clipX;
+//		int clipHeight = Math.round(2 * lineHeight);
+//		
+//		grx.clipRect(
+//			clipX, 
+//			clipY, 
+//			clipWidth, 
+//			clipHeight
+//			);
+//		
+//		try
+//		{
+			segment.layout.draw(
+				grx,
+				x + drawPosX,// + leftPadding,
+				//y + topPadding + verticalAlignOffset + text.getLeadingOffset() + drawPosY
+				y + topPadding + verticalAlignOffset + drawPosY
+				);
+//		}
+//		finally
+//		{
+//			grx.setClip(oldClip);
+//		}
+	}
+
+	
+	@Override
 	public FontRenderContext getFontRenderContext()
 	{
 		return grx.getFontRenderContext();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,14 +23,14 @@
  */
 package net.sf.jasperreports.engine.analytics.dataset;
 
-import net.sf.jasperreports.engine.JRConstants;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.type.NamedEnum;
 import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BucketOrder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public enum BucketOrder implements NamedEnum
 {
@@ -49,9 +49,9 @@ public enum BucketOrder implements NamedEnum
 	 */ 
 	NONE("None");
 
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-	
 	private final transient String name;
+	public static final String EXCEPTION_MESSAGE_KEY_CANNOT_TRANSLATE_NONE = "engine.analytics.dataset.cannot.translate.none";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_ORDER_ENUM = "engine.analytics.dataset.unknown.order.enum";
 
 	private BucketOrder(String name)
 	{
@@ -59,6 +59,7 @@ public enum BucketOrder implements NamedEnum
 	}
 
 	@Override
+	@JsonValue(false)
 	public String getName()
 	{
 		return name;
@@ -82,10 +83,16 @@ public enum BucketOrder implements NamedEnum
 				sortOrder = SortOrderEnum.DESCENDING;
 				break;
 			case NONE:
-				throw new JRRuntimeException("Cannot translate NONE to SortOrderEnum");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_CANNOT_TRANSLATE_NONE,
+						(Object[])null);
 			default:
 				// should not happen
-				throw new JRRuntimeException("Unknown order enum " + order);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_ORDER_ENUM,
+						new Object[]{order});
 			}
 		}
 		return sortOrder;
@@ -110,7 +117,10 @@ public enum BucketOrder implements NamedEnum
 				break;
 			default:
 				// should not happen
-				throw new JRRuntimeException("Unknown order enum " + orderValue);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_ORDER_ENUM,
+						new Object[]{orderValue});
 			}
 		}
 		return order;

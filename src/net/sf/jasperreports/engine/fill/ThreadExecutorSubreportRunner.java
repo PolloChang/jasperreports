@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import org.apache.commons.logging.LogFactory;
  * the master thread.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ThreadExecutorSubreportRunner.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ThreadExecutorSubreportRunner extends AbstractThreadSubreportRunner
 {
@@ -54,6 +53,7 @@ public class ThreadExecutorSubreportRunner extends AbstractThreadSubreportRunner
 		this.threadExecutor = threadExecutor;
 	}
 
+	@Override
 	public boolean isFilling()
 	{
 		return filling;
@@ -72,6 +72,7 @@ public class ThreadExecutorSubreportRunner extends AbstractThreadSubreportRunner
 		threadExecutor.execute(this);
 	}
 
+	@Override
 	public void reset()
 	{
 		filling = false;

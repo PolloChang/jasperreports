@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,11 +25,14 @@ package net.sf.jasperreports.engine.query;
 
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Query executer factory for Excel file type.
@@ -37,14 +40,19 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * The factory creates {@link net.sf.jasperreports.engine.query.ExcelQueryExecuter ExcelQueryExecuter}
  * query executers.
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ExcelQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class ExcelQueryExecuterFactory extends AbstractXlsQueryExecuterFactory 
 {
 	/**
 	 * Built-in parameter/property holding the value of the Excel format to be used when parsing the Excel data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {AbstractXlsQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
 	public static final String XLS_FORMAT = JRPropertiesUtil.PROPERTY_PREFIX + "xls.format";
 
 	private final static Object[] XLS_BUILTIN_PARAMETERS = {
@@ -61,25 +69,41 @@ public class ExcelQueryExecuterFactory extends AbstractXlsQueryExecuterFactory
 			XLS_NUMBER_FORMAT, "java.text.NumberFormat",
 			XLS_NUMBER_PATTERN, "java.lang.String",
 			XLS_USE_FIRST_ROW_AS_HEADER, "java.lang.Boolean",
+			XLS_LOCALE, "java.util.Locale",
 			XLS_LOCALE_CODE, "java.lang.String",
+			XLS_TIMEZONE, "java.util.TimeZone",
 			XLS_TIMEZONE_ID, "java.lang.String",
 			XLS_SHEET_SELECTION, "java.lang.String",
 			XLS_FORMAT, "net.sf.jasperreports.data.excel.ExcelFormatEnum"
 			};
 	
+	@Override
 	public Object[] getBuiltinParameters() {
 		return XLS_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext,
 		JRDataset dataset, 
 		Map<String,? extends JRValueParameter> parameters
 		) throws JRException 
 	{
-		return new ExcelQueryExecuter(jasperReportsContext, dataset, parameters);
+		return createQueryExecuter(SimpleQueryExecutionContext.of(jasperReportsContext), 
+				dataset, parameters);
 	}
 
+	@Override
+	public JRQueryExecuter createQueryExecuter(
+		QueryExecutionContext context,
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parameters
+		) throws JRException 
+	{
+		return new ExcelQueryExecuter(context, dataset, parameters);
+	}
+
+	@Override
 	public boolean supportsQueryParameterType(String className) {
 		return true;
 	}

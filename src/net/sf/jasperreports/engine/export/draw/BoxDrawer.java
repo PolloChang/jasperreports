@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ package net.sf.jasperreports.engine.export.draw;
 
 import java.awt.Graphics2D;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -43,19 +42,9 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: BoxDrawer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BoxDrawer extends ElementDrawer<JRPrintElement>
 {
-	/**
-	 * @deprecated Replaced by {@link #BoxDrawer(JasperReportsContext)}.
-	 */
-	public BoxDrawer()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-	
-	
 	/**
 	 *
 	 */
@@ -65,9 +54,7 @@ public class BoxDrawer extends ElementDrawer<JRPrintElement>
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public void draw(Graphics2D grx, JRPrintElement element, int offsetX, int offsetY) throws JRException
 	{
 		drawBox(grx, (JRLineBox)element, element, offsetX, offsetY);

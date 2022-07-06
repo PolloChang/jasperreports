@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,16 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRRuntimeException;
+import org.apache.commons.collections4.map.ReferenceMap;
 
-import org.apache.commons.collections.map.ReferenceMap;
+import net.sf.jasperreports.engine.JRRuntimeException;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRIncrementerFactoryCache.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRIncrementerFactoryCache
 {
@@ -42,7 +42,9 @@ public final class JRIncrementerFactoryCache
 	 *
 	 */
 	private static Map<Class<?>,JRIncrementerFactory> factoriesMap = 
-		new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.HARD);
+		new ReferenceMap<>(
+			ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.HARD
+			);
 
 
 	/**
@@ -56,13 +58,10 @@ public final class JRIncrementerFactoryCache
 		{
 			try
 			{
-				incrementerFactory = (JRIncrementerFactory)factoryClass.newInstance();
+				incrementerFactory = (JRIncrementerFactory)factoryClass.getDeclaredConstructor().newInstance();
 			}
-			catch (InstantiationException e)
-			{
-				throw new JRRuntimeException(e);
-			}
-			catch (IllegalAccessException e)
+			catch (InstantiationException | IllegalAccessException 
+				| NoSuchMethodException | InvocationTargetException e)
 			{
 				throw new JRRuntimeException(e);
 			}

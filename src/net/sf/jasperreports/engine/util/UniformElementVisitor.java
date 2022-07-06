@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,6 @@ import net.sf.jasperreports.engine.JRVisitor;
  * An abstract visitor class that treats all report elements in the same way. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: UniformElementVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  * @see #visitElement(JRElement)
  */
 public abstract class UniformElementVisitor implements JRVisitor
@@ -56,66 +55,79 @@ public abstract class UniformElementVisitor implements JRVisitor
 	 */
 	protected abstract void visitElement(JRElement element);
 	
+	@Override
 	public void visitBreak(JRBreak breakElement)
 	{
 		visitElement(breakElement);
 	}
 
+	@Override
 	public void visitChart(JRChart chart)
 	{
 		visitElement(chart);
 	}
 
+	@Override
 	public void visitComponentElement(JRComponentElement componentElement)
 	{
 		visitElement(componentElement);
 	}
 
+	@Override
 	public void visitCrosstab(JRCrosstab crosstab)
 	{
 		visitElement(crosstab);
 	}
 
+	@Override
 	public void visitEllipse(JREllipse ellipse)
 	{
 		visitElement(ellipse);
 	}
 
+	@Override
 	public void visitFrame(JRFrame frame)
 	{
 		visitElement(frame);
 	}
 
+	@Override
 	public void visitGenericElement(JRGenericElement element)
 	{
 		visitElement(element);
 	}
 
+	@Override
 	public void visitImage(JRImage image)
 	{
 		visitElement(image);
 	}
 
+	@Override
 	public void visitLine(JRLine line)
 	{
 		visitElement(line);
 	}
 
+	@Override
 	public void visitRectangle(JRRectangle rectangle)
 	{
 		visitElement(rectangle);
 	}
 
+	@Override
 	public void visitStaticText(JRStaticText staticText)
 	{
 		visitElement(staticText);
 	}
 
+	@Override
 	public void visitSubreport(JRSubreport subreport)
 	{
 		visitElement(subreport);
 	}
 
+	@Override
 	public void visitTextField(JRTextField textField)
 	{
 		visitElement(textField);

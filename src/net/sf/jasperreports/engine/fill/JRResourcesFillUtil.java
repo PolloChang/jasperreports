@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,24 +23,20 @@
  */
 package net.sf.jasperreports.engine.fill;
 
-import java.net.URLStreamHandlerFactory;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.JRResourcesUtil;
 
 /**
  * Resources utility class used for report fills.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRResourcesFillUtil.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRResourcesUtil
  */
 public final class JRResourcesFillUtil
 {
 	
-	@SuppressWarnings("deprecation")
 	public static ResourcesFillContext setResourcesFillContext(Map<String,Object> parameterValues)
 	{
 		ResourcesFillContext context = new ResourcesFillContext();
@@ -53,49 +49,20 @@ public final class JRResourcesFillUtil
 			context.setClassLoader(classLoader);
 		}
 		
-		URLStreamHandlerFactory urlHandlerFactory = (URLStreamHandlerFactory) 
-				parameterValues.get(JRParameter.REPORT_URL_HANDLER_FACTORY);
-		if (urlHandlerFactory != null)
-		{
-			JRResourcesUtil.setThreadURLHandlerFactory(urlHandlerFactory);
-			context.setUrlHandlerFactory(urlHandlerFactory);
-		}
-		
-		FileResolver fileResolver = (FileResolver) parameterValues.get(
-				JRParameter.REPORT_FILE_RESOLVER);
-		if (fileResolver != null)
-		{
-			JRResourcesUtil.setThreadFileResolver(fileResolver);
-			context.setFileResolver(fileResolver);
-		}
-		
 		return context;
 	}
 
-	@SuppressWarnings("deprecation")
 	public static void revertResourcesFillContext(ResourcesFillContext context)
 	{
 		if (context.getClassLoader() != null)
 		{
 			JRResourcesUtil.resetClassLoader();
 		}
-		
-		if (context.getUrlHandlerFactory() != null)
-		{
-			JRResourcesUtil.resetThreadURLHandlerFactory();
-		}
-		
-		if (context.getFileResolver() != null)
-		{
-			JRResourcesUtil.resetThreadFileResolver();
-		}
 	}
 	
 	public static class ResourcesFillContext
 	{
 		protected ClassLoader classLoader;
-		protected URLStreamHandlerFactory urlHandlerFactory;
-		protected FileResolver fileResolver;
 		
 		public ClassLoader getClassLoader()
 		{
@@ -106,27 +73,6 @@ public final class JRResourcesFillUtil
 		{
 			this.classLoader = classLoader;
 		}
-		
-		public URLStreamHandlerFactory getUrlHandlerFactory()
-		{
-			return urlHandlerFactory;
-		}
-		
-		public void setUrlHandlerFactory(URLStreamHandlerFactory urlHandlerFactory)
-		{
-			this.urlHandlerFactory = urlHandlerFactory;
-		}
-		
-		public FileResolver getFileResolver()
-		{
-			return fileResolver;
-		}
-		
-		public void setFileResolver(FileResolver fileResolver)
-		{
-			this.fileResolver = fileResolver;
-		}
-		
 	}
 
 	

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.view.JRSaveContributor;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRRtfSaveContributor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRRtfSaveContributor extends JRSaveContributor 
 {
@@ -70,9 +69,7 @@ public class JRRtfSaveContributor extends JRSaveContributor
 		super(jasperReportsContext, locale, resBundle);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public boolean accept(File file)
 	{
 		if(file.isDirectory()){
@@ -82,17 +79,13 @@ public class JRRtfSaveContributor extends JRSaveContributor
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getDescription()
 	{
 		return getBundleString("file.desc.rtf");
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public void save(JasperPrint jasperPrint, File file) throws JRException
 	{
 		if(!file.getName().toLowerCase().endsWith(EXTENSION_RTF))

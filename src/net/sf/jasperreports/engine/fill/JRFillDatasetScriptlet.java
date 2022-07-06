@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,54 +24,29 @@
 package net.sf.jasperreports.engine.fill;
 
 import java.util.Iterator;
-import java.util.Map;
 
 import net.sf.jasperreports.engine.JRAbstractScriptlet;
 import net.sf.jasperreports.engine.JRScriptletException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillDatasetScriptlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 {
 	
-	/**
-	 *
-	 */
-	private JRFillDataset dataset;
-
-	/**
-	 *
-	 */
-	public JRFillDatasetScriptlet(JRFillDataset dataset)
+	@Override
+	public void setData(JRFillDataset dataset)
 	{
-		this.dataset = dataset;
-	}
-
-
-	/**
-	 *
-	 */
-	public void setData(
-		Map<String,JRFillParameter> parsm,
-		Map<String,JRFillField> fldsm,
-		Map<String,JRFillVariable> varsm,
-		JRFillGroup[] grps
-		)
-	{
-		super.setData(parsm, fldsm, varsm, grps);
+		super.setData(dataset);
 		
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
 		{
-			it.next().setData(parsm, fldsm, varsm, grps);
+			it.next().setData(dataset);
 		}
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforeReportInit() throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -81,9 +56,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterReportInit() throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -93,9 +66,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforePageInit() throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -105,9 +76,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterPageInit() throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -117,9 +86,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforeColumnInit() throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -129,9 +96,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterColumnInit() throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -141,9 +106,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforeGroupInit(String groupName) throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -153,9 +116,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterGroupInit(String groupName) throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -165,9 +126,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void beforeDetailEval() throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)
@@ -177,9 +136,7 @@ public class JRFillDatasetScriptlet extends JRAbstractScriptlet
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void afterDetailEval() throws JRScriptletException
 	{
 		for(Iterator<JRAbstractScriptlet> it = dataset.scriptlets.iterator(); it.hasNext();)

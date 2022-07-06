@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,11 +23,15 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.type.OrientationEnum;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.type.SectionTypeEnum;
 import net.sf.jasperreports.engine.type.WhenNoDataTypeEnum;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -234,8 +238,8 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  *   &lt;property name="com.mycompany.report.author" value="John Smith"/&gt;
  *   &lt;property name="com.mycompany.report.description" value="Displays sales data"/&gt;</pre>
  * At runtime, this application-defined data can be retrieved from the report template using
- * the <code>public JRPropertiesMap getPropertiesMap()</code> inherited from the 
- * {@link net.sf.jasperreports.engine.JRPropertiesHolder} interface.
+ * the public method {@link net.sf.jasperreports.engine.JRPropertiesHolder#getPropertiesMap() getPropertiesMap()} 
+ * inherited from the {@link net.sf.jasperreports.engine.JRPropertiesHolder} interface.
  * <h3>Report Styles</h3>
  * A report style is a collection of style settings declared at the report level. These settings
  * can be reused throughout the entire report template when setting the style properties of
@@ -262,7 +266,7 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * condition is true. This is done using conditional styles.
  * </p><p>
  * The default style of a report can be accessed using the 
- * <code>public JRStyle getDefaultStyle()</code> method inherited from the 
+ * {@link net.sf.jasperreports.engine.JRDefaultStyleProvider#getDefaultStyle() getDefaultStyle()} method inherited from the 
  * {@link net.sf.jasperreports.engine.JRDefaultStyleProvider} interface.
  * </p>
  * @see net.sf.jasperreports.engine.JRParameter#IS_IGNORE_PAGINATION
@@ -273,11 +277,21 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * @see net.sf.jasperreports.engine.util.DefaultFormatFactory
  * @see net.sf.jasperreports.engine.util.FormatFactory
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRReport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRReport extends JRDefaultStyleProvider, JRPropertiesHolder, JRIdentifiable
 {
 
+	/**
+	 * Property that specifies a default value for the <code>whenNoDataType</code> attribute of report.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = "NoPages",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_3_1,
+			valueType = WhenNoDataTypeEnum.class
+			)
+	public static final String CONFIG_PROPERTY_WHEN_NO_DATA_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "when.no.data.type";
 
 	/**
 	 * A constant used to specify that the language used by expressions is Java.
@@ -342,6 +356,12 @@ public interface JRReport extends JRDefaultStyleProvider, JRPropertiesHolder, JR
 	 * Sets the report behavior in case of empty datasources.
 	 */
 	public void setWhenNoDataType(WhenNoDataTypeEnum whenNoDataType);
+
+	/**
+	 * Specifies whether report sections are made of bands or of parts.
+	 * @return a value representing one of the section type constants in {@link SectionTypeEnum}
+	 */
+	public SectionTypeEnum getSectionType();
 
 	/**
 	 *
@@ -432,6 +452,13 @@ public interface JRReport extends JRDefaultStyleProvider, JRPropertiesHolder, JR
 	 */
 	public void removeProperty(String name);
 
+	/**
+	 * Returns the list of dynamic/expression-based properties for this report.
+	 * 
+	 * @return an array containing the expression-based properties of this report
+	 */
+	public DatasetPropertyExpression[] getPropertyExpressions();
+	
 	/**
 	 * Gets an array of imports (needed if report expression require additional classes in order to compile).
 	 */

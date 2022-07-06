@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,33 +34,39 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.SortedSet;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.crosstabs.JRCellContents;
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.export.PrintElementIndex;
 import net.sf.jasperreports.engine.export.ExporterFilter;
+import net.sf.jasperreports.engine.export.PrintElementIndex;
+import net.sf.jasperreports.engine.export.tabulator.TableCell.CellType;
 import net.sf.jasperreports.engine.type.BandTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.Bounds;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.Pair;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.export.AccessibilityUtil;
+import net.sf.jasperreports.export.type.AccessibilityTagEnum;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: Tabulator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Tabulator
 {
 	private static final Log log = LogFactory.getLog(Tabulator.class);
+	public static final String EXCEPTION_MESSAGE_KEY_DROPPING_PARENT_ERROR = "export.tabulator.dropping.parent.error";
 	
 	private final ExporterFilter filter;
 	private final List<? extends JRPrintElement> elements;
+	private final boolean isAccessibleHtml;
 	
 	private Table mainTable;
 	
@@ -70,10 +76,11 @@ public class Tabulator
 	private CollapseCheck collapseCheck = new CollapseCheck();
 	private TableCellCreator tableCellCreator = new TableCellCreator();
 
-	public Tabulator(ExporterFilter filter, List<? extends JRPrintElement> elements)
+	public Tabulator(ExporterFilter filter, List<? extends JRPrintElement> elements, boolean isAccessibleHtml)
 	{
 		this.filter = filter;
 		this.elements = elements;
+		this.isAccessibleHtml = isAccessibleHtml;
 		
 		this.mainTable = new Table(this);
 	}
@@ -82,6 +89,11 @@ public class Tabulator
 	{
 		// TODO lucianc force background as different layer
 		layoutElements(elements, mainTable, null, null, 0, 0, null);
+	}
+	
+	public void tabulate(int xOffset, int yOffset)
+	{
+		layoutElements(elements, mainTable, null, null, xOffset, yOffset, null);
 	}
 
 	protected void layoutElements(List<? extends JRPrintElement> elementList, Table table, 
@@ -171,37 +183,64 @@ public class Tabulator
 			}
 		}
 		
-		for (Row row : rowRange.rangeSet)
+		Bounds covered = null;
+		Bounds originalBounds;
+		
+		overlapLoop:
+		do
 		{
-			for (Column col : colRange.rangeSet)
+			originalBounds = overlapBounds.cloneBounds();
+			
+			if (rowRange.start != overlapBounds.getStartY() || rowRange.end != overlapBounds.getEndY())
 			{
-				Cell cell = row.getCell(col);
-				if (!canOverwrite(cell, parentCell))
+				rowRange = table.rows.getRange(overlapBounds.getStartY(), overlapBounds.getEndY());
+			}
+			if (colRange.start != overlapBounds.getStartX() || colRange.end != overlapBounds.getEndX())
+			{
+				colRange = table.columns.getRange(overlapBounds.getStartX(), overlapBounds.getEndX());
+			}
+			
+			for (Row row : rowRange.rangeSet)
+			{
+				for (Column col : colRange.rangeSet)
 				{
-					overlap = true;
-					if (!allowOverlap)
+					if (covered != null && covered.contains(col.startCoord, col.endCoord, row.startCoord, row.endCoord))
 					{
-						break;
+						//we've been here before
+						continue;
 					}
+					
+					Cell cell = row.getCell(col);
+					if (!canOverwrite(cell, parentCell))
+					{
+						overlap = true;
+						if (!allowOverlap)
+						{
+							break overlapLoop;
+						}
 
-					// TODO lucianc see if we can avoid some of these checks
-					Cell overlapParentCell = overlapParentCell(cell, parentCell);
-					Pair<Column, Column> colSpanRange = getColumnSpanRange(table, col, row, overlapParentCell);
-					Pair<Row, Row> rowSpanRange = getRowSpanRange(table, col, row, overlapParentCell);
-					
-					if (log.isTraceEnabled())
-					{
-						log.trace("found overlap with cell " + cell 
-								+ ", overlap parent " + overlapParentCell
-								+ ", column span range " + colSpanRange.first().startCoord + " to " + colSpanRange.second().startCoord
-								+ ", row span range " + rowSpanRange.first().startCoord + " to " + rowSpanRange.second().startCoord);
+						// TODO lucianc see if we can avoid some of these checks
+						Cell overlapParentCell = overlapParentCell(cell, parentCell);
+						Pair<Column, Column> colSpanRange = getColumnSpanRange(table, col, row, overlapParentCell);
+						Pair<Row, Row> rowSpanRange = getRowSpanRange(table, col, row, overlapParentCell);
+						
+						if (log.isTraceEnabled())
+						{
+							log.trace("found overlap with cell " + cell 
+									+ ", overlap parent " + overlapParentCell
+									+ ", column span range " + colSpanRange.first().startCoord + " to " + colSpanRange.second().startCoord
+									+ ", row span range " + rowSpanRange.first().startCoord + " to " + rowSpanRange.second().startCoord);
+						}
+						
+						overlapBounds.grow(colSpanRange.first().startCoord, colSpanRange.second().startCoord, 
+								rowSpanRange.first().startCoord, rowSpanRange.second().startCoord);
 					}
-					
-					overlapBounds.grow(colSpanRange.first().startCoord, colSpanRange.second().startCoord, 
-							rowSpanRange.first().startCoord, rowSpanRange.second().startCoord);
 				}
 			}
+			
+			covered = originalBounds;
 		}
+		while (!originalBounds.equals(overlapBounds));
 		
 		if (!overlap)
 		{
@@ -342,23 +381,52 @@ public class Tabulator
 		if (element instanceof JRPrintFrame)
 		{
 			JRPrintFrame frame = (JRPrintFrame) element;
-			FrameCell frameCell = new FrameCell(parentCell, parentIndex, elementIndex);
-			setElementCells(elementColRange, elementRowRange, frameCell);
-			
-			// go deep in the frame
-			PrintElementIndex frameIndex = new PrintElementIndex(parentIndex, elementIndex);
-			JRLineBox box = frame.getLineBox();
-			layoutElements(frame.getElements(), table, frameCell, frameIndex, 
-					xOffset + frame.getX() + box.getLeftPadding(), 
-					yOffset + frame.getY() + box.getTopPadding(),
-					new Bounds(0, frame.getWidth()  - box.getLeftPadding() - box.getRightPadding(),
-							0, frame.getHeight() - box.getTopPadding() - box.getBottomPadding()));
+			boolean createNestedTable = false;
+			if (isAccessibleHtml)
+			{
+				String accessibilityTag = JRPropertiesUtil.getOwnProperty(frame, AccessibilityUtil.PROPERTY_ACCESSIBILITY_TAG);
+				createNestedTable = AccessibilityTagEnum.TABLE == AccessibilityTagEnum.getByName(accessibilityTag);
+			}
+			if (createNestedTable)
+			{
+				Table nestedTable = new Table(this);
+				DimensionRange<Column> nestedColRange = nestedTable.columns.addEntries(nestedTable.columns.getRange(0, frame.getWidth()));
+				DimensionRange<Row> nestedRowRange = nestedTable.rows.addEntries(nestedTable.rows.getRange(0, element.getHeight()));
+				layoutFrame(nestedTable, null, 0, 0, parentIndex, elementIndex, nestedColRange, nestedRowRange, frame);
+				
+				NestedTableCell tableCell = new NestedTableCell(parentCell, nestedTable);
+				setElementCells(elementColRange, elementRowRange, tableCell);
+			}
+			else
+			{
+				layoutFrame(table, parentCell, 
+						xOffset + frame.getX(), yOffset + frame.getY(), 
+						parentIndex, elementIndex, 
+						elementColRange, elementRowRange, frame);
+			}
 		}
 		else
 		{
 			ElementCell elementCell = new ElementCell(parentCell, parentIndex, elementIndex);
 			setElementCells(elementColRange, elementRowRange, elementCell);
 		}
+	}
+
+	protected void layoutFrame(Table table, FrameCell parentCell, int xOffset, int yOffset,
+			PrintElementIndex parentIndex, int elementIndex, DimensionRange<Column> elementColRange,
+			DimensionRange<Row> elementRowRange, JRPrintFrame frame)
+	{
+		FrameCell frameCell = new FrameCell(parentCell, parentIndex, elementIndex);
+		setElementCells(elementColRange, elementRowRange, frameCell);
+		
+		// go deep in the frame
+		PrintElementIndex frameIndex = new PrintElementIndex(parentIndex, elementIndex);
+		JRLineBox box = frame.getLineBox();
+		layoutElements(frame.getElements(), table, frameCell, frameIndex, 
+				xOffset + box.getLeftPadding(), 
+				yOffset + box.getTopPadding(),
+				new Bounds(0, frame.getWidth()  - box.getLeftPadding() - box.getRightPadding(), 
+						0, frame.getHeight() - box.getTopPadding() - box.getBottomPadding()));
 	}
 
 	protected boolean canOverwrite(Cell existingCell, FrameCell currentParent)
@@ -394,13 +462,13 @@ public class Tabulator
 	
 	protected Cell overlapParentCell(Cell existingCell, FrameCell currentParent)
 	{
-		LinkedList<FrameCell> existingParents = new LinkedList<FrameCell>();
+		LinkedList<FrameCell> existingParents = new LinkedList<>();
 		for (FrameCell parent = existingCell.getParent(); parent != null; parent = parent.getParent())
 		{
 			existingParents.addFirst(parent);
 		}
 		
-		LinkedList<FrameCell> currentParents = new LinkedList<FrameCell>();
+		LinkedList<FrameCell> currentParents = new LinkedList<>();
 		for (FrameCell parent = currentParent; parent != null; parent = parent.getParent())
 		{
 			currentParents.addFirst(parent);
@@ -447,7 +515,7 @@ public class Tabulator
 		assert endCol != null;
 		assert startCol.startCoord < endCol.startCoord;
 		
-		return new Pair<Column, Column>(startCol, endCol);
+		return new Pair<>(startCol, endCol);
 	}
 	
 	protected Pair<Row, Row> getRowSpanRange(Table table, Column col, Row row, Cell spanned)
@@ -476,7 +544,7 @@ public class Tabulator
 		assert endRow != null;
 		assert startRow.startCoord < endRow.startCoord;
 		
-		return new Pair<Row, Row>(startRow, endRow);
+		return new Pair<>(startRow, endRow);
 	}
 
 	protected void moveCellsToLayerTable(FrameCell parentCell, Table layerTable,
@@ -518,7 +586,7 @@ public class Tabulator
 
 	protected void collapseSpanColumns(Table table, DimensionRange<Column> range)
 	{
-		List<Pair<Column, Column>> removeList = new ArrayList<Pair<Column, Column>>();
+		List<Pair<Column, Column>> removeList = new ArrayList<>();
 		Column prevColumn = null;
 		for (Column column : range.rangeSet)
 		{
@@ -545,7 +613,7 @@ public class Tabulator
 			if (collapse)
 			{
 				// removing outside the iteration so that the iterator is not broken
-				removeList.add(new Pair<Column, Column>(column, prevColumn));
+				removeList.add(new Pair<>(column, prevColumn));
 			}
 			else
 			{
@@ -561,7 +629,7 @@ public class Tabulator
 
 	protected void collapseSpanRows(Table table, DimensionRange<Row> range)
 	{
-		List<Pair<Row, Row>> removeList = new ArrayList<Pair<Row, Row>>();
+		List<Pair<Row, Row>> removeList = new ArrayList<>();
 		Row prevRow = null;
 		for (Row row : range.rangeSet)
 		{
@@ -588,7 +656,7 @@ public class Tabulator
 			if (collapse)
 			{
 				// removing outside the iteration so that the iterator is not broken
-				removeList.add(new Pair<Row, Row>(row, prevRow));
+				removeList.add(new Pair<>(row, prevRow));
 			}
 			else
 			{
@@ -726,7 +794,7 @@ public class Tabulator
 			++span;
 			lastCol = tailCol;
 		}
-		return new SpanInfo<Column>(span, lastCol);
+		return new SpanInfo<>(span, lastCol);
 	}
 
 	protected SpanInfo<Row> getRowCellSpan(TablePosition position, Cell cell)
@@ -749,7 +817,7 @@ public class Tabulator
 			++span;
 			lastRow = tailRow;
 		}
-		return new SpanInfo<Row>(span, lastRow);
+		return new SpanInfo<>(span, lastRow);
 	}
 
 	protected FrameCell droppedParent(FrameCell existingParent, FrameCell parent)
@@ -757,7 +825,10 @@ public class Tabulator
 		if (existingParent == null)
 		{
 			// should not happen
-			throw new JRRuntimeException("Internal error while dropping parent");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_DROPPING_PARENT_ERROR,
+					(Object[])null);
 		}
 		
 		if (existingParent.equals(parent))
@@ -801,6 +872,12 @@ public class Tabulator
 		{
 			return Tabulator.this.isParent(parentCell, layeredCell.getParent());
 		}		
+
+		@Override
+		public Boolean visit(NestedTableCell nestedTableCell, FrameCell parentCell)
+		{
+			return Tabulator.this.isParent(parentCell, nestedTableCell.getParent());
+		}		
 	}
 	
 	protected class SpanRangeCheck implements CellVisitor<Cell, Boolean, RuntimeException>
@@ -828,6 +905,12 @@ public class Tabulator
 		{
 			return spanned.equals(cell) || Tabulator.this.isSplitCell(spanned, cell);
 		}
+
+		@Override
+		public Boolean visit(NestedTableCell spanned, Cell cell)
+		{
+			return spanned.equals(cell) || Tabulator.this.isSplitCell(spanned, cell);
+		}
 	}
 	
 	protected class SpanCheck implements CellVisitor<Cell, Boolean, RuntimeException>
@@ -852,6 +935,12 @@ public class Tabulator
 
 		@Override
 		public Boolean visit(LayeredCell spanned, Cell cell)
+		{
+			return Tabulator.this.isSplitCell(spanned, cell);
+		}
+
+		@Override
+		public Boolean visit(NestedTableCell spanned, Cell cell)
 		{
 			return Tabulator.this.isSplitCell(spanned, cell);
 		}
@@ -884,11 +973,17 @@ public class Tabulator
 		{
 			return Tabulator.this.isSplitCell(spanned, cell);
 		}
+
+		@Override
+		public Boolean visit(NestedTableCell spanned, Cell cell)
+		{
+			return Tabulator.this.isSplitCell(spanned, cell);
+		}
 	}
 	
 	protected class ParentDrop implements CellVisitor<FrameCell, Cell, RuntimeException>
 	{
-		private final Map<FrameCell, FrameCell> parentMapping = new HashMap<FrameCell, FrameCell>();
+		private final Map<FrameCell, FrameCell> parentMapping = new HashMap<>();
 
 		protected FrameCell droppedParent(FrameCell existingParent, FrameCell parent)
 		{
@@ -942,6 +1037,14 @@ public class Tabulator
 			layeredCell.setParent(droppedParent);
 			return layeredCell;
 		}
+
+		@Override
+		public Cell visit(NestedTableCell nestedTableCell, FrameCell parent)
+		{
+			FrameCell droppedParent = droppedParent(nestedTableCell.getParent(), parent);
+			nestedTableCell.setParent(droppedParent);
+			return nestedTableCell;
+		}
 	}
 	
 	protected class TableCellCreator implements CellVisitor<TablePosition, TableCell, RuntimeException>
@@ -953,11 +1056,12 @@ public class Tabulator
 			int colSpan = getColumnCellSpan(position, cell).span;
 			int rowSpan = getRowCellSpan(position, cell).span;
 			Color backcolor = getElementBackcolor(cell);
+			CellType cellType = getCellType(cell);
 			
 			JRLineBox elementBox = (element instanceof JRBoxContainer) ? ((JRBoxContainer) element).getLineBox() : null;
 			JRLineBox box = copyParentBox(cell, element, elementBox, true, true, true, true);
 			
-			TableCell tableCell = new TableCell(Tabulator.this, position, cell, element, colSpan, rowSpan, backcolor, box);
+			TableCell tableCell = new TableCell(Tabulator.this, position, cell, element, cellType, colSpan, rowSpan, backcolor, box);
 			return tableCell;
 		}
 
@@ -973,24 +1077,37 @@ public class Tabulator
 		{
 			JRPrintElement element = getCellElement(frameCell);
 			Color backcolor = getElementBackcolor(frameCell);
+			CellType cellType = getCellType(frameCell);
 			
 			boolean[] borders = getFrameCellBorders(position.getTable(), frameCell,
 					position.getColumn(), position.getColumn(),
 					position.getRow(), position.getRow());
 			JRLineBox box = copyFrameBox(frameCell, (JRPrintFrame) element, null, borders[0], borders[1], borders[2], borders[3]);
 			
-			return new TableCell(Tabulator.this, position, frameCell, element, 1, 1, backcolor, box);
+			return new TableCell(Tabulator.this, position, frameCell, element, cellType, 1, 1, backcolor, box);
 		}
 
 		@Override
 		public TableCell visit(LayeredCell layeredCell, TablePosition position)
 		{
-			SpanInfo<Column> colSpan = getColumnCellSpan(position, layeredCell);
-			SpanInfo<Row> rowSpan = getRowCellSpan(position, layeredCell);
-			Color backcolor = getElementBackcolor(layeredCell.getParent());
+			return createFromParent(layeredCell, position);
+		}
+
+		@Override
+		public TableCell visit(NestedTableCell cell, TablePosition position) throws RuntimeException
+		{
+			return createFromParent(cell, position);
+		}
+
+		protected TableCell createFromParent(Cell cell, TablePosition position)
+		{
+			SpanInfo<Column> colSpan = getColumnCellSpan(position, cell);
+			SpanInfo<Row> rowSpan = getRowCellSpan(position, cell);
+			Color backcolor = getElementBackcolor(cell.getParent());
+			CellType cellType = getCellType(cell.getParent()) ;
 			
 			JRLineBox box = null;
-			FrameCell parentCell = layeredCell.getParent();
+			FrameCell parentCell = cell.getParent();
 			if (parentCell != null)
 			{
 				boolean[] borders = getFrameCellBorders(position.getTable(), parentCell,
@@ -1003,7 +1120,7 @@ public class Tabulator
 				}
 			}
 			
-			return new TableCell(Tabulator.this, position, layeredCell, null, colSpan.span, rowSpan.span, backcolor, box);
+			return new TableCell(Tabulator.this, position, cell, null, cellType, colSpan.span, rowSpan.span, backcolor, box);
 		}
 		
 		protected Color getElementBackcolor(BaseElementCell cell)
@@ -1020,6 +1137,37 @@ public class Tabulator
 			}
 			
 			return getElementBackcolor(cell.getParent());
+		}
+		
+		protected CellType getCellType(BaseElementCell cell)
+		{
+			if (cell == null || !isAccessibleHtml)
+			{
+				return null;
+			}
+			
+			JRPrintElement element = getCellElement(cell);
+			if (element.getPropertiesMap().containsProperty(AccessibilityUtil.PROPERTY_ACCESSIBILITY_TAG))
+			{
+				AccessibilityTagEnum accesibitliTagEnum = 
+					AccessibilityTagEnum.getByName(
+						element.getPropertiesMap().getProperty(AccessibilityUtil.PROPERTY_ACCESSIBILITY_TAG)
+						);
+				return 
+					accesibitliTagEnum == AccessibilityTagEnum.COLUMN_HEADER 
+					? CellType.COLUMN_HEADER 
+					: (accesibitliTagEnum == AccessibilityTagEnum.ROW_HEADER ? CellType.ROW_HEADER : null);
+			}
+			else if (element.getPropertiesMap().containsProperty(JRCellContents.PROPERTY_TYPE))
+			{
+				String cellContentsType = element.getPropertiesMap().getProperty(JRCellContents.PROPERTY_TYPE);
+				return 
+					JRCellContents.TYPE_COLUMN_HEADER.equals(cellContentsType) || JRCellContents.TYPE_CROSSTAB_HEADER.equals(cellContentsType)
+					? CellType.COLUMN_HEADER
+					: (JRCellContents.TYPE_ROW_HEADER.equals(cellContentsType) ? CellType.ROW_HEADER : null);
+			}
+			
+			return getCellType(cell.getParent());
 		}
 		
 		protected JRLineBox copyParentBox(Cell cell, JRPrintElement element, JRLineBox baseBox, 

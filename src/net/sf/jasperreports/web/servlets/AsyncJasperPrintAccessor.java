@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,31 +30,34 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.fill.AsynchronousFilllListener;
 import net.sf.jasperreports.engine.fill.FillHandle;
 import net.sf.jasperreports.engine.fill.FillListener;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * Generated report accessor used for asynchronous report executions that publishes pages
  * before the entire report has been generated.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: AsyncJasperPrintAccessor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class AsyncJasperPrintAccessor implements JasperPrintAccessor, AsynchronousFilllListener, FillListener
 {
 
 	private static final Log log = LogFactory.getLog(AsyncJasperPrintAccessor.class);
+	public static final String EXCEPTION_MESSAGE_KEY_LOCK_ATTEMPT_INTERRUPTED = "web.servlets.lock.attempt.interrupted";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_JASPERPRINT_GENERATED = "web.servlets.no.jasperprint.generated";
+	public static final String EXCEPTION_MESSAGE_KEY_REPORT_GENERATION_CANCELLED = "web.servlets.report.generation.cancelled";
+	public static final String EXCEPTION_MESSAGE_KEY_ASYNC_REPORT_GENERATION_ERROR = "web.servlets.async.report.generation.error";
 	
 	private FillHandle fillHandle;
 	private final Lock lock;
 	private final Condition pageCondition;
-	private final Map<Integer, Long> trackedPages = new HashMap<Integer, Long>();
+	private final Map<Integer, Long> trackedPages = new HashMap<>();
 	
 	private volatile boolean done;
 	private boolean cancelled;
@@ -85,7 +88,11 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		}
 		catch (InterruptedException e)
 		{
-			throw new JRRuntimeException("Interrupted while attempting to lock", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_LOCK_ATTEMPT_INTERRUPTED,
+					(Object[])null,
+					e);
 		}
 	}
 
@@ -94,6 +101,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		lock.unlock();
 	}
 	
+	@Override
 	public ReportPageStatus pageStatus(int pageIdx, Long pageTimestamp)
 	{
 		if (!done)
@@ -155,6 +163,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		return status;
 	}
 
+	@Override
 	public JasperPrint getJasperPrint()
 	{
 		return jasperPrint;
@@ -194,6 +203,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		return done;
 	}
 	
+	@Override
 	public JasperPrint getFinalJasperPrint()
 	{
 		if (!done)
@@ -209,7 +219,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 						log.debug("waiting for report end");
 					}
 					
-					pageCondition.await();
+					pageCondition.await();//FIXME use a different condition to void frequent interruptions
 				}
 			}
 			catch (InterruptedException e)
@@ -224,17 +234,25 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		
 		if (error != null)
 		{
-			throw new JRRuntimeException("Error occured during report generation", error);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_ASYNC_REPORT_GENERATION_ERROR,
+					(Object[])null,
+					error);
 		}
 		
 		if (jasperPrint == null)
 		{
-			throw new JRRuntimeException("No JasperPrint generated");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NO_JASPERPRINT_GENERATED,
+					(Object[])null);
 		}
 		
 		return jasperPrint;
 	}
 
+	@Override
 	public void reportFinished(JasperPrint jasperPrint)
 	{
 		if (log.isDebugEnabled())
@@ -265,6 +283,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		}
 	}
 
+	@Override
 	public void reportCancelled()
 	{
 		if (log.isDebugEnabled())
@@ -280,7 +299,9 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 			pageCount = jasperPrint == null ? 0 : jasperPrint.getPages().size();
 
 			// store an error as cancelled status
-			error = new JRRuntimeException("Report generation cancelled");
+			error = new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_REPORT_GENERATION_CANCELLED,
+						(Object[])null);
 			
 			// clear fillHandle to release filler references
 			fillHandle = null;
@@ -294,6 +315,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		}
 	}
 
+	@Override
 	public void reportFillError(Throwable t)
 	{
 		log.error("Error during report execution", t);
@@ -317,6 +339,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		}
 	}
 
+	@Override
 	public void pageGenerated(JasperPrint jasperPrint, int pageIndex)
 	{
 		if (log.isDebugEnabled())
@@ -342,6 +365,7 @@ public class AsyncJasperPrintAccessor implements JasperPrintAccessor, Asynchrono
 		}
 	}
 
+	@Override
 	public void pageUpdated(JasperPrint jasperPrint, int pageIndex)
 	{
 		if (log.isDebugEnabled())

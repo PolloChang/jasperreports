@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,10 +31,10 @@ import net.sf.jasperreports.engine.type.ColorEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRColorUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRColorUtil
 {
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_COLOR = "util.color.invalid.color";
 
 	/**
 	 *
@@ -116,7 +116,10 @@ public final class JRColorUtil
 					}
 					else
 					{
-						throw new JRRuntimeException("Invalid color : " + strColor);
+						throw 
+							new JRRuntimeException(
+								EXCEPTION_MESSAGE_KEY_INVALID_COLOR,
+								new Object[]{strColor});
 					}
 					
 					String numStr = strColor.substring(prefix.length(), strColor.length() - RGBA_SUFFIX.length());
@@ -124,7 +127,10 @@ public final class JRColorUtil
 					
 					if (numArray == null || numArray.length != numArrayLength)
 					{
-						throw new JRRuntimeException("Invalid color : " + strColor);
+						throw 
+							new JRRuntimeException(
+								EXCEPTION_MESSAGE_KEY_INVALID_COLOR,
+								new Object[]{strColor});
 					}
 					else
 					{
@@ -133,7 +139,10 @@ public final class JRColorUtil
 							numArray[i] = numArray[i].trim();
 							if (numArray[i].length() == 0)
 							{
-								throw new JRRuntimeException("Invalid color : " + strColor);
+								throw 
+									new JRRuntimeException(
+										EXCEPTION_MESSAGE_KEY_INVALID_COLOR,
+										new Object[]{strColor});
 							}
 						}
 
@@ -170,6 +179,10 @@ public final class JRColorUtil
 		return color;
 	}
 
+	public static int getOpaqueArgb(Color color, Color defaultColor) {
+		Color result = color == null ? defaultColor : color;
+		return result == null ? 0x00000000 : result.getRGB() & 0xffffffff;
+	}
 
 	private JRColorUtil()
 	{

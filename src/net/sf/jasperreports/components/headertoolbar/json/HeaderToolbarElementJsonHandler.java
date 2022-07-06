@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,6 +39,9 @@ import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElement;
 import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElementUtils;
 import net.sf.jasperreports.components.headertoolbar.actions.ConditionalFormattingData;
@@ -67,13 +70,14 @@ import net.sf.jasperreports.engine.JRExpressionChunk;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRIdentifiable;
-import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRSortField;
+import net.sf.jasperreports.engine.JRStyle;
+import net.sf.jasperreports.engine.JRStyleContainer;
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReportContext;
-import net.sf.jasperreports.engine.base.JRBasePrintHyperlink;
 import net.sf.jasperreports.engine.design.JRDesignComponentElement;
 import net.sf.jasperreports.engine.design.JRDesignDataset;
 import net.sf.jasperreports.engine.design.JRDesignDatasetRun;
@@ -83,32 +87,33 @@ import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.export.GenericElementJsonHandler;
 import net.sf.jasperreports.engine.export.JsonExporterContext;
 import net.sf.jasperreports.engine.fonts.FontUtil;
-import net.sf.jasperreports.engine.type.JREnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
+import net.sf.jasperreports.engine.util.JRDataUtils;
 import net.sf.jasperreports.engine.util.JRStringUtil;
-import net.sf.jasperreports.engine.util.MessageProvider;
-import net.sf.jasperreports.engine.util.MessageUtil;
 import net.sf.jasperreports.repo.JasperDesignCache;
+import net.sf.jasperreports.util.JacksonUtil;
 import net.sf.jasperreports.web.commands.CommandTarget;
-import net.sf.jasperreports.web.util.JacksonUtil;
-import net.sf.jasperreports.web.util.ReportInteractionHyperlinkProducer;
 import net.sf.jasperreports.web.util.VelocityUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id:ChartThemesUtilities.java 2595 2009-02-10 17:56:51Z teodord $
  */
 public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandler
 {
+	private static final Log log = LogFactory.getLog(HeaderToolbarElementJsonHandler.class);
+	
 	private static final String HEADER_TOOLBAR_ELEMENT_JSON_TEMPLATE = "net/sf/jasperreports/components/headertoolbar/json/resources/HeaderToolbarElementJsonTemplate.vm";
 	private static final String PARAM_GENERATED_TEMPLATE_PREFIX = "net.sf.jasperreports.headertoolbar.";
-	
-	private static final List<String> datePatterns = new ArrayList<String>(); 
-	private static final List<String> timePatterns = new ArrayList<String>(); 
-	private static final Map<String, String> numberPatternsMap = new LinkedHashMap<String, String>(); 
+
+	private static final List<String> datePatterns = new ArrayList<>(); 
+	private static final List<String> timePatterns = new ArrayList<>(); 
+	private static final Map<String, String> numberPatternsMap = new LinkedHashMap<>();
+
+	private static final String DURATION_PATTERN = "[h]:mm:ss";
 	
 	static {
 		// date patterns
@@ -144,10 +149,12 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 		numberPatternsMap.put("###0;(###0)", "(1234)");
 		numberPatternsMap.put("###0;(-###0)", "(-1234)");
 		numberPatternsMap.put("###0;(###0-)", "(1234-)");
+		numberPatternsMap.put(DURATION_PATTERN, "[h]:mm:ss");
 	}
 	
 	private static final String TABLE_UUID = "exporter_first_attempt";
 
+	@Override
 	public String getJsonFragment(JsonExporterContext context, JRGenericPrintElement element)
 	{
 		boolean templateAlreadyLoaded = false;
@@ -164,15 +171,19 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			}
 			int columnIndex = Integer.parseInt(element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_COLUMN_INDEX));
 			
-			Map<String, Object> contextMap = new HashMap<String, Object>();
+			Map<String, Object> contextMap = new HashMap<>();
 			contextMap.put("JRStringUtil", JRStringUtil.class);
 			contextMap.put("tableUUID", tableUUID);
 			
 			JasperReportsContext jrContext = context.getJasperReportsContext();
-			Locale locale = (Locale) reportContext.getParameterValue(JRParameter.REPORT_LOCALE);
 			
-			if (locale == null) {
-				locale = Locale.getDefault();
+			JasperPrint jasperPrint = context.getExportedReport();
+			Locale locale = jasperPrint.getLocaleCode() == null ? Locale.getDefault() : JRDataUtils.getLocale(jasperPrint.getLocaleCode());
+			TimeZone timeZone = getFilterTimeZone(jasperPrint, element);
+			
+			if (log.isDebugEnabled())
+			{
+				log.debug("column " + columnUuid + " has locale " + locale + ", timezone " + timeZone);
 			}
 			
 			Boolean isClearCache = (Boolean)reportContext.getParameterValue(PARAMETER_CLEAR_CONTEXT_CACHE);
@@ -182,6 +193,8 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			} else {
 				reportContext.setParameterValue(PARAM_GENERATED_TEMPLATE_PREFIX, true);
 			}
+			
+			ColumnFormatting.store(reportContext, tableUUID, columnIndex, locale, timeZone);
 			
 			/*** begin: FILTER PATTERNS ***/
 			// numeric filter pattern
@@ -217,7 +230,7 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			if (!tableUUID.equals(context.getValue(TABLE_UUID))) 
 			{
 				Map<String, ColumnInfo> columnNames = getAllColumnNames(element, jrContext, contextMap);
-				List<Map<String, Object>> columnGroupsData = getColumnGroupsData(jrContext, reportContext, jasperDesign, dataset, table, tableUUID, locale);
+				List<Map<String, Object>> columnGroupsData = getColumnGroupsData(jrContext, reportContext, target, jasperDesign, dataset, table, tableUUID, locale, timeZone);
 				// column names are normally set on the first column, but check if we got them
 				if (!columnNames.isEmpty()) {
 					context.setValue(TABLE_UUID, tableUUID);
@@ -227,17 +240,19 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 					contextMap.put("allColumnGroupsData", JacksonUtil.getInstance(jrContext).getJsonString(columnGroupsData));
 					contextMap.put("tableName", element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_TABLE_NAME));
 
+					// floating header
+					contextMap.put("hasFloatingHeader", Boolean.parseBoolean(element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_FLOATING_HEADER)));
+
 					// patterns
 					contextMap.put("numericPatterns", JacksonUtil.getInstance(jrContext).getJsonString(getNumberPatterns(numberPatternsMap)));
 					contextMap.put("datePatterns", JacksonUtil.getInstance(jrContext).getJsonString(getDatePatterns(datePatterns, locale)));
 					contextMap.put("timePatterns", JacksonUtil.getInstance(jrContext).getJsonString(getDatePatterns(timePatterns, locale)));
 
 					// operators
-					contextMap.put("numericOperators", JacksonUtil.getInstance(jrContext).getJsonString(getTranslatedOperators(jrContext, FilterTypeNumericOperatorsEnum.class.getName(), FilterTypeNumericOperatorsEnum.values(), locale)));
-					contextMap.put("dateOperators", JacksonUtil.getInstance(jrContext).getJsonString(getTranslatedOperators(jrContext, FilterTypeDateOperatorsEnum.class.getName(), FilterTypeDateOperatorsEnum.values(), locale)));
-					contextMap.put("timeOperators", JacksonUtil.getInstance(jrContext).getJsonString(getTranslatedOperators(jrContext, FilterTypeDateOperatorsEnum.class.getName(), FilterTypeDateOperatorsEnum.values(), locale)));
-					contextMap.put("textOperators", JacksonUtil.getInstance(jrContext).getJsonString(getTranslatedOperators(jrContext, FilterTypeTextOperatorsEnum.class.getName(), FilterTypeTextOperatorsEnum.values(), locale)));
-					contextMap.put("booleanOperators", JacksonUtil.getInstance(jrContext).getJsonString(getTranslatedOperators(jrContext, FilterTypeBooleanOperatorsEnum.class.getName(), FilterTypeBooleanOperatorsEnum.values(), locale)));
+					contextMap.put("numericOperators", JacksonUtil.getInstance(jrContext).getJsonString(getOperators(FilterTypeNumericOperatorsEnum.values())));
+					contextMap.put("dateTimeOperators", JacksonUtil.getInstance(jrContext).getJsonString(getOperators(FilterTypeDateOperatorsEnum.values())));
+					contextMap.put("textOperators", JacksonUtil.getInstance(jrContext).getJsonString(getOperators(FilterTypeTextOperatorsEnum.values())));
+					contextMap.put("booleanOperators", JacksonUtil.getInstance(jrContext).getJsonString(getOperators(FilterTypeBooleanOperatorsEnum.values())));
 
 					/*** begin: FILTER PATTERNS ***/
 					// numeric filter pattern
@@ -284,8 +299,8 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			contextMap.put("fontExtensionsFontNames", getFontExtensionsFontNames(jrContext));
 			contextMap.put("systemFontNames", getSystemFontNames(jrContext));
 
-			setColumnHeaderData(columnLabel, columnIndex, tableUUID, contextMap, jrContext, reportContext, locale);
-			setColumnValueData(columnIndex, tableUUID, contextMap, jrContext, reportContext, locale);
+			setColumnHeaderData(columnLabel, columnIndex, target, contextMap, jrContext, reportContext, locale);
+			EditTextElementData columnValueData = setColumnValueData(columnIndex, target, contextMap, jrContext, reportContext, locale);
 
 			String columnName = element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_COLUMN_NAME);
 			String columnComponentName = element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_COLUMN_COMPONENT_NAME);
@@ -299,7 +314,8 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 
 			if (canFilter)
 			{
-				FilterData filterData = getFilterData(jrContext, reportContext, dataset, tableUUID, columnName, columnType, filterType);
+				FilterData filterData = getFilterData(jrContext, dataset, columnName, columnType, filterType, columnValueData.getFormatPattern(),
+						locale, timeZone);
 
 				contextMap.put("dataType", filterType.getName());
 				contextMap.put("filterData", JacksonUtil.getInstance(jrContext).getJsonString(filterData));
@@ -331,7 +347,8 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			JRDesignTextField detailTextField = TableUtil.getCellElement(JRDesignTextField.class, column.getDetailCell(), true);
 			if (detailTextField != null)
 			{
-				ConditionalFormattingData detailCfd = getConditionalFormattingData(jrContext, reportContext, dataset, tableUUID, detailTextField, null);
+				ConditionalFormattingData detailCfd = getConditionalFormattingData(element, jrContext, dataset, detailTextField, null,
+						locale, timeZone);
 				if (detailCfd != null)
 				{
 					contextMap.put("conditionalFormattingData", JacksonUtil.getInstance(jrContext).getJsonString(detailCfd));
@@ -343,16 +360,35 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 		
 		return htmlFragment;
 	}
+
+	protected TimeZone getFilterTimeZone(JasperPrint jasperPrint, JRGenericPrintElement element)
+	{
+		String formatTimeZone = element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_FORMAT_TIME_ZONE);
+		TimeZone timeZone;
+		if (formatTimeZone != null)
+		{
+			timeZone = JRDataUtils.getTimeZone(formatTimeZone);
+		}
+		else if (jasperPrint.getTimeZoneId() != null)
+		{
+			timeZone = JRDataUtils.getTimeZone(jasperPrint.getTimeZoneId());
+		}
+		else
+		{
+			timeZone = TimeZone.getDefault();
+		}
+		return timeZone;
+	}
 	
 	private List<HashMap<String, String>> getDatePatterns(List<String> datePatterns, Locale locale) {
-		List<HashMap<String, String>> formatPatterns = new ArrayList<HashMap<String, String>>();
+		List<HashMap<String, String>> formatPatterns = new ArrayList<>();
 
 		SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", locale);
 		Date today = new Date();
 		HashMap<String, String> keys;
 
 		for(String datePattern: datePatterns) {
-			keys = new HashMap<String, String>();
+			keys = new HashMap<>();
 			sdf.applyPattern(datePattern);
 			keys.put("key", datePattern);
 			keys.put("val", sdf.format(today));
@@ -362,24 +398,17 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 		return formatPatterns;
 	}
 	private List<HashMap<String, String>> getNumberPatterns(Map<String, String> numberPatternsMap) {
-		List<HashMap<String, String>> formatPatterns = new ArrayList<HashMap<String, String>>();
+		List<HashMap<String, String>> formatPatterns = new ArrayList<>();
 		HashMap<String, String> keys;
 
 		for(Map.Entry<String, String> entry: numberPatternsMap.entrySet()) {
-			keys = new HashMap<String, String>();
+			keys = new HashMap<>();
 			keys.put("key", entry.getKey());
 			keys.put("val", entry.getValue());
 			formatPatterns.add(keys);
 		}
 
 		return formatPatterns;
-	}
-
-	private String getActionBaseUrl(JsonExporterContext context) {
-		JRBasePrintHyperlink hyperlink = new JRBasePrintHyperlink();
-		hyperlink.setLinkType(ReportInteractionHyperlinkProducer.HYPERLINK_TYPE_REPORT_INTERACTION);
-//		return context.getHyperlinkURL(hyperlink);
-		return "FIXME HeaderToolbarElementJsonHandler.getActionBaseUrl";
 	}
 
 	private String getCurrentSortField(
@@ -433,41 +462,30 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 		return null;
 	}
 	
+	@Override
 	public boolean toExport(JRGenericPrintElement element) {
 		return true;
 	}
 	
-	private List<LinkedHashMap<String, String>> getTranslatedOperators(
-		JasperReportsContext jasperReportsContext, 
-		String bundleName, 
-		JREnum[] operators, 
-		Locale locale
-		) //FIXMEJIVE make utility method for translating enums
+	private List<String> getOperators(NamedEnum[] operators)
 	{
-		List<LinkedHashMap<String, String>> result = new ArrayList<LinkedHashMap<String, String>>();
-		MessageProvider messageProvider = MessageUtil.getInstance(jasperReportsContext).getMessageProvider(bundleName);
-		LinkedHashMap<String, String> keys;
-		
-		for (JREnum operator: operators) 
+		List<String> result = new ArrayList<>();
+		for (NamedEnum operator: operators)
 		{
-			keys = new LinkedHashMap<String, String>();
-			String key = bundleName + "." + ((Enum<?>)operator).name();
-			keys.put("key", ((Enum<?>)operator).name());
-			keys.put("val", messageProvider.getMessage(key, null, locale));
-			result.add(keys);
+			result.add(((Enum<?>)operator).name());
 		}
-		
 		return result;
 	}
 	
 	private static FilterData getFilterData(
 		JasperReportsContext jasperReportsContext,
-		ReportContext reportContext,
 		JRDesignDataset dataset,
-		String tableUuid,
 		String columnName,
 		String columnType,
-		FilterTypesEnum filterType
+		FilterTypesEnum filterType,
+		String columnValuePattern,
+		Locale locale,
+		TimeZone timeZone
 		) 
 	{
 		// get existing filter as JSON string
@@ -477,7 +495,7 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			serializedFilters = propertiesMap.getProperty(FilterCommand.DATASET_FILTER_PROPERTY);
 		}
 		
-		List<DatasetFilter> filters = new ArrayList<DatasetFilter>();
+		List<DatasetFilter> filters = new ArrayList<>();
 		
 		List<? extends DatasetFilter> existingFilters = JacksonUtil.getInstance(jasperReportsContext).loadList(serializedFilters, FieldFilter.class);
 		if (existingFilters.size() > 0) {
@@ -487,15 +505,6 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 					break;
 				}
 			}
-		}
-		
-		Locale locale = (Locale) reportContext.getParameterValue(JRParameter.REPORT_LOCALE);
-		if (locale == null) {
-			locale = Locale.getDefault();
-		}
-		TimeZone timeZone = (TimeZone) reportContext.getParameterValue(JRParameter.REPORT_TIME_ZONE);
-		if (timeZone == null) {
-			timeZone = TimeZone.getDefault();//FIXMEJIVE maybe get timezone from somewhere else?
 		}
 		
 		FilterData filterData = new FilterData();
@@ -519,6 +528,10 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 		{
 			String filterPattern = HeaderToolbarElementUtils.getFilterPattern(jasperReportsContext, locale, filterType);
 
+			if (FilterTypesEnum.NUMERIC.equals(filterType) && DURATION_PATTERN.equals(columnValuePattern)) {
+				filterPattern = DURATION_PATTERN;
+			}
+
 			HeaderToolbarElementUtils.updateFilterData(
 				filterData,
 				filterPattern,
@@ -534,13 +547,8 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 		return filterData;
 	}
 
-	private void setColumnHeaderData(String sortColumnLabel, Integer columnIndex, String tableUuid, Map<String, Object> contextMap,
+	private void setColumnHeaderData(String sortColumnLabel, Integer columnIndex, CommandTarget target, Map<String, Object> contextMap,
 			JasperReportsContext jasperReportsContext, ReportContext reportContext, Locale locale) {
-		FilterAction action = new FilterAction();
-		action.init(jasperReportsContext, reportContext);
-		CommandTarget target = action.getCommandTarget(UUID.fromString(tableUuid));
-		EditTextElementData textElementData = new EditTextElementData();
-
 		if (target != null){
 			JRIdentifiable identifiable = target.getIdentifiable();
 			JRDesignComponentElement componentElement = identifiable instanceof JRDesignComponentElement ? (JRDesignComponentElement)identifiable : null;
@@ -554,41 +562,135 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 				JRDesignTextElement textElement = TableUtil.getCellElement(JRDesignTextElement.class, column.getColumnHeader(), true);
 
 				if (textElement != null) {
+					EditTextElementData textElementData = new EditTextElementData();
+
 					textElementData.setHeadingName(JRStringUtil.htmlEncode(sortColumnLabel));
 					textElementData.setColumnIndex(columnIndex);
-					HeaderToolbarElementUtils.copyTextElementStyle(textElementData, textElement, locale);
+					JRDesignTextElement styledElement = resolveElementStyle(textElement, reportContext, target);
+					HeaderToolbarElementUtils.copyTextElementStyle(textElementData, styledElement, locale);
+
+					contextMap.put("colHeaderData", JacksonUtil.getInstance(jasperReportsContext).getJsonString(textElementData));
 				}
 			}
 		}
-		contextMap.put("colHeaderData", JacksonUtil.getInstance(jasperReportsContext).getJsonString(textElementData));
 	}
 	
-	private void setColumnValueData(Integer columnIndex, String tableUuid, Map<String, Object> contextMap,
-			JasperReportsContext jasperReportsContext, ReportContext reportContext, Locale locale) {
-		FilterAction action = new FilterAction();
-		action.init(jasperReportsContext, reportContext);
-		CommandTarget target = action.getCommandTarget(UUID.fromString(tableUuid));
-		EditTextElementData textElementData = new EditTextElementData();
+	private JRDesignTextElement resolveElementStyle(JRDesignTextElement element, ReportContext context, 
+			CommandTarget target)
+	{
+		JRStyle defaultStyle = element.getDefaultStyleProvider() == null ? null 
+				: element.getDefaultStyleProvider().getDefaultStyle();
+		boolean hasExternalStyle = hasExternalStyle(element) 
+				|| (defaultStyle != null && hasExternalStyle(defaultStyle));
+		if (!hasExternalStyle && defaultStyle != null)
+		{
+			//we have everything
+			return element;
+		}
 		
+		JasperDesignCache designCache = JasperDesignCache.getExistingInstance(context);
+		List<JRStyle> reportStyles = designCache == null ? null : designCache.getStyles(
+				target.getUri(), target.getIdentifiable() == null ? null : target.getIdentifiable().getUUID());
+		if (reportStyles == null || reportStyles.isEmpty())
+		{
+			return element;
+		}
+		
+		JRStyle externalDefault = null;
+		if (defaultStyle == null)
+		{
+			for (JRStyle style : reportStyles)
+			{
+				if (style.isDefault())
+				{
+					externalDefault = style;
+				}
+			}
+			
+			if (!hasExternalStyle && externalDefault == null)
+			{
+				//nothing to change
+				return element;
+			}
+		}
+		
+		JRStyle elementStyle;
+		if (element.getStyle() == null && element.getStyleNameReference() == null)
+		{
+			elementStyle = externalDefault;
+		}
+		else
+		{
+			String elementStyleName = element.getStyleNameReference() == null 
+					? element.getStyle().getName() : element.getStyleNameReference();
+					
+			elementStyle = null;
+			for (JRStyle style : reportStyles)
+			{
+				if (style.getName().equals(elementStyleName))
+				{
+					elementStyle = style;
+				}
+			}
+		}
+		
+		if (elementStyle == null)
+		{
+			//didn't find a style for the element
+			return element;
+		}
+		
+		JRDesignTextElement elementClone = (JRDesignTextElement) element.clone();
+		elementClone.setStyle(elementStyle);
+		return elementClone;
+	}
+	
+	private boolean hasExternalStyle(JRStyleContainer styleContainer)
+	{
+		if (styleContainer.getStyle() == null && styleContainer.getStyleNameReference() != null)
+		{
+			return true;
+		}
+		
+		JRStyle style = styleContainer.getStyle();
+		while (style != null)
+		{
+			if (style.getStyle() == null && style.getStyleNameReference() != null)
+			{
+				return true;
+			}
+			
+			style = style.getStyle();
+		}
+		return false;
+	}
+	
+	private EditTextElementData setColumnValueData(Integer columnIndex, CommandTarget target, Map<String, Object> contextMap,
+			JasperReportsContext jasperReportsContext, ReportContext reportContext, Locale locale) {
+		EditTextElementData textElementData = new EditTextElementData();
+
 		if (target != null){
 			JRIdentifiable identifiable = target.getIdentifiable();
 			JRDesignComponentElement componentElement = identifiable instanceof JRDesignComponentElement ? (JRDesignComponentElement)identifiable : null;
 			StandardTable table = componentElement == null ? null : (StandardTable)componentElement.getComponent();
-			
+
 			List<BaseColumn> tableColumns = TableUtil.getAllColumns(table);
-			
+
 			if (columnIndex != null) {
 				StandardColumn column = (StandardColumn) tableColumns.get(columnIndex);
-				
+
 				JRDesignTextField textElement = TableUtil.getCellElement(JRDesignTextField.class, column.getDetailCell(), true);
-				
+
 				if (textElement != null) {
 					textElementData.setColumnIndex(columnIndex);
-					HeaderToolbarElementUtils.copyTextElementStyle(textElementData, textElement, locale);
+					JRDesignTextElement styledElement = resolveElementStyle(textElement, reportContext, target);
+					HeaderToolbarElementUtils.copyTextElementStyle(textElementData, styledElement, locale);
 				}
 			}
 		}
 		contextMap.put("colValueData", JacksonUtil.getInstance(jasperReportsContext).getJsonString(textElementData));
+
+		return textElementData;
 	}
 
 	public static class ColumnInfo {
@@ -630,7 +732,7 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 	private Map<String, ColumnInfo> getAllColumnNames(JRGenericPrintElement element, 
 			JasperReportsContext jasperReportsContext, Map<String, Object> contextMap) {
 		int prefixLength = HeaderToolbarElement.PARAM_COLUMN_LABEL_PREFIX.length();
-		Map<String, ColumnInfo> columnNames = new HashMap<String, ColumnInfo>();
+		Map<String, ColumnInfo> columnNames = new HashMap<>();
 		for (String paramName : element.getParameterNames()) {
 			if (paramName.startsWith(HeaderToolbarElement.PARAM_COLUMN_LABEL_PREFIX)) {
 				String columnName = (String) element.getParameterValue(paramName);
@@ -656,7 +758,7 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 		public GroupInfo(String name, String type) {
 			this.name = name;
 			this.type = type;
-			this.forColumns = new ArrayList<Integer>();
+			this.forColumns = new ArrayList<>();
 		}
 
 		public String getName() {
@@ -698,13 +800,14 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 		return result;
 	}
 
-	private List<Map<String, Object>> getColumnGroupsData(JasperReportsContext jasperReportsContext, ReportContext reportContext, JasperDesign jasperDesign,
-			JRDesignDataset dataset, StandardTable table, String tableUuid, Locale locale)
+	private List<Map<String, Object>> getColumnGroupsData(JasperReportsContext jasperReportsContext, 
+			ReportContext reportContext, CommandTarget target, JasperDesign jasperDesign,
+			JRDesignDataset dataset, StandardTable table, String tableUuid, Locale locale, TimeZone timeZone)
 	{
 		List<BaseColumn> allColumns = TableUtil.getAllColumns(table);
 
 		int i = 0;
-		Map<JRDesignTextElement, GroupInfo> groups = new HashMap<JRDesignTextElement, GroupInfo>();
+		Map<JRDesignTextElement, GroupInfo> groups = new HashMap<>();
 		boolean found;
 
 		// build the groups map
@@ -777,7 +880,7 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			i++;
 		}
 
-		List<Map<String, Object>> groupsData = new ArrayList<Map<String, Object>>();
+		List<Map<String, Object>> groupsData = new ArrayList<>();
 
 		// populate groupsData
 		i = 0;
@@ -789,12 +892,14 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			EditTextElementData textElementData;
 			textElementData = new EditTextElementData();
 			textElementData.setGroupName(groupInfo.getName());
-			HeaderToolbarElementUtils.copyTextElementStyle(textElementData, textElement, locale);
+			JRDesignTextElement styledElement = resolveElementStyle(textElement, reportContext, target);
+			HeaderToolbarElementUtils.copyTextElementStyle(textElementData, styledElement, locale);
 
-			Map<String, Object> groupData = new HashMap<String, Object>();
-			groupData.put("grouptype", groupInfo.getType());
+			Map<String, Object> groupData = new HashMap<>();
+			groupData.put("groupType", groupInfo.getType());
 			groupData.put("id", groupInfo.getType() + "_" + i);
 			groupData.put("groupData", textElementData);
+			groupData.put("groupName", groupInfo.getName());
 			groupData.put("forColumns", groupInfo.getForColumns());
 
 			JRDesignTextField textField = textElement instanceof JRDesignTextField ? (JRDesignTextField)textElement : null;
@@ -802,19 +907,23 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 				textField == null 
 					? null 
 					: getConditionalFormattingData(
+						null,
 						jasperReportsContext, 
-						reportContext, 
 						dataset, 
-						tableUuid, 
-						textField, 
-						groupInfo.getName()
+						textField,
+						groupInfo.getName(),
+						locale,
+						timeZone
 						);
 			
 			if (cfData != null) 
 			{
-				textElementData.setDataType(cfData.getConditionType());
-
+				groupData.put("dataType", cfData.getConditionType());
 				groupData.put("conditionalFormattingData", cfData);
+			}
+			else
+			{
+				groupData.put("dataType", FilterTypesEnum.TEXT.getName());
 			}
 
 			groupsData.add(groupData);
@@ -826,17 +935,33 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 	}
 
 	private static ConditionalFormattingData getConditionalFormattingData(
+		JRGenericPrintElement element,
 		JasperReportsContext jasperReportsContext, 
-		ReportContext reportContext, 
 		JRDesignDataset dataset,
-		String tableUuid,
 		JRDesignTextField textField,
-		String groupName
+		String groupName,
+		Locale locale,
+		TimeZone timeZone
 		) 
 	{
 		FilterTypesEnum conditionType = null;
-		
-		String conditionTypeProp = textField.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_CONDTION_TYPE);
+		String conditionTypeProp;
+
+		// only for the detail values the element will not be null
+		if (element != null) {
+			conditionTypeProp = element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_FILTER_TYPE);
+
+			if (element.getPropertiesMap().containsProperty(HeaderToolbarElement.PROPERTY_COLUMN_FIELD)) {
+				textField.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_COLUMN_FIELD, element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_COLUMN_FIELD));
+			} else if (element.getPropertiesMap().containsProperty(HeaderToolbarElement.PROPERTY_COLUMN_VARIABLE)) {
+				textField.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_COLUMN_VARIABLE, element.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_COLUMN_VARIABLE));
+			}
+
+		} else {
+			conditionTypeProp = textField.getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_CONDTION_TYPE);
+		}
+
+
 		if (conditionTypeProp == null)
 		{
 			JRExpression expression = textField.getExpression();
@@ -890,16 +1015,11 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 			
 			if (conditionType.getName().equals(cfd.getConditionType()))
 			{
-				Locale locale = (Locale) reportContext.getParameterValue(JRParameter.REPORT_LOCALE);
-				if (locale == null) {
-					locale = Locale.getDefault();
-				}
-				TimeZone timeZone = (TimeZone) reportContext.getParameterValue(JRParameter.REPORT_TIME_ZONE);
-				if (timeZone == null) {
-					timeZone = TimeZone.getDefault();//FIXMEJIVE maybe get timezone from somewhere else?
-				}
-				
 				String conditionPattern = HeaderToolbarElementUtils.getFilterPattern(jasperReportsContext, locale, conditionType);
+
+				if (FilterTypesEnum.NUMERIC.equals(conditionType) && DURATION_PATTERN.equals(textField.getPattern())) {
+					conditionPattern = DURATION_PATTERN;
+				}
 
 				HeaderToolbarElementUtils.updateConditionalFormattingData(
 					cfd,
@@ -913,14 +1033,14 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 				//FIXMEJIVE should we raise error?
 			}
 		}
-		
+
 		return cfd;
 	}
 
 	private Set<String> getFontExtensionsFontNames(JasperReportsContext jasperReportsContext) {
-		Set<String> classes = new TreeSet<String>(); 
+		Set<String> classes = new TreeSet<>(); 
 
-		Collection<String> extensionFonts = FontUtil.getInstance(jasperReportsContext).getFontFamilyNames();
+		Collection<String> extensionFonts = FontUtil.getInstance(jasperReportsContext).getFontNames();
 		for (Iterator<String> it = extensionFonts.iterator(); it.hasNext();) {
 			String fname = it.next();
 			classes.add(fname);
@@ -931,7 +1051,7 @@ public class HeaderToolbarElementJsonHandler implements GenericElementJsonHandle
 
 	private Set<String> getSystemFontNames(JasperReportsContext jasperReportsContext) {
 		Set<String> fontExtensionsFontNames = getFontExtensionsFontNames(jasperReportsContext);
-		Set<String> classes = new TreeSet<String>();
+		Set<String> classes = new TreeSet<>();
 
 		String[] names = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
 		for (int i = 0; i < names.length; i++) {

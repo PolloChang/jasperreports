@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -51,11 +51,12 @@ import org.olap4j.layout.RectangularCellSetFormatter;
 
 /**
  * @author swood
- * @version $Id: Olap4jMondrianQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Olap4jMondrianQueryExecuter extends JRAbstractQueryExecuter
 {
 	private static final Log log = LogFactory.getLog(Olap4jMondrianQueryExecuter.class);
+	public static final String EXCEPTION_MESSAGE_KEY_CONNECTION_ERROR = "query.mondrian.connection.error";
+	public static final String EXCEPTION_MESSAGE_KEY_EXECUTE_QUERY_ERROR = "query.mondrian.execute.query.error";
 
 	public static final String OLAP4J_DRIVER = "olap4jDriver";
 	public static final String OLAP4J_URL_PREFIX = "urlPrefix";
@@ -92,11 +93,13 @@ public class Olap4jMondrianQueryExecuter extends JRAbstractQueryExecuter
 		return Olap4jQueryExecuterFactory.CANONICAL_LANGUAGE;
 	}
 
+	@Override
 	protected String getParameterReplacement(String parameterName)
 	{
 		return String.valueOf(getParameterValue(parameterName));
 	}
 
+	@Override
 	public JRDataSource createDatasource() throws JRException
 	{
 		JRDataSource dataSource = null;
@@ -125,7 +128,11 @@ public class Olap4jMondrianQueryExecuter extends JRAbstractQueryExecuter
 		}
 		catch (Throwable t)
 		{
-			throw new JRException("error loading Mondrian olap4j driver and getting Connection '" + OLAP4J_MONDRIAN_DRIVER_CLASS + "'", t);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_CONNECTION_ERROR,
+					new Object[]{OLAP4J_MONDRIAN_DRIVER_CLASS},
+					t);
 		}
 
 		OlapConnection connection = (OlapConnection) rConnection;
@@ -147,7 +154,10 @@ public class Olap4jMondrianQueryExecuter extends JRAbstractQueryExecuter
 			}
 			catch (OlapException e)
 			{
-				throw new JRException("Error executing query: " + getQueryString(),
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_EXECUTE_QUERY_ERROR,
+						new Object[]{getQueryString()},
 						e);
 			}
 
@@ -165,6 +175,7 @@ public class Olap4jMondrianQueryExecuter extends JRAbstractQueryExecuter
 		return dataSource;
 	}
 
+	@Override
 	public boolean cancelQuery() throws JRException
 	{
 		return false;

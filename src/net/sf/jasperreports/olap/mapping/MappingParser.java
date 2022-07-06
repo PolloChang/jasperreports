@@ -2,7 +2,7 @@
 
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,6 @@ import antlr.collections.impl.BitSet;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: MappingParser.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MappingParser extends antlr.LLkParser implements MappingParserTokenTypes
  {
@@ -509,7 +508,7 @@ public MappingParser(ParserSharedInputState state) {
 	}
 	
 	public final List<Member>  memberFilter() throws RecognitionException, TokenStreamException {
-		List<Member> filter = new ArrayList<Member>();
+		List<Member> filter = new ArrayList<>();
 		
 		Member member;
 		
@@ -541,7 +540,7 @@ public MappingParser(ParserSharedInputState state) {
 	}
 	
 	public final List<AxisPosition> axisPositions() throws RecognitionException, TokenStreamException {
-		List<AxisPosition> positions = new ArrayList<AxisPosition>();
+		List<AxisPosition> positions = new ArrayList<>();
 		
 		AxisPosition pos; int axis = 0;
 		

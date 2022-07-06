@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,23 +38,26 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlaResult.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlaResult implements JROlapResult
 {
 
 	private final static Log log = LogFactory.getLog(JRXmlaResult.class);
 	
-	private List<JRXmlaResultAxis> axesList = new ArrayList<JRXmlaResultAxis>();
+	public static final String EXCEPTION_MESSAGE_KEY_XMLA_AXIS_POSITIONS_NUMBER_ERROR = "data.olap.xmla.axis.positions.number.error";
+	
+	private List<JRXmlaResultAxis> axesList = new ArrayList<>();
 	private JRXmlaResultAxis[] axes;
 	private int[] cellOrdinalFactors;
-	private final List<JRXmlaCell> cells = new ArrayList<JRXmlaCell>();
+	private final List<JRXmlaCell> cells = new ArrayList<>();
 
+	@Override
 	public JROlapResultAxis[] getAxes()
 	{
 		return ensureAxisArray();
 	}
 
+	@Override
 	public JROlapCell getCell(int[] axisPositions)
 	{
 		int cellOrdinal = getCellOrdinal(axisPositions);
@@ -77,8 +80,10 @@ public class JRXmlaResult implements JROlapResult
 
 		if (axisPositions.length != axes.length)
 		{
-			throw new JRRuntimeException("Number of axis positions (" + axisPositions.length 
-					+ ") doesn't match the number of axes (" + axes.length + ")");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_XMLA_AXIS_POSITIONS_NUMBER_ERROR,
+					new Object[]{axisPositions.length, axes.length});
 		}
 		
 		int ordinal = 0;

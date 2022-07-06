@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ package net.sf.jasperreports.repo;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PersistenceService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface PersistenceService
 {
@@ -38,6 +37,11 @@ public interface PersistenceService
 	 * 
 	 */
 	public Resource load(String uri, RepositoryService repositoryService);
+
+	default public Resource load(RepositoryContext context, String uri, RepositoryService repositoryService)
+	{
+		return load(uri, repositoryService);
+	}
 	
 	/**
 	 * 

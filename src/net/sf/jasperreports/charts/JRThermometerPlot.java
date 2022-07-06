@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.JRChartPlot;
  * and "critical", and the textual display of the value.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRThermometerPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRThermometerPlot extends JRChartPlot
 {
@@ -55,15 +54,10 @@ public interface JRThermometerPlot extends JRChartPlot
 	public JRValueDisplay getValueDisplay();
 
 	/**
-	 * @deprecated No longer used.
-	 */
-	public boolean isShowValueLines();
-
-	/**
 	 * Returns the location where the value of the thermometer will be shown.  The
-	 * return value will be one of <code>net.sf.jasperreports.charts.type.ValueLocationEnum.NONE</code>,
-	 * <code>net.sf.jasperreports.charts.type.ValueLocationEnum.LEFT</code>, <code>net.sf.jasperreports.charts.type.ValueLocationEnum.RIGHT</code> or
-	 * <code>net.sf.jasperreports.charts.type.ValueLocationEnum.BULB</code>.
+	 * return value will be one of {@link net.sf.jasperreports.charts.type.ValueLocationEnum#NONE NONE},
+	 * {@link net.sf.jasperreports.charts.type.ValueLocationEnum#LEFT LEFT}, {@link net.sf.jasperreports.charts.type.ValueLocationEnum#RIGHT RIGHT} or
+	 * {@link net.sf.jasperreports.charts.type.ValueLocationEnum#BULB BULB}.
 	 *
 	 * @return the location where the value of the thermometer will be shown
 	 */

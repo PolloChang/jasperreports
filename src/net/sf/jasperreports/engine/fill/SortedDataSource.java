@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,29 +25,42 @@ package net.sf.jasperreports.engine.fill;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.engine.JRDataSource;
+import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRRewindableDataSource;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.data.IndexedDataSource;
+import net.sf.jasperreports.engine.data.RandomAccessDataSource;
+import net.sf.jasperreports.engine.fill.DatasetSortInfo.RecordField;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SortedDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortedDataSource implements JRRewindableDataSource, IndexedDataSource
 {
 	
+	private static final Log log = LogFactory.getLog(SortedDataSource.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_FIELD_NOT_FOUND = "data.sorted.field.not.found";
+	
 	public static class SortRecord
 	{
 		private final Object[] values;
+		private int originalRecordIndex;
 		private int recordIndex;
 		private boolean filtered;
 		
 		public SortRecord(Object[] values, int recordIndex)
 		{
 			this.values = values;
+			this.originalRecordIndex = recordIndex;
 			this.recordIndex = recordIndex;
 			this.filtered = false;
 		}
@@ -83,35 +96,58 @@ public class SortedDataSource implements JRRewindableDataSource, IndexedDataSour
 		}
 	}
 	
+	private final JRDataSource originalDataSource;
 	private final List<SortRecord> records;
 	private final Integer[] recordIndexes;
-	private final Map<String, Integer> columnNamesMap = new HashMap<String, Integer>();
+	private final Map<String, Integer> columnNamesMap = new HashMap<>();
 	
 	private int currentIndex;
 	private SortRecord currentRecord;
 	
-	public SortedDataSource(List<SortRecord> records, Integer[] recordIndexes, String[] columnNames)
+	public SortedDataSource(DatasetSortInfo sortInfo, 
+			List<SortRecord> records, Integer[] recordIndexes)
 	{
 		if (records.size() != recordIndexes.length)
 		{
 			throw new IllegalArgumentException("Record count " + records.size() 
 					+ " doesn't match index count " + recordIndexes.length);
 		}
-		
+
+		this.originalDataSource = sortInfo.getOriginalDataSource();
 		this.records = records;
 		this.recordIndexes = recordIndexes;
 		
-		if (columnNames != null)
+		for (ListIterator<RecordField> it = sortInfo.getRecordFields().listIterator(); it.hasNext();)
 		{
-			for(int i = 0; i < columnNames.length; i++)
+			RecordField recordField = it.next();
+			if (!recordField.isVariable())
 			{
-				columnNamesMap.put(columnNames[i], Integer.valueOf(i));
+				columnNamesMap.put(recordField.getName(), it.previousIndex());
 			}
 		}
 
 		this.currentIndex = 0;
 	}
 
+	public JRDataSource getOriginalDataSource() throws JRException
+	{
+		if (currentRecord != null && originalDataSource instanceof RandomAccessDataSource)
+		{
+			RandomAccessDataSource dataSource = (RandomAccessDataSource) originalDataSource;
+			if (dataSource.currentIndex() != currentRecord.originalRecordIndex)
+			{
+				if (log.isDebugEnabled())
+				{
+					log.debug("moving original data source to record " + currentRecord.originalRecordIndex);
+				}
+				dataSource.moveToRecord(currentRecord.originalRecordIndex);
+			}
+		}
+		
+		return originalDataSource;
+	}
+	
+	@Override
 	public boolean next()
 	{
 		if (currentIndex >= recordIndexes.length)
@@ -132,16 +168,21 @@ public class SortedDataSource implements JRRewindableDataSource, IndexedDataSour
 		currentRecord.setRecordIndex(index);
 	}
 
+	@Override
 	public Object getFieldValue(JRField jrField)
 	{
 		Integer fieldIndex = columnNamesMap.get(jrField.getName());
 		if (fieldIndex == null)
 		{
-			throw new JRRuntimeException("Field \"" + jrField.getName() + "\" not found in data source.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_FIELD_NOT_FOUND,
+					new Object[]{jrField.getName()});
 		}
 		return currentRecord.fieldValue(fieldIndex);
 	}
 
+	@Override
 	public void moveFirst()
 	{
 		currentIndex = 0;

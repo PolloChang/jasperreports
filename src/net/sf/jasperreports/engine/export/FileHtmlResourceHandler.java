@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,9 +23,11 @@
  */
 package net.sf.jasperreports.engine.export;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.MessageFormat;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
@@ -34,10 +36,11 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FileHtmlResourceHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FileHtmlResourceHandler implements HtmlResourceHandler 
 {
+	public static final String EXCEPTION_MESSAGE_KEY_RESOURCES_DIRECTORY_NOT_SPECIFIED = "export.html.resources.directory.not.specified";
+	
 	/**
 	 * 
 	 */
@@ -61,9 +64,7 @@ public class FileHtmlResourceHandler implements HtmlResourceHandler
 		this(parentFolder, null);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getResourcePath(String id)
 	{
 		if (pathPattern == null)
@@ -73,37 +74,25 @@ public class FileHtmlResourceHandler implements HtmlResourceHandler
 		return MessageFormat.format(pathPattern, new Object[]{id});
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void handleResource(String id, byte[] data)
 	{
 		ensureParentFolder();
 		
-		FileOutputStream fos = null;
-		
-		try
+		try (
+			OutputStream os = 
+				new BufferedOutputStream(
+					new FileOutputStream(
+						new File(parentFolder, id)
+						)
+					)
+			)
 		{
-			fos = new FileOutputStream(new File(parentFolder, id));
-			fos.write(data);
+			os.write(data);
 		}
 		catch (IOException e)
 		{
 			throw new JRRuntimeException(e);
-		}
-		finally
-		{
-			if (fos != null)
-			{
-				try
-				{
-					fos.close();
-				}
-				catch (IOException e)
-				{
-					throw new JRRuntimeException(e);
-				}
-			}
 		}
 	}
 	
@@ -111,7 +100,10 @@ public class FileHtmlResourceHandler implements HtmlResourceHandler
 	{
 		if (parentFolder == null)
 		{
-			throw new JRRuntimeException("The resources directory was not specified for the exporter.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_RESOURCES_DIRECTORY_NOT_SPECIFIED,
+					(Object[])null);
 		}
 
 		if (!parentFolder.exists())

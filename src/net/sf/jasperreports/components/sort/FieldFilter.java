@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,12 +31,12 @@ import net.sf.jasperreports.engine.EvaluationType;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.fill.DatasetFillContext;
 import net.sf.jasperreports.engine.fill.JRFillDataset;
+import net.sf.jasperreports.engine.util.JRDataUtils;
 
 /**
  * A dataset filter that matches String values based on substrings.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FieldFilter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FieldFilter implements DatasetFilter {
 
@@ -77,19 +77,56 @@ public class FieldFilter implements DatasetFilter {
 		this.filterTypeOperator = filterTypeOperator;
 	}
 
+	@Override
 	public void init(DatasetFillContext context) {
 		this.context = context;
 		this.filterTypeEnum = FilterTypesEnum.getByName(filterType);
 		if (fieldComparator == null) {
+			Locale locale = getFilterLocale();
+			TimeZone timeZone = getFilterTimeZone();
+			
 			fieldComparator = FieldComparatorFactory
 					.createFieldComparator(
 							filterTypeEnum,
 							filterPattern,
-							context.getLocale() != null ? context.getLocale() : Locale.getDefault(),
-							(TimeZone) context.getParameterValue(JRParameter.REPORT_TIME_ZONE));
+							locale,
+							timeZone);
 		}
 	}
 
+	protected Locale getFilterLocale()
+	{
+		Locale locale;
+		if (localeCode != null)
+		{
+			locale = JRDataUtils.getLocale(localeCode);
+		}
+		else if (context.getLocale() != null)
+		{
+			locale = context.getLocale();
+		}
+		else
+		{
+			locale = Locale.getDefault();
+		}
+		return locale;
+	}
+
+	protected TimeZone getFilterTimeZone()
+	{
+		TimeZone timeZone;
+		if (timeZoneId != null)
+		{
+			timeZone = JRDataUtils.getTimeZone(timeZoneId);
+		}
+		else
+		{
+			timeZone = (TimeZone) context.getParameterValue(JRParameter.REPORT_TIME_ZONE);
+		}
+		return timeZone;
+	}
+
+	@Override
 	public boolean matches(EvaluationType evaluation) {
 		Object value;
 		if (isField == null || Boolean.TRUE.equals(isField)) {

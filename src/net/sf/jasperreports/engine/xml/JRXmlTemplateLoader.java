@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,45 +37,43 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.xml.sax.SAXException;
+
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRTemplate;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.repo.RepositoryContext;
 import net.sf.jasperreports.repo.RepositoryUtil;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.xml.sax.SAXException;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 
 /**
  * Utility class that loads {@link JRTemplate templates} from XML representations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlTemplateLoader.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlTemplateLoader
 {
 	
 	private static final Log log = LogFactory.getLog(JRXmlTemplateLoader.class);
 	
-	private JasperReportsContext jasperReportsContext;
+	public static final String EXCEPTION_MESSAGE_KEY_TEMPLATE_NOT_FOUND = "xml.template.loader.template.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_TEMPLATE_PARSING_ERROR = "xml.template.loader.template.parsing.error";
+	public static final String EXCEPTION_MESSAGE_KEY_TEMPLATE_READING_ERROR = "xml.template.loader.template.reading.error";
+	public static final String EXCEPTION_MESSAGE_KEY_URL_CONNECTION_ERROR = "xml.template.loader.url.connection.error";
 	
-	/**
-	 * @deprecated Replaced by {@link #JRXmlTemplateLoader(JasperReportsContext)}.
-	 */
-	protected JRXmlTemplateLoader()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
+	private RepositoryContext repositoryContext;
 	
 	/**
 	 *
 	 */
-	private JRXmlTemplateLoader(JasperReportsContext jasperReportsContext)
+	private JRXmlTemplateLoader(RepositoryContext repositoryContext)
 	{
-		this.jasperReportsContext = jasperReportsContext;
+		this.repositoryContext = repositoryContext;
 	}
 	
 	/**
@@ -83,7 +81,7 @@ public class JRXmlTemplateLoader
 	 */
 	private static JRXmlTemplateLoader getDefaultInstance()
 	{
-		return new JRXmlTemplateLoader(DefaultJasperReportsContext.getInstance());
+		return getInstance(DefaultJasperReportsContext.getInstance());
 	}
 	
 	
@@ -92,7 +90,12 @@ public class JRXmlTemplateLoader
 	 */
 	public static JRXmlTemplateLoader getInstance(JasperReportsContext jasperReportsContext)
 	{
-		return new JRXmlTemplateLoader(jasperReportsContext);
+		return getInstance(SimpleRepositoryContext.of(jasperReportsContext));
+	}
+	
+	public static JRXmlTemplateLoader getInstance(RepositoryContext repositoryContext)
+	{
+		return new JRXmlTemplateLoader(repositoryContext);
 	}
 	
 	
@@ -107,7 +110,7 @@ public class JRXmlTemplateLoader
 	 */
 	public JRTemplate loadTemplate(String location) throws JRException
 	{
-		byte[] data = RepositoryUtil.getInstance(jasperReportsContext).getBytesFromLocation(location);
+		byte[] data = RepositoryUtil.getInstance(repositoryContext).getBytesFromLocation(location);
 		return load(new ByteArrayInputStream(data));
 	}
 	
@@ -126,7 +129,11 @@ public class JRXmlTemplateLoader
 		}
 		catch (FileNotFoundException e)
 		{
-			throw new JRRuntimeException("Template XML file not found", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_TEMPLATE_NOT_FOUND,
+					(Object[])null,
+					e);
 		}
 
 		try
@@ -161,7 +168,11 @@ public class JRXmlTemplateLoader
 		}
 		catch (IOException e)
 		{
-			throw new JRRuntimeException("Error opening connection to template URL " + url, e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_URL_CONNECTION_ERROR,
+					new Object[]{url},
+					e);
 		}
 
 		try
@@ -189,18 +200,27 @@ public class JRXmlTemplateLoader
 	 */
 	public JRTemplate loadTemplate(InputStream data)
 	{
-		JRXmlDigester digester = JRXmlTemplateDigesterFactory.instance().createDigester(jasperReportsContext);
+		JRXmlDigester digester = JRXmlTemplateDigesterFactory.instance().createDigester(
+				repositoryContext.getJasperReportsContext());
 		try
 		{
 			return (JRTemplate) digester.parse(data);
 		}
 		catch (IOException e)
 		{
-			throw new JRRuntimeException("Error reading template XML", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_TEMPLATE_READING_ERROR,
+					(Object[])null,
+					e);
 		}
 		catch (SAXException e)
 		{
-			throw new JRRuntimeException("Error parsing template XML", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_TEMPLATE_PARSING_ERROR,
+					(Object[])null,
+					e);
 		}
 	}
 	

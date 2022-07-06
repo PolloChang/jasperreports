@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
  * {@link JRReportTemplate} implementation to be used at report design time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignReportTemplate.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignReportTemplate extends JRBaseReportTemplate implements JRChangeEventsSupport
 {
@@ -75,9 +74,7 @@ public class JRDesignReportTemplate extends JRBaseReportTemplate implements JRCh
 		getEventSupport().firePropertyChange(PROPERTY_SOURCE_EXPRESSION, old, this.sourceExpression);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignReportTemplate clone = (JRDesignReportTemplate)super.clone();
@@ -87,6 +84,7 @@ public class JRDesignReportTemplate extends JRBaseReportTemplate implements JRCh
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,16 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExpression;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.design.JRCompilationUnit;
-import net.sf.jasperreports.engine.util.CompositeExpressionChunkVisitor;
-import net.sf.jasperreports.engine.util.JRExpressionUtil;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mozilla.javascript.CompilerEnvirons;
@@ -48,13 +38,25 @@ import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.optimizer.ClassCompiler;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.design.JRCompilationUnit;
+import net.sf.jasperreports.engine.design.JRSourceCompileTask;
+import net.sf.jasperreports.engine.util.CompositeExpressionChunkVisitor;
+import net.sf.jasperreports.engine.util.JRExpressionUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
+
 /**
  * Compiler for reports that use JavaScript as expression language.
  * 
  * This implementation produces Java bytecode for the expressions.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptClassCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JavaScriptCompiledData
  * @see JavaScriptCompiledEvaluator
  */
@@ -67,6 +69,12 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 	 * 
 	 * See <a href="http://www-archive.mozilla.org/rhino/apidocs/org/mozilla/javascript/Context.html#setOptimizationLevel%28int%29"/>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_4_7_0,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_OPTIMIZATION_LEVEL = JRPropertiesUtil.PROPERTY_PREFIX
 			+ "javascript.class.compiler.optimization.level";
 
@@ -74,6 +82,12 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 	 * Property that determines the maximum number of report expressions that will be included
 	 * in a single generated Java class.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_4_7_0,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_EXPRESSIONS_PER_SCRIPT = JRPropertiesUtil.PROPERTY_PREFIX
 			+ "javascript.class.compiler.expressions.per.script";
 	
@@ -81,11 +95,20 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 	 * Property that determines the maximum size of a script that will be compiled into
 	 * a single Java class.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_4_7_0,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_SCRIPT_MAX_SIZE = JRPropertiesUtil.PROPERTY_PREFIX
 			+ "javascript.class.compiler.script.max.size";
 	
 	private static final Log log = LogFactory.getLog(JavaScriptClassCompiler.class);
 	
+	public static final String EXCEPTION_MESSAGE_KEY_UNEXPECTED_CLASS_NAME = "compilers.javascript.unexpected.class.name";
+	public static final String EXCEPTION_MESSAGE_KEY_UNEXPECTED_CLASSES_LENGTH = "compilers.javascript.unexpected.classes.length";
+
 	/**
 	 * Creates a JavaScript compiler.
 	 */
@@ -94,14 +117,7 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 		super(jasperReportsContext);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JavaScriptClassCompiler(JasperReportsContext)}.
-	 */
-	public JavaScriptClassCompiler()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
+	@Override
 	protected String compileUnits(JRCompilationUnit[] units, String classpath,
 			File tempDirFile) throws JRException
 	{
@@ -130,10 +146,11 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 				CompileSources compileSources = new CompileSources(expressionsPerScript, scriptMaxLength);
 				JavaScriptCompiledData compiledData = new JavaScriptCompiledData();
 				
-				for (Iterator<JRExpression> it = unit.getExpressions().iterator(); it.hasNext();)
+				JRSourceCompileTask compileTask = unit.getCompileTask();
+				for (Iterator<JRExpression> it = compileTask.getExpressions().iterator(); it.hasNext();)
 				{
 					JRExpression expr = it.next();
-					int id = unit.getCompileTask().getExpressionId(expr).intValue();
+					int id = compileTask.getExpressionId(expr);
 					
 					ScriptExpressionVisitor defaultVisitor = defaultExpressionCreator();
 					JRExpressionUtil.visitChunks(expr, defaultVisitor);
@@ -198,12 +215,17 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 			Object[] compilationResult = compiler.compileToClassFiles(scriptSource, unit.getName(), 0, scriptClassName);
 			if (compilationResult.length != 2)
 			{
-				throw new JRRuntimeException("Unexpected compiled classes length " + compilationResult.length);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNEXPECTED_CLASSES_LENGTH,
+						new Object[]{compilationResult.length});
 			}
 			if (!scriptClassName.equals(compilationResult[0]))
 			{
-				throw new JRRuntimeException("Unexpected compiled class name " + compilationResult[0]
-						+ ", expecting " + scriptClassName);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNEXPECTED_CLASS_NAME,
+						new Object[]{compilationResult[0], scriptClassName});
 			}
 			
 			byte[] compiledClass = (byte[]) compilationResult[1];
@@ -218,8 +240,8 @@ public class JavaScriptClassCompiler extends JavaScriptCompilerBase
 		private final int expressionsPerSource;
 		private final int scriptMaxLength;
 		
-		private final Map<String, Integer> expressionIndexes = new HashMap<String, Integer>();
-		private final List<String> scriptSources = new LinkedList<String>();
+		private final Map<String, Integer> expressionIndexes = new HashMap<>();
+		private final List<String> scriptSources = new LinkedList<>();
 		private int currentScriptIndex = 0;
 		private int currentExpressionId = 0;
 		private StringBuilder currentScriptSource;

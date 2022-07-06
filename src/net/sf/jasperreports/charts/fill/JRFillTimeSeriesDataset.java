@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jfree.data.general.Dataset;
+import org.jfree.data.time.RegularTimePeriod;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
+
 import net.sf.jasperreports.charts.JRTimeSeries;
 import net.sf.jasperreports.charts.JRTimeSeriesDataset;
 import net.sf.jasperreports.charts.util.TimeSeriesLabelGenerator;
@@ -41,18 +46,14 @@ import net.sf.jasperreports.engine.fill.JRExpressionEvalException;
 import net.sf.jasperreports.engine.fill.JRFillChartDataset;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
-import org.jfree.data.general.Dataset;
-import org.jfree.data.time.RegularTimePeriod;
-import org.jfree.data.time.TimeSeries;
-import org.jfree.data.time.TimeSeriesCollection;
-
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRFillTimeSeriesDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTimeSeriesDataset 
 {
 
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME = "charts.time.series.dataset.series.null.name";
+	
 	/**
 	 * 
 	 */
@@ -82,11 +83,13 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 		}
 	}
 	
+	@Override
 	public JRTimeSeries[] getSeries()
 	{
 		return timeSeries;
 	}
 	
+	@Override
 	protected void customInitialize()
 	{
 		seriesNames = null;
@@ -95,6 +98,7 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 		itemHyperlinks = null;
 	}
 	
+	@Override
 	protected void customEvaluate(JRCalculator calculator) throws JRExpressionEvalException 
 	{
 		if(timeSeries != null && timeSeries.length > 0)
@@ -107,16 +111,17 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 	}
 	
 	
+	@Override
 	protected void customIncrement()
 	{
 		if (timeSeries != null && timeSeries.length > 0)
 		{
 			if (seriesNames == null)
 			{
-				seriesNames = new ArrayList<Comparable<?>>();
-				seriesMap = new HashMap<Comparable<?>, TimeSeries>();
-				labelsMap = new HashMap<Comparable<?>, Map<RegularTimePeriod, String>>();
-				itemHyperlinks = new HashMap<Comparable<?>, Map<RegularTimePeriod, JRPrintHyperlink>>();
+				seriesNames = new ArrayList<>();
+				seriesMap = new HashMap<>();
+				labelsMap = new HashMap<>();
+				itemHyperlinks = new HashMap<>();
 			}
 
 			for (int i = 0; i < timeSeries.length; i++)
@@ -126,13 +131,17 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 				Comparable<?> seriesName = crtTimeSeries.getSeries();
 				if (seriesName == null)
 				{
-					throw new JRRuntimeException("Time series name is null.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME,  
+							(Object[])null 
+							);
 				}
 
 				TimeSeries series = seriesMap.get(seriesName);
 				if(series == null)
 				{
-					series = new TimeSeries(seriesName.toString(), getTimePeriod());
+					series = new TimeSeries(seriesName.toString());
 					seriesNames.add(seriesName);
 					seriesMap.put(seriesName, series);
 				}
@@ -151,7 +160,7 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 					Map<RegularTimePeriod, String> seriesLabels = labelsMap.get(seriesName);
 					if (seriesLabels == null)
 					{
-						seriesLabels = new HashMap<RegularTimePeriod, String>();
+						seriesLabels = new HashMap<>();
 						labelsMap.put(seriesName, seriesLabels);
 					}
 					
@@ -163,7 +172,7 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 					Map<RegularTimePeriod, JRPrintHyperlink> seriesLinks = itemHyperlinks.get(seriesName);
 					if (seriesLinks == null)
 					{
-						seriesLinks = new HashMap<RegularTimePeriod, JRPrintHyperlink>();
+						seriesLinks = new HashMap<>();
 						itemHyperlinks.put(seriesName, seriesLinks);
 					}
 					seriesLinks.put(tp, crtTimeSeries.getPrintItemHyperlink());
@@ -172,6 +181,7 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 		}
 	}
 	
+	@Override
 	public Dataset getCustomDataset()
 	{
 		TimeSeriesCollection dataset = new TimeSeriesCollection(getTimeZone());
@@ -187,29 +197,28 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 	}
 
 
+	@Override
 	public Class<?> getTimePeriod() {
 		return ((JRTimeSeriesDataset)parent).getTimePeriod();
 	}
 
+	@Override
 	public void setTimePeriod(Class<?> timePeriod) {	
 	}
 
-	/** 
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.TIMESERIES_DATASET;
 	}
 	
 	
+	@Override
 	public Object getLabelGenerator(){
-		return new TimeSeriesLabelGenerator(labelsMap);//FIXMETHEME this and other similar implementations should be able to return null and chart themes should be protected agains null;
+		return new TimeSeriesLabelGenerator(labelsMap, getLocale());//FIXMETHEME this and other similar implementations should be able to return null and chart themes should be protected agains null;
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
@@ -236,6 +245,7 @@ public class JRFillTimeSeriesDataset extends JRFillChartDataset implements JRTim
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

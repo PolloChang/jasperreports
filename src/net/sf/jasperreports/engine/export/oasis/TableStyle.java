@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,14 +23,15 @@
  */
 package net.sf.jasperreports.engine.export.oasis;
 
+import java.awt.Color;
 import java.io.IOException;
 
 import net.sf.jasperreports.engine.export.LengthUtil;
+import net.sf.jasperreports.engine.util.JRColorUtil;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: TableStyle.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class TableStyle extends Style
 {
@@ -38,48 +39,66 @@ public class TableStyle extends Style
 	 *
 	 */
 	private int width;
-	private int reportIndex;
+	private int pageFormatIndex;
 	private boolean isFrame;
 	private boolean isPageBreak;
+	private Color tabColor;
 
 	/**
 	 *
 	 */
-	public TableStyle(WriterHelper styleWriter, int width, int reportIndex, boolean isFrame, boolean isPageBreak)
+	public TableStyle(WriterHelper styleWriter, int width, int pageFormatIndex, boolean isFrame, boolean isPageBreak, Color tabColor)
 	{
 		super(styleWriter);
 		this.width = width;
-		this.reportIndex = reportIndex;
+		this.pageFormatIndex = pageFormatIndex;
 		this.isFrame = isFrame;
 		this.isPageBreak = isPageBreak;
+		this.tabColor = tabColor;
 	}
 	
-	/**
-	 *
-	 */
 	@Override
 	public String getId()
 	{
-		return "" + width + "|" + reportIndex + "|" + isFrame + "|" + isPageBreak; 
+		return "" + width + "|" + pageFormatIndex + "|" + isFrame + "|" + isPageBreak + "|" + tabColor; 
 	}
 
-	/**
-	 *
-	 */
 	@Override
 	public void write(String tableStyleName) throws IOException
 	{
 		styleWriter.write(" <style:style style:name=\"" + tableStyleName + "\"");
 		if (!isFrame)
 		{
-			styleWriter.write(" style:master-page-name=\"master_" + reportIndex +"\"");
+			styleWriter.write(" style:master-page-name=\"master_" + pageFormatIndex +"\"");
 		}
 		styleWriter.write(" style:family=\"table\">\n");
 		styleWriter.write("   <style:table-properties");		
-		styleWriter.write(" table:align=\"left\" style:width=\"" + LengthUtil.inch(width) + "in\"");
-		if (isPageBreak) {
+		styleWriter.write(" table:align=\"left\" style:width=\"" + LengthUtil.inchFloor4Dec(width) + "in\"");
+		if (isPageBreak)
+		{
 			styleWriter.write(" fo:break-before=\"page\"");
 		}
+		if (tabColor != null)
+		{
+			styleWriter.write(" tableooo:tab-color=\"#" + JRColorUtil.getColorHexa(tabColor) + "\"");
+		}
+//		FIXMEODT
+//		if (tableWidth != null)
+//		{
+//			styleWriter.write(" style:width=\""+ tableWidth +"in\"");
+//		}
+//		if (align != null)
+//		{
+//			styleWriter.write(" table:align=\""+ align +"\"");
+//		}
+//		if (margin != null)
+//		{
+//			styleWriter.write(" fo:margin=\""+ margin +"\"");
+//		}
+//		if (backGroundColor != null)
+//		{
+//			styleWriter.write(" fo:background-color=\""+ backGroundColor +"\"");
+//		}
 		styleWriter.write("/>\n");
 		styleWriter.write(" </style:style>\n");
 		styleWriter.flush();

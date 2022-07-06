@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import java.util.Map;
  * Utility class used by grid exporters to create a grid for page layout.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: Cut.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Cut
 {
@@ -84,6 +83,14 @@ public class Cut
 		return ((getUsage() & Cut.USAGE_SPANNED) > 0);
 	}
 
+	/**
+	 * 
+	 */
+	public boolean isBreak()
+	{
+		return ((getUsage() & Cut.USAGE_BREAK) > 0);
+	}
+	
 	public boolean hasProperty(String name) 
 	{
 		return propertiesMap == null ? false : propertiesMap.containsKey(name);
@@ -98,7 +105,7 @@ public class Cut
 	{
 		if (propertiesMap == null)
 		{
-			propertiesMap = new HashMap<String, Object>();
+			propertiesMap = new HashMap<>();
 		}
 		propertiesMap.put(name, value);
 	}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,12 +25,14 @@ package net.sf.jasperreports.crosstabs;
 
 import java.awt.Color;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRElementGroup;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRStyleContainer;
 import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Crosstab cell contents interface.
@@ -45,9 +47,8 @@ import net.sf.jasperreports.engine.type.ModeEnum;
  * </ul>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCellContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRCellContents extends JRElementGroup, JRStyleContainer, JRBoxContainer, JRPropertiesHolder
+public interface JRCellContents extends JRElementGroup, JRBoxContainer, JRPropertiesHolder
 {
 
 	/**
@@ -76,16 +77,33 @@ public interface JRCellContents extends JRElementGroup, JRStyleContainer, JRBoxC
 	 * 	<li>{@link #TYPE_NO_DATA_CELL}</li>
 	 * </ul>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_CROSSTAB,
+			scopes = {PropertyScope.INTERNAL},
+			sinceVersion = PropertyConstants.VERSION_3_1_2
+			)
 	public static final String PROPERTY_TYPE = PROPERTIES_PREFIX + "type";
 	
 	/**
 	 * A property that provides the crosstab row span of a print frame.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_CROSSTAB,
+			scopes = {PropertyScope.INTERNAL},
+			sinceVersion = PropertyConstants.VERSION_3_1_2,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_ROW_SPAN = PROPERTIES_PREFIX + "row.span";
 	
 	/**
 	 * A property that provides the crosstab column span of a print frame.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_CROSSTAB,
+			scopes = {PropertyScope.INTERNAL},
+			sinceVersion = PropertyConstants.VERSION_3_1_2,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_COLUMN_SPAN = PROPERTIES_PREFIX + "column.span";
 	
 	/**

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,11 +26,11 @@ package net.sf.jasperreports.engine.design;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.base.JRBaseParameter;
+import net.sf.jasperreports.engine.type.ParameterEvaluationTimeEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignParameter extends JRBaseParameter
 {
@@ -50,6 +50,8 @@ public class JRDesignParameter extends JRBaseParameter
 	public static final String PROPERTY_VALUE_CLASS_NAME = "valueClassName";
 	
 	public static final String PROPERTY_NESTED_TYPE_NAME = "nestedType";
+	
+	public static final String PROPERTY_EVALUATION_TIME = "evaluationTime";
 
 
 	/**
@@ -85,7 +87,7 @@ public class JRDesignParameter extends JRBaseParameter
 	/**
 	 * Sets the parameter nested value type.
 	 * 
-	 * @param type the nester value type
+	 * @param type the nested value type
 	 * @see #getNestedType()
 	 */
 	public void setNestedType(Class<?> type)
@@ -125,6 +127,16 @@ public class JRDesignParameter extends JRBaseParameter
 		boolean old = this.isForPrompting;
 		this.isForPrompting = isForPrompting;
 		getEventSupport().firePropertyChange(PROPERTY_FOR_PROMPTING, old, this.isForPrompting);
+	}
+
+	/**
+	 *
+	 */
+	public void setEvaluationTime(ParameterEvaluationTimeEnum evaluationTime)
+	{
+		ParameterEvaluationTimeEnum old = this.evaluationTime;
+		this.evaluationTime = evaluationTime;
+		getEventSupport().firePropertyChange(PROPERTY_EVALUATION_TIME, old, this.evaluationTime);
 	}
 
 	/**

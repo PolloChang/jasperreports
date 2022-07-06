@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.crosstabs.fill.BucketOrderer;
 import net.sf.jasperreports.crosstabs.fill.calculation.BucketDefinition.Bucket;
 import net.sf.jasperreports.crosstabs.fill.calculation.BucketValueOrderDecorator.OrderPosition;
@@ -41,10 +44,13 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CrosstabBucketingService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CrosstabBucketingService extends BucketingService implements BucketingData
 {
+	
+	private static final Log log = LogFactory.getLog(CrosstabBucketingService.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_DATA_NOT_PROCESSED = "crosstabs.calculation.data.not.processed";
 	
 	protected HeaderCell[][] colHeaders;
 	protected HeaderCell[][] rowHeaders;
@@ -64,7 +70,10 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 	{
 		if (!processed)
 		{
-			throw new JRRuntimeException("Crosstab data needs to be processed first");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_DATA_NOT_PROCESSED,
+					(Object[])null);
 		}
 		
 		if (!hasData())
@@ -86,26 +95,39 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 			}
 		}
 		
-		collectedHeaders[DIMENSION_COLUMN] = createHeadersList(DIMENSION_COLUMN, columnBucketMap, 0, false);
+		collectedHeaders[DIMENSION_COLUMN] = createHeadersList(DIMENSION_COLUMN,
+				// using column totals for sorting if needed
+				columnTotalsMap == null ? columnBucketMap : columnTotalsMap, 
+				0, false);
 		
 		int rowBuckets = collectedHeaders[BucketingService.DIMENSION_ROW].span;
 		int colBuckets = collectedHeaders[BucketingService.DIMENSION_COLUMN].span;
 
 		int bucketMeasureCount = rowBuckets * colBuckets * origMeasureCount;
+		
+		if (log.isDebugEnabled())
+		{
+			log.debug("crosstab has " + rowBuckets + " row buckets, " 
+					+ colBuckets + " column buckets and " 
+					+ origMeasureCount + " measures");
+			log.debug("bucket measure count is " + bucketMeasureCount 
+					+ ", limit " + bucketMeasureLimit);
+		}
+		
 		checkBucketMeasureCount(bucketMeasureCount);
 		
 		colHeaders = createHeaders(BucketingService.DIMENSION_COLUMN, collectedHeaders, columnTotalsMap);
 		rowHeaders = createHeaders(BucketingService.DIMENSION_ROW, collectedHeaders, bucketValueMap);
 		
 		cells = new CrosstabCell[rowBuckets][colBuckets];
-		fillCells(collectedHeaders, bucketValueMap, 0, new int[]{0, 0}, new ArrayList<Bucket>(), new ArrayList<BucketMap>());
+		fillCells(collectedHeaders, bucketValueMap, 0, new int[]{0, 0}, new ArrayList<>(), new ArrayList<>());
 	}
 
 	protected HeaderCell[][] createHeaders(byte dimension, CollectedList[] headersLists, BucketMap totalsMap)
 	{
 		HeaderCell[][] headers = new HeaderCell[buckets[dimension].length][headersLists[dimension].span];
 		
-		List<Bucket> vals = new ArrayList<Bucket>();
+		List<Bucket> vals = new ArrayList<>();
 		fillHeaders(dimension, headers, 0, 0, headersLists[dimension], vals, totalsMap);
 		
 		return headers;
@@ -170,6 +192,7 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 	}
 
 	
+	@Override
 	public MeasureValue[] getMeasureTotals(BucketMap bucketMap, Bucket bucket)
 	{
 		Object bucketValue = bucketMap.get(bucket);
@@ -198,16 +221,35 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 			
 			vals.add(subList.key);
 			
+			if (!subList.key.isTotal())
+			{
+				fillHeaders(dimension, headers, level + 1, col, subList, vals, totalsMap);
+			}
+			
 			int depthSpan = subList.key.isTotal() ? buckets[dimension].length - level : 1;
 			Bucket[] values = new Bucket[buckets[dimension].length];
 			vals.toArray(values);
 			
 			MeasureValue[][] totals = retrieveHeaderTotals(dimension, values, totalsMap);
-			headers[level][col] = new HeaderCell(values, subList.span, depthSpan, totals);
 			
-			if (!subList.key.isTotal())
+			if (subList.key.isTotal() 
+					|| buckets[dimension][level].isMergeHeaderCells()
+					|| level >= buckets[dimension].length - 1)
 			{
-				fillHeaders(dimension, headers, level + 1, col, subList, vals, totalsMap);
+				// a single merged header
+				headers[level][col] = new HeaderCell(values, subList.span, depthSpan, totals);
+			}
+			else
+			{
+				// creating one header for each header on the next level
+				for (int c = col; c < col + subList.span; ++c)
+				{
+					HeaderCell subheader = headers[level + 1][c];
+					if (subheader != null)
+					{
+						headers[level][c] = new HeaderCell(values, subheader.getLevelSpan(), depthSpan, totals);
+					}
+				}
 			}
 			
 			col += subList.span;
@@ -505,6 +547,7 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 			}
 		}
 		
+		@Override
 		public String toString()
 		{
 			return key + "/" + span + ": " + super.toString();
@@ -520,14 +563,16 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 		{
 			this.totalPosition = totalPosition;
 			
-			list = new LinkedList<CollectedList>();
+			list = new LinkedList<>();
 		}
 
+		@Override
 		public Iterator<CollectedList> iterator()
 		{
 			return list.iterator();
 		}
 
+		@Override
 		protected void addSublist(CollectedList sublist)
 		{
 			if (sublist.key.isTotal() && totalPosition == CrosstabTotalPositionEnum.START)
@@ -551,14 +596,16 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 			
 			CollectedListComparator comparator = 
 				new CollectedListComparator(bucketDefinition);
-			list = new TreeSet<CollectedList>(comparator);
+			list = new TreeSet<>(comparator);
 		}
 
+		@Override
 		public Iterator<CollectedList> iterator()
 		{
 			return list.iterator();
 		}
 
+		@Override
 		protected void addSublist(CollectedList sublist)
 		{
 			list.add(sublist);
@@ -567,6 +614,7 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 	
 	protected static class CollectedListComparator implements Comparator<CollectedList>
 	{
+		final String EXCEPTION_MESSAGE_KEY_TWO_TOTAL_KEYS_IN_SAME_LIST = "crosstabs.calculation.two.total.keys.in.same.list";
 		final BucketOrderer bucketOrderer;
 		final boolean totalFirst;
 		
@@ -577,6 +625,7 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 					== CrosstabTotalPositionEnum.START;
 		}
 
+		@Override
 		public int compare(CollectedList l1, CollectedList l2)
 		{
 			if (l1 == l2)
@@ -590,7 +639,10 @@ public class CrosstabBucketingService extends BucketingService implements Bucket
 				if (l2.key.isTotal())
 				{
 					// this should not happen
-					throw new JRRuntimeException("Two total keys in the same list");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_TWO_TOTAL_KEYS_IN_SAME_LIST,
+							(Object[])null);
 				}
 				
 				order = totalFirst ? -1 : 1;

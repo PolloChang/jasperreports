@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,6 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
  * Crosstab measure implementation to be used for report designing.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstabMeasure.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCrosstabMeasure extends JRBaseCrosstabMeasure implements JRChangeEventsSupport
 {
@@ -253,9 +252,7 @@ public class JRDesignCrosstabMeasure extends JRBaseCrosstabMeasure implements JR
 		return getEventSupport();
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignCrosstabMeasure clone = (JRDesignCrosstabMeasure) super.clone();
@@ -267,6 +264,7 @@ public class JRDesignCrosstabMeasure extends JRBaseCrosstabMeasure implements JR
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,14 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.query.JRClauseFunction;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRQueryChunk.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRQueryChunk extends JRCloneable
 {
@@ -41,6 +43,12 @@ public interface JRQueryChunk extends JRCloneable
 	 * and the vertical bar (<code>'|'</code>). 
 	 * </p>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			defaultValue = ", ; |",
+			scopes = {PropertyScope.GLOBAL},
+			sinceVersion = PropertyConstants.VERSION_2_0_5
+			)
 	public static final String PROPERTY_CHUNK_TOKEN_SEPARATOR = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "query.chunk.token.separators";
 

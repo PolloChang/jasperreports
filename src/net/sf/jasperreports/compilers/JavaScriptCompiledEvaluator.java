@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,11 @@ package net.sf.jasperreports.compilers;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.collections4.map.ReferenceMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.mozilla.javascript.Script;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.fill.JREvaluator;
@@ -35,16 +40,10 @@ import net.sf.jasperreports.engine.fill.JRFillVariable;
 import net.sf.jasperreports.engine.fill.JasperReportsContextAware;
 import net.sf.jasperreports.functions.FunctionsUtil;
 
-import org.apache.commons.collections.map.ReferenceMap;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.mozilla.javascript.Script;
-
 /**
  * JavaScript expression evaluator that uses Java bytecode compiled by {@link JavaScriptClassCompiler}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptCompiledEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JavaScriptCompiledEvaluator extends JREvaluator implements JasperReportsContextAware
 {
@@ -53,7 +52,10 @@ public class JavaScriptCompiledEvaluator extends JREvaluator implements JasperRe
 
 	protected static final String EXPRESSION_ID_VAR = "_jreid";
 	
-	private static final ReferenceMap scriptClassLoaders = new ReferenceMap(ReferenceMap.HARD, ReferenceMap.SOFT);
+	private static final ReferenceMap<String, JavaScriptClassLoader> scriptClassLoaders = 
+		new ReferenceMap<>(
+			ReferenceMap.ReferenceStrength.HARD, ReferenceMap.ReferenceStrength.SOFT
+			);
 	
 	protected static JavaScriptClassLoader getScriptClassLoader(String unitName)
 	{
@@ -61,7 +63,7 @@ public class JavaScriptCompiledEvaluator extends JREvaluator implements JasperRe
 		boolean created = false;
 		synchronized (scriptClassLoaders)
 		{
-			loader = (JavaScriptClassLoader) scriptClassLoaders.get(unitName);
+			loader = scriptClassLoaders.get(unitName);
 			if (loader == null)
 			{
 				loader = new JavaScriptClassLoader();
@@ -83,7 +85,7 @@ public class JavaScriptCompiledEvaluator extends JREvaluator implements JasperRe
 	private FunctionsUtil functionsUtil;
 	private JavaScriptEvaluatorScope evaluatorScope;
 	
-	private final Map<Integer, Script> scripts = new HashMap<Integer, Script>();
+	private final Map<Integer, Script> scripts = new HashMap<>();
 
 
 	/**
@@ -106,6 +108,7 @@ public class JavaScriptCompiledEvaluator extends JREvaluator implements JasperRe
 		this.functionsUtil = FunctionsUtil.getInstance(context);
 	}
 
+	@Override
 	protected void customizedInit(
 			Map<String, JRFillParameter> parametersMap, 
 			Map<String, JRFillField> fieldsMap,
@@ -116,18 +119,21 @@ public class JavaScriptCompiledEvaluator extends JREvaluator implements JasperRe
 		evaluatorScope.init(parametersMap, fieldsMap, variablesMap);
 	}
 	
+	@Override
 	protected Object evaluate(int id) throws Throwable //NOSONAR
 	{
 		JavaScriptCompiledData.ExpressionIndexes expression = getExpression(id);
 		return evaluateExpression(expression.getDefaultExpressionIndex());
 	}
 
+	@Override
 	protected Object evaluateEstimated(int id) throws Throwable //NOSONAR
 	{
 		JavaScriptCompiledData.ExpressionIndexes expression = getExpression(id);
 		return evaluateExpression(expression.getEstimatedExpressionIndex());
 	}
 
+	@Override
 	protected Object evaluateOld(int id) throws Throwable //NOSONAR
 	{
 		JavaScriptCompiledData.ExpressionIndexes expression = getExpression(id);

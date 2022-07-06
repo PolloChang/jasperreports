@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.JRGroup;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.util.LocalJasperReportsContext;
 
 
 /**
@@ -41,7 +40,6 @@ import net.sf.jasperreports.engine.util.LocalJasperReportsContext;
  * without actually filling it.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRParameterDefaultValuesEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRParameterDefaultValuesEvaluator
 {
@@ -69,7 +67,7 @@ public final class JRParameterDefaultValuesEvaluator
 	 */
 	public static Map<String,Object> evaluateParameterDefaultValues(JasperReportsContext jasperReportsContext, JasperReport report, Map<String,Object> initialParameters) throws JRException
 	{
-		Map<String,Object> valuesMap = initialParameters == null ? new HashMap<String,Object>() : new HashMap<String,Object>(initialParameters);
+		Map<String,Object> valuesMap = initialParameters == null ? new HashMap<>() : new HashMap<>(initialParameters);
 		
 		valuesMap.put(JRParameter.JASPER_REPORT, report);
 		
@@ -77,7 +75,10 @@ public final class JRParameterDefaultValuesEvaluator
 		JRDataset reportDataset = report.getMainDataset();
 		JRFillDataset fillDataset = factory.getDataset(reportDataset);
 		
-		fillDataset.setJasperReportsContext(LocalJasperReportsContext.getLocalContext(jasperReportsContext, initialParameters));
+		@SuppressWarnings("deprecation")
+		JasperReportsContext depContext = 
+			net.sf.jasperreports.engine.util.LocalJasperReportsContext.getLocalContext(jasperReportsContext, initialParameters);
+		fillDataset.setJasperReportsContext(depContext);
 		
 		fillDataset.createCalculator(report);
 		fillDataset.initCalculator();
@@ -88,7 +89,7 @@ public final class JRParameterDefaultValuesEvaluator
 		{
 			fillDataset.setParameterValues(valuesMap);
 			
-			Map<String,Object> parameterValues = new HashMap<String,Object>();
+			Map<String,Object> parameterValues = new HashMap<>();
 			JRParameter[] parameters = reportDataset.getParameters();
 			for (int i = 0; i < parameters.length; i++)
 			{
@@ -117,7 +118,8 @@ public final class JRParameterDefaultValuesEvaluator
 			super((JRBaseFiller) null, null);
 		}
 
-		protected JRFillGroup getGroup(JRGroup group)
+		@Override
+		public JRFillGroup getGroup(JRGroup group)
 		{
 			return super.getGroup(null);
 		}

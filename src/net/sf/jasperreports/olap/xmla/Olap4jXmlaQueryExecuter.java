@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,17 +34,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRDataSource;
-import net.sf.jasperreports.engine.JRDataset;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JRValueParameter;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.query.JRAbstractQueryExecuter;
-import net.sf.jasperreports.olap.JRMdxQueryExecuterFactory;
-import net.sf.jasperreports.olap.JROlapDataSource;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.olap4j.Axis;
@@ -61,14 +50,27 @@ import org.olap4j.layout.RectangularCellSetFormatter;
 import org.olap4j.metadata.Hierarchy;
 import org.olap4j.metadata.Member;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRDataSource;
+import net.sf.jasperreports.engine.JRDataset;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JRValueParameter;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.query.JRAbstractQueryExecuter;
+import net.sf.jasperreports.olap.JRMdxQueryExecuterFactory;
+import net.sf.jasperreports.olap.JROlapDataSource;
+
 
 
 /**
  * @author swood
- * @version $Id: Olap4jXmlaQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Olap4jXmlaQueryExecuter extends JRAbstractQueryExecuter
 {
+	public static final String EXCEPTION_MESSAGE_KEY_CONNECTION_ERROR = "query.xmla.connection.error";
+	public static final String EXCEPTION_MESSAGE_KEY_EXECUTE_QUERY_ERROR = "query.xmla.execute.query.error";
+	
 	public static final String OLAP4J_DRIVER = "olap4jDriver";
 	public static final String OLAP4J_URL_PREFIX = "urlPrefix";
 	public static final String XMLA_SERVER = "server";
@@ -107,12 +109,14 @@ public class Olap4jXmlaQueryExecuter extends JRAbstractQueryExecuter
 		return JRMdxQueryExecuterFactory.CANONICAL_LANGUAGE;
 	}
 
+	@Override
 	protected String getParameterReplacement(String parameterName)
 	{
 		return String.valueOf(getParameterValue(parameterName));
 	}
 
 	
+	@Override
 	public JRDataSource createDatasource() throws JRException
 	{
 		
@@ -134,7 +138,11 @@ public class Olap4jXmlaQueryExecuter extends JRAbstractQueryExecuter
 		}
 		catch (Throwable t) 
 		{
-			throw new JRException("error loading olap4j driver and getting Connection '" + OLAP4J_XMLA_DRIVER_CLASS + "'", t);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_CONNECTION_ERROR,
+					new Object[]{OLAP4J_XMLA_DRIVER_CLASS},
+					t);
 		}
 
 		OlapConnection connection = (OlapConnection) rConnection;
@@ -163,7 +171,10 @@ public class Olap4jXmlaQueryExecuter extends JRAbstractQueryExecuter
 		}
 		catch (OlapException e)
 		{
-			throw new JRException("Error executing query: " + getQueryString(),
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_EXECUTE_QUERY_ERROR,
+					new Object[]{getQueryString()},
 					e);
 		}
 		
@@ -172,11 +183,13 @@ public class Olap4jXmlaQueryExecuter extends JRAbstractQueryExecuter
 		return new JROlapDataSource(dataset, xmlaResult);
 	}
 
+	@Override
 	public boolean cancelQuery() throws JRException
 	{
 		return false;
 	}
 
+	@Override
 	public void close()
 	{
 		if (rConnection != null)
@@ -345,10 +358,6 @@ public class Olap4jXmlaQueryExecuter extends JRAbstractQueryExecuter
 				{
 					caption = (String) captionMethod.invoke(m, new Object[]{null});
 				}
-				catch (IllegalAccessException e)
-				{
-					throw new JRRuntimeException(e);
-				} 
 				catch (Exception e)
 				{
 					throw new JRRuntimeException(e);

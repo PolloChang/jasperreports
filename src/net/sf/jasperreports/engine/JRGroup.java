@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -135,7 +135,6 @@ import net.sf.jasperreports.engine.type.FooterPositionEnum;
  * information is displayed in the group, such as the current page number, their values 
  * might be wrong after they are moved.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRGroup extends JRCloneable
 {
@@ -184,9 +183,19 @@ public interface JRGroup extends JRCloneable
 	public boolean isReprintHeaderOnEachPage();
 		
 	/**
+	 * Gets the flag that signals if the group header should be reprinted at the beginning of each column, in vertically filled reports only.
+	 */
+	public boolean isReprintHeaderOnEachColumn();
+		
+	/**
 	 * Sets the flag that signals if the group header should be reprinted at the beginning of each page.
 	 */
 	public void setReprintHeaderOnEachPage(boolean isReprint);
+		
+	/**
+	 * Sets the flag that signals if the group header should be reprinted at the beginning of each column, in vertically filled reports only.
+	 */
+	public void setReprintHeaderOnEachColumn(boolean isReprint);
 		
 	/**
 	 * Gets the minimum amount of vertical space needed at the bottom of the column in order to place the
@@ -199,6 +208,16 @@ public interface JRGroup extends JRCloneable
 	 * group header on the current column.
 	 */
 	public void setMinHeightToStartNewPage(int minHeight);
+		
+	/**
+	 * Gets the minimum number of details to be rendered on the current column, to avoid starting the group on a new column.
+	 */
+	public int getMinDetailsToStartFromTop();
+
+	/**
+	 * Sets the minimum number of details to be rendered on the current column, to avoid starting the group on a new column.
+	 */
+	public void setMinDetailsToStartFromTop(int minDetails);
 		
 	/**
 	 * Specifies how the group footer section behaves with regards to its position on the current page.
@@ -219,7 +238,17 @@ public interface JRGroup extends JRCloneable
 	 * Sets the flag that signals if the group should be prevented from splitting on first break attempt.
 	 */
 	public void setKeepTogether(boolean keepTogether);
+	
+	/**
+	 * Gets the flag that signals if the group footer should be prevented from appearing without a detail at the top of a new page/column.
+	 */
+	public boolean isPreventOrphanFooter();
 		
+	/**
+	 * Sets the flag that signals if the group should be prevented from appearing without a detail at the top of a new page/column.
+	 */
+	public void setPreventOrphanFooter(boolean preventOrphanFooter);
+	
 	/**
 	 * Gets the expression that defines what records in the group have in common.
 	 */

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,10 +27,11 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: Axis.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Axis
 {
+	public static final String EXCEPTION_MESSAGE_KEY_OLAP_AXIS_NOT_FOUND = "data.olap.axis.not.found";
+	
 	public static final String AXIS0 = "Columns";
 	public static final String AXIS1 = "Rows";
 	public static final String AXIS2 = "Pages";
@@ -48,7 +49,10 @@ public class Axis
 			}
 		}
 		
-		throw new JRRuntimeException("No such axis \"" + name + "\".");
+		throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_OLAP_AXIS_NOT_FOUND,
+				new Object[]{name});
 	}
 	
 	private final int idx;
@@ -68,6 +72,7 @@ public class Axis
 		return idx;
 	}
 
+	@Override
 	public String toString ()
 	{
 		return "Axis(" + idx +")";

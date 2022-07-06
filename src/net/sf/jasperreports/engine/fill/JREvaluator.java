@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Locale;
@@ -30,12 +31,18 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.compilers.DirectExpressionEvaluator;
+import net.sf.jasperreports.compilers.DirectExpressionEvaluators;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
 import net.sf.jasperreports.functions.FunctionSupport;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Base class for the dynamically generated expression evaluator classes.
@@ -60,10 +67,29 @@ import net.sf.jasperreports.functions.FunctionSupport;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JREvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JREvaluator implements DatasetExpressionEvaluator
 {
+	public static final String EXCEPTION_MESSAGE_KEY_RESOURCE_NOT_FOUND = "fill.evaluator.resource.not.found";
+	
+	/**
+	 * The expression evaluation engine in JasperReports has always ignored java.lang.NullPointerException 
+	 * exceptions raised during expression evaluation. An expression raising NullPointerException is evaluated to null. 
+	 * However, in certain cases, users want to be able to track down the source of their NPE and this configuration 
+	 * property can be set to instruct the expression evaluation engine to treat NPEs just the way all other expression 
+	 * exceptions are treated. 
+	 * The default value of this configuration property is true, meaning NPEs are ignored. 
+	 * The property can be set globally, at report or at dataset level. 
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			sinceVersion = PropertyConstants.VERSION_6_1_1,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_IGNORE_NPE = JRPropertiesUtil.PROPERTY_PREFIX + "evaluator.ignore.npe";
+
 	/**
 	 * The resource bundle parameter.
 	 */
@@ -90,12 +116,29 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 	private FillFunctionContext functionContext;
 
 	/**
+	 *
+	 */
+	protected boolean ignoreNPE = true;
+	
+	private DirectExpressionEvaluators directExpressionEvaluators;
+
+	/**
 	 * Default constructor.
 	 */
 	protected JREvaluator()
 	{
 	}
+	
+	public void setDirectExpressionEvaluators(DirectExpressionEvaluators directExpressionEvaluators)
+	{
+		this.directExpressionEvaluators = directExpressionEvaluators;
+	}
 
+	private DirectExpressionEvaluator directEvaluator(JRExpression expression)
+	{
+		return directExpressionEvaluators == null ? null 
+				: directExpressionEvaluators.getEvaluator(expression);
+	}
 
 	/**
 	 * Initializes the evaluator by setting the parameter, field and variable objects.
@@ -106,21 +149,29 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 	 * @param resourceMissingType the resource missing type
 	 * @throws JRException
 	 */
+	@Override
 	public void init(
 			Map<String, JRFillParameter> parametersMap, 
 			Map<String, JRFillField> fieldsMap, 
 			Map<String, JRFillVariable> variablesMap, 
-			WhenResourceMissingTypeEnum resourceMissingType
+			WhenResourceMissingTypeEnum resourceMissingType,
+			boolean ignoreNPE
 			) throws JRException
 	{
 		whenResourceMissingType = resourceMissingType;
+		this.ignoreNPE = ignoreNPE;
 		resourceBundle = parametersMap.get(JRParameter.REPORT_RESOURCE_BUNDLE);
 		locale = parametersMap.get(JRParameter.REPORT_LOCALE);
 		
-		functions = new HashMap<String, FunctionSupport>();
+		functions = new HashMap<>();
 		functionContext = new FillFunctionContext(parametersMap);
 		
 		customizedInit(parametersMap, fieldsMap, variablesMap);
+		
+		if (directExpressionEvaluators != null)
+		{
+			directExpressionEvaluators.init(this, parametersMap, fieldsMap, variablesMap);
+		}
 	}
 
 	
@@ -135,19 +186,15 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 		{
 			try
 			{
-				FunctionSupport functionSupport = clazz.newInstance();
+				FunctionSupport functionSupport = clazz.getDeclaredConstructor().newInstance();
 				functionSupport.init(functionContext);
 				functions.put(classId, functionSupport);
 			}
-			catch (IllegalAccessException e)
+			catch (IllegalAccessException | InstantiationException 
+				| NoSuchMethodException | InvocationTargetException e)
 			{
 				throw new JRRuntimeException(e);
 			}
-			catch (InstantiationException e)
-			{
-				throw new JRRuntimeException(e);
-			}
-			
 		}
 		return (T)functions.get(classId);
 	}
@@ -196,18 +243,18 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 	}
 
 	/**
-	 * Constructs a message using a pattern with an Object array parameter.
+	 * Constructs a message using a pattern with any number of parameters.
 	 * 
 	 * @param pattern the message pattern
-	 * @param args the parameter Object array
+	 * @param args the message parameters
 	 * @return the constructed message
 	 * @see MessageFormat#format(java.lang.Object[],java.lang.StringBuffer, java.text.FieldPosition)
 	 */
-	public String msg(String pattern, Object[] args)
+	public String msg(String pattern, Object... args)
 	{
 		return getMessageFormat(pattern).format(args, new StringBuffer(), null).toString();
 	}
-	
+
 	/**
 	 * Returns a string for a given key from the resource bundle associated with the evaluator.
 	 * 
@@ -225,7 +272,14 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 		}
 		catch (NullPointerException e) //NOPMD
 		{
-			str = handleMissingResource(key, e);
+			if (ignoreNPE)
+			{
+				str = handleMissingResource(key, e);
+			}
+			else
+			{
+				throw e;
+			}
 		}
 		catch (MissingResourceException e)
 		{
@@ -235,22 +289,33 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 		return str;
 	}
 
+	protected Object handleEvaluationException(JRExpression expression, Throwable e) throws JRExpressionEvalException
+	{
+		throw new JRExpressionEvalException(expression, e);
+	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object evaluate(JRExpression expression) throws JRExpressionEvalException
 	{
 		Object value = null;
 		
 		if (expression != null)
 		{
+			DirectExpressionEvaluator directEvaluator = directEvaluator(expression);
 			try
 			{
-				value = evaluate(expression.getId());
+				if (directEvaluator != null)
+				{
+					value = directEvaluator.evaluate();
+				}
+				else
+				{
+					value = evaluate(expression.getId());
+				}
 			}
 			catch (NullPointerException e) //NOPMD
 			{
+				if (!ignoreNPE) throw new JRExpressionEvalException(expression, e);
 			}
 			catch (OutOfMemoryError e)
 			{
@@ -260,7 +325,7 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 			// of the evaluate method, without breaking backward compatibility of compiled report templates 
 			catch (Throwable e) //NOPMD
 			{
-				throw new JRExpressionEvalException(expression, e);
+				value = handleEvaluationException(expression, e);
 			}
 		}
 		
@@ -268,21 +333,28 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public Object evaluateOld(JRExpression expression) throws JRExpressionEvalException
 	{
 		Object value = null;
 		
 		if (expression != null)
 		{
+			DirectExpressionEvaluator directEvaluator = directEvaluator(expression);
 			try
 			{
-				value = evaluateOld(expression.getId());
+				if (directEvaluator != null)
+				{
+					value = directEvaluator.evaluateOld();
+				}
+				else
+				{
+					value = evaluateOld(expression.getId());
+				}
 			}
 			catch (NullPointerException e) //NOPMD
 			{
+				if (!ignoreNPE) throw new JRExpressionEvalException(expression, e);
 			}
 			catch (OutOfMemoryError e)
 			{
@@ -292,7 +364,7 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 			// of the evaluate method, without breaking backward compatibility of compiled report templates 
 			catch (Throwable e) //NOPMD
 			{
-				throw new JRExpressionEvalException(expression, e);
+				value = handleEvaluationException(expression, e);
 			}
 		}
 		
@@ -300,21 +372,28 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object evaluateEstimated(JRExpression expression) throws JRExpressionEvalException
 	{
 		Object value = null;
 		
 		if (expression != null)
 		{
+			DirectExpressionEvaluator directEvaluator = directEvaluator(expression);
 			try
 			{
-				value = evaluateEstimated(expression.getId());
+				if (directEvaluator != null)
+				{
+					value = directEvaluator.evaluateEstimated();
+				}
+				else
+				{
+					value = evaluateEstimated(expression.getId());
+				}
 			}
 			catch (NullPointerException e) //NOPMD
 			{
+				if (!ignoreNPE) throw new JRExpressionEvalException(expression, e);
 			}
 			catch (OutOfMemoryError e)
 			{
@@ -324,7 +403,7 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 			// of the evaluate method, without breaking backward compatibility of compiled report templates 
 			catch (Throwable e) //NOPMD
 			{
-				throw new JRExpressionEvalException(expression, e);
+				value = handleEvaluationException(expression, e);
 			}
 		}
 		
@@ -360,7 +439,11 @@ public abstract class JREvaluator implements DatasetExpressionEvaluator
 			}
 			case ERROR:
 			{
-				throw new JRRuntimeException("Resource not found for key \"" + key + "\".", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_RESOURCE_NOT_FOUND,
+						new Object[]{key},
+						e);
 			}
 			case NULL:
 			default:

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,9 @@
  */
 package net.sf.jasperreports.components.barbecue;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.base.JRBasePrintImage;
@@ -32,13 +35,9 @@ import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
 import net.sourceforge.barbecue.Barcode;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarbecueDesignConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarbecueDesignConverter implements ComponentDesignConverter
 {
@@ -47,6 +46,7 @@ public class BarbecueDesignConverter implements ComponentDesignConverter
 	
 	private static final String DEFAULT_PREVIEW_CODE = "01234567890";
 
+	@Override
 	public JRPrintElement convert(ReportConverter reportConverter,
 			JRComponentElement element)
 	{
@@ -93,9 +93,9 @@ public class BarbecueDesignConverter implements ComponentDesignConverter
 			barcodeInfo.setBarHeight(component.getBarHeight());
 			
 			Barcode barcode = BarcodeProviders.createBarcode(barcodeInfo);
-			BarbecueRenderer renderer = new BarbecueRenderer(barcode);
+			BarbecueRendererImpl renderer = new BarbecueRendererImpl(barcode);
 			renderer.setRotation(BarbecueStyleResolver.getRotationValue(element));
-			image.setRenderable(renderer);
+			image.setRenderer(renderer);
 			return image;
 		}
 		catch (Exception e)

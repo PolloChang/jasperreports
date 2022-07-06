@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,14 +31,13 @@
 package net.sf.jasperreports.renderers;
 
 import java.awt.Graphics2D;
+import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRAbstractSvgRenderer;
+import org.jfree.ui.Drawable;
+
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JasperReportsContext;
-
-import org.jfree.ui.Drawable;
 
 
 /**
@@ -47,9 +46,9 @@ import org.jfree.ui.Drawable;
  * used to allow JFreeChart objects to be included in the output report in vector form.
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JCommonDrawableRenderer.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link JCommonDrawableRendererImpl}.
  */
-public class JCommonDrawableRenderer extends JRAbstractSvgRenderer
+public class JCommonDrawableRenderer extends net.sf.jasperreports.engine.JRAbstractSvgRenderer implements Graphics2DRenderable
 {
 
 	/**
@@ -71,23 +70,19 @@ public class JCommonDrawableRenderer extends JRAbstractSvgRenderer
 		this.drawable = drawable;
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public Dimension2D getDimension(JasperReportsContext jasperReportsContext) 
+	{
+		return null;
+	}
+
+	@Override
 	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) 
 	{
 		if (drawable != null) 
 		{
 			drawable.draw(grx, rectangle);
 		}
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
-	 */
-	public void render(Graphics2D grx, Rectangle2D rectangle) 
-	{
-		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);
 	}
 	
 }

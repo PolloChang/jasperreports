@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,17 +26,30 @@ package net.sf.jasperreports.data.xml;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import net.sf.jasperreports.data.DataAdapter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import net.sf.jasperreports.data.FileDataAdapter;
+import net.sf.jasperreports.data.StandardRepositoryDataLocation;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XmlDataAdapter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface XmlDataAdapter extends DataAdapter
+public interface XmlDataAdapter extends FileDataAdapter
 {
+	/**
+	 * @deprecated replaced by {@link #getDataFile()}
+	 */
+	@Deprecated
+	@JsonIgnore
 	public String getFileName();
 
+	/**
+	 * @deprecated replaced by {@link #setDataFile(net.sf.jasperreports.data.DataFile)} and {@link StandardRepositoryDataLocation}
+	 */
+	@Deprecated
+	@JsonProperty
 	public void setFileName(String fileName);
 	
 	public String getSelectExpression();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,18 +25,23 @@ package net.sf.jasperreports.engine.export.ooxml;
 
 import java.io.Writer;
 
-import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.PrintPageFormat;
+import net.sf.jasperreports.engine.export.Cut;
+import net.sf.jasperreports.engine.export.CutsInfo;
+import net.sf.jasperreports.engine.export.JRGridLayout;
 import net.sf.jasperreports.engine.export.LengthUtil;
+import net.sf.jasperreports.engine.export.ooxml.type.PaperSizeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxDocumentHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxDocumentHelper extends BaseHelper
 {
+	protected static int DEFAULT_LINE_PITCH = 360;
+
 	/**
 	 * 
 	 */
@@ -65,21 +70,76 @@ public class DocxDocumentHelper extends BaseHelper
 		write(" xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">\n"); 
 		write(" <w:body>\n");
 	}
-	
 
 	/**
 	 *
 	 */
-	public void exportFooter(JasperPrint jasperPrint)
+	public void exportSection(PrintPageFormat pageFormat, JRGridLayout pageGridLayout, boolean lastPage)
 	{
+		if (!lastPage)
+		{
+			write("    <w:p>\n");
+			write("    <w:pPr>\n");
+		}
 		write("  <w:sectPr>\n");
-		write("   <w:pgSz w:w=\"" + LengthUtil.twip(jasperPrint.getPageWidth()) + "\" w:h=\"" + LengthUtil.twip(jasperPrint.getPageHeight()) + "\"");
-		write(" w:orient=\"" + (jasperPrint.getOrientationValue() == OrientationEnum.LANDSCAPE ? "landscape" : "portrait") + "\"");
+		write("   <w:pgSz w:w=\"" + LengthUtil.twip(pageFormat.getPageWidth()) + "\" w:h=\"" + LengthUtil.twip(pageFormat.getPageHeight()) + "\"");
+		write(" w:orient=\"" + (pageFormat.getOrientation() == OrientationEnum.LANDSCAPE ? "landscape" : "portrait") + "\"");
+		
+		if(OoxmlUtils.getSuitablePaperSize(pageFormat) == PaperSizeEnum.UNDEFINED)
+		{
+			// unique identifier for the paper size
+			write(" w:code=\""+ (1000 + pageFormat.getPageWidth() + pageFormat.getPageHeight()) +"\"");
+		}
 		write("/>\n");
-		write("   <w:pgMar w:top=\"0\" w:right=\"0\" w:bottom=\"0\" w:left=\"0\" w:header=\"0\" w:footer=\"0\" w:gutter=\"0\" />\n");
+		
+		CutsInfo xCuts = pageGridLayout.getXCuts();
+		
+		Cut leftCut = xCuts.getCut(0);
+		int gridLeftPadding = leftCut.isCutNotEmpty() ? 0 : pageGridLayout.getColumnWidth(0);
+		int leftMargin = Math.min(gridLeftPadding, pageFormat.getLeftMargin());
+
+		Cut rightCut = xCuts.getCut(xCuts.size() - 2);
+		int gridRightPadding = rightCut.isCutNotEmpty() ? 0 : pageGridLayout.getColumnWidth(xCuts.size() - 2);
+		int rightMargin = Math.min(gridRightPadding, pageFormat.getRightMargin());
+
+		CutsInfo yCuts = pageGridLayout.getYCuts();
+		
+		int topMargin = pageFormat.getTopMargin();
+		if (yCuts.size() > 1)
+		{
+			Cut topCut = yCuts.getCut(0);
+			int gridTopPadding = topCut.isCutNotEmpty() ? 0 : pageGridLayout.getRowHeight(0);
+			topMargin = Math.min(gridTopPadding, pageFormat.getTopMargin());
+		}
+
+		//last y cut is from bottom element, not page height
+		int gridBottomPadding = pageFormat.getPageHeight() - yCuts.getLastCutOffset();
+		int bottomMargin = LengthUtil.twip(Math.min(gridBottomPadding, pageFormat.getBottomMargin())) - DEFAULT_LINE_PITCH;
+		bottomMargin = bottomMargin < 0 ? 0 : bottomMargin;
+
+		write("   <w:pgMar w:top=\""
+				+ LengthUtil.twip(topMargin)
+				+ "\" w:right=\""
+				+ LengthUtil.twip(rightMargin)
+				+ "\" w:bottom=\""
+				+ bottomMargin
+				+ "\" w:left=\""
+				+ LengthUtil.twip(leftMargin)
+				+ "\" w:header=\"0\" w:footer=\"0\" w:gutter=\"0\" />\n");
 //		write("   <w:cols w:space=\"720\" />\n");
-		write("   <w:docGrid w:linePitch=\"360\" />\n");
+		write("   <w:docGrid w:linePitch=\"" + DEFAULT_LINE_PITCH + "\" />\n");
 		write("  </w:sectPr>\n");
+		if (!lastPage)
+		{
+			write("    </w:pPr>\n");
+			write("    </w:p>\n");
+		}
+	}
+	/**
+	 *
+	 */
+	public void exportFooter()
+	{
 		write(" </w:body>\n");
 		write("</w:document>\n");
 	}

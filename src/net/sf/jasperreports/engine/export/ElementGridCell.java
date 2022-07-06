@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,10 +32,10 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 	
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ElementGridCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ElementGridCell extends JRExporterGridCell
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NOT_FRAME_ELEMENT = "export.common.grid.cell.not.frame.element";
 	
 	private GridCellSize size;
 
@@ -44,6 +44,9 @@ public class ElementGridCell extends JRExporterGridCell
 
 	private PrintElementIndex parentIndex;
 	private int elementIndex;
+
+	// used only by XLSX exporter for now
+	private Integer styleIndex;
 
 	/**
 	 *
@@ -80,6 +83,7 @@ public class ElementGridCell extends JRExporterGridCell
 		return container.getElement(parentIndex, elementIndex);
 	}
 	
+	@Override
 	public String getProperty(String propName)
 	{
 		JRPrintElement element = getElement();
@@ -128,7 +132,10 @@ public class ElementGridCell extends JRExporterGridCell
 		if (!(element instanceof JRPrintFrame))
 		{
 			// should not happen
-			throw new JRRuntimeException("Element at address " + getElementAddress() + " is not a frame");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NOT_FRAME_ELEMENT,
+					new Object[]{getElementAddress()});
 		}
 		
 		JRPrintFrame frame = (JRPrintFrame) element;
@@ -156,4 +163,19 @@ public class ElementGridCell extends JRExporterGridCell
 		return container;
 	}
 
+	/**
+	 * 	Used only by XLSX exporter for now.
+	 */
+	public void setStyleIndex(Integer styleIndex)
+	{
+		this.styleIndex = styleIndex;
+	}
+
+	/**
+	 * 	Used only by XLSX exporter for now.
+	 */
+	public Integer getStyleIndex()
+	{
+		return styleIndex;
+	}
 }

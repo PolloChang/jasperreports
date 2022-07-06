@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,17 +24,33 @@
 package net.sf.jasperreports.data.csv;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
-import net.sf.jasperreports.data.DataAdapter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+
+import net.sf.jasperreports.data.FileDataAdapter;
+import net.sf.jasperreports.data.StandardRepositoryDataLocation;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CsvDataAdapter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface CsvDataAdapter extends DataAdapter
+public interface CsvDataAdapter extends FileDataAdapter
 {
+	/**
+	 * @deprecated replaced by {@link #getDataFile()}
+	 */
+	@Deprecated
+	@JsonIgnore
 	public String getFileName();
 
+	/**
+	 * @deprecated replaced by {@link #setDataFile(net.sf.jasperreports.data.DataFile)} and {@link StandardRepositoryDataLocation}
+	 */
+	@Deprecated
+	@JsonProperty
 	public void setFileName(String fileName);
 
 	public String getEncoding();
@@ -53,6 +69,14 @@ public interface CsvDataAdapter extends DataAdapter
 
 	public void setFieldDelimiter(String fieldDelimiter);
 
+	public Locale getLocale();
+
+	public void setLocale(Locale locale);
+
+	public TimeZone getTimeZone();
+
+	public void setTimeZone(TimeZone timeZone);
+
 	public String getDatePattern();
 
 	public void setDatePattern(String datePattern);
@@ -65,6 +89,7 @@ public interface CsvDataAdapter extends DataAdapter
 
 	public void setQueryExecuterMode(boolean queryExecuterMode);
 
+	@JacksonXmlElementWrapper(useWrapping = false)
 	public List<String> getColumnNames();
 
 	public void setColumnNames(List<String> columnNames);

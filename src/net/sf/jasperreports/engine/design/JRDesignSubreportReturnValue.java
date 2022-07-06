@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,12 +31,11 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
 
 /**
  * Implementation of {@link net.sf.jasperreports.engine.JRSubreportReturnValue JRSubreportReturnValue}
- * to be used for report desing purposes.
+ * to be used for report design purposes.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignSubreportReturnValue.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRDesignSubreportReturnValue extends JRBaseSubreportReturnValue implements JRChangeEventsSupport
+public class JRDesignSubreportReturnValue extends JRBaseSubreportReturnValue implements JRChangeEventsSupport // do not extend DesignCommonReturnValue to avoid deserialization field issues
 {
 
 	/**
@@ -56,7 +55,7 @@ public class JRDesignSubreportReturnValue extends JRBaseSubreportReturnValue imp
 	 * Sets the subreport variable name.
 	 * 
 	 * @param name the variable name
-	 * @see net.sf.jasperreports.engine.JRSubreportReturnValue#getSubreportVariable()
+	 * @see net.sf.jasperreports.engine.JRSubreportReturnValue#getFromVariable()
 	 */
 	public void setSubreportVariable(String name)
 	{
@@ -82,7 +81,7 @@ public class JRDesignSubreportReturnValue extends JRBaseSubreportReturnValue imp
 	 * Sets the calculation type.
 	 * 
 	 * @param calculationValue the calculation type
-	 * @see net.sf.jasperreports.engine.JRSubreportReturnValue#getCalculationValue()
+	 * @see net.sf.jasperreports.engine.JRSubreportReturnValue#getCalculation()
 	 */
 	public void setCalculation(CalculationEnum calculationValue)
 	{
@@ -104,9 +103,7 @@ public class JRDesignSubreportReturnValue extends JRBaseSubreportReturnValue imp
 		getEventSupport().firePropertyChange(PROPERTY_INCREMENTER_FACTORY_CLASS_NAME, old, this.incrementerFactoryClassName);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignSubreportReturnValue clone = (JRDesignSubreportReturnValue)super.clone();
@@ -116,6 +113,7 @@ public class JRDesignSubreportReturnValue extends JRBaseSubreportReturnValue imp
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

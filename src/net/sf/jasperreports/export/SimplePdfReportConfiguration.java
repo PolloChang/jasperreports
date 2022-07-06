@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,6 @@ package net.sf.jasperreports.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimplePdfReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimplePdfReportConfiguration extends SimpleReportExportConfiguration implements PdfReportConfiguration
 {
@@ -36,6 +35,10 @@ public class SimplePdfReportConfiguration extends SimpleReportExportConfiguratio
 	private Boolean isSizePageToContent;
 	private Boolean isIgnoreHyperlink;
 	private Boolean isForceLineBreakPolicy;
+	private Integer oddPageOffsetX;
+	private Integer oddPageOffsetY;
+	private Integer evenPageOffsetX;
+	private Integer evenPageOffsetY;
 
 	
 	/**
@@ -45,9 +48,7 @@ public class SimplePdfReportConfiguration extends SimpleReportExportConfiguratio
 	{
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isForceSvgShapes()
 	{
 		return isForceSvgShapes;
@@ -61,9 +62,7 @@ public class SimplePdfReportConfiguration extends SimpleReportExportConfiguratio
 		this.isForceSvgShapes = isForceSvgShapes;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isCollapseMissingBookmarkLevels()
 	{
 		return isCollapseMissingBookmarkLevels;
@@ -77,9 +76,7 @@ public class SimplePdfReportConfiguration extends SimpleReportExportConfiguratio
 		this.isCollapseMissingBookmarkLevels = isCollapseMissingBookmarkLevels;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isSizePageToContent()
 	{
 		return isSizePageToContent;
@@ -93,9 +90,7 @@ public class SimplePdfReportConfiguration extends SimpleReportExportConfiguratio
 		this.isSizePageToContent = isSizePageToContent;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreHyperlink()
 	{
 		return isIgnoreHyperlink;
@@ -109,9 +104,7 @@ public class SimplePdfReportConfiguration extends SimpleReportExportConfiguratio
 		this.isIgnoreHyperlink = isIgnoreHyperlink;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isForceLineBreakPolicy()
 	{
 		return isForceLineBreakPolicy;
@@ -123,5 +116,61 @@ public class SimplePdfReportConfiguration extends SimpleReportExportConfiguratio
 	public void setForceLineBreakPolicy(Boolean isForceLineBreakPolicy)
 	{
 		this.isForceLineBreakPolicy = isForceLineBreakPolicy;
+	}
+	
+	@Override
+	public Integer getOddPageOffsetX()
+	{
+		return oddPageOffsetX;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setOddPageOffsetX(Integer oddPageOffsetX)
+	{
+		this.oddPageOffsetX = oddPageOffsetX;
+	}
+	
+	@Override
+	public Integer getOddPageOffsetY()
+	{
+		return oddPageOffsetY;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setOddPageOffsetY(Integer oddPageOffsetY)
+	{
+		this.oddPageOffsetY = oddPageOffsetY;
+	}
+	
+	@Override
+	public Integer getEvenPageOffsetX()
+	{
+		return evenPageOffsetX;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setEvenPageOffsetX(Integer evenPageOffsetX)
+	{
+		this.evenPageOffsetX = evenPageOffsetX;
+	}
+	
+	@Override
+	public Integer getEvenPageOffsetY()
+	{
+		return evenPageOffsetY;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setEvenPageOffsetY(Integer evenPageOffsetY)
+	{
+		this.evenPageOffsetY = evenPageOffsetY;
 	}
 }

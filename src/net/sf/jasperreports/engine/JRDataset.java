@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -75,7 +75,6 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * @see net.sf.jasperreports.engine.JRReport#getMainDataset()
  * @see net.sf.jasperreports.engine.JRReport#getDatasets()
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRDataset extends JRPropertiesHolder, JRCloneable, JRIdentifiable
 {
@@ -104,7 +103,15 @@ public interface JRDataset extends JRPropertiesHolder, JRCloneable, JRIdentifiab
 	 */
 	public JRScriptlet[] getScriptlets();
 
-	
+
+	/**
+	 * Returns the list of dynamic/expression-based properties for this dataset.
+	 * 
+	 * @return an array containing the expression-based properties of this dataset
+	 */
+	public DatasetPropertyExpression[] getPropertyExpressions();
+
+
 	/**
 	 * Returns the dataset's parameters.
 	 * 

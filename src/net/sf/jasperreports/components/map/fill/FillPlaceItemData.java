@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,14 +23,14 @@
  */
 package net.sf.jasperreports.components.map.fill;
 
-import net.sf.jasperreports.components.map.Item;
-import net.sf.jasperreports.components.map.ItemData;
+import net.sf.jasperreports.components.items.Item;
+import net.sf.jasperreports.components.items.ItemData;
+import net.sf.jasperreports.components.items.fill.FillItem;
+import net.sf.jasperreports.engine.component.FillContextProvider;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
-
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: FillPlaceItemData.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class FillPlaceItemData extends FillItemData
 {
@@ -46,7 +46,8 @@ public class FillPlaceItemData extends FillItemData
 		super(fillContextProvider, itemData, factory);
 	}
 	
-	public FillItem getFillItem(Item item, JRFillObjectFactory factory){
-		return new FillPlaceItem(item, factory);
-	}
+	@Override
+	public FillItem getFillItem(FillContextProvider fillContextProvider, Item item, JRFillObjectFactory factory){
+		return new FillPlaceItem(fillContextProvider, item, factory);
+	}	
 }

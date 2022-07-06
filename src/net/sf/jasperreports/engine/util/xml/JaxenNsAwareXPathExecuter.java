@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,9 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRException;
-
-import org.apache.commons.collections.map.ReferenceMap;
+import org.apache.commons.collections4.map.ReferenceMap;
 import org.jaxen.JaxenException;
 import org.jaxen.NamespaceContext;
 import org.jaxen.XPath;
@@ -38,17 +36,17 @@ import org.jaxen.dom.DOMXPath;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import net.sf.jasperreports.engine.JRException;
+
 
 /**
  * XPath executer implementation that uses a namespace aware <a href="http://jaxen.org/" target="_blank">Jaxen</a>.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JaxenNsAwareXPathExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 {
-
-	private final Map<String,XPath> cachedXPaths = new ReferenceMap();//soft cache
+	private final Map<String,XPath> cachedXPaths = new ReferenceMap<>();//soft cache
 	
 	private Map<String, String> xmlNamespaceMap;
 	
@@ -99,7 +97,11 @@ public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 			}
 			catch (JaxenException e)
 			{
-				throw new JRException("XPath compilation failed. Expression: " + expression, e);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_XPATH_COMPILATION_FAILURE,
+						new Object[]{expression},
+						e);
 			}
 			cachedXPaths.put(expression, xPath);
 		}
@@ -107,6 +109,7 @@ public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 	}
 	
 	
+	@Override
 	public NodeList selectNodeList(Node contextNode, String expression) throws JRException
 	{
 		try
@@ -120,17 +123,22 @@ public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 			}
 			else
 			{
-				nodes = new ArrayList<Object>();
+				nodes = new ArrayList<>();
 				nodes.add(object);
 			}
 			return new NodeListWrapper(nodes);
 		}
 		catch (JaxenException e)
 		{
-			throw new JRException("XPath selection failed. Expression: " + expression, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE,
+					new Object[]{expression},
+					e);
 		}		
 	}
 
+	@Override
 	public Object selectObject(Node contextNode, String expression) throws JRException
 	{
 		try
@@ -162,7 +170,11 @@ public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 		}
 		catch (JaxenException e)
 		{
-			throw new JRException("XPath selection failed. Expression: " + expression, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE,
+					new Object[]{expression},
+					e);
 		}
 	}
 	
@@ -180,7 +192,7 @@ public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 	
 	private Map<String, String> extractXmlNamespaces(Node contextNode) throws JRException 
 	{
-		Map<String, String> namespaces = new HashMap<String, String>();
+		Map<String, String> namespaces = new HashMap<>();
 		List<Node> nlist;
 		String namespaceXPathString = "//namespace::node()";
 
@@ -203,7 +215,11 @@ public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 			
 		} catch (JaxenException e)
 		{
-			throw new JRException("XPath selection failed. Expression: " + namespaceXPathString, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE,
+					new Object[]{namespaceXPathString},
+					e);
 		}
 		
 		return namespaces;
@@ -220,6 +236,7 @@ public class JaxenNsAwareXPathExecuter extends JaxenXPathExecuter
 			if (context == null) {
 				context = new NamespaceContext() {
 					
+					@Override
 					public String translateNamespacePrefixToUri(String prefix) {
 						return xmlNamespaceMap.get(prefix);
 					}

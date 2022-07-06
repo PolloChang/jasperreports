@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRFillXyzSeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillXyzSeries implements JRXyzSeries {
 	
@@ -54,18 +53,22 @@ public class JRFillXyzSeries implements JRXyzSeries {
 		parent = xyzSeries;
 	}
 	
+	@Override
 	public JRExpression getSeriesExpression(){
 		return parent.getSeriesExpression();
 	}
 	
+	@Override
 	public JRExpression getXValueExpression(){
 		return parent.getXValueExpression();
 	}
 	
+	@Override
 	public JRExpression getYValueExpression(){
 		return parent.getYValueExpression();
 	}
 	
+	@Override
 	public JRExpression getZValueExpression(){
 		return parent.getZValueExpression();
 	}
@@ -120,6 +123,7 @@ public class JRFillXyzSeries implements JRXyzSeries {
 		}
 	}
 
+	@Override
 	public JRHyperlink getItemHyperlink()
 	{
 		return parent.getItemHyperlink();
@@ -130,9 +134,7 @@ public class JRFillXyzSeries implements JRXyzSeries {
 		return !JRHyperlinkHelper.isEmpty(getItemHyperlink()); 
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

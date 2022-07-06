@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.util.JRTextMeasurerUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StaticTextConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class StaticTextConverter extends TextElementConverter
 {
@@ -65,9 +64,7 @@ public final class StaticTextConverter extends TextElementConverter
 		return INSTANCE;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRPrintElement convert(ReportConverter reportConverter, JRElement element)
 	{
 		JRBasePrintText printText = new JRBasePrintText(reportConverter.getDefaultStyleProvider());

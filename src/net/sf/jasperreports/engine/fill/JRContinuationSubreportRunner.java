@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,14 @@
  */
 package net.sf.jasperreports.engine.fill;
 
-
-import org.apache.commons.javaflow.Continuation;
-
+import org.apache.commons.javaflow.api.Continuation;
+import org.apache.commons.javaflow.api.continuable;
 
 /**
  * Implemetation of {@link net.sf.jasperreports.engine.fill.JRSubreportRunner JRSubreportRunner}
  * using <a href="http://jakarta.apache.org/commons/sandbox/javaflow/">Javaflow</a> continuations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRContinuationSubreportRunner.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRContinuationSubreportRunner extends JRSubreportRunnable implements JRSubreportRunner
 {
@@ -43,34 +41,47 @@ public class JRContinuationSubreportRunner extends JRSubreportRunnable implement
 		super(fillSubreport);
 	}
 
+	@Override
 	public boolean isFilling()
 	{
 		return continuation != null;
 	}
 
+	@Override
 	public JRSubreportRunResult start()
 	{
 		continuation = Continuation.startWith(this);
 		return runResult();
 	}
 
+	@Override
 	public JRSubreportRunResult resume()
 	{
-		continuation = Continuation.continueWith(continuation);
+		continuation = continuation.resume(null);
 		return runResult();
 	}
 
+	@Override
 	public void reset()
 	{
 		continuation = null;
 	}
 
+	@Override
 	public void cancel()
 	{
 	}
 
+	@Override
+	@continuable
 	public void suspend()
 	{
 		Continuation.suspend();
+	}
+
+	@Override
+	public void abort()
+	{
+		//NOP
 	}
 }

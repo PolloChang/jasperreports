@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,11 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * {@link BigDecimalHandler} implementation used on Java 1.5 or newer.
@@ -37,7 +41,6 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
  * divisions.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: Java15BigDecimalHandler.java 7199 2014-08-27 13:58:10Z teodord $
  * @see BigDecimalUtils#divide(BigDecimal, BigDecimal)
  * @see #PROPERTY_MINIMUM_PRECISION
  */
@@ -51,6 +54,13 @@ public class Java15BigDecimalHandler implements BigDecimalHandler
 	 * <p>
 	 * The property can only be set globally.  The default value is 16.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_OTHER,
+			defaultValue = "16",
+			scopes = {PropertyScope.GLOBAL},
+			sinceVersion = PropertyConstants.VERSION_3_5_4,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_MINIMUM_PRECISION = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "big.decimal.minimum.precision";
 	
@@ -70,13 +80,12 @@ public class Java15BigDecimalHandler implements BigDecimalHandler
 		}
 		
 		this.minPrecision = minPrecision;
-		this.mathContexts = new ThreadLocal<MathContext[]>();
+		this.mathContexts = new ThreadLocal<>();
 	}
 	
-	@SuppressWarnings("deprecation")
 	private static int readConfiguredPrecision()
 	{
-		return JRProperties.getIntegerProperty(PROPERTY_MINIMUM_PRECISION);
+		return JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getIntegerProperty(PROPERTY_MINIMUM_PRECISION);
 	}
 	
 	/**
@@ -86,6 +95,7 @@ public class Java15BigDecimalHandler implements BigDecimalHandler
 	 * 
 	 * @see #PROPERTY_MINIMUM_PRECISION
 	 */
+	@Override
 	public BigDecimal divide(BigDecimal dividend, BigDecimal divisor)
 	{
 		int precision = getDivisionPrecision(dividend, divisor);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,22 +28,36 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.core.io.JsonStringEncoder;
+
+import net.sf.jasperreports.engine.JRRuntimeException;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStringUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRStringUtil
 {
-
 	protected static final String JAVA_IDENTIFIER_PREFIX = "j";
+	
+	protected static final Pattern PATTERN_CSS_INVALID_CHARACTER = Pattern.compile("[^a-zA-Z0-9_-]+");
+	protected static final char[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+			'a', 'b', 'c', 'd', 'e', 'f'};
+
+	public static final String EXCEPTION_MESSAGE_KEY_NUMBER_OUTSIDE_BOUNDS = "util.markup.processor.number.outside.bounds";
+
+	protected static final String[] THOUSAND_DIGITS = {"","M","MM","MMM"};
+	protected static final String[] HUNDRED_DIGITS = {"","C","CC","CCC","CD","D","DC","DCC","DCCC","CM"};
+	protected static final String[] TEN_DIGITS = {"","X","XX","XXX","XL","L","LX","LXX","LXXX","XC"};
+	protected static final String[] UNIT_DIGITS = {"","I","II","III","IV","V","VI","VII","VIII","IX"};
 
 	/**
 	 * This method replaces all occurrences of the CR character with the LF character, 
@@ -104,7 +118,7 @@ public final class JRStringUtil
 		}
 		
 		int length = text.length();
-		StringBuffer ret = new StringBuffer(length * 12 / 10);
+		StringBuilder ret = new StringBuilder(length * 12 / 10);
 		int last = 0;
 		
 		for (int i = 0; i < length; i++)
@@ -118,7 +132,7 @@ public final class JRStringUtil
 					//the invalid character is preserved
 					ret.append(c);
 				}
-				else if("".equals(invalidCharReplacement))
+				else if(invalidCharReplacement.length() == 0)
 				{
 					//the invalid character is removed
 					continue;
@@ -164,13 +178,18 @@ public final class JRStringUtil
 	
 	public static String encodeXmlAttribute(String text)
 	{
+		return encodeXmlAttribute(text, false);
+	}
+	
+	public static String encodeXmlAttribute(String text, boolean exceptApos)
+	{
 		if (text == null || text.length() == 0)
 		{
 			return text;
 		}
 		
 		int length = text.length();
-		StringBuffer ret = new StringBuffer(length * 12 / 10);//FIXME avoid creating this when not necessary
+		StringBuilder ret = new StringBuilder(length * 12 / 10);//FIXME avoid creating this when not necessary
 		int last = 0;
 		for (int i = 0; i < length; i++)
 		{
@@ -194,8 +213,11 @@ public final class JRStringUtil
 					ret.append("&quot;");
 					break;
 				case '\'' :
-					last = appendText(text, ret, i, last);
-					ret.append("&apos;");
+					if (!exceptApos)
+					{
+						last = appendText(text, ret, i, last);
+						ret.append("&apos;");
+					}
 					break;
 				// encoding tabs and newlines because otherwise they get replaced by spaces on parsing
 				case '\t' :
@@ -226,7 +248,7 @@ public final class JRStringUtil
 		return ret.toString();
 	}
 	
-	private static int appendText(String text, StringBuffer ret, int current, int old)
+	private static int appendText(String text, StringBuilder ret, int current, int old)
 	{
 		if(old < current)
 		{
@@ -246,7 +268,7 @@ public final class JRStringUtil
 		}
 		
 		int length = text.length();
-		StringBuffer ret = new StringBuffer(length * 12 / 10);
+		StringBuilder ret = new StringBuilder(length * 12 / 10);
 
 		boolean isEncodeSpace = true;
 		int last = 0;
@@ -323,16 +345,18 @@ public final class JRStringUtil
 //						ret.append("&apos;");
 //						isEncodeSpace = false;
 //						break;
-				case '\n' :
-					if (last < i)
-					{
-						ret.append(text.substring(last, i));
-					}
-					last = i + 1;
-					
-					ret.append("<br/>");
-					isEncodeSpace = false;
-					break;
+// newline characters do not need to be encoded in HTML attributes; the only place where it is used for HTML element content encoding, 
+// the text is already split by paragraphs and does not contain newline characters
+//				case '\n' :
+//					if (last < i)
+//					{
+//						ret.append(text.substring(last, i));
+//					}
+//					last = i + 1;
+//					
+//					ret.append("<br/>");
+//					isEncodeSpace = false;
+//					break;
 
 				default :
 					isEncodeSpace = false;
@@ -362,7 +386,7 @@ public final class JRStringUtil
 			return name;
 		}
 
-		StringBuffer buffer = new StringBuffer(name.length() + 5);
+		StringBuilder sb = new StringBuilder(name.length() + 5);
 		
 		char[] literalChars = new char[name.length()];
 		name.getChars(0, literalChars.length, literalChars, 0);
@@ -371,20 +395,20 @@ public final class JRStringUtil
 		{
 			if (i == 0 && !Character.isJavaIdentifierStart(literalChars[i]))
 			{
-				buffer.append(JAVA_IDENTIFIER_PREFIX);
-				buffer.append((int)literalChars[i]);
+				sb.append(JAVA_IDENTIFIER_PREFIX);
+				sb.append((int)literalChars[i]);
 			}
 			else if (i != 0 && !Character.isJavaIdentifierPart(literalChars[i]))
 			{
-				buffer.append((int)literalChars[i]);
+				sb.append((int)literalChars[i]);
 			}
 			else
 			{
-				buffer.append(literalChars[i]);
+				sb.append(literalChars[i]);
 			}
 		}
 		
-		return buffer.toString();
+		return sb.toString();
 	}
 	
 	
@@ -431,7 +455,7 @@ public final class JRStringUtil
 			return text;
 		}
 		
-		StringBuffer sbuffer = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		StringTokenizer tkzer = new StringTokenizer(text, "\\\"\n\r\t", true);
 		while(tkzer.hasMoreTokens())
 		{
@@ -439,31 +463,31 @@ public final class JRStringUtil
 			//TODO optimize ifs?
 			if ("\\".equals(token))
 			{
-				sbuffer.append("\\\\");
+				sb.append("\\\\");
 			}
 			else if ("\"".equals(token))
 			{
-				sbuffer.append("\\\"");
+				sb.append("\\\"");
 			}
 			else if ("\n".equals(token))
 			{
-				sbuffer.append("\\n");
+				sb.append("\\n");
 			}
 			else if ("\r".equals(token))
 			{
-				sbuffer.append("\\r");
+				sb.append("\\r");
 			}
 			else if ("\t".equals(token))
 			{
-				sbuffer.append("\\t");
+				sb.append("\\t");
 			}
 			else
 			{
-				sbuffer.append(token);
+				sb.append(token);
 			}
 		}
 		
-		return sbuffer.toString();
+		return sb.toString();
 	}
 	
 	/**
@@ -577,7 +601,7 @@ public final class JRStringUtil
 			// returning null if no tabs
 			if (index >= 0)
 			{
-				tabIndexes = new ArrayList<Integer>();
+				tabIndexes = new ArrayList<>();
 				do
 				{
 					tabIndexes.add(index);
@@ -599,7 +623,7 @@ public final class JRStringUtil
 		List<String> tokens = null;
 		if (srcArray != null)
 		{
-			tokens = new ArrayList<String>();
+			tokens = new ArrayList<>();
 			for(int i = 0; i < srcArray.length; i++)
 			{
 				if (srcArray[i] == null)
@@ -652,6 +676,98 @@ public final class JRStringUtil
 		return String.valueOf(escapedChars);
 	}
 	
+	public static String getCSSClass(String name)
+	{
+		if (name == null || name.isEmpty())
+		{
+			return name;
+		}
+		
+		Matcher matcher = PATTERN_CSS_INVALID_CHARACTER.matcher(name);
+		StringBuffer sb = null;
+		while (matcher.find()) {
+			if (sb == null) {
+				sb = new StringBuffer(name.length() + 4);
+			}
+			
+			String text = matcher.group();
+			String replacement = cssClassReplacement(text);
+			matcher.appendReplacement(sb, replacement);
+		}
+		
+		String cssClass;
+		if (sb == null)
+		{
+			cssClass = name;
+		}
+		else
+		{
+			matcher.appendTail(sb);
+			cssClass = sb.toString();
+		}
+		
+		if (!Character.isLetter(cssClass.charAt(0)))
+		{
+			cssClass = 'c' + cssClass;
+		}
+		return cssClass;
+	}
+	
+	protected static String cssClassReplacement(String text)
+	{
+		try
+		{
+			byte[] bytes = text.getBytes("UTF-8");
+			char[] chars = new char[bytes.length * 2 + 1];
+			chars[0] = '-';
+			for (int i = 0; i < bytes.length; i++)
+			{
+				int code = bytes[i] & 0xff;
+				chars[2 * i + 1] = HEX_DIGITS[code >>> 4];
+				chars[2 * i + 2] = HEX_DIGITS[code & 0xf];
+			}
+			return new String(chars);
+		}
+		catch (UnsupportedEncodingException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+	}
+	
+	public static String getLetterNumeral(int number, boolean isUpperCase)
+	{
+		String romanNumeral = "";
+		int tmpNumber = number;
+		while (tmpNumber > 0)
+		{
+			int modulo = (tmpNumber - 1) % 26;
+			romanNumeral = (char)(modulo + 'A') + romanNumeral;
+			tmpNumber = (tmpNumber - modulo) / 26;
+		}
+		return isUpperCase ? romanNumeral : romanNumeral.toLowerCase();
+	}
+	
+	/**
+	 * @param number an integer value between 1 and 3999
+	 * @param isUpperCase specifies whether the result should be made of upper case characters
+	 * @return the Roman numeral representation of this number
+	 */
+	public static String getRomanNumeral(int number, boolean isUpperCase)
+	{
+		if(number < 1 || number > 3999)
+		{
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NUMBER_OUTSIDE_BOUNDS,
+					new Object[]{number});
+		}
+		String strNumber = ("0000"+String.valueOf(number)).substring(String.valueOf(number).length());
+		String result = THOUSAND_DIGITS[strNumber.charAt(0) - '0'] 
+				+ HUNDRED_DIGITS[strNumber.charAt(1) - '0']
+				+ TEN_DIGITS[strNumber.charAt(2) - '0']
+				+ UNIT_DIGITS[strNumber.charAt(3) - '0'];
+		return isUpperCase ? result : result.toLowerCase();
+	}
 
 	private JRStringUtil()
 	{

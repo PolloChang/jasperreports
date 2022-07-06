@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,23 +36,23 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintPage;
+import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.Pair;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /**
  * Utility class used by grid exporters to create a grid for page layout.
  *
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRGridLayout.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRGridLayout
 {
@@ -135,9 +135,9 @@ public class JRGridLayout
 		this.elementList = elements;
 		
 		// TODO lucianc cache these across report pages?
-		this.cellSizes = new HashMap<GridCellSize, GridCellSize>();
-		this.cellStyles = new HashMap<GridCellStyle, GridCellStyle>();
-		this.emptyCells = new HashMap<Pair<GridCellSize,GridCellStyle>, EmptyGridCell>();
+		this.cellSizes = new HashMap<>();
+		this.cellStyles = new HashMap<>();
+		this.emptyCells = new HashMap<>();
 		
 		this.height = height;
 		this.width = width;
@@ -145,7 +145,7 @@ public class JRGridLayout
 		this.offsetY = offsetY;
 		this.xCuts = xCuts;
 
-		boxesCache = new HashMap<BoxKey,JRLineBox>();
+		boxesCache = new HashMap<>();
 
 		layoutGrid(null, elements);
 	}
@@ -183,7 +183,7 @@ public class JRGridLayout
 		//this constructor is called only in nested grids:
 		this.isNested = true;
 
-		boxesCache = new HashMap<BoxKey,JRLineBox>();
+		boxesCache = new HashMap<>();
 		
 		layoutGrid(parentElementIndex, elements);
 	}
@@ -318,8 +318,8 @@ public class JRGridLayout
 				{
 					createCuts(
 						frame.getElements(),
-						element.getX() + elementOffsetX + frame.getLineBox().getLeftPadding().intValue(),
-						element.getY() + elementOffsetY + frame.getLineBox().getTopPadding().intValue(),
+						element.getX() + elementOffsetX + frame.getLineBox().getLeftPadding(),
+						element.getY() + elementOffsetY + frame.getLineBox().getTopPadding(),
 						createXCuts
 						);
 				}
@@ -385,8 +385,8 @@ public class JRGridLayout
 						PrintElementIndex frameIndex = new PrintElementIndex(parentIndex, elementIndex);
 						setGridElements(
 							frameIndex, frame.getElements(),
-							x + frame.getLineBox().getLeftPadding().intValue(),
-							y + frame.getLineBox().getTopPadding().intValue(),
+							x + frame.getLineBox().getLeftPadding(),
+							y + frame.getLineBox().getTopPadding(),
 							row1, col1, row2, col2
 							);
 						
@@ -408,7 +408,7 @@ public class JRGridLayout
 
 	protected EmptyGridCell emptyCell(GridCellSize size, GridCellStyle style)
 	{
-		Pair<GridCellSize, GridCellStyle> key = new Pair<GridCellSize, GridCellStyle>(size, style);
+		Pair<GridCellSize, GridCellStyle> key = new Pair<>(size, style);
 		EmptyGridCell cell = emptyCells.get(key);
 		if (cell == null)
 		{
@@ -772,36 +772,40 @@ public class JRGridLayout
 	/**
 	 * This static method calculates all the X cuts for a list of pages.
 	 *
-	 * @param pages
-	 *            The list of pages.
+	 * @param jasperPrint
+	 *            The JasperPrint document.
 	 * @param startPageIndex
 	 *            The first page to consider.
 	 * @param endPageIndex
 	 *            The last page to consider.
-	 * @param width
-	 *            The page width
 	 * @param offsetX
 	 *            horizontal element position offset
 	 */
-	public static CutsInfo calculateXCuts(ExporterNature nature, List<JRPrintPage> pages, int startPageIndex, int endPageIndex, int width, int offsetX)
+	public static CutsInfo calculateXCuts(ExporterNature nature, JasperPrint jasperPrint, int startPageIndex, int endPageIndex, int offsetX)
 	{
 		CutsInfo xCuts = new CutsInfo();
 
+		List<JRPrintPage> pages = jasperPrint.getPages();
 		for (int pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++)
 		{
 			JRPrintPage page = pages.get(pageIndex);
 			addXCuts(nature, page.getElements(), offsetX, xCuts);
 		}
-		
-		// add a cut at the page width if no element goes beyond the width
-		int lastCut = xCuts.getLastCutOffset();
-		if (lastCut < width)
+
+		// add a cut at the page width if there are not parts and if no element goes beyond the page width
+		if (!jasperPrint.hasParts())
 		{
-			xCuts.addCutOffset(width);
+			int width = jasperPrint.getPageWidth();
+			int lastCut = xCuts.getLastCutOffset();
+			if (lastCut < width)
+			{
+				xCuts.addCutOffset(width);
+			}
 		}
 
 		return xCuts;
 	}
+
 
 	/**
 	 * This static method calculates the X cuts for a list of print elements and
@@ -831,7 +835,7 @@ public class JRGridLayout
 					addXCuts(
 						nature,
 						frame.getElements(),
-						element.getX() + elementOffsetX + frame.getLineBox().getLeftPadding().intValue(),
+						element.getX() + elementOffsetX + frame.getLineBox().getLeftPadding(),
 						xCuts
 						);
 				}
@@ -876,6 +880,7 @@ public class JRGridLayout
 			hashCode = hash;
 		}
 
+		@Override
 		public boolean equals(Object obj)
 		{
 			if (obj == this)
@@ -890,6 +895,7 @@ public class JRGridLayout
 				b.left == left && b.right == right && b.top == top && b.bottom == bottom;
 		}
 
+		@Override
 		public int hashCode()
 		{
 			return hashCode;

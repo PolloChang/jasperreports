@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,15 @@
  */
 package net.sf.jasperreports.web.actions;
 
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.web.commands.CommandStack;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: RedoAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RedoAction extends AbstractAction {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	public RedoAction() {
 	}
@@ -38,6 +40,7 @@ public class RedoAction extends AbstractAction {
 		return "redo_action";
 	}
 
+	@Override
 	public void performAction() {
 		// obtain command stack
 		CommandStack commandStack = getCommandStack();

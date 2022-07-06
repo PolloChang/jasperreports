@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,18 @@
  */
 package net.sf.jasperreports.web.commands;
 
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.repo.JasperDesignCache;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ResetInCacheCommand.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class ResetInCacheCommand implements Command 
+public class ResetInCacheCommand implements Command
 {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	private Command command;
 	private JasperReportsContext jasperReportsContext;
@@ -52,6 +54,7 @@ public class ResetInCacheCommand implements Command
 		this.uri = uri;
 	}
 
+	@Override
 	public void execute() throws CommandException
 	{
 		command.execute();
@@ -59,6 +62,7 @@ public class ResetInCacheCommand implements Command
 		JasperDesignCache.getInstance(jasperReportsContext, reportContext).resetJasperReport(uri);
 	}
 	
+	@Override
 	public void undo() 
 	{
 		command.undo();
@@ -66,6 +70,7 @@ public class ResetInCacheCommand implements Command
 		JasperDesignCache.getInstance(jasperReportsContext, reportContext).resetJasperReport(uri);
 	}
 
+	@Override
 	public void redo() 
 	{
 		command.redo();

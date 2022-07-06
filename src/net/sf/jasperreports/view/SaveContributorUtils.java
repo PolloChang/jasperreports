@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.util.JRClassLoader;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SaveContributorUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SaveContributorUtils
 {
@@ -64,7 +63,7 @@ public class SaveContributorUtils
 	public static List<JRSaveContributor> createBuiltinContributors(JasperReportsContext context,
 			Locale locale, ResourceBundle resourceBundle)
 	{
-		ArrayList<JRSaveContributor> contributors = new ArrayList<JRSaveContributor>(DEFAULT_CONTRIBUTORS.length);
+		ArrayList<JRSaveContributor> contributors = new ArrayList<>(DEFAULT_CONTRIBUTORS.length);
 		for (String contributorClassName : DEFAULT_CONTRIBUTORS)
 		{
 			try

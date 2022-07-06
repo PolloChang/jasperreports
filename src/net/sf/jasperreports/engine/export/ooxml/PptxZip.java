@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.export.zip.FileBufferedZip;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PptxZip.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PptxZip extends FileBufferedZip
 {
@@ -43,6 +42,8 @@ public class PptxZip extends FileBufferedZip
 //	private ExportZipEntry stylesEntry;
 	private ExportZipEntry relsEntry;
 	private ExportZipEntry contentTypesEntry;
+	private ExportZipEntry appEntry;
+	private ExportZipEntry coreEntry;
 	
 	/**
 	 * 
@@ -50,22 +51,20 @@ public class PptxZip extends FileBufferedZip
 	public PptxZip() throws IOException
 	{
 		presentationEntry = createEntry("ppt/presentation.xml");
-		addEntry(presentationEntry);
 		
 //		stylesEntry = createEntry("xl/styles.xml");
-//		addEntry(stylesEntry);
 		
 		relsEntry = createEntry("ppt/_rels/presentation.xml.rels");
-		addEntry(relsEntry);
 
 		contentTypesEntry = createEntry("[Content_Types].xml");
-		addEntry(contentTypesEntry);
 		
+		appEntry = createEntry("docProps/app.xml");
+
+		coreEntry = createEntry("docProps/core.xml");
+
 		addEntry("_rels/.rels", "net/sf/jasperreports/engine/export/ooxml/pptx/_rels/xml.rels");
 		addEntry("ppt/slideLayouts/_rels/slideLayout1.xml.rels", "net/sf/jasperreports/engine/export/ooxml/pptx/ppt/slideLayouts/_rels/slideLayout1.xml.rels");
 		addEntry("ppt/slideLayouts/slideLayout1.xml", "net/sf/jasperreports/engine/export/ooxml/pptx/ppt/slideLayouts/slideLayout1.xml");
-		addEntry("ppt/slideMasters/_rels/slideMaster1.xml.rels", "net/sf/jasperreports/engine/export/ooxml/pptx/ppt/slideMasters/_rels/slideMaster1.xml.rels");
-		addEntry("ppt/slideMasters/slideMaster1.xml", "net/sf/jasperreports/engine/export/ooxml/pptx/ppt/slideMasters/slideMaster1.xml");
 		addEntry("ppt/theme/theme1.xml", "net/sf/jasperreports/engine/export/ooxml/pptx/ppt/theme/theme1.xml");
 	}
 	
@@ -101,28 +100,51 @@ public class PptxZip extends FileBufferedZip
 		return contentTypesEntry;
 	}
 	
+ 	/**
+	 *
+	 */
+	public ExportZipEntry getAppEntry()
+	{
+		return appEntry;
+	}
+	
+	/**
+	 *
+	 */
+	public ExportZipEntry getCoreEntry()
+	{
+		return coreEntry;
+	}
+
 	/**
 	 * 
 	 */
-	public ExportZipEntry addSlide(int index)
+	public ExportZipEntry addSlideMaster()
 	{
-		ExportZipEntry slideEntry = createEntry("ppt/slides/slide" + index + ".xml");
-
-		exportZipEntries.add(slideEntry);
-
-		return slideEntry;
+		return createEntry("ppt/slideMasters/slideMaster1.xml");
 	}
 	
 	/**
 	 * 
 	 */
+	public ExportZipEntry addSlide(int index)
+	{
+		return createEntry("ppt/slides/slide" + index + ".xml");
+	}
+	
+	/**
+	 * 
+	 */
+	public ExportZipEntry addSlideMasterRels()
+	{
+		return createEntry("ppt/slideMasters/_rels/slideMaster1.xml.rels");
+	}
+	/**
+	 * 
+	 */
 	public ExportZipEntry addSlideRels(int index)
 	{
-		ExportZipEntry slideRelsEntry = createEntry("ppt/slides/_rels/slide" + index + ".xml.rels");
-
-		exportZipEntries.add(slideRelsEntry);
-
-		return slideRelsEntry;
+		return createEntry("ppt/slides/_rels/slide" + index + ".xml.rels");
 	}
 	
 }

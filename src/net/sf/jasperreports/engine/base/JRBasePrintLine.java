@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePrintLine.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePrintLine extends JRBasePrintGraphicElement implements JRPrintLine
 {
@@ -61,9 +60,7 @@ public class JRBasePrintLine extends JRBasePrintGraphicElement implements JRPrin
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void setWidth(int width)
 	{
 		if (width == 0)
@@ -74,9 +71,7 @@ public class JRBasePrintLine extends JRBasePrintGraphicElement implements JRPrin
 		super.setWidth(width);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setHeight(int height)
 	{
 		if (height == 0)
@@ -87,17 +82,13 @@ public class JRBasePrintLine extends JRBasePrintGraphicElement implements JRPrin
 		super.setHeight(height);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public LineDirectionEnum getDirectionValue()
 	{
 		return this.directionValue;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void setDirection(LineDirectionEnum directionValue)
 	{
 		this.directionValue = directionValue;
@@ -112,6 +103,7 @@ public class JRBasePrintLine extends JRBasePrintGraphicElement implements JRPrin
 	 */
 	private byte direction;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -123,6 +115,7 @@ public class JRBasePrintLine extends JRBasePrintGraphicElement implements JRPrin
 		
 	}
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);

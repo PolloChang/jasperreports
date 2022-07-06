@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,16 +32,13 @@ import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: XlsxServlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxServlet extends AbstractXlsServlet
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected JRXlsAbstractExporter getXlsExporter()
 	{
 		return new JRXlsxExporter(DefaultJasperReportsContext.getInstance());

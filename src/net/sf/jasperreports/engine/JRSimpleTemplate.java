@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,19 +36,21 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
  * Default {@link JRTemplate} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSimpleTemplate.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRSimpleTemplate implements JRTemplate, Serializable, JRChangeEventsSupport {
+
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_TEMPLATE_STYLE = "engine.template.duplicate.template.style";
+
 	public static final String PROPERTY_STYLE = "style";
 	public static final String PROPERTY_INCLUDED_TEMPLATES = "incluldedTemplates";
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
-	private final List<JRTemplateReference> includedTemplates = new ArrayList<JRTemplateReference>();
-	private final List<JRStyle> styles = new ArrayList<JRStyle>();
-	private JRStyle defaultStyle;
+	private final List<JRTemplateReference> includedTemplates = new ArrayList<>();
+	private final List<JRStyle> styles = new ArrayList<>();
 	private transient JRPropertyChangeSupport eventSupport;//FIXMECLONE
 
+	@Override
 	public JRPropertyChangeSupport getEventSupport() {
 		synchronized (this) {
 			if (eventSupport == null) {
@@ -82,9 +84,6 @@ public class JRSimpleTemplate implements JRTemplate, Serializable, JRChangeEvent
 	public void addStyle(int index, JRStyle style) throws JRException {
 		checkExistingName(style.getName());
 
-		if (style.isDefault()) {
-			defaultStyle = style;
-		}
 		if (index >= 0 && index < styles.size())
 			styles.add(index, style);
 		else {
@@ -96,7 +95,10 @@ public class JRSimpleTemplate implements JRTemplate, Serializable, JRChangeEvent
 
 	protected void checkExistingName(String name) throws JRException {
 		if (getStyle(name) != null) {
-			throw new JRException("Duplicate declaration of template style : " + name);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_TEMPLATE_STYLE,
+					new Object[]{name});
 		}
 	}
 
@@ -136,10 +138,6 @@ public class JRSimpleTemplate implements JRTemplate, Serializable, JRChangeEvent
 		if (idx >= 0) {
 			styles.remove(idx);
 
-			if (style.isDefault()) {
-				defaultStyle = null;
-			}
-
 			getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_STYLE, style, idx);
 			return true;
 		}
@@ -158,10 +156,6 @@ public class JRSimpleTemplate implements JRTemplate, Serializable, JRChangeEvent
 		for (ListIterator<JRStyle> it = styles.listIterator(); it.hasNext();) {
 			JRStyle style = it.next();
 			if (nameMatches(style, name)) {
-				if (style.isDefault()) {
-					defaultStyle = null;
-				}
-
 				removed = style;
 				break;
 			}
@@ -174,12 +168,9 @@ public class JRSimpleTemplate implements JRTemplate, Serializable, JRChangeEvent
 		return styles;
 	}
 
+	@Override
 	public JRStyle[] getStyles() {
 		return styles.toArray(new JRStyle[styles.size()]);
-	}
-
-	public JRStyle getDefaultStyle() {
-		return defaultStyle;
 	}
 
 	/**
@@ -259,6 +250,7 @@ public class JRSimpleTemplate implements JRTemplate, Serializable, JRChangeEvent
 		return removed;
 	}
 
+	@Override
 	public JRTemplateReference[] getIncludedTemplates() {
 		return includedTemplates.toArray(new JRTemplateReference[includedTemplates.size()]);
 	}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,13 +25,17 @@ package net.sf.jasperreports.engine;
 
 import java.awt.Color;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
-import net.sf.jasperreports.engine.type.LineSpacingEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Provides a collection of style settings declared at the report level.
@@ -65,7 +69,7 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
  * <li><code>backcolor</code> - the element background color</li>
  * <li><code>fill</code> - the fill pattern. Possible value is <code>Solid</code></li>
  * <li><code>radius</code> - the radius for some graphic elements</li>
- * <li><code>hAlign</code> - the horizontal alignment of the text within a text element. Possible values are:
+ * <li><code>hTextAlign</code> - the horizontal alignment of the text within a text element. Possible values are:
  * <ul>
  * <li><code>Left</code> - default setting</li>
  * <li><code>Center</code></li>
@@ -73,7 +77,21 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
  * <li><code>Justified</code></li>
  * </ul>
  * </li>
- * <li><code>vAlign</code> - the vertical alignment of the text within a text element. Possible values are:
+ * <li><code>vTextAlign</code> - the vertical alignment of the text within a text element. Possible values are:
+ * <ul>
+ * <li><code>Top</code> - default setting</li>
+ * <li><code>Middle</code></li>
+ * <li><code>Bottom</code></li>
+ * </ul>
+ * </li>
+ * <li><code>hImageAlign</code> - the horizontal alignment of the image within an image element. Possible values are:
+ * <ul>
+ * <li><code>Left</code> - default setting</li>
+ * <li><code>Center</code></li>
+ * <li><code>Right</code></li>
+ * </ul>
+ * </li>
+ * <li><code>vImageAlign</code> - the vertical alignment of the image within an image element. Possible values are:
  * <ul>
  * <li><code>Top</code> - default setting</li>
  * <li><code>Middle</code></li>
@@ -109,11 +127,11 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
  * A style also may contain:</p>
  * <ul>
  * <li>a {@link net.sf.jasperreports.engine.JRPen} element that can be retrieved 
- * using the <code>public JRPen getLinePen()</code> method.</li>
+ * using the {@link #getLinePen()} method.</li>
  * <li>a {@link net.sf.jasperreports.engine.JRLineBox} element that can be retrieved 
- * using the <code>public JRLineBox getLineBox()</code> method.</li>
+ * using the {@link #getLineBox()} method.</li>
  * <li>a {@link net.sf.jasperreports.engine.JRParagraph} element that can be retrieved 
- * using the <code>public JRParagraph getParagraph()</code> method inherited from the 
+ * using the {@link #getParagraph()} method inherited from the 
  *  {@link net.sf.jasperreports.engine.JRParagraphContainer} interface.</li>
  * </ul>
  * <p>
@@ -145,7 +163,7 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
  * </p><p>
  * If the evaluation of the condition expression of the style needs to be delayed, just like the
  * value of the text field or the image element that uses the conditional style, the
- * <code>net.sf.jasperreports.style.evaluation.time.enabled</code> configuration property
+ * {@link #PROPERTY_EVALUATION_TIME_ENABLED net.sf.jasperreports.style.evaluation.time.enabled} configuration property
  * should be set to true.
  * </p>
  * <h3>Style Templates</h3>
@@ -167,9 +185,8 @@ import net.sf.jasperreports.engine.type.VerticalAlignEnum;
  * @see net.sf.jasperreports.engine.JRParagraph
  * @see net.sf.jasperreports.engine.JRPen
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRStyle.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContainer, JRParagraphContainer, JRCloneable
+public interface JRStyle extends JRBoxContainer, JRPenContainer, JRParagraphContainer, JRCloneable
 {
 	
 	/**
@@ -188,6 +205,13 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	 * By default, this flag is set to <code>false</code>.  The property can be
 	 * set globally, at report level and at element level.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_5_2,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_EVALUATION_TIME_ENABLED = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "style.evaluation.time.enabled";
 	
@@ -252,24 +276,38 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	public ScaleImageEnum getOwnScaleImageValue();
 
 	/**
-	 * Gets the horizontal alignment of the element.
-	 * @return one of the alignment values defined in {@link HorizontalAlignEnum}
+	 * Gets the horizontal text alignment of the element.
+	 * @return one of the alignment values defined in {@link HorizontalTextAlignEnum}
 	 */
-	public HorizontalAlignEnum getHorizontalAlignmentValue();
+	public HorizontalTextAlignEnum getHorizontalTextAlign();
 
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue();
+	public HorizontalTextAlignEnum getOwnHorizontalTextAlign();
 
 	/**
-	 * Gets the vertical alignment of the element.
-	 * @return one of the alignment values defined in {@link JRAlignment}
+	 * Gets the vertical text alignment of the element.
+	 * @return one of the alignment values defined in {@link VerticalTextAlignEnum}
 	 */
-	public VerticalAlignEnum getVerticalAlignmentValue();
+	public VerticalTextAlignEnum getVerticalTextAlign();
 
-	public VerticalAlignEnum getOwnVerticalAlignmentValue();
+	public VerticalTextAlignEnum getOwnVerticalTextAlign();
 
 	/**
-	 * 
+	 * Gets the horizontal image alignment of the element.
+	 * @return one of the alignment values defined in {@link HorizontalImageAlignEnum}
 	 */
+	public HorizontalImageAlignEnum getHorizontalImageAlign();
+
+	public HorizontalImageAlignEnum getOwnHorizontalImageAlign();
+
+	/**
+	 * Gets the vertical image alignment of the element.
+	 * @return one of the alignment values defined in {@link VerticalImageAlignEnum}
+	 */
+	public VerticalImageAlignEnum getVerticalImageAlign();
+
+	public VerticalImageAlignEnum getOwnVerticalImageAlign();
+
+	@Override
 	public JRLineBox getLineBox();
 
 
@@ -285,16 +323,6 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	 */
 	public RotationEnum getOwnRotationValue();
 	
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#getLineSpacing()}.
-	 */
-	public LineSpacingEnum getLineSpacingValue();
-
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#getOwnLineSpacing()}.
-	 */
-	public LineSpacingEnum getOwnLineSpacingValue();
-
 	/**
 	 * Returns the markup language used to format the text.
 	 */
@@ -361,16 +389,6 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	 *
 	 */
 	public Float getOwnFontsize();
-
-	/**
-	 * @deprecated Replaced by {@link #getFontsize()}.
-	 */
-	public Integer getFontSize();
-
-	/**
-	 * @deprecated Replaced by {@link #getOwnFontsize()}.
-	 */
-	public Integer getOwnFontSize();
 
 	/**
 	 *
@@ -445,11 +463,6 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	/**
 	 *
 	 */
-	public void setRadius(int radius);
-
-	/**
-	 *
-	 */
 	public void setRadius(Integer radius);
 
 	/**
@@ -460,12 +473,22 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	/**
 	 *
 	 */
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlignment);
+	public void setHorizontalTextAlign(HorizontalTextAlignEnum horizontalAlignment);
 
 	/**
 	 *
 	 */
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlignment);
+	public void setVerticalTextAlign(VerticalTextAlignEnum verticalAlignment);
+
+	/**
+	 *
+	 */
+	public void setHorizontalImageAlign(HorizontalImageAlignEnum horizontalAlignment);
+
+	/**
+	 *
+	 */
+	public void setVerticalImageAlign(VerticalImageAlignEnum verticalAlignment);
 
 	public void setRotation(RotationEnum rotation);
 
@@ -477,17 +500,7 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	/**
 	 *
 	 */
-	public void setBold(boolean bold);
-
-	/**
-	 *
-	 */
 	public void setBold(Boolean bold);
-
-	/**
-	 *
-	 */
-	public void setItalic(boolean italic);
 
 	/**
 	 *
@@ -497,17 +510,7 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	/**
 	 *
 	 */
-	public void setPdfEmbedded(boolean pdfEmbedded);
-
-	/**
-	 *
-	 */
 	public void setPdfEmbedded(Boolean pdfEmbedded);
-
-	/**
-	 *
-	 */
-	public void setStrikeThrough(boolean strikeThrough);
 
 	/**
 	 *
@@ -522,27 +525,12 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	/**
 	 *
 	 */
-	public void setUnderline(boolean underline);
-
-	/**
-	 *
-	 */
 	public void setUnderline(Boolean underline);
-
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#setLineSpacing(LineSpacingEnum)}
-	 */
-	public void setLineSpacing(LineSpacingEnum lineSpacing);
 
 	/**
 	 *
 	 */
 	public void setPattern(String pattern);
-
-	/**
-	 *
-	 */
-	public void setBlankWhenNull(boolean isBlankWhenNull);
 
 	/**
 	 *
@@ -563,16 +551,6 @@ public interface JRStyle extends JRStyleContainer, JRBoxContainer, JRPenContaine
 	 *
 	 */
 	public void setFontSize(Float fontSize);
-
-	/**
-	 * @deprecated Replaced by {@link #setFontSize(Float)}.
-	 */
-	public void setFontSize(int fontSize);
-
-	/**
-	 * @deprecated Replaced by {@link #setFontSize(Float)}.
-	 */
-	public void setFontSize(Integer fontSize);
 
 	/**
 	 *

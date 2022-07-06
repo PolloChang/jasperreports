@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.xml.JRXmlTemplateLoader;
  * resolved at runtime to a {@link JRTemplate JRTemplate} instance.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRReportTemplate.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRReport#getTemplates()
  */
 public interface JRReportTemplate
@@ -45,7 +44,7 @@ public interface JRReportTemplate
 	 * The expression type should be (compatible with) one of <code>java.lang.String</code>,
 	 * <code>java.io.File</code>, <code>java.net.URL</code>, <code>java.io.InputStream</code>
 	 * (in which cases the template is loaded via {@link JRXmlTemplateLoader}) or
-	 * <code>net.sf.jasperreports.engine.JRTemplate</code> .
+	 * {@link net.sf.jasperreports.engine.JRTemplate} .
 	 * 
 	 * @return the template source expression
 	 */

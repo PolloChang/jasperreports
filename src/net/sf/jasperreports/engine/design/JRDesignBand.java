@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,20 +25,25 @@ package net.sf.jasperreports.engine.design;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
+import net.sf.jasperreports.engine.ExpressionReturnValue;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.ReturnValue;
 import net.sf.jasperreports.engine.base.JRBaseBand;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
+import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignBand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignBand extends JRDesignElementGroup implements JRBand
 {
@@ -52,6 +57,8 @@ public class JRDesignBand extends JRDesignElementGroup implements JRBand
 	public static final String PROPERTY_HEIGHT = "height";
 
 	public static final String PROPERTY_PRINT_WHEN_EXPRESSION = "printWhenExpression";
+	
+	public static final String PROPERTY_RETURN_VALUES = "returnValues";
 
 	/**
 	 *
@@ -67,10 +74,17 @@ public class JRDesignBand extends JRDesignElementGroup implements JRBand
 	private JROrigin origin;
 	
 	private JRPropertiesMap propertiesMap;
+	protected List<ExpressionReturnValue> returnValues;
 
 	/**
 	 *
 	 */
+	public JRDesignBand()
+	{
+		returnValues = new ArrayList<>(2);
+	}
+
+	@Override
 	public int getHeight()
 	{
 		return height;
@@ -86,27 +100,21 @@ public class JRDesignBand extends JRDesignElementGroup implements JRBand
 		getEventSupport().firePropertyChange(PROPERTY_HEIGHT, old, this.height);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public SplitTypeEnum getSplitTypeValue()
 	{
 		return splitTypeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setSplitType(SplitTypeEnum splitTypeValue)
 	{
 		SplitTypeEnum old = this.splitTypeValue;
 		this.splitTypeValue = splitTypeValue;
-		getEventSupport().firePropertyChange(JRBaseBand.PROPERTY_SPLIT_TYPE, old, this.splitTypeValue);
+		getEventSupport().firePropertyChange(JRBaseBand.PROPERTY_splitType, old, this.splitTypeValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getPrintWhenExpression()
 	{
 		return this.printWhenExpression;
@@ -142,11 +150,58 @@ public class JRDesignBand extends JRDesignElementGroup implements JRBand
 	{
 		this.origin = origin;
 	}
-	
+
+
+	@Override
+	public List<ExpressionReturnValue> getReturnValues()
+	{
+		return returnValues == null ? null : Collections.unmodifiableList(returnValues);
+	}
 
 	/**
-	 *
+	 * Adds a return value to the band.
+	 * 
+	 * @param returnValue the return value to be added.
 	 */
+	public void addReturnValue(ExpressionReturnValue returnValue)
+	{
+		this.returnValues.add(returnValue);
+		getEventSupport().fireCollectionElementAddedEvent(PROPERTY_RETURN_VALUES, 
+				returnValue, returnValues.size() - 1);
+	}
+
+	
+	/**
+	 * Returns the list of values to increment report variables with.
+	 * 
+	 * @return list of {@link ReturnValue ReturnValue} objects
+	 */
+	public List<ExpressionReturnValue> getReturnValuesList()
+	{
+		return returnValues;
+	}
+
+	
+	/**
+	 * Removes a return value from the band.
+	 * 
+	 * @param returnValue the return value to be removed
+	 * @return <code>true</code> if the return value was found and removed 
+	 */
+	public boolean removeReturnValue(ExpressionReturnValue returnValue)
+	{
+		int idx = this.returnValues.indexOf(returnValue);
+		if (idx >= 0)
+		{
+			this.returnValues.remove(idx);
+			getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_RETURN_VALUES, returnValue, idx);
+			return true;
+		}
+		return false;
+	}
+	
+
+	@Override
 	public Object clone() 
 	{
 		JRDesignBand clone = (JRDesignBand)super.clone();
@@ -159,6 +214,7 @@ public class JRDesignBand extends JRDesignElementGroup implements JRBand
 			clone.origin = (JROrigin)origin.clone();
 		}
 		clone.propertiesMap = JRPropertiesMap.getPropertiesClone(this);
+		clone.returnValues = JRCloneUtils.cloneList(returnValues);
 		return clone;
 	}
 
@@ -176,6 +232,7 @@ public class JRDesignBand extends JRDesignElementGroup implements JRBand
 	 */
 	private Byte splitType;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -193,11 +250,13 @@ public class JRDesignBand extends JRDesignElementGroup implements JRBand
 		}
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		if (propertiesMap == null)
@@ -207,6 +266,7 @@ public class JRDesignBand extends JRDesignElementGroup implements JRBand
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;

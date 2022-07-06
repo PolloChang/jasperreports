@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,6 @@ import org.apache.commons.logging.LogFactory;
  * Report data cache handler that collects data in column stores.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ColumnDataCacheHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ColumnDataCacheHandler implements DataCacheHandler
 {
@@ -58,11 +57,13 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 		recordingEnabled = true;
 	}
 	
+	@Override
 	public boolean isRecordingEnabled()
 	{
 		return recordingEnabled;
 	}
 
+	@Override
 	public DataRecorder createDataRecorder()
 	{
 		if (log.isDebugEnabled())
@@ -73,6 +74,7 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 		return new DataCollector();
 	}
 
+	@Override
 	public DataSnapshot getDataSnapshot()
 	{
 		return snapshot;
@@ -93,6 +95,7 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 		this.snapshot = snapshot;
 	}
 
+	@Override
 	public boolean isSnapshotPopulated()
 	{
 		return snapshot != null;
@@ -191,6 +194,7 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 			this.dataSnapshot = new ColumnDataSnapshot();
 		}
 
+		@Override
 		public DatasetRecorder createRecorder()
 		{
 			if (log.isDebugEnabled())
@@ -202,6 +206,7 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 			return collector;
 		}
 		
+		@Override
 		public void addRecordResult(Object key, Object result)
 		{
 			ColumnCacheData data = (ColumnCacheData) result;
@@ -224,6 +229,7 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 			dataSnapshot.addCachedData(key, data);
 		}
 
+		@Override
 		public void setSnapshotPopulated()
 		{
 			if (isEnabled())
@@ -263,6 +269,7 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 		{
 		}
 
+		@Override
 		public void start(JRField[] datasetFields)
 		{
 			fields = (datasetFields == null) ? new JRField[0] : datasetFields;
@@ -302,12 +309,13 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 		{
 			if (parameters == null)
 			{
-				parameters = new LinkedHashMap<String, Object>();
+				parameters = new LinkedHashMap<>();
 			}
 			
 			parameters.put(name, value);
 		}
 
+		@Override
 		public void addRecord(Object[] values)
 		{
 			if (!isRecordingEnabled())
@@ -329,6 +337,7 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 			++size;
 		}
 
+		@Override
 		public Object end()
 		{
 			if (!isRecordingEnabled())
@@ -368,6 +377,7 @@ public class ColumnDataCacheHandler implements DataCacheHandler
 			return data;
 		}
 
+		@Override
 		public boolean hasEnded()
 		{
 			return ended;

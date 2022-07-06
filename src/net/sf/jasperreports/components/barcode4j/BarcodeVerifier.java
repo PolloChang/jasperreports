@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,13 +29,11 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 
 import org.krysalis.barcode4j.BaselineAlignment;
 import org.krysalis.barcode4j.ChecksumMode;
-import org.krysalis.barcode4j.HumanReadablePlacement;
 import org.krysalis.barcode4j.impl.datamatrix.SymbolShapeHint;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeVerifier.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeVerifier implements BarcodeVisitor
 {
@@ -55,9 +53,6 @@ public class BarcodeVerifier implements BarcodeVisitor
 			verifier.addBrokenRule("Barcode expression is null", barcode);
 		}
 		
-		verifyTextPosition(barcode);
-		verifyOrientation(barcode);
-		
 		EvaluationTimeEnum evaluationTime = barcode.getEvaluationTimeValue();
 		if (evaluationTime == EvaluationTimeEnum.AUTO)
 		{
@@ -72,7 +67,7 @@ public class BarcodeVerifier implements BarcodeVisitor
 			}
 			else if (!verifier.getReportDesign().getGroupsMap().containsKey(evaluationGroup))
 			{
-				verifier.addBrokenRule("Barcode evalution group \"" 
+				verifier.addBrokenRule("Barcode evaluation group \"" 
 						+ evaluationGroup + " not found", barcode);
 			}
 		}
@@ -93,51 +88,26 @@ public class BarcodeVerifier implements BarcodeVisitor
 		}
 	}
 
-	protected void verifyTextPosition(BarcodeComponent barcode)
-	{
-		try
-		{
-			String position = barcode.getTextPosition();
-			if (position != null)
-			{
-				HumanReadablePlacement.byName(position);
-			}
-		}
-		catch (Exception e)
-		{
-			verifier.addBrokenRule(e, barcode);
-		}
-	}
-
-	protected void verifyOrientation(BarcodeComponent barcode)
-	{
-		int orientation = barcode.getOrientation();
-		if (!(orientation == BarcodeComponent.ORIENTATION_UP 
-				|| orientation == BarcodeComponent.ORIENTATION_LEFT 
-				|| orientation == BarcodeComponent.ORIENTATION_DOWN 
-				|| orientation == BarcodeComponent.ORIENTATION_RIGHT))
-		{
-			verifier.addBrokenRule("Invalid barcode orientation, supported values are 0, 90, 180, 270", 
-					barcode);
-		}
-	}
-
+	@Override
 	public void visitCodabar(CodabarComponent codabar)
 	{
 		verifyBarcode(codabar);
 	}
 
+	@Override
 	public void visitCode128(Code128Component code128)
 	{
 		verifyBarcode(code128);
 	}
 
+	@Override
 	public void visitEANCode128(EAN128Component ean128)
 	{
 		verifyBarcode(ean128);
 		verifyChecksumMode(ean128.getChecksumMode(), ean128);
 	}
 
+	@Override
 	public void visitDataMatrix(DataMatrixComponent dataMatrix)
 	{
 		verifyBarcode(dataMatrix);
@@ -156,42 +126,49 @@ public class BarcodeVerifier implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitCode39(Code39Component code39)
 	{
 		verifyBarcode(code39);
 		verifyChecksumMode(code39.getChecksumMode(), code39);
 	}
 
+	@Override
 	public void visitUPCA(UPCAComponent upcA)
 	{
 		verifyBarcode(upcA);
 		verifyChecksumMode(upcA.getChecksumMode(), upcA);
 	}
 
+	@Override
 	public void visitUPCE(UPCEComponent upcE)
 	{
 		verifyBarcode(upcE);
 		verifyChecksumMode(upcE.getChecksumMode(), upcE);
 	}
 
+	@Override
 	public void visitEAN13(EAN13Component ean13)
 	{
 		verifyBarcode(ean13);
 		verifyChecksumMode(ean13.getChecksumMode(), ean13);
 	}
 
+	@Override
 	public void visitEAN8(EAN8Component ean8)
 	{
 		verifyBarcode(ean8);
 		verifyChecksumMode(ean8.getChecksumMode(), ean8);
 	}
 
+	@Override
 	public void visitInterleaved2Of5(Interleaved2Of5Component interleaved2Of5)
 	{
 		verifyBarcode(interleaved2Of5);
 		verifyChecksumMode(interleaved2Of5.getChecksumMode(), interleaved2Of5);
 	}
 
+	@Override
 	public void visitRoyalMailCustomer(
 			RoyalMailCustomerComponent royalMailCustomer)
 	{
@@ -199,6 +176,7 @@ public class BarcodeVerifier implements BarcodeVisitor
 		verifyChecksumMode(royalMailCustomer.getChecksumMode(), royalMailCustomer);
 	}
 
+	@Override
 	public void visitUSPSIntelligentMail(
 			USPSIntelligentMailComponent intelligentMail)
 	{
@@ -206,6 +184,7 @@ public class BarcodeVerifier implements BarcodeVisitor
 		verifyChecksumMode(intelligentMail.getChecksumMode(), intelligentMail);
 	}
 
+	@Override
 	public void visitPostnet(POSTNETComponent postnet)
 	{
 		verifyBarcode(postnet);
@@ -224,9 +203,15 @@ public class BarcodeVerifier implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitPDF417(PDF417Component pdf417)
 	{
 		verifyBarcode(pdf417);
 	}
-
+	
+	@Override
+	public void visitQRCode(QRCodeComponent qrCode)
+	{
+		verifyBarcode(qrCode);
+	}
 }

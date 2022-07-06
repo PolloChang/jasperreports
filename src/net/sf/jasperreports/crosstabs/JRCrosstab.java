@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.crosstabs;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JRExpression;
@@ -31,12 +33,12 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.type.HorizontalPosition;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Crosstab element interface.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstab.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCrosstab extends JRElement, JRBoxContainer
 {
@@ -76,6 +78,13 @@ public interface JRCrosstab extends JRElement, JRBoxContainer
 	 * 
 	 * @see #setIgnoreWidth(Boolean)
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_CROSSTAB,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_5_3,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_IGNORE_WIDTH = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "crosstab.ignore.width";
 	 
@@ -327,14 +336,6 @@ public interface JRCrosstab extends JRElement, JRBoxContainer
 	 * @see #PROPERTY_IGNORE_WIDTH
 	 */
 	public void setIgnoreWidth(Boolean ignoreWidth);
-	
-	/**
-	 * Set the ignore width crosstab flag.
-	 * 
-	 * @param ignoreWidth
-	 * @see #setIgnoreWidth(Boolean)
-	 */
-	public void setIgnoreWidth(boolean ignoreWidth);
 	
 	/**
 	 * Returns the position of the crosstab within its element box.

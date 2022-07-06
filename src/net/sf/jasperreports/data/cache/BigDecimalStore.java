@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BigDecimalStore.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BigDecimalStore implements BufferColumnStore
 {
@@ -59,6 +58,7 @@ public class BigDecimalStore implements BufferColumnStore
 		return BigDecimal.class;
 	}
 	
+	@Override
 	public void addValue(Object object)
 	{
 		if (!(object instanceof BigDecimal))
@@ -74,17 +74,20 @@ public class BigDecimalStore implements BufferColumnStore
 		scaleStore.addValue(scale);
 	}
 
+	@Override
 	public boolean full()
 	{
 		return valueStore.full() || scaleStore.full();
 	}
 
+	@Override
 	public void resetValues()
 	{
 		valueStore.resetValues();
 		scaleStore.resetValues();
 	}
 
+	@Override
 	public ColumnValues createValues()
 	{
 		// TODO lucianc check empty
@@ -93,6 +96,7 @@ public class BigDecimalStore implements BufferColumnStore
 		return new BigDecimalValues(unscaledValues, scaleValues);
 	}
 
+	@Override
 	public String toString()
 	{
 		return "BigDecimalStore@" + hashCode();

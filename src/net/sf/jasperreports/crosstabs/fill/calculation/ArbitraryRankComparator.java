@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,24 +25,29 @@ package net.sf.jasperreports.crosstabs.fill.calculation;
 
 import java.util.Comparator;
 
-import net.sf.jasperreports.engine.JRRuntimeException;
+import org.apache.commons.collections4.map.ReferenceMap;
 
-import org.apache.commons.collections.map.ReferenceMap;
+import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * A comparator that assigns arbitrary ranks to objects and uses the ranks
  * to impose an arbitrary order on them.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ArbitraryRankComparator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ArbitraryRankComparator implements Comparator<Object>
 {
+	public static final String EXCEPTION_MESSAGE_KEY_FOUND_OBJECTS_WITH_SAME_RANK = "crosstabs.calculation.found.objects.with.same.rank";
+	public static final String EXCEPTION_MESSAGE_KEY_RANK_COMPARATOR_OVERFLOW = "crosstabs.calculation.rank.comparator.overflow";
 
 	// using a weak ref map to store ranks per objects
-	private final ReferenceMap ranks = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.HARD);
+	private final ReferenceMap<Object, Long> ranks = 
+		new ReferenceMap<>(
+			ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.HARD
+			);
 	private long rankCounter = Long.MIN_VALUE;
 	
+	@Override
 	public int compare(Object o1, Object o2)
 	{
 		if (o1 == o2 || o1.equals(o2))
@@ -64,13 +69,16 @@ public class ArbitraryRankComparator implements Comparator<Object>
 		}
 		
 		// this should not happen
-		throw new JRRuntimeException("Arbitrary rank comparator found two objects with the same rank");
+		throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_FOUND_OBJECTS_WITH_SAME_RANK,
+				(Object[])null);
 	}
 
 	protected synchronized long rank(Object o)
 	{
 		long rank;
-		Long existingRank = (Long) ranks.get(o);
+		Long existingRank = ranks.get(o);
 		if (existingRank == null)
 		{
 			rank = rankCounter;
@@ -79,14 +87,17 @@ public class ArbitraryRankComparator implements Comparator<Object>
 			// check for overflow, very unlikely
 			if (rankCounter == Long.MIN_VALUE)
 			{
-				throw new JRRuntimeException("Arbitrary rank comparator has overflowed");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_RANK_COMPARATOR_OVERFLOW,
+						(Object[])null);
 			}
 			
-			ranks.put(o, new Long(rank));
+			ranks.put(o, rank);
 		}
 		else
 		{
-			rank = existingRank.longValue();
+			rank = existingRank;
 		}
 		return rank;
 	}

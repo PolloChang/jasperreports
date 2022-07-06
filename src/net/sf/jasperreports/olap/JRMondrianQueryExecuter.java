@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,10 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import mondrian.olap.Connection;
 import mondrian.olap.Query;
 import mondrian.olap.Result;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
@@ -46,13 +48,9 @@ import net.sf.jasperreports.olap.result.JROlapMember;
 import net.sf.jasperreports.olap.result.JROlapMemberTuple;
 import net.sf.jasperreports.olap.result.JROlapResultAxis;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMondrianQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 {
@@ -82,25 +80,19 @@ public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 		parseQuery();
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JRMondrianQueryExecuter(JasperReportsContext, JRDataset, Map)}.
-	 */
-	public JRMondrianQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap)
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
-	}
-
 	@Override
 	protected String getCanonicalQueryLanguage()
 	{
 		return JRMdxQueryExecuterFactory.CANONICAL_LANGUAGE;
 	}
 
+	@Override
 	protected String getParameterReplacement(String parameterName)
 	{
 		return String.valueOf(getParameterValue(parameterName));
 	}
 
+	@Override
 	public JRDataSource createDatasource() throws JRException
 	{
 		JRDataSource dataSource = null;
@@ -123,6 +115,7 @@ public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 		return dataSource;
 	}
 
+	@Override
 	public void close()
 	{
 		if (result != null)
@@ -132,6 +125,7 @@ public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 		}
 	}
 
+	@Override
 	public boolean cancelQuery() throws JRException
 	{
 		return false;
@@ -150,8 +144,8 @@ public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 		}
 		
 		JRMondrianResult monResult = new JRMondrianResult(result);
-		Set<String> measureNames = new HashSet<String>();
-		List<List<String>> allLevelExpressions = new ArrayList<List<String>>();
+		Set<String> measureNames = new HashSet<>();
+		List<List<String>> allLevelExpressions = new ArrayList<>();
 		int axisCount = 0;
 		int levelCount = 0;
 		for (JROlapResultAxis axis : monResult.getAxes())
@@ -186,7 +180,7 @@ public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 							List<String> thisLevelExpressions = null;
 							if (levelCount >= allLevelExpressions.size())
 							{
-								thisLevelExpressions = new ArrayList<String>();
+								thisLevelExpressions = new ArrayList<>();
 								allLevelExpressions.add(thisLevelExpressions);
 							} 
 							else
@@ -211,7 +205,7 @@ public class JRMondrianQueryExecuter extends JRAbstractQueryExecuter
 				for (int i = 0; i < axis.getTupleCount(); i++)
 				{
 					JROlapMemberTuple memberTuple = axis.getTuple(i);
-					// StringBuffer sb = new StringBuffer();
+					// StringBuilder sb = new StringBuilder();
 					for (int j = 0; j < memberTuple.getMembers().length; j++)
 					{
 						// if (j > 0) { sb.append(", "); }

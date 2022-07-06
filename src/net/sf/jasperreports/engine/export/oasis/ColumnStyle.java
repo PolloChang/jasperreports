@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,8 +29,7 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ColumnStyle.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class ColumnStyle extends Style
 {
@@ -48,25 +47,19 @@ public class ColumnStyle extends Style
 		this.columnWidth = columnWidth;
 	}
 	
-	/**
-	 *
-	 */
 	@Override
 	public String getId()
 	{
 		return "" + columnWidth;
 	}
 
-	/**
-	 *
-	 */
 	@Override
 	public void write(String columnStyleName) throws IOException
 	{
 		styleWriter.write(" <style:style style:name=\"" + columnStyleName + "\"");
 		styleWriter.write(" style:family=\"table-column\">\n");
 		styleWriter.write("   <style:table-column-properties");		
-		styleWriter.write(" style:column-width=\"" + LengthUtil.inch(columnWidth) + "in\"");
+		styleWriter.write(" style:column-width=\"" + LengthUtil.inchFloor4Dec(columnWidth) + "in\"");
 		styleWriter.write("/>\n");
 		styleWriter.write(" </style:style>\n");
 		styleWriter.flush();

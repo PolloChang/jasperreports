@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,53 +24,54 @@
 package net.sf.jasperreports.components.map.fill;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import net.sf.jasperreports.components.map.Item;
-import net.sf.jasperreports.components.map.ItemProperty;
-import net.sf.jasperreports.components.map.MapComponent;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.fill.JRFillExpressionEvaluator;
-import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
-import net.sf.jasperreports.engine.type.ColorEnum;
-import net.sf.jasperreports.engine.util.JRColorUtil;
-
 import org.jaxen.dom.DOMXPath;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+import net.sf.jasperreports.components.items.Item;
+import net.sf.jasperreports.components.items.ItemProperty;
+import net.sf.jasperreports.components.items.fill.FillItem;
+import net.sf.jasperreports.components.map.MapComponent;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.component.FillContextProvider;
+import net.sf.jasperreports.engine.fill.JRFillExpressionEvaluator;
+import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
+import net.sf.jasperreports.engine.type.ColorEnum;
+import net.sf.jasperreports.engine.util.JRColorUtil;
+import net.sf.jasperreports.engine.util.JRLoader;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FillPlaceItem.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillPlaceItem extends FillItem
 {
 	public static final String PROPERTY_COLOR = "color";
+	public static final String EXCEPTION_MESSAGE_KEY_MISSING_COORDINATES = "components.map.missing.coordinates";
+
 	/**
 	 *
 	 */
 	public FillPlaceItem(
+		FillContextProvider fillContextProvider,
 		Item item, 
 		JRFillObjectFactory factory
 		)
 	{
-		super(item, factory);
+		super(fillContextProvider, item, factory);
 	}
 
 	@Override
 	public Object getEvaluatedValue(ItemProperty property, JRFillExpressionEvaluator evaluator, byte evaluation) throws JRException
 	{
 		Object result = super.getEvaluatedValue(property, evaluator, evaluation);
-		return MapComponent.PROPERTY_address.equals(property.getName())
+		return MapComponent.ITEM_PROPERTY_address.equals(property.getName())
 			? getCoords((String)result)
 			: (PROPERTY_COLOR.equals(property.getName()) 
 				? JRColorUtil.getColorHexa(JRColorUtil.getColor((String)result, ColorEnum.RED.getColor()))
@@ -84,59 +85,77 @@ public class FillPlaceItem extends FillItem
 	@Override
 	public void verifyValues(Map<String, Object> result) throws JRException {
 		if(result != null) {
-			Object latitude = result.get(MapComponent.PROPERTY_latitude);
-			Object longitude = result.get(MapComponent.PROPERTY_longitude);
-			Object address = result.get(MapComponent.PROPERTY_address);
+			Object latitude = result.get(MapComponent.ITEM_PROPERTY_latitude);
+			Object longitude = result.get(MapComponent.ITEM_PROPERTY_longitude);
+			Object address = result.get(MapComponent.ITEM_PROPERTY_address);
 
-			boolean hasLatitude = !(latitude == null || "".equals(latitude));
-			boolean hasLongitude = !(longitude == null || "".equals(longitude));
-
-			if(hasLatitude && hasLongitude)
+			Float fLatitude = null;
+			if (latitude instanceof Number)
 			{
-				result.remove(MapComponent.PROPERTY_address);
-				if (latitude instanceof Number) 
-				{
-					result.put(MapComponent.PROPERTY_latitude, ((Number)latitude).floatValue());
-				}
-				else
-				{
-					result.put(MapComponent.PROPERTY_latitude, Float.parseFloat(String.valueOf(latitude)));
-				}
-				
-				if (longitude instanceof Number) 
-				{
-					result.put(MapComponent.PROPERTY_longitude, ((Number)longitude).floatValue());
-				}
-				else 
-				{
-					result.put(MapComponent.PROPERTY_longitude, Float.parseFloat(String.valueOf(longitude)));
-				}
+				fLatitude = ((Number)latitude).floatValue();
+			}
+			else
+			{
+				String strLatitude = latitude == null ? null : String.valueOf(latitude);
+				fLatitude = strLatitude == null || strLatitude.trim().length() == 0 ? null : Float.parseFloat(strLatitude);
+			}
+			
+			Float fLongitude = null;
+			if (longitude instanceof Number)
+			{
+				fLongitude = ((Number)longitude).floatValue();
+			}
+			else
+			{
+				String strLongitude = longitude == null ? null : String.valueOf(longitude);
+				fLongitude = strLongitude == null || strLongitude.trim().length() == 0 ? null : Float.parseFloat(strLongitude);
+			}
+			
+			if (fLatitude != null && fLongitude != null)
+			{
+				result.remove(MapComponent.ITEM_PROPERTY_address);
+				result.put(MapComponent.ITEM_PROPERTY_latitude, fLatitude);
+				result.put(MapComponent.ITEM_PROPERTY_longitude, fLongitude);
 			}
 			else if (address != null)
 			{
 				Float[] coords = (Float[])address;
 				if(coords[0] != null && coords[1] != null){
-					result.put(MapComponent.PROPERTY_latitude, coords[0]);
-					result.put(MapComponent.PROPERTY_longitude, coords[1]);
-					result.remove(MapComponent.PROPERTY_address);
+					result.put(MapComponent.ITEM_PROPERTY_latitude, coords[0]);
+					result.put(MapComponent.ITEM_PROPERTY_longitude, coords[1]);
+					result.remove(MapComponent.ITEM_PROPERTY_address);
 				} else {
-					throw new JRException("Invalid coordinates geocoded from address: (" + coords[0] +", "+coords[1]+").");
+					throw 
+						new JRException(
+							MapFillComponent.EXCEPTION_MESSAGE_KEY_INVALID_ADDRESS_COORDINATES,  
+							new Object[]{coords[0], coords[1]} 
+							);
 				}
-			} else {
-				String msg = hasLatitude ? "" : MapComponent.PROPERTY_latitude;
-				msg += "".equals(msg) ? "" : " and ";
-				msg += hasLongitude ? "" : MapComponent.PROPERTY_longitude;
-				throw new JRException("Found empty value for "+ msg);
+			}
+			else 
+			{
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_MISSING_COORDINATES,  
+						new Object[]{fLatitude == null ? MapComponent.ITEM_PROPERTY_latitude : MapComponent.ITEM_PROPERTY_longitude}
+						);
 			}
 		}
 	}
 	
 	private Float[] getCoords(String address) throws JRException {
+		String reqParams = ((MapFillComponent)fillContextProvider).getReqParams();
 		Float[] coords = null;
 		if(address != null) {
 			try {
-				String url = MapFillComponent.PLACE_URL_PREFIX + URLEncoder.encode(address, MapFillComponent.DEFAULT_ENCODING) + MapFillComponent.PLACE_URL_SUFFIX;
-				byte[] response = read(url);
+				
+				String urlStr = MapFillComponent.PLACE_URL_PREFIX 
+						+ URLEncoder.encode(address, MapFillComponent.DEFAULT_ENCODING) 
+						+ MapFillComponent.PLACE_URL_SUFFIX
+						+ (reqParams != null && reqParams.trim().length() > 0 ? "&" + reqParams : "");
+
+				URL url = new URL(urlStr);
+				byte[] response = JRLoader.loadBytes(url);
 				Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new ByteArrayInputStream(response));
 				Node statusNode = (Node) new DOMXPath(MapFillComponent.STATUS_NODE).selectSingleNode(document);
 				String status = statusNode.getTextContent();
@@ -147,31 +166,16 @@ public class FillPlaceItem extends FillItem
 					Node lngNode = (Node) new DOMXPath(MapFillComponent.LONGITUDE_NODE).selectSingleNode(document);
 					coords[1] = Float.valueOf(lngNode.getTextContent());
 				} else {
-					throw new JRRuntimeException("Address request failed (see status: " + status + ")");
+					throw 
+						new JRException(
+							MapFillComponent.EXCEPTION_MESSAGE_KEY_ADDRESS_REQUEST_FAILED,  
+							new Object[]{status}
+							);
 				}
 			} catch (Exception e) {
 				throw new JRException(e);
 			}
 		}
 		return coords;
-	}
-	
-	private byte[] read(String url) throws IOException {
-		InputStream stream = null;
-		try {
-			URL u = new URL(url);
-			stream = u.openStream();
-			ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-			byte[] buf = new byte[4096];
-			int read;
-			while ((read = stream.read(buf)) > 0) {
-				byteOut.write(buf, 0, read);
-			}
-			return byteOut.toByteArray();
-		} finally {
-			if(stream != null) {
-				stream.close();
-			}
-		}
 	}
 }

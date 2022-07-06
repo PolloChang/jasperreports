@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,15 +24,17 @@
 package net.sf.jasperreports.engine.util;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.fill.JRFileVirtualizer;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.fill.JRFileVirtualizer;
 
 
 /**
@@ -46,7 +48,6 @@ import org.apache.commons.logging.LogFactory;
  * only one thread would do a read or write at one moment.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSwapFile.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRSwapFile
 {
@@ -78,6 +79,21 @@ public class JRSwapFile
 	 */
 	public JRSwapFile(String directory, int blockSize, int minGrowCount)
 	{
+		this(DefaultJasperReportsContext.getInstance(), directory, blockSize, minGrowCount);
+	}
+	
+	/**
+	 * Creates a swap file.
+	 * 
+	 * The file name is generated automatically.
+	 * 
+	 * @param jasperReportsContext the JasperReportsContext to read configuration from.
+	 * @param directory the directory where the file should be created.
+	 * @param blockSize the size of the blocks allocated by the swap file
+	 * @param minGrowCount the minimum number of blocks by which the swap file grows when full
+	 */
+	public JRSwapFile(JasperReportsContext jasperReportsContext, String directory, int blockSize, int minGrowCount)
+	{
 		try
 		{
 			String filename = "swap_" + System.identityHashCode(this) + "_" + System.currentTimeMillis();
@@ -88,8 +104,7 @@ public class JRSwapFile
 			}
 			boolean fileExists = swapFile.exists();
 			
-			@SuppressWarnings("deprecation")
-			boolean deleteOnExit = JRProperties.getBooleanProperty(PROPERTY_DELETE_ON_EXIT);
+			boolean deleteOnExit = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(PROPERTY_DELETE_ON_EXIT);
 			if (deleteOnExit)
 			{
 				swapFile.deleteOnExit();
@@ -109,10 +124,6 @@ public class JRSwapFile
 					log.debug("Swap file " + swapFile.getPath() + " exists, truncating");
 				}
 			}
-		}
-		catch (FileNotFoundException e)
-		{
-			throw new JRRuntimeException(e);
 		}
 		catch (IOException e)
 		{
@@ -243,6 +254,7 @@ public class JRSwapFile
 	}
 
 
+	@Override
 	protected void finalize() throws Throwable //NOSONAR
 	{
 		dispose();
@@ -294,6 +306,8 @@ public class JRSwapFile
 	
 	protected static class LongQueue
 	{
+		public static final String EXCEPTION_MESSAGE_KEY_QUEUE_UNDERFLOW = "util.long.queue.underflow";
+		
 		private final int minGrowCount;
 		private long[] vals;
 		private int size;
@@ -339,7 +353,10 @@ public class JRSwapFile
 		{
 			if (size == 0)
 			{
-				throw new JRRuntimeException("Queue underflow");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_QUEUE_UNDERFLOW,
+						(Object[])null);
 			}
 
 			long val = vals[first];

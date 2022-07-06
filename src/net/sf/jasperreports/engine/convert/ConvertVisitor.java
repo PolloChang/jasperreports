@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -62,7 +62,6 @@ import net.sf.jasperreports.engine.type.ModeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ConvertVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ConvertVisitor implements JRVisitor
 {
@@ -101,17 +100,13 @@ public class ConvertVisitor implements JRVisitor
 		return null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitBreak(JRBreak breakElement)
 	{
 		//FIXMECONVERT
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitChart(JRChart chart)
 	{
 		JRPrintElement printImage = ChartConverter.getInstance().convert(reportConverter, chart);
@@ -119,9 +114,7 @@ public class ConvertVisitor implements JRVisitor
 		addContour(reportConverter, parentFrame, printImage);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitCrosstab(JRCrosstab crosstab)
 	{
 		JRPrintElement printFrame = CrosstabConverter.getInstance().convert(reportConverter, crosstab); 
@@ -129,9 +122,7 @@ public class ConvertVisitor implements JRVisitor
 		addContour(reportConverter, parentFrame, printFrame);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitElementGroup(JRElementGroup elementGroup)
 	{
 		List<JRChild> children = elementGroup.getChildren();
@@ -144,17 +135,13 @@ public class ConvertVisitor implements JRVisitor
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitEllipse(JREllipse ellipse)
 	{
 		addElement(parentFrame, EllipseConverter.getInstance().convert(reportConverter, ellipse));
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitFrame(JRFrame frame)
 	{
 		JRPrintElement printFrame = FrameConverter.getInstance().convert(reportConverter, frame); 
@@ -162,9 +149,7 @@ public class ConvertVisitor implements JRVisitor
 		addContour(reportConverter, parentFrame, printFrame);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitImage(JRImage image)
 	{
 		JRPrintElement printImage = ImageConverter.getInstance().convert(reportConverter, image);
@@ -172,25 +157,19 @@ public class ConvertVisitor implements JRVisitor
 		addContour(reportConverter, parentFrame, printImage);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitLine(JRLine line)
 	{
 		addElement(parentFrame, LineConverter.getInstance().convert(reportConverter, line));
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitRectangle(JRRectangle rectangle)
 	{
 		addElement(parentFrame, RectangleConverter.getInstance().convert(reportConverter, rectangle));
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitStaticText(JRStaticText staticText)
 	{
 		JRPrintElement printText = StaticTextConverter.getInstance().convert(reportConverter, staticText);
@@ -198,9 +177,7 @@ public class ConvertVisitor implements JRVisitor
 		addContour(reportConverter, parentFrame, printText);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitSubreport(JRSubreport subreport)
 	{
 		JRPrintElement printImage = SubreportConverter.getInstance().convert(reportConverter, subreport);
@@ -208,9 +185,7 @@ public class ConvertVisitor implements JRVisitor
 		addContour(reportConverter, parentFrame, printImage);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitTextField(JRTextField textField)
 	{
 		JRPrintElement printText = TextFieldConverter.getInstance().convert(reportConverter, textField);
@@ -242,15 +217,15 @@ public class ConvertVisitor implements JRVisitor
 			if (box == null)
 			{
 				JRPrintGraphicElement graphicElement = element instanceof JRPrintGraphicElement ? (JRPrintGraphicElement)element : null;
-				hasContour = (graphicElement == null) || graphicElement.getLinePen().getLineWidth().floatValue() <= 0f; 
+				hasContour = (graphicElement == null) || graphicElement.getLinePen().getLineWidth() <= 0f; 
 			}
 			else
 			{
 				hasContour = 
-					box.getTopPen().getLineWidth().floatValue() <= 0f 
-					&& box.getLeftPen().getLineWidth().floatValue() <= 0f 
-					&& box.getRightPen().getLineWidth().floatValue() <= 0f 
-					&& box.getBottomPen().getLineWidth().floatValue() <= 0f;
+					box.getTopPen().getLineWidth() <= 0f 
+					&& box.getLeftPen().getLineWidth() <= 0f 
+					&& box.getRightPen().getLineWidth() <= 0f 
+					&& box.getBottomPen().getLineWidth() <= 0f;
 			}
 			
 			if (hasContour)
@@ -261,7 +236,7 @@ public class ConvertVisitor implements JRVisitor
 				rectangle.setY(element.getY());
 				rectangle.setWidth(element.getWidth());
 				rectangle.setHeight(element.getHeight());
-				rectangle.getLinePen().setLineWidth(0.1f);
+				rectangle.getLinePen().setLineWidth((Float)0.1f);
 				rectangle.getLinePen().setLineStyle(LineStyleEnum.DASHED);
 				rectangle.getLinePen().setLineColor(ReportConverter.GRID_LINE_COLOR);
 				rectangle.setMode(ModeEnum.TRANSPARENT);
@@ -270,6 +245,7 @@ public class ConvertVisitor implements JRVisitor
 		}
 	}
 
+	@Override
 	public void visitComponentElement(JRComponentElement componentElement)
 	{
 		JRPrintElement image = ComponentElementConverter.getInstance()
@@ -278,6 +254,7 @@ public class ConvertVisitor implements JRVisitor
 		addContour(reportConverter, parentFrame, image);
 	}
 
+	@Override
 	public void visitGenericElement(JRGenericElement element)
 	{
 		JRPrintElement image = GenericElementConverter.getInstance()

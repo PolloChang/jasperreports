@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,10 +33,7 @@ import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRGraphicElement;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRPen;
-import net.sf.jasperreports.engine.base.JRBasePen;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.util.JRPenUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.engine.util.ObjectUtils;
 import net.sf.jasperreports.engine.util.ObjectUtils.HashCode;
 
@@ -46,7 +43,6 @@ import net.sf.jasperreports.engine.util.ObjectUtils.HashCode;
  * print element instances.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateGraphicElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRTemplateGraphicElement extends JRTemplateElement implements JRCommonGraphicElement
 {
@@ -105,47 +101,38 @@ public abstract class JRTemplateGraphicElement extends JRTemplateElement impleme
 		linePen = pen.clone(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPen getLinePen()
 	{
 		return linePen;
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public FillEnum getFillValue()
 	{
-		return JRStyleResolver.getFillValue(this);
+		return getStyleResolver().getFillValue(this);
 	}
 
+	@Override
 	public FillEnum getOwnFillValue()
 	{
 		return this.fillValue;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setFill(FillEnum fillValue)
 	{
 		this.fillValue = fillValue;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Float getDefaultLineWidth() 
 	{
 		return JRPen.LINE_WIDTH_1;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return getForecolor();
@@ -159,12 +146,9 @@ public abstract class JRTemplateGraphicElement extends JRTemplateElement impleme
 	/**
 	 * @deprecated
 	 */
-	private Byte pen;
-	/**
-	 * @deprecated
-	 */
 	private Byte fill;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -173,12 +157,6 @@ public abstract class JRTemplateGraphicElement extends JRTemplateElement impleme
 		{
 			fillValue = FillEnum.getByValue(fill);
 			fill = null;
-		}
-		if (linePen == null)
-		{
-			linePen = new JRBasePen(this);
-			JRPenUtil.setLinePenFromPen(pen, linePen);
-			pen = null;
 		}
 	}
 

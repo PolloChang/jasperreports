@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import org.jfree.data.xy.XYDataset;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XYChartHyperlinkProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XYChartHyperlinkProvider implements ChartHyperlinkProvider
 {
@@ -51,6 +50,7 @@ public class XYChartHyperlinkProvider implements ChartHyperlinkProvider
 	}
 
 
+	@Override
 	public JRPrintHyperlink getEntityHyperlink(ChartEntity entity)
 	{
 		JRPrintHyperlink printHyperlink = null;
@@ -64,13 +64,14 @@ public class XYChartHyperlinkProvider implements ChartHyperlinkProvider
 			{
 				Number x = dataset.getX(itemEntity.getSeriesIndex(), itemEntity.getItem());
 				Number y = dataset.getY(itemEntity.getSeriesIndex(), itemEntity.getItem());
-				Pair<Number,Number> xyKey = new Pair<Number,Number>(x, y);
+				Pair<Number,Number> xyKey = new Pair<>(x, y);
 				printHyperlink = serieHyperlinks.get(xyKey);
 			}
 		}
 		return printHyperlink;
 	}
 
+	@Override
 	public boolean hasHyperlinks()
 	{
 		return itemHyperlinks != null && itemHyperlinks.size() > 0;

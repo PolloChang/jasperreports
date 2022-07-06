@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,18 +37,21 @@ import net.sf.jasperreports.engine.JRQuery;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRSubreport;
 import net.sf.jasperreports.engine.JRTemplate;
-import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.component.FillContext;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
 import net.sf.jasperreports.engine.fill.DatasetExpressionEvaluator;
+import net.sf.jasperreports.engine.fill.FillerSubreportParent;
+import net.sf.jasperreports.engine.fill.JRFillCloneFactory;
+import net.sf.jasperreports.engine.fill.JRFillCloneable;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 import net.sf.jasperreports.engine.fill.JRFillSubreport;
+import net.sf.jasperreports.engine.fill.JasperReportSource;
+import net.sf.jasperreports.engine.fill.SimpleJasperReportSource;
 
 /**
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillTableSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillTableSubreport extends JRFillSubreport
 {
@@ -67,15 +70,32 @@ public class FillTableSubreport extends JRFillSubreport
 		this.builtinEvaluatorFactory = builtinEvaluatorFactory;
 	}
 
+	public FillTableSubreport(FillTableSubreport tableSubreport, JRFillCloneFactory factory)
+	{
+		super(tableSubreport, factory);
+		
+		this.fillContainerContext = tableSubreport.fillContainerContext;
+		this.tableReport = tableSubreport.tableReport;
+		this.builtinEvaluatorFactory = tableSubreport.builtinEvaluatorFactory;
+	}
+
 	public TableJasperReport getTableReport()
 	{
 		return tableReport;
 	}
 
 	@Override
-	protected JasperReport evaluateReport(byte evaluation) throws JRException
+	protected FillerSubreportParent createFillerParent(DatasetExpressionEvaluator evaluator) throws JRException
 	{
-		return tableReport;
+		return new FillerTableSubreportParent(this, evaluator);
+	}
+	
+	@Override
+	protected JasperReportSource evaluateReportSource(byte evaluation) throws JRException
+	{
+		return SimpleJasperReportSource.from(tableReport,
+				filler.getReportSource().getReportLocation(),
+				filler.getRepositoryContext().getResourceContext());
 	}
 
 	@Override
@@ -103,6 +123,12 @@ public class FillTableSubreport extends JRFillSubreport
 		return values;
 	}
 
+	@Override
+	protected boolean isReorderBandElements()
+	{
+		return true;
+	}
+	
 	protected void copyConnectionParameter(Map<String, Object> parameterValues)
 	{
 		// copy the main report's connection parameter to the table subreport
@@ -154,7 +180,17 @@ public class FillTableSubreport extends JRFillSubreport
 		throws JRException
 	{
 		boolean willOverflow = prepare(availableHeight, isOverflow);
-		return FillPrepareResult.printStretch(getStretchHeight(), willOverflow);
+		FillPrepareResult result;
+		if (printPage == null)
+		{
+			// don't produce any result
+			result = FillPrepareResult.NO_PRINT_NO_OVERFLOW;
+		}
+		else
+		{
+			result = FillPrepareResult.printStretch(getStretchHeight(), willOverflow);
+		}
+		return result;
 	}
 	
 	@Override
@@ -186,5 +222,32 @@ public class FillTableSubreport extends JRFillSubreport
 	{
 		// overriding this for package access
 		super.cancelSubreportFill();
+	}
+
+	@Override
+	public JRFillCloneable createClone(JRFillCloneFactory factory)
+	{
+		// not actually used, but implemented for safety
+		return new FillTableSubreport(this, factory);
+	}
+
+	@Override
+	protected void registerReportStyles(List<JRStyle> styles)
+	{
+		filler.registerReportStyles(getUUID(), styles);
+	}
+	
+	@Override
+	protected String getReportName()
+	{
+		String tableName = tableReport.getBaseReport().getTableName();
+		return tableName == null ? super.getReportName() : tableName;
+	}
+
+	@Override
+	protected int getPrintContentsWidth()
+	{
+		// overriding this for package access
+		return super.getPrintContentsWidth();
 	}
 }

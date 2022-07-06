@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -45,15 +45,19 @@ import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRPrintPage;
+import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.export.draw.FrameDrawer;
+import net.sf.jasperreports.engine.export.draw.PrintDrawVisitor;
 import net.sf.jasperreports.engine.util.JRGraphEnvInitializer;
 import net.sf.jasperreports.export.Graphics2DExporterConfiguration;
 import net.sf.jasperreports.export.Graphics2DExporterOutput;
 import net.sf.jasperreports.export.Graphics2DReportConfiguration;
 import net.sf.jasperreports.export.ReportExportConfiguration;
+import net.sf.jasperreports.renderers.RenderersCache;
 
 
 /**
@@ -134,16 +138,10 @@ import net.sf.jasperreports.export.ReportExportConfiguration;
  * @see net.sf.jasperreports.export.ReportExportConfiguration
  * @see net.sf.jasperreports.export.SimpleExporterInput
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRGraphics2DExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportConfiguration, Graphics2DExporterConfiguration, Graphics2DExporterOutput, JRGraphics2DExporterContext>
 {
 	private static final float DEFAULT_ZOOM = 1f;
-
-	/**
-	 * @deprecated Replaced by {@link Graphics2DReportConfiguration#MINIMIZE_PRINTER_JOB_SIZE}.
-	 */
-	public static final String MINIMIZE_PRINTER_JOB_SIZE = Graphics2DReportConfiguration.MINIMIZE_PRINTER_JOB_SIZE;
 
 	private static final String GRAPHICS2D_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.graphics2d.";
 
@@ -156,9 +154,10 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 	/**
 	 *
 	 */
-	protected AwtTextRenderer textRenderer;
-	protected FrameDrawer frameDrawer;
-
+	protected PrintDrawVisitor drawVisitor;
+	
+	private boolean whitePageBackground = true;
+	
 	protected class ExporterContext extends BaseExporterContext implements JRGraphics2DExporterContext
 	{
 	}
@@ -185,27 +184,21 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<Graphics2DExporterConfiguration> getConfigurationInterface()
 	{
 		return Graphics2DExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<Graphics2DReportConfiguration> getItemConfigurationInterface()
 	{
 		return Graphics2DReportConfiguration.class;
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	protected void ensureOutput()
 	{
@@ -216,9 +209,7 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public void exportReport() throws JRException
 	{
 		/*   */
@@ -260,18 +251,42 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 		
 		Boolean isMinimizePrinterJobSize = configuration.isMinimizePrinterJobSize();
 		Boolean isIgnoreMissingFont = configuration.isIgnoreMissingFont();
-		
-		textRenderer = 
-			new AwtTextRenderer(
-				jasperReportsContext,
-				isMinimizePrinterJobSize == null ? Boolean.TRUE : isMinimizePrinterJobSize,
-				isIgnoreMissingFont == null ? Boolean.FALSE : isIgnoreMissingFont
+		boolean defaultIndentFirstLine = 
+			propertiesUtil.getBooleanProperty(
+				jasperPrint, 
+				JRPrintText.PROPERTY_AWT_INDENT_FIRST_LINE, 
+				true
 				);
-
-		frameDrawer = new FrameDrawer(exporterContext, filter, textRenderer);
+		boolean defaultJustifyLastLine = 
+			propertiesUtil.getBooleanProperty(
+				jasperPrint, 
+				JRPrintText.PROPERTY_AWT_JUSTIFY_LAST_LINE, 
+				false
+				);
+		
+		drawVisitor = 
+			new PrintDrawVisitor(
+				exporterContext,
+				getRenderersCache(),
+				isMinimizePrinterJobSize == null ? Boolean.TRUE : isMinimizePrinterJobSize,
+				isIgnoreMissingFont == null ? Boolean.FALSE : isIgnoreMissingFont,
+				defaultIndentFirstLine,
+				defaultJustifyLastLine
+				);
+		
+		whitePageBackground = configuration.isWhitePageBackground();
 	}
 
 	
+	/**
+	 *
+	 */
+	protected RenderersCache getRenderersCache()
+	{
+		return new RenderersCache(getJasperReportsContext());
+	}
+
+
 	/**
 	 *
 	 */
@@ -303,12 +318,12 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 
 			Shape oldClipShape = grx.getClip();
 	
-			grx.clip(new Rectangle(0, 0, jasperPrint.getPageWidth(), jasperPrint.getPageHeight()));
+			PrintPageFormat pageFormat = jasperPrint.getPageFormat(startPageIndex);
+			grx.clip(new Rectangle(0, 0, pageFormat.getPageWidth(), pageFormat.getPageHeight()));
 	
 			try
 			{
-				JRPrintPage page = pages.get(startPageIndex);
-				exportPage(grx, page);
+				exportPage(grx, startPageIndex);
 			}
 			finally
 			{
@@ -321,21 +336,28 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 	/**
 	 *
 	 */
-	protected void exportPage(Graphics2D grx, JRPrintPage page) throws JRException
+	protected void exportPage(Graphics2D grx, int pageIndex) throws JRException
 	{
-		grx.setColor(Color.white);
-		grx.fillRect(
-			0, 
-			0, 
-			jasperPrint.getPageWidth(), 
-			jasperPrint.getPageHeight()
-			);
+		List<JRPrintPage> pages = jasperPrint.getPages();
+		JRPrintPage page = pages.get(pageIndex);
+		PrintPageFormat pageFormat = jasperPrint.getPageFormat(pageIndex);
+
+		if (whitePageBackground)
+		{
+			grx.setColor(Color.white);
+			grx.fillRect(
+				0, 
+				0, 
+				pageFormat.getPageWidth(), 
+				pageFormat.getPageHeight()
+				);
+		}
 
 		grx.setColor(Color.black);
 		grx.setStroke(new BasicStroke(1));
 
 		/*   */
-		frameDrawer.draw(grx, page.getElements(), getOffsetX(), getOffsetY());
+		drawVisitor.getFrameDrawer().draw(grx, page.getElements(), getOffsetX(), getOffsetY());
 		
 		JRExportProgressMonitor progressMonitor = getCurrentItemConfiguration().getProgressMonitor();
 		if (progressMonitor != null)
@@ -344,17 +366,13 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getExporterKey()
 	{
 		return GRAPHICS2D_EXPORTER_KEY;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getExporterPropertiesPrefix()
 	{
 		return GRAPHICS2D_EXPORTER_PROPERTIES_PREFIX;
@@ -362,11 +380,20 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 
 
 	/**
-	 * @return the frameDrawer
+	 *
+	 */
+	public PrintDrawVisitor getDrawVisitor()
+	{
+		return drawVisitor;
+	}
+
+
+	/**
+	 * @deprecated Replaced by {@link #getDrawVisitor()}.
 	 */
 	public FrameDrawer getFrameDrawer()
 	{
-		return this.frameDrawer;
+		return drawVisitor.getFrameDrawer();
 	}
 
 
@@ -377,10 +404,14 @@ public class JRGraphics2DExporter extends JRAbstractExporter<Graphics2DReportCon
 		Float zoomRatio = getCurrentItemConfiguration().getZoomRatio();
 		if (zoomRatio != null)
 		{
-			zoom = zoomRatio.floatValue();
+			zoom = zoomRatio;
 			if (zoom <= 0)
 			{
-				throw new JRRuntimeException("Invalid zoom ratio : " + zoom);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_INVALID_ZOOM_RATIO,  
+						new Object[]{zoom} 
+						);
 			}
 		}
 

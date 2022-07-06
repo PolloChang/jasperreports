@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,7 +40,6 @@ import net.sf.jasperreports.engine.type.NamedEnum;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlWriteHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlWriteHelper
 {
@@ -60,7 +58,7 @@ public class JRXmlWriteHelper
 	
 	private int indent;
 	private final List<StackElement> elementStack;
-	private StringBuffer buffer;
+	private StringBuilder builder;
 	private StackElement lastElement;
 		
 	protected static class Attribute
@@ -87,7 +85,7 @@ public class JRXmlWriteHelper
 		StackElement(String name, XmlNamespace namespace)
 		{
 			this.name = name;
-			this.atts = new ArrayList<Attribute>();
+			this.atts = new ArrayList<>();
 			this.hasChildren = false;
 			this.namespace = namespace;
 			this.qName = getQualifiedName(this.name, this.namespace);
@@ -109,10 +107,10 @@ public class JRXmlWriteHelper
 	{
 		this.writer = writer;
 		
-		indents = new ArrayList<char[]>();
+		indents = new ArrayList<>();
 		
 		indent = 0;
-		elementStack = new ArrayList<StackElement>();
+		elementStack = new ArrayList<>();
 		lastElement = null;
 		
 		clearBuffer();
@@ -260,10 +258,10 @@ public class JRXmlWriteHelper
 		{
 			writeParents(true);
 
-			buffer.append(getIndent(indent));
-			buffer.append("<![CDATA[");
-			buffer.append(encodeCDATA(data));
-			buffer.append("]]>\n");
+			builder.append(getIndent(indent));
+			builder.append("<![CDATA[");
+			builder.append(encodeCDATA(data));
+			builder.append("]]>\n");
 			flushBuffer();
 		}
 	}
@@ -280,15 +278,15 @@ public class JRXmlWriteHelper
 		{
 			writeParents(true);
 
-			buffer.append(getIndent(indent));
-			buffer.append('<');
+			builder.append(getIndent(indent));
+			builder.append('<');
 			String qName = getQualifiedName(name, namespace);
-			buffer.append(qName);
-			buffer.append("><![CDATA[");
-			buffer.append(encodeCDATA(data));
-			buffer.append("]]></");
-			buffer.append(qName);
-			buffer.append(">\n");
+			builder.append(qName);
+			builder.append("><![CDATA[");
+			builder.append(encodeCDATA(data));
+			builder.append("]]></");
+			builder.append(qName);
+			builder.append(">\n");
 			flushBuffer();
 		}
 	}
@@ -303,56 +301,78 @@ public class JRXmlWriteHelper
 		writeCDATAElement(name, getParentNamespace(), data, attName, attValue);
 	}
 	
-	public void writeCDATAElement(String name, XmlNamespace namespace, 
-			String data, String attName, Object attValue) throws IOException
+	public void writeCDATAElement(
+		String name, 
+		XmlNamespace namespace, 
+		String data, 
+		String attName, 
+		Object attValue
+		) throws IOException
+	{
+		writeCDATAElement(name, namespace, data, new String[]{attName}, new Object[]{attValue});
+	}
+	
+	public void writeCDATAElement(
+		String name, 
+		XmlNamespace namespace, 
+		String data, 
+		String[] attNames, 
+		Object[] attValues
+		) throws IOException
 	{
 		if (data != null)
 		{
 			writeParents(true);
 
-			buffer.append(getIndent(indent));
-			buffer.append('<');
+			builder.append(getIndent(indent));
+			builder.append('<');
 			String qName = getQualifiedName(name, namespace);
-			buffer.append(qName);
-			if (attValue != null)
+			builder.append(qName);
+			if (attNames != null)
 			{
-				buffer.append(' ');
-				buffer.append(attName);
-				buffer.append("=\"");
-				buffer.append(attValue);
-				buffer.append("\"");
+				for (int i = 0; i < attNames.length; i++)
+				{
+					if (attValues[i] != null)
+					{
+						builder.append(' ');
+						builder.append(attNames[i]);
+						builder.append("=\"");
+						builder.append(attValues[i]);
+						builder.append("\"");
+					}
+				}
 			}
-			buffer.append("><![CDATA[");
-			buffer.append(encodeCDATA(data));
-			buffer.append("]]></");
-			buffer.append(qName);
-			buffer.append(">\n");
+			builder.append("><![CDATA[");
+			builder.append(encodeCDATA(data));
+			builder.append("]]></");
+			builder.append(qName);
+			builder.append(">\n");
 			flushBuffer();
 		}
 	}
 	
 	protected void writeElementAttributes(StackElement element, int level) throws IOException
 	{
-		buffer.append(getIndent(level));
-		buffer.append('<');
-		buffer.append(element.qName);
+		builder.append(getIndent(level));
+		builder.append('<');
+		builder.append(element.qName);
 		for (Iterator<Attribute> i = element.atts.iterator(); i.hasNext();)
 		{
 			Attribute att = i.next();
-			buffer.append(' ');
-			buffer.append(att.name);
-			buffer.append("=\"");
-			buffer.append(att.value);
-			buffer.append('"');
+			builder.append(' ');
+			builder.append(att.name);
+			builder.append("=\"");
+			builder.append(att.value);
+			builder.append('"');
 		}
 		
 		if (element.hasChildren)
 		{
-			buffer.append(">\n");
+			builder.append(">\n");
 		}
 		else
 		{
-			buffer.append("/>\n");
+			builder.append("/>\n");
 		}
 		
 		flushBuffer();
@@ -377,10 +397,10 @@ public class JRXmlWriteHelper
 			
 			if (lastElement.hasChildren)
 			{
-				buffer.append(getIndent(indent));
-				buffer.append("</");
-				buffer.append(lastElement.qName);
-				buffer.append(">\n");
+				builder.append(getIndent(indent));
+				builder.append("</");
+				builder.append(lastElement.qName);
+				builder.append(">\n");
 				flushBuffer();
 			}
 		}
@@ -406,13 +426,13 @@ public class JRXmlWriteHelper
 	
 	protected void flushBuffer() throws IOException
 	{
-		writer.write(buffer.toString());
+		writer.write(builder.toString());
 		clearBuffer();
 	}
 
 	protected void clearBuffer()
 	{
-		buffer = new StringBuffer();
+		builder = new StringBuilder();
 	}
 	
 
@@ -643,58 +663,6 @@ public class JRXmlWriteHelper
 		if (value != null && value.getRGB() != defaultValue.getRGB())
 		{
 			addAttribute(name, value);
-		}
-	}
-	
-	/**
-	 * @deprecated To be removed. 
-	 */
-	public void addAttribute(String name, byte value, Map<?,?> xmlValues)
-	{
-		String xmlValue = (String) xmlValues.get(new Byte(value));
-		writeAttribute(name, xmlValue);
-	}
-	
-	/**
-	 * @deprecated To be removed. 
-	 */
-	public void addAttribute(String name, int value, Map<?,?> xmlValues)
-	{
-		String xmlValue = (String) xmlValues.get(Integer.valueOf(value));
-		writeAttribute(name, xmlValue);
-	}
-	
-	/**
-	 * @deprecated To be removed. 
-	 */
-	public void addAttribute(String name, byte value, Map<?,?> xmlValues, byte defaultValue)
-	{
-		if (value != defaultValue)
-		{
-			addAttribute(name, value, xmlValues);
-		}
-	}
-	
-	/**
-	 * @deprecated To be removed. 
-	 */
-	public void addAttribute(String name, Object value, Map<?,?> xmlValues)
-	{
-		if (value != null)
-		{
-			String xmlValue = (String) xmlValues.get(value);
-			writeAttribute(name, xmlValue);
-		}
-	}
-	
-	/**
-	 * @deprecated To be removed. 
-	 */
-	public void addAttribute(String name, Object value, Map<?,?> xmlValues, Object defaultValue)
-	{
-		if (!value.equals(defaultValue))
-		{
-			addAttribute(name, value, xmlValues);
 		}
 	}
 	

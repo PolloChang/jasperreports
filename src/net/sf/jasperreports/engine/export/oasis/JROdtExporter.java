@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,11 +27,12 @@
  *
  * Contributors:
  * Majid Ali Khan - majidkk@users.sourceforge.net
- * Frank Sch�nheit - Frank.Schoenheit@Sun.COM
+ * Frank Schönheit - Frank.Schoenheit@Sun.COM
  */
 package net.sf.jasperreports.engine.export.oasis;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.geom.Dimension2D;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,6 +41,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
@@ -59,8 +63,7 @@ import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.ElementGridCell;
 import net.sf.jasperreports.engine.export.ExporterNature;
@@ -76,17 +79,22 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 import net.sf.jasperreports.engine.export.zip.ExportZipEntry;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZipEntry;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.util.ExifOrientationEnum;
+import net.sf.jasperreports.engine.util.ImageUtil;
+import net.sf.jasperreports.engine.util.ImageUtil.Insets;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.export.ExportInterruptedException;
 import net.sf.jasperreports.export.ExporterInputItem;
 import net.sf.jasperreports.export.OdtExporterConfiguration;
 import net.sf.jasperreports.export.OdtReportConfiguration;
 import net.sf.jasperreports.export.OutputStreamExporterOutput;
 import net.sf.jasperreports.export.ReportExportConfiguration;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
@@ -108,12 +116,12 @@ import org.apache.commons.logging.LogFactory;
  * the ODT editor. This is controlled using either the
  * {@link net.sf.jasperreports.export.OdtReportConfiguration#isFlexibleRowHeight() isFlexibleRowHeight()} 
  * exporter configuration flag, or its corresponding exporter hint called
- * <code>net.sf.jasperreports.export.odt.flexible.row.height</code>.</li>
+ * {@link net.sf.jasperreports.export.OdtReportConfiguration#PROPERTY_ODT_FLEXIBLE_ROW_HEIGHT net.sf.jasperreports.export.odt.flexible.row.height}.</li>
  * <li>Ignoring hyperlinks in generated documents if they are not intended for the ODT output format. This can be 
  * customized using either the 
  * {@link net.sf.jasperreports.export.OdtReportConfiguration#isIgnoreHyperlink() isIgnoreHyperlink()} 
  * exporter configuration flag, or its corresponding exporter hint called
- * <code>net.sf.jasperreports.export.odt.ignore.hyperlinks</code></li>
+ * {@link net.sf.jasperreports.export.OdtReportConfiguration#PROPERTY_IGNORE_HYPERLINK net.sf.jasperreports.export.odt.ignore.hyperlink}</li>
  * </ul>
  * <p/>
  * So far, the ODT exporter has the known limitations of grid exporters. It
@@ -122,7 +130,6 @@ import org.apache.commons.logging.LogFactory;
  * 
  * @see net.sf.jasperreports.export.OdtReportConfiguration
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROdtExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, OdtExporterConfiguration, OutputStreamExporterOutput, JROdtExporterContext>
 {
@@ -134,15 +141,9 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	 */
 	public static final String ODT_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "odt";
 	
-	protected static final String ODT_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.odt.";
+	public static final String ODT_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.odt.";
 
 	
-	/**
-	 * @deprecated Replaced by {@link OdtReportConfiguration#PROPERTY_IGNORE_HYPERLINK}.
-	 */
-	public static final String PROPERTY_IGNORE_HYPERLINK = OdtReportConfiguration.PROPERTY_IGNORE_HYPERLINK;
-	
-
 	protected class ExporterContext extends BaseExporterContext implements JROdtExporterContext
 	{
 		TableBuilder tableBuilder = null;
@@ -152,6 +153,7 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 			this.tableBuilder = tableBuidler;
 		}
 		
+		@Override
 		public TableBuilder getTableBuilder()
 		{
 			return tableBuilder;
@@ -221,13 +223,14 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	protected WriterHelper tempStyleWriter;
 
 	protected int reportIndex;
+	protected int pageFormatIndex;
 	protected int pageIndex;
 	protected int tableIndex;
 	protected boolean startPage;
 	
 	protected String invalidCharReplacement;
 
-	protected LinkedList<Color> backcolorStack = new LinkedList<Color>();
+	protected LinkedList<Color> backcolorStack = new LinkedList<>();
 	protected Color backcolor;
 
 	protected DocumentBuilder documentBuilder;
@@ -236,8 +239,8 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 
 	protected ExporterNature nature;
 
-	protected Map<Integer, String> rowStyles = new HashMap<Integer, String>();
-	protected Map<Integer, String> columnStyles = new HashMap<Integer, String>();
+	protected Map<Integer, String> rowStyles = new HashMap<>();
+	protected Map<Integer, String> columnStyles = new HashMap<>();
 	
 	/**
 	 * @see #JROdtExporter(JasperReportsContext)
@@ -259,27 +262,21 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<OdtExporterConfiguration> getConfigurationInterface()
 	{
 		return OdtExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<OdtReportConfiguration> getItemConfigurationInterface()
 	{
 		return OdtReportConfiguration.class;
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	protected void ensureOutput()
 	{
@@ -295,9 +292,7 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public void exportReport() throws JRException
 	{
 		/*   */
@@ -357,7 +352,7 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	 */
 	protected void exportReportToOasisZip(OutputStream os) throws JRException, IOException
 	{
-		OasisZip oasisZip = new FileBufferedOasisZip(OasisZip.MIME_TYPE_ODT);
+		OasisZip oasisZip = new OdtZip();
 
 		ExportZipEntry tempBodyEntry = new FileBufferedZipEntry(null);
 		ExportZipEntry tempStyleEntry = new FileBufferedZipEntry(null);
@@ -367,16 +362,17 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 
 		documentBuilder = new OdtDocumentBuilder(oasisZip);
 		
-		styleCache = new StyleCache(documentBuilder, jasperReportsContext, tempStyleWriter, getExporterKey());
+		styleCache = new StyleCache(jasperReportsContext, tempStyleWriter, getExporterKey());
 
 		WriterHelper stylesWriter = new WriterHelper(jasperReportsContext, oasisZip.getStylesEntry().getWriter());
 
 		List<ExporterInputItem> items = exporterInput.getItems();
 
-		StyleBuilder styleBuilder = new StyleBuilder(exporterInput, stylesWriter);
-		styleBuilder.build();
-
-		stylesWriter.close();
+		StyleBuilder styleBuilder = new StyleBuilder(stylesWriter);
+		
+		styleBuilder.buildBeforeAutomaticStyles(jasperPrint);
+		
+		pageFormatIndex = -1;
 
 		for(reportIndex = 0; reportIndex < items.size(); reportIndex++)
 		{
@@ -393,12 +389,21 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 				int startPageIndex = (pageRange == null || pageRange.getStartPageIndex() == null) ? 0 : pageRange.getStartPageIndex();
 				int endPageIndex = (pageRange == null || pageRange.getEndPageIndex() == null) ? (pages.size() - 1) : pageRange.getEndPageIndex();
 
+				PrintPageFormat oldPageFormat = null;
 				JRPrintPage page = null;
 				for(pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++)
 				{
 					if (Thread.interrupted())
 					{
-						throw new JRException("Current thread interrupted.");
+						throw new ExportInterruptedException();
+					}
+
+					PrintPageFormat pageFormat = jasperPrint.getPageFormat(pageIndex);
+					
+					if (oldPageFormat != pageFormat)
+					{
+						styleBuilder.buildPageLayout(++pageFormatIndex, pageFormat);
+						oldPageFormat = pageFormat;
 					}
 
 					page = pages.get(pageIndex);
@@ -408,11 +413,15 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 			}
 		}
 
+		styleBuilder.buildMasterPages(pageFormatIndex);
+		
 
+		stylesWriter.flush();
 		tempBodyWriter.flush();
 		tempStyleWriter.flush();
 
 
+		stylesWriter.close();
 		tempBodyWriter.close();
 		tempStyleWriter.close();
 
@@ -446,12 +455,14 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 
 		ReportExportConfiguration configuration = getCurrentItemConfiguration();
 		
+		PrintPageFormat pageFormat = jasperPrint.getPageFormat(pageIndex);
+		
 		JRGridLayout layout =
 			new JRGridLayout(
 				nature,
 				page.getElements(),
-				jasperPrint.getPageWidth(),
-				jasperPrint.getPageHeight(),
+				pageFormat.getPageWidth(),
+				pageFormat.getPageHeight(),
 				configuration.getOffsetX() == null ? 0 : configuration.getOffsetX(), 
 				configuration.getOffsetY() == null ? 0 : configuration.getOffsetY(),
 				null //address
@@ -478,7 +489,7 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 		Grid grid = gridLayout.getGrid();
 
 		TableBuilder tableBuilder = frameIndex == null
-			? new TableBuilder(documentBuilder, jasperPrint, reportIndex, pageIndex, tempBodyWriter, tempStyleWriter, styleCache, rowStyles, columnStyles)
+			? new TableBuilder(documentBuilder, jasperPrint, pageFormatIndex, pageIndex, tempBodyWriter, tempStyleWriter, styleCache, rowStyles, columnStyles)
 			: new TableBuilder(documentBuilder, jasperPrint, frameIndex.toString(), tempBodyWriter, tempStyleWriter, styleCache, rowStyles, columnStyles);
 
 		
@@ -514,16 +525,25 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 				{
 					if (emptyCellColSpan > 0)
 					{
+						//writeEmptyCell(gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
+						//emptyCellWidth = 0;
 					}
 
+					//writeOccupiedCells(1);
 					exportOccupiedCells(1);
+//					OccupiedGridCell occupiedGridCell = (OccupiedGridCell)gridCell;
+//					ElementGridCell elementGridCell = (ElementGridCell)grid[occupiedGridCell.getRow()][occupiedGridCell.getCol()];
+//					exportOccupiedCells(elementGridCell);
+//					col += elementGridCell.getColSpan() - 1;
 				}
 				else if(gridCell.getType() == JRExporterGridCell.TYPE_ELEMENT_CELL)
 				{
 					if (emptyCellColSpan > 0)
 					{
+						//writeEmptyCell(gridCell, emptyCellColSpan, emptyCellWidth, rowHeight);
 						emptyCellColSpan = 0;
+						//emptyCellWidth = 0;
 					}
 
 					JRPrintElement element = gridCell.getElement();
@@ -557,13 +577,21 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 						exportGenericElement(tableBuilder, (JRGenericPrintElement)element, gridCell);
 					}
 
+					// //x += gridCell.colSpan - 1;
+					//col += gridCell.getColSpan() - 1;
 				}
 				else
 				{
 					emptyCellColSpan++;
+					//emptyCellWidth += gridCell.getWidth();
 					exportEmptyCell(gridCell, 1);
 				}
 			}
+
+//			if (emptyCellColSpan > 0)
+//			{
+//				//writeEmptyCell(null, emptyCellColSpan, emptyCellWidth, rowHeight);
+//			}
 
 			tableBuilder.buildRowFooter();
 		}
@@ -590,6 +618,12 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	private void exportEmptyCell(JRExporterGridCell gridCell, int emptyCellColSpan) throws IOException
 	{
 		tempBodyWriter.write("<table:table-cell");
+		//tempBodyWriter.write(" office:value-type=\"string\"");
+//		if (gridCell == null)
+//		{
+//			tempBodyWriter.write(" table:style-name=\"empty-cell\"");
+//		}
+//		else
 		{
 			tempBodyWriter.write(" table:style-name=\"" + styleCache.getCellStyle(gridCell) + "\"");
 		}
@@ -694,7 +728,7 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	 */
 	public void exportText(TableBuilder tableBuilder, JRPrintText text, JRExporterGridCell gridCell)
 	{
-		tableBuilder.exportText(text, gridCell);
+		tableBuilder.exportText(text, gridCell, false, true, false);
 	}
 
 	
@@ -704,140 +738,590 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	public void exportImage(TableBuilder tableBuilder, JRPrintImage image, JRExporterGridCell gridCell) throws JRException
 	{
 		int topPadding = 
-			Math.max(image.getLineBox().getTopPadding().intValue(), Math.round(image.getLineBox().getTopPen().getLineWidth().floatValue()));
+			Math.max(image.getLineBox().getTopPadding(), Math.round(image.getLineBox().getTopPen().getLineWidth()));
 		int leftPadding = 
-			Math.max(image.getLineBox().getLeftPadding().intValue(), Math.round(image.getLineBox().getLeftPen().getLineWidth().floatValue()));
+			Math.max(image.getLineBox().getLeftPadding(), Math.round(image.getLineBox().getLeftPen().getLineWidth()));
 		int bottomPadding = 
-			Math.max(image.getLineBox().getBottomPadding().intValue(), Math.round(image.getLineBox().getBottomPen().getLineWidth().floatValue()));
+			Math.max(image.getLineBox().getBottomPadding(), Math.round(image.getLineBox().getBottomPen().getLineWidth()));
 		int rightPadding = 
-			Math.max(image.getLineBox().getRightPadding().intValue(), Math.round(image.getLineBox().getRightPen().getLineWidth().floatValue()));
+			Math.max(image.getLineBox().getRightPadding(), Math.round(image.getLineBox().getRightPen().getLineWidth()));
 
-		int availableImageWidth = image.getWidth() - leftPadding - rightPadding;
-		availableImageWidth = availableImageWidth < 0 ? 0 : availableImageWidth;
-
-		int availableImageHeight = image.getHeight() - topPadding - bottomPadding;
-		availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
-
-		int width = availableImageWidth;
-		int height = availableImageHeight;
-
-		int xoffset = 0;
-		int yoffset = 0;
+		int availableImageWidth = Math.max(0,image.getWidth() - leftPadding - rightPadding);
+		int availableImageHeight = Math.max(0,image.getHeight() - topPadding - bottomPadding);
 
 		tableBuilder.buildCellHeader(styleCache.getCellStyle(gridCell), gridCell.getColSpan(), gridCell.getRowSpan());
 
-		Renderable renderer = image.getRenderable();
+		Renderable renderer = image.getRenderer();
 
 		if (
-			renderer != null &&
-			availableImageWidth > 0 &&
-			availableImageHeight > 0
+			renderer != null 
+			&& availableImageWidth > 0 
+			&& availableImageHeight > 0
 			)
 		{
-			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && !image.isLazy())
+			InternalImageProcessor imageProcessor = 
+				new InternalImageProcessor(
+					image, 
+					gridCell,
+					availableImageWidth,
+					availableImageHeight
+					);
+				
+			InternalImageProcessorResult imageProcessorResult = null;
+			
+			try
 			{
-				// Non-lazy image renderers are all asked for their image data at some point.
-				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = RenderableUtil.getInstance(getJasperReportsContext()).getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
+				imageProcessorResult = imageProcessor.process(renderer);
+			}
+			catch (Exception e)
+			{
+				Renderable onErrorRenderer = getRendererUtil().handleImageError(e, image.getOnErrorTypeValue());
+				if (onErrorRenderer != null)
+				{
+					imageProcessorResult = imageProcessor.process(onErrorRenderer);
+				}
+			}
+			
+			if (imageProcessorResult != null)
+			{
+				tempBodyWriter.write("<text:p>");
+				documentBuilder.insertPageAnchor(tableBuilder);
+				if (image.getAnchorName() != null)
+				{
+					tableBuilder.exportAnchor(JRStringUtil.xmlEncode(image.getAnchorName()));
+				}
+
+
+				boolean startedHyperlink = tableBuilder.startHyperlink(image,false);
+
+				tempBodyWriter.write(
+						"<draw:frame text:anchor-type=\"as-char\" "
+						+ "draw:style-name=\"G_ImgFrm\" "
+						+ "svg:x=\"0in\" "
+						+ "svg:y=\"0in\" "
+						+ "svg:width=\"" + LengthUtil.inchFloor4Dec(imageProcessorResult.frameWidth) + "in\" "
+						+ "svg:height=\"" + LengthUtil.inchFloor4Dec(imageProcessorResult.frameHeight) + "in\" "
+						+ ">\n"
+						);
+				tempBodyWriter.write("<draw:text-box>\n");
+				tempBodyWriter.write(
+					"<draw:frame text:anchor-type=\"frame\" "
+					+ "draw:style-name=\"" + styleCache.getGraphicStyle(
+							image, 
+							imageProcessorResult.cropTop, 
+							imageProcessorResult.cropLeft,
+							imageProcessorResult.cropBottom,
+							imageProcessorResult.cropRight
+							) + "\" "
+					+ "svg:x=\"" + LengthUtil.inchFloor4Dec(imageProcessorResult.xoffset) + "in\" "
+					+ "svg:y=\"" + LengthUtil.inchFloor4Dec(imageProcessorResult.yoffset) + "in\" "
+					+ "svg:width=\"" + LengthUtil.inchFloor4Dec(imageProcessorResult.imageWidth) + "in\" "
+					+ "svg:height=\"" + LengthUtil.inchFloor4Dec(imageProcessorResult.imageHeight) + "in\" "
+					+ "draw:transform=\"rotate (" + imageProcessorResult.angle + ")\">\n"
+					);
+				tempBodyWriter.write("<draw:image ");
+				tempBodyWriter.write(" xlink:href=\"" + JRStringUtil.xmlEncode(imageProcessorResult.imagePath) + "\"");
+				tempBodyWriter.write(" xlink:type=\"simple\"");
+				tempBodyWriter.write(" xlink:show=\"embed\"");
+				tempBodyWriter.write(" xlink:actuate=\"onLoad\"");
+				tempBodyWriter.write("/>\n");
+				tempBodyWriter.write("</draw:frame>\n");
+				tempBodyWriter.write("</draw:text-box>\n");
+				tempBodyWriter.write("</draw:frame>\n");
+				if(startedHyperlink)
+				{
+					tableBuilder.endHyperlink(false);
+				}
+				tempBodyWriter.write("</text:p>");
 			}
 		}
-		else
+
+		tableBuilder.buildCellFooter();
+	}
+
+	
+	private class InternalImageProcessor 
+	{
+		private final JRPrintImage imageElement;
+		private final RenderersCache imageRenderersCache;
+		private final JRExporterGridCell cell;
+		private final int availableImageWidth;
+		private final int availableImageHeight;
+		
+		protected InternalImageProcessor(
+			JRPrintImage imageElement,
+			JRExporterGridCell cell,
+			int availableImageWidth,
+			int availableImageHeight
+			)
 		{
-			renderer = null;
+			this.imageElement = imageElement;
+			this.imageRenderersCache = imageElement.isUsingCache() ? documentBuilder.getRenderersCache() 
+					: new RenderersCache(getJasperReportsContext());
+			this.cell = cell;
+			this.availableImageWidth = availableImageWidth;
+			this.availableImageHeight = availableImageHeight;
 		}
-
-		if (renderer != null)
+		
+		private InternalImageProcessorResult process(Renderable renderer) throws JRException
 		{
-			float xalignFactor = tableBuilder.getXAlignFactor(image);
-			float yalignFactor = tableBuilder.getYAlignFactor(image);
+//			boolean isLazy = RendererUtil.isLazy(renderer);
+//
+//			if (!isLazy)
+//			{
+				if (renderer instanceof ResourceRenderer)
+				{
+					renderer = imageRenderersCache.getLoadedRenderer((ResourceRenderer)renderer);
+				}
+//			}
 
-			switch (image.getScaleImageValue())
+			// check dimension first, to avoid caching renderers that might not be used eventually, due to their dimension errors
+				
+			ExifOrientationEnum exifOrientation = ExifOrientationEnum.NORMAL;
+			if (renderer instanceof DataRenderable)
+			{
+				byte[] imageData = ((DataRenderable)renderer).getData(jasperReportsContext);
+				exifOrientation = ImageUtil.getExifOrientation(imageData);
+			}
+
+			int imageWidth = availableImageWidth;
+			int imageHeight = availableImageHeight;
+
+			int xoffset = 0;
+			int yoffset = 0;
+			
+			double cropTop = 0;
+			double cropLeft = 0;
+			double cropBottom = 0;
+			double cropRight = 0;
+			
+			double angle = 0;
+
+			switch (imageElement.getScaleImageValue())
 			{
 				case FILL_FRAME :
 				{
-					width = availableImageWidth;
-					height = availableImageHeight;
-					xoffset = 0;
-					yoffset = 0;
+					switch (ImageUtil.getRotation(imageElement.getRotation(), exifOrientation))
+					{
+						case LEFT:
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							xoffset = (int)((availableImageWidth - availableImageHeight) / 2f);
+							yoffset = - (int)((availableImageWidth - availableImageHeight) / 2f);
+							angle = Math.PI / 2;
+							break;
+						case RIGHT:
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							xoffset = (int)((availableImageWidth - availableImageHeight) / 2f);
+							yoffset = - (int)((availableImageWidth - availableImageHeight) / 2f);
+							angle = - Math.PI / 2;
+							break;
+						case UPSIDE_DOWN:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							xoffset = 0;
+							yoffset = 0;
+							angle = Math.PI;
+							break;
+						case NONE:
+						default:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							xoffset = 0;
+							yoffset = 0;
+							angle = 0;
+							break;
+					}
+					
 					break;
 				}
 				case CLIP :
+				{
+					double normalWidth = availableImageWidth;
+					double normalHeight = availableImageHeight;
+
+					DimensionRenderable dimensionRenderer = imageRenderersCache.getDimensionRenderable(renderer);
+					Dimension2D dimension = dimensionRenderer == null ? null :  dimensionRenderer.getDimension(getJasperReportsContext());
+					if (dimension != null)
+					{
+						normalWidth = dimension.getWidth();
+						normalHeight = dimension.getHeight();
+					}
+
+					switch (ImageUtil.getRotation(imageElement.getRotation(), exifOrientation))
+					{
+						case LEFT:
+							if (dimension == null)
+							{
+								normalWidth = availableImageHeight;
+								normalHeight = availableImageWidth;
+							}
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							switch (imageElement.getHorizontalImageAlign())
+							{
+								case RIGHT :
+									cropLeft = normalWidth - availableImageHeight;
+									cropRight = 0;
+									yoffset = - (availableImageWidth - availableImageHeight) / 2 - (availableImageHeight - imageWidth);
+									break;
+								case CENTER :
+									cropLeft = (normalWidth - availableImageHeight) / 2;
+									cropRight = cropLeft;
+									yoffset = - (availableImageWidth - availableImageHeight) / 2 - (availableImageHeight - imageWidth) / 2;
+									break;
+								case LEFT :
+								default :
+									cropLeft = 0;
+									cropRight = normalWidth - availableImageHeight;
+									yoffset = - (availableImageWidth - availableImageHeight) / 2;
+									break;
+							}
+							switch (imageElement.getVerticalImageAlign())
+							{
+								case TOP :
+									cropTop = 0;
+									cropBottom = normalHeight - availableImageWidth;
+									xoffset = (availableImageWidth - availableImageHeight) / 2;
+									break;
+								case MIDDLE :
+									cropTop = (normalHeight - availableImageWidth) / 2;
+									cropBottom = cropTop;
+									xoffset = (availableImageWidth - availableImageHeight) / 2 + (availableImageWidth - imageHeight) / 2;
+									break;
+								case BOTTOM :
+								default :
+									cropTop = normalHeight - availableImageWidth;
+									cropBottom = 0;
+									xoffset = (availableImageWidth - availableImageHeight) / 2 + availableImageWidth - imageHeight;
+									break;
+							}
+							angle = Math.PI / 2;
+							break;
+						case RIGHT:
+							if (dimension == null)
+							{
+								normalWidth = availableImageHeight;
+								normalHeight = availableImageWidth;
+							}
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							switch (imageElement.getHorizontalImageAlign())
+							{
+								case RIGHT :
+									cropLeft = normalWidth - availableImageHeight;
+									cropRight = 0;
+									yoffset = - (availableImageWidth - availableImageHeight) / 2 + (availableImageHeight - imageWidth);
+									break;
+								case CENTER :
+									cropLeft = (normalWidth - availableImageHeight) / 2;
+									cropRight = cropLeft;
+									yoffset = - (availableImageWidth - availableImageHeight) / 2 + (availableImageHeight - imageWidth) / 2;
+									break;
+								case LEFT :
+								default :
+									cropLeft = 0;
+									cropRight = normalWidth - availableImageHeight;
+									yoffset = - (availableImageWidth - availableImageHeight) / 2;
+									break;
+							}
+							switch (imageElement.getVerticalImageAlign())
+							{
+								case TOP :
+									cropTop = 0;
+									cropBottom = normalHeight - availableImageWidth;
+									xoffset = (availableImageWidth - availableImageHeight) / 2;
+									break;
+								case MIDDLE :
+									cropTop = (normalHeight - availableImageWidth) / 2;
+									cropBottom = cropTop;
+									xoffset = (availableImageWidth - availableImageHeight) / 2 - (availableImageWidth - imageHeight) / 2;
+									break;
+								case BOTTOM :
+								default :
+									cropTop = normalHeight - availableImageWidth;
+									cropBottom = 0;
+									xoffset = (availableImageWidth - availableImageHeight) / 2 - (availableImageWidth - imageHeight);
+									break;
+							}
+							angle = - Math.PI / 2;
+							break;
+						case UPSIDE_DOWN:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							switch (imageElement.getHorizontalImageAlign())
+							{
+								case RIGHT :
+									cropLeft = normalWidth - availableImageWidth;
+									cropRight = 0;
+									xoffset = 0;
+									break;
+								case CENTER :
+									cropLeft = (normalWidth - availableImageWidth) / 2;
+									cropRight = cropLeft;
+									xoffset = - (availableImageWidth - imageWidth) / 2;
+									break;
+								case LEFT :
+								default :
+									cropLeft = 0;
+									cropRight = normalWidth - availableImageWidth;
+									xoffset = - (availableImageWidth - imageWidth);
+									break;
+							}
+							switch (imageElement.getVerticalImageAlign())
+							{
+								case TOP :
+									cropTop = 0;
+									cropBottom = normalHeight - availableImageHeight;
+									yoffset = 0;
+									break;
+								case MIDDLE :
+									cropTop = (normalHeight - availableImageHeight) / 2;
+									cropBottom = cropTop;
+									yoffset = - (availableImageHeight - imageHeight) / 2;
+									break;
+								case BOTTOM :
+								default :
+									cropTop = normalHeight - availableImageHeight;
+									cropBottom = 0;
+									yoffset = - (availableImageHeight - imageHeight);
+									break;
+							}
+							angle = Math.PI;
+							break;
+						case NONE:
+						default:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							switch (imageElement.getHorizontalImageAlign())
+							{
+								case RIGHT :
+									cropLeft = normalWidth - availableImageWidth;
+									cropRight = 0;
+									xoffset = availableImageWidth - imageWidth;
+									break;
+								case CENTER :
+									cropLeft = (normalWidth - availableImageWidth) / 2;
+									cropRight = cropLeft;
+									xoffset = (availableImageWidth - imageWidth) / 2;
+									break;
+								case LEFT :
+								default :
+									cropLeft = 0;
+									cropRight = normalWidth - availableImageWidth;
+									xoffset = 0;
+									break;
+							}
+							switch (imageElement.getVerticalImageAlign())
+							{
+								case TOP :
+									cropTop = 0;
+									cropBottom = normalHeight - availableImageHeight;
+									yoffset = 0;
+									break;
+								case MIDDLE :
+									cropTop = (normalHeight - availableImageHeight) / 2;
+									cropBottom = cropTop;
+									yoffset = (availableImageHeight - imageHeight) / 2;
+									break;
+								case BOTTOM :
+								default :
+									cropTop = normalHeight - availableImageHeight;
+									cropBottom = 0;
+									yoffset = availableImageHeight - imageHeight;
+									break;
+							}
+							angle = 0;
+							break;
+					}
+									
+					Insets exifCrop = ImageUtil.getExifCrop(imageElement, exifOrientation, cropTop, cropLeft, cropBottom, cropRight);
+					cropLeft = exifCrop.left;
+					cropRight = exifCrop.right;
+					cropTop = exifCrop.top;
+					cropBottom = exifCrop.bottom;
+
+					break;
+				}
 				case RETAIN_SHAPE :
 				default :
 				{
 					double normalWidth = availableImageWidth;
 					double normalHeight = availableImageHeight;
 
-					if (!image.isLazy())
-					{
-						// Image load might fail.
-						Renderable tmpRenderer =
-							RenderableUtil.getInstance(getJasperReportsContext()).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-						Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(getJasperReportsContext());
-						// If renderer was replaced, ignore image dimension.
-						if (tmpRenderer == renderer && dimension != null)
+					Dimension2D dimension = null;
+//					if (!isLazy)
+//					{
+						DimensionRenderable dimensionRenderer = imageRenderersCache.getDimensionRenderable(renderer);
+						dimension = dimensionRenderer == null ? null :  dimensionRenderer.getDimension(getJasperReportsContext());
+						if (dimension != null)
 						{
 							normalWidth = dimension.getWidth();
 							normalHeight = dimension.getHeight();
 						}
-					}
+//					}
 
-					if (availableImageHeight > 0)
+					double ratioX = 1f;
+					double ratioY = 1f;
+
+					switch (ImageUtil.getRotation(imageElement.getRotation(), exifOrientation))
 					{
-						double ratio = normalWidth / normalHeight;
-
-						if( ratio > availableImageWidth / (double)availableImageHeight )
-						{
-							width = availableImageWidth;
-							height = (int)(width/ratio);
-
-						}
-						else
-						{
-							height = availableImageHeight;
-							width = (int)(ratio * height);
-						}
+						case LEFT:
+							if (dimension == null)
+							{
+								normalWidth = availableImageHeight;
+								normalHeight = availableImageWidth;
+							}
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							ratioX = availableImageWidth / normalHeight;
+							ratioY = availableImageHeight / normalWidth;
+							ratioX = ratioX < ratioY ? ratioX : ratioY;
+							ratioY = ratioX;
+							xoffset = (int)((availableImageWidth - availableImageHeight) / 2f);
+							yoffset = - (int)((availableImageWidth - availableImageHeight) / 2f);
+							cropLeft = (int)(ImageUtil.getXAlignFactor(imageElement) * (normalWidth - availableImageHeight / ratioX));
+							cropRight = (int)((1f - ImageUtil.getXAlignFactor(imageElement)) * (normalWidth - availableImageHeight / ratioX));
+							cropTop = (int)(ImageUtil.getYAlignFactor(imageElement) * (normalHeight - availableImageWidth / ratioY));
+							cropBottom = (int)((1f - ImageUtil.getYAlignFactor(imageElement)) * (normalHeight - availableImageWidth / ratioY));
+							angle = Math.PI / 2;
+							break;
+						case RIGHT:
+							if (dimension == null)
+							{
+								normalWidth = availableImageHeight;
+								normalHeight = availableImageWidth;
+							}
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							ratioX = availableImageWidth / normalHeight;
+							ratioY = availableImageHeight / normalWidth;
+							ratioX = ratioX < ratioY ? ratioX : ratioY;
+							ratioY = ratioX;
+							xoffset = (int)((availableImageWidth - availableImageHeight) / 2f);
+							yoffset = - (int)((availableImageWidth - availableImageHeight) / 2f);
+							cropLeft = (int)(ImageUtil.getXAlignFactor(imageElement) * (normalWidth - availableImageHeight / ratioX));
+							cropRight = (int)((1f - ImageUtil.getXAlignFactor(imageElement)) * (normalWidth - availableImageHeight / ratioX));
+							cropTop = (int)(ImageUtil.getYAlignFactor(imageElement) * (normalHeight - availableImageWidth / ratioY));
+							cropBottom = (int)((1f - ImageUtil.getYAlignFactor(imageElement)) * (normalHeight - availableImageWidth / ratioY));
+							angle = - Math.PI / 2;
+							break;
+						case UPSIDE_DOWN:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							ratioX = availableImageWidth / normalWidth;
+							ratioY = availableImageHeight / normalHeight;
+							ratioX = ratioX < ratioY ? ratioX : ratioY;
+							ratioY = ratioX;
+							xoffset = 0;
+							yoffset = 0;
+							cropLeft = (int)(ImageUtil.getXAlignFactor(imageElement) * (normalWidth - availableImageWidth / ratioX));
+							cropRight = (int)((1f - ImageUtil.getXAlignFactor(imageElement)) * (normalWidth - availableImageWidth / ratioX));
+							cropTop = (int)(ImageUtil.getYAlignFactor(imageElement) * (normalHeight - availableImageHeight / ratioY));
+							cropBottom = (int)((1f - ImageUtil.getYAlignFactor(imageElement)) * (normalHeight - availableImageHeight / ratioY));
+							angle = Math.PI;
+							break;
+						case NONE:
+						default:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							ratioX = availableImageWidth / normalWidth;
+							ratioY = availableImageHeight / normalHeight;
+							ratioX = ratioX < ratioY ? ratioX : ratioY;
+							ratioY = ratioX;
+							xoffset = 0;
+							yoffset = 0;
+							cropLeft = (int)(ImageUtil.getXAlignFactor(imageElement) * (normalWidth - availableImageWidth / ratioX));
+							cropRight = (int)((1f - ImageUtil.getXAlignFactor(imageElement)) * (normalWidth - availableImageWidth / ratioX));
+							cropTop = (int)(ImageUtil.getYAlignFactor(imageElement) * (normalHeight - availableImageHeight / ratioY));
+							cropBottom = (int)((1f - ImageUtil.getYAlignFactor(imageElement)) * (normalHeight - availableImageHeight / ratioY));
+							angle = 0;
+							break;
 					}
 
-					xoffset = (int)(xalignFactor * (availableImageWidth - width));
-					yoffset = (int)(yalignFactor * (availableImageHeight - height));
+					Insets exifCrop = ImageUtil.getExifCrop(imageElement, exifOrientation, cropTop, cropLeft, cropBottom, cropRight);
+					cropLeft = exifCrop.left;
+					cropRight = exifCrop.right;
+					cropTop = exifCrop.top;
+					cropBottom = exifCrop.bottom;
 				}
 			}
 
-			tempBodyWriter.write("<text:p>");
-			documentBuilder.insertPageAnchor(tableBuilder);
-			if (image.getAnchorName() != null)
-			{
-				tableBuilder.exportAnchor(JRStringUtil.xmlEncode(image.getAnchorName()));
-			}
 
-
-			boolean startedHyperlink = tableBuilder.startHyperlink(image,false);
-
-			tempBodyWriter.write("<draw:frame text:anchor-type=\"paragraph\" "
-					+ "draw:style-name=\"" + styleCache.getGraphicStyle(image) + "\" "
-					+ "svg:x=\"" + LengthUtil.inch(leftPadding + xoffset) + "in\" "
-					+ "svg:y=\"" + LengthUtil.inch(topPadding + yoffset) + "in\" "
-					+ "svg:width=\"" + LengthUtil.inch(width) + "in\" "
-					+ "svg:height=\"" + LengthUtil.inch(height) + "in\">"
+			String imagePath = 
+				documentBuilder.getImagePath(
+					renderer, 
+					new Dimension(imageWidth, imageHeight),
+					ModeEnum.OPAQUE == imageElement.getModeValue() ? imageElement.getBackcolor() : null,
+					cell,
+//					isLazy,
+					imageRenderersCache
 					);
-			tempBodyWriter.write("<draw:image ");
-			String imagePath = documentBuilder.getImagePath(renderer, image, gridCell);
-			tempBodyWriter.write(" xlink:href=\"" + JRStringUtil.xmlEncode(imagePath) + "\"");
-			tempBodyWriter.write(" xlink:type=\"simple\"");
-			tempBodyWriter.write(" xlink:show=\"embed\"");
-			tempBodyWriter.write(" xlink:actuate=\"onLoad\"");
-			tempBodyWriter.write("/>\n");
 
-			tempBodyWriter.write("</draw:frame>");
-			if(startedHyperlink)
-			{
-				tableBuilder.endHyperlink(false);
-			}
-			tempBodyWriter.write("</text:p>");
+			return 
+				new InternalImageProcessorResult(
+					imagePath, 
+					availableImageWidth,
+					availableImageHeight,
+					imageWidth,
+					imageHeight,
+					xoffset,
+					yoffset,
+					cropTop,
+					cropLeft,
+					cropBottom,
+					cropRight,
+					angle
+					);
 		}
+	}
 
-		tableBuilder.buildCellFooter();
+	
+	private class InternalImageProcessorResult 
+	{
+		protected final String imagePath;
+		protected final int frameWidth;
+		protected final int frameHeight;
+		protected final int imageWidth;
+		protected final int imageHeight;
+		protected final int xoffset;
+		protected final int yoffset;
+		protected final double cropTop;
+		protected final double cropLeft;
+		protected final double cropBottom;
+		protected final double cropRight;
+		protected final double angle;
+
+		protected InternalImageProcessorResult(
+			String imagePath, 
+			int frameWidth,
+			int frameHeight,
+			int imageWidth,
+			int imageHeight,
+			int xoffset,
+			int yoffset,
+			double cropTop,
+			double cropLeft,
+			double cropBottom,
+			double cropRight,
+			double angle
+			
+			)
+		{
+			this.imagePath = imagePath;
+			this.frameWidth = frameWidth;
+			this.frameHeight = frameHeight;
+			this.imageWidth = imageWidth;
+			this.imageHeight = imageHeight;
+			this.xoffset = xoffset;
+			this.yoffset = yoffset;
+			this.cropTop = cropTop;
+			this.cropLeft = cropLeft;
+			this.cropBottom = cropBottom;
+			this.cropRight = cropRight;
+			this.angle = angle;
+		}
 	}
 
 	
@@ -880,18 +1364,14 @@ public class JROdtExporter extends JRAbstractExporter<OdtReportConfiguration, Od
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getExporterKey()
 	{
 		return ODT_EXPORTER_KEY;
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getExporterPropertiesPrefix()
 	{
 		return ODT_EXPORTER_PROPERTIES_PREFIX;

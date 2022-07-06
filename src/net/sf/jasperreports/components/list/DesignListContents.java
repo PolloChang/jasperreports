@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import net.sf.jasperreports.engine.design.JRDesignElementGroup;
  * {@link ListContents} implementation used at report design time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DesignListContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DesignListContents extends JRDesignElementGroup implements
 		ListContents
@@ -43,6 +42,7 @@ public class DesignListContents extends JRDesignElementGroup implements
 	private int height;
 	private Integer width;
 
+	@Override
 	public int getHeight()
 	{
 		return height;
@@ -61,6 +61,7 @@ public class DesignListContents extends JRDesignElementGroup implements
 		getEventSupport().firePropertyChange(PROPERTY_HEIGHT, old, this.height);
 	}
 
+	@Override
 	public Integer getWidth()
 	{
 		return width;
@@ -77,17 +78,6 @@ public class DesignListContents extends JRDesignElementGroup implements
 		Object old = this.width;
 		this.width = width;
 		getEventSupport().firePropertyChange(PROPERTY_WIDTH, old, this.width);
-	}
-
-	/**
-	 * Sets the width of the list contents.
-	 * 
-	 * @param width the list contents width
-	 * @see #getWidth()
-	 */
-	public void setWidth(int width)
-	{
-		setWidth(Integer.valueOf(width));
 	}
 
 }

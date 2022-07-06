@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.fill;
 
+import org.apache.commons.javaflow.api.continuable;
 
 /**
  * Abstract base for {@link java.lang.Runnable Runnable}-based
@@ -30,7 +31,6 @@ package net.sf.jasperreports.engine.fill;
  * implementations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSubreportRunnable.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRSubreportRunnable implements Runnable
 {
@@ -49,6 +49,8 @@ public abstract class JRSubreportRunnable implements Runnable
 		return new JRSubreportRunResult(!running, error);
 	}
 	
+	@Override
+	@continuable
 	public void run()
 	{
 		running = true;		

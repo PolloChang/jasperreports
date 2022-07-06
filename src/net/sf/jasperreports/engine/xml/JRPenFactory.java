@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,14 +35,11 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPenFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPenFactory extends JRBaseFactory
 {
 
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JRCommonGraphicElement graphicElement = (JRCommonGraphicElement) digester.peek();
@@ -56,7 +53,7 @@ public class JRPenFactory extends JRBaseFactory
 		String lineWidth = atts.getValue(JRXmlConstants.ATTRIBUTE_lineWidth);
 		if (lineWidth != null && lineWidth.length() > 0)
 		{
-			pen.setLineWidth(Float.parseFloat(lineWidth));
+			pen.setLineWidth(Float.valueOf(lineWidth));
 		}
 
 		LineStyleEnum lineStyle = LineStyleEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_lineStyle));
@@ -78,6 +75,7 @@ public class JRPenFactory extends JRBaseFactory
 	 */
 	public static class Style extends JRPenFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			JRStyle style = (JRStyle) digester.peek();
@@ -91,6 +89,7 @@ public class JRPenFactory extends JRBaseFactory
 	 */
 	public static class Box extends JRPenFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			JRLineBox box = (JRLineBox) digester.peek();
@@ -104,6 +103,7 @@ public class JRPenFactory extends JRBaseFactory
 	 */
 	public static class Top extends JRPenFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			JRLineBox box = (JRLineBox) digester.peek();
@@ -117,6 +117,7 @@ public class JRPenFactory extends JRBaseFactory
 	 */
 	public static class Left extends JRPenFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			JRLineBox box = (JRLineBox) digester.peek();
@@ -130,6 +131,7 @@ public class JRPenFactory extends JRBaseFactory
 	 */
 	public static class Bottom extends JRPenFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			JRLineBox box = (JRLineBox) digester.peek();
@@ -143,6 +145,7 @@ public class JRPenFactory extends JRBaseFactory
 	 */
 	public static class Right extends JRPenFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			JRLineBox box = (JRLineBox) digester.peek();

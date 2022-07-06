@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,33 +24,38 @@
 package net.sf.jasperreports.engine.design;
 
 import net.sf.jasperreports.engine.JRConstants;
-import net.sf.jasperreports.engine.base.BaseReturnValue;
-import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
-import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
-import net.sf.jasperreports.engine.type.CalculationEnum;
+import net.sf.jasperreports.engine.ReturnValue;
 
 /**
- * Implementation of {@link net.sf.jasperreports.engine.ReturnValue JRReturnValue}
- * to be used for report desing purposes.
+ * Implementation of {@link net.sf.jasperreports.engine.ReturnValue ReturnValue}
+ * to be used for report design purposes.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DesignReturnValue.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class DesignReturnValue extends BaseReturnValue implements JRChangeEventsSupport
+public class DesignReturnValue extends DesignCommonReturnValue implements ReturnValue
 {
-
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
-	public static final String PROPERTY_CALCULATION = "calculation";
-	
-	public static final String PROPERTY_INCREMENTER_FACTORY_CLASS_NAME = "incrementerFactoryClassName";
-	
 	public static final String PROPERTY_FROM_VARIABLE = "fromVariable";
-	
-	public static final String PROPERTY_TO_VARIABLE = "toVariable";
+
+	/**
+	 * The name of the variable to be copied.
+	 */
+	protected String fromVariable;
+
+	/**
+	 * Returns the name of the variable whose value should be copied.
+	 * 
+	 * @return the name of the variable whose value should be copied.
+	 */
+	@Override
+	public String getFromVariable()
+	{
+		return this.fromVariable;
+	}
 
 	/**
 	 * Sets the source variable name.
@@ -64,65 +69,10 @@ public class DesignReturnValue extends BaseReturnValue implements JRChangeEvents
 		this.fromVariable = name;
 		getEventSupport().firePropertyChange(PROPERTY_FROM_VARIABLE, old, this.fromVariable);
 	}
-
-	/**
-	 * Sets the destination variable name.
-	 * 
-	 * @param name the variable name
-	 * @see net.sf.jasperreports.engine.ReturnValue#getToVariable()
-	 */
-	public void setToVariable(String name)
-	{
-		Object old = this.toVariable;
-		this.toVariable = name;
-		getEventSupport().firePropertyChange(PROPERTY_TO_VARIABLE, old, this.toVariable);
-	}
-
-	/**
-	 * Sets the calculation type.
-	 * 
-	 * @param calculationValue the calculation type
-	 * @see net.sf.jasperreports.engine.ReturnValue#getCalculation()
-	 */
-	public void setCalculation(CalculationEnum calculationValue)
-	{
-		CalculationEnum old = this.calculation;
-		this.calculation = calculationValue;
-		getEventSupport().firePropertyChange(PROPERTY_CALCULATION, old, this.calculation);
-	}
 	
-	/**
-	 * Sets the incrementer factory class name.
-	 * 
-	 * @param incrementerFactoryClassName the name of the incrementer factory class
-	 * @see net.sf.jasperreports.engine.ReturnValue#getIncrementerFactoryClassName()
-	 */
-	public void setIncrementerFactoryClassName(String incrementerFactoryClassName)
-	{
-		Object old = this.incrementerFactoryClassName;
-		this.incrementerFactoryClassName = incrementerFactoryClassName;
-		getEventSupport().firePropertyChange(PROPERTY_INCREMENTER_FACTORY_CLASS_NAME, old, this.incrementerFactoryClassName);
-	}
-	
+	@Override
 	public Object clone()
 	{
-		DesignReturnValue clone = (DesignReturnValue)super.clone();
-		clone.eventSupport = null;
-		return clone;
-	}
-
-	private transient JRPropertyChangeSupport eventSupport;
-	
-	public JRPropertyChangeSupport getEventSupport()
-	{
-		synchronized (this)
-		{
-			if (eventSupport == null)
-			{
-				eventSupport = new JRPropertyChangeSupport(this);
-			}
-		}
-		
-		return eventSupport;
+		return super.clone();
 	}
 }

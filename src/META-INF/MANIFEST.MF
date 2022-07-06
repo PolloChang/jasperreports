@@ -1,6 +1,3 @@
 Manifest-Version: 1.0
-Built-By: dori
-Build-Jdk: 1.7.0_07
-Created-By: Apache Maven 3.0.4
-Archiver-Version: Plexus Archiver
+Created-By: Maven Source Plugin 3.2.1
 

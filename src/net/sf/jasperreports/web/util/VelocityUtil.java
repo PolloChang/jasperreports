@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,9 +28,12 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -39,11 +42,16 @@ import org.apache.velocity.app.VelocityEngine;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: VelocityUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class VelocityUtil
 {
-	private static final String VELOCITY_PROPERTY_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "velocity.";
+	@Property(
+			name = "net.sf.jasperreports.velocity.{arbitrary_suffix}",
+			category = PropertyConstants.CATEGORY_OTHER,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_4_7_1
+			)
+	public static final String VELOCITY_PROPERTY_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "velocity.";
 	private static final VelocityEngine velocityEngine;
 	
 	static {

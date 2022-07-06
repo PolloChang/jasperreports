@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,10 +40,11 @@ import net.sf.jasperreports.engine.JasperReport;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRCsvDataSourceProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCsvDataSourceProvider implements JRDataSourceProvider
 {
+	public static final String EXCEPTION_MESSAGE_KEY_CANNOT_FIND_SOURCE = "data.csv.cannot.find.source";
+	
 	private Reader reader;
 
 	private DateFormat dateFormat;
@@ -80,27 +81,21 @@ public class JRCsvDataSourceProvider implements JRDataSourceProvider
 		this.reader = reader;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean supportsGetFieldsOperation()
 	{
 		return false;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRField[] getFields(JasperReport report) throws JRException, UnsupportedOperationException
 	{
 		return null;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataSource create(JasperReport report) throws JRException
 	{
 		JRCsvDataSource ds;
@@ -110,7 +105,10 @@ public class JRCsvDataSourceProvider implements JRDataSourceProvider
 		}
 		else 
 		{
-			throw new JRException("Cannot find a source to read the data from");
+			throw 
+			new JRException(
+				EXCEPTION_MESSAGE_KEY_CANNOT_FIND_SOURCE,
+				(Object[])null);
 		}
 
 		ds.setDateFormat(dateFormat);
@@ -123,9 +121,7 @@ public class JRCsvDataSourceProvider implements JRDataSourceProvider
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void dispose(JRDataSource dataSource) throws JRException
 	{
 	}

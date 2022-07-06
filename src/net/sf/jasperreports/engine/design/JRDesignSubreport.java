@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,12 +42,10 @@ import net.sf.jasperreports.engine.base.JRBaseSubreport;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OverflowType;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 {
@@ -57,6 +55,8 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	 *
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_PARAMETER = "design.subreport.duplicate.parameter";
 	
 	public static final String PROPERTY_CONNECTION_EXPRESSION = "connectionExpression";
 	
@@ -81,12 +81,12 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	/**
 	 *
 	 */
-	protected Map<String, JRSubreportParameter> parametersMap = new LinkedHashMap<String, JRSubreportParameter>();
+	protected Map<String, JRSubreportParameter> parametersMap = new LinkedHashMap<>();
 	
 	/**
 	 * Values to be copied from the subreport into the master report.
 	 */
-	protected List<JRSubreportReturnValue> returnValues = new ArrayList<JRSubreportReturnValue>();
+	protected List<JRSubreportReturnValue> returnValues = new ArrayList<>();
 
 	/**
 	 *
@@ -106,35 +106,14 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 
 
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public boolean isUsingCache()
-	{
-		if (isUsingCache == null)
-		{
-			JRExpression subreportExpression = getExpression();
-			if (subreportExpression != null)
-			{
-				return String.class.getName().equals(subreportExpression.getValueClassName());
-			}
-			return true;
-		}
-		return isUsingCache.booleanValue();
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getParametersMapExpression()
 	{
 		return this.parametersMapExpression;
@@ -150,9 +129,7 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 		getEventSupport().firePropertyChange(PROPERTY_PARAMETERS_MAP_EXPRESSION, old, this.parametersMapExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRSubreportParameter[] getParameters()
 	{
 		JRSubreportParameter[] parametersArray = new JRSubreportParameter[parametersMap.size()];
@@ -177,7 +154,10 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	{
 		if (this.parametersMap.containsKey(subreportParameter.getName()))
 		{
-			throw new JRException("Duplicate declaration of subreport parameter : " + subreportParameter.getName());
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_PARAMETER,
+					new Object[]{subreportParameter.getName()});
 		}
 
 		this.parametersMap.put(subreportParameter.getName(), subreportParameter);
@@ -198,9 +178,7 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 		return removed;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getConnectionExpression()
 	{
 		return this.connectionExpression;
@@ -220,9 +198,7 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 		getEventSupport().firePropertyChange(PROPERTY_CONNECTION_EXPRESSION, old, this.connectionExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getDataSourceExpression()
 	{
 		return this.dataSourceExpression;
@@ -242,9 +218,7 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 		getEventSupport().firePropertyChange(PROPERTY_DATASOURCE_EXPRESSION, old, this.dataSourceExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getExpression()
 	{
 		return this.expression;
@@ -260,17 +234,13 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 		getEventSupport().firePropertyChange(PROPERTY_EXPRESSION, old, this.expression);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitSubreport(this);
@@ -295,6 +265,7 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	 * 
 	 * @return the list of values to be copied from the subreport into the master.
 	 */
+	@Override
 	public JRSubreportReturnValue[] getReturnValues()
 	{
 		JRSubreportReturnValue[] returnValuesArray = new JRSubreportReturnValue[returnValues.size()];
@@ -335,24 +306,14 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	}
 
 
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public Boolean isOwnUsingCache()
-	{
-		return isUsingCache;
-	}
-
-
-	/**
-	 *
-	 */
+	@Override
 	public Boolean getUsingCache()
 	{
 		return isUsingCache;
 	}
 
 
+	@Override
 	public void setUsingCache(Boolean isUsingCache)
 	{
 		Object old = this.isUsingCache;
@@ -361,12 +322,14 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	}
 
 	
+	@Override
 	public Boolean isRunToBottom()
 	{
 		return runToBottom;
 	}
 
 	
+	@Override
 	public void setRunToBottom(Boolean runToBottom)
 	{
 		Object old = this.runToBottom;
@@ -389,16 +352,14 @@ public class JRDesignSubreport extends JRDesignElement implements JRSubreport
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignSubreport clone = (JRDesignSubreport)super.clone();
 		
 		if (parametersMap != null)
 		{
-			clone.parametersMap = new LinkedHashMap<String, JRSubreportParameter>();
+			clone.parametersMap = new LinkedHashMap<>();
 			for(Iterator<String> it = parametersMap.keySet().iterator(); it.hasNext();)
 			{
 				String name = it.next();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,13 +33,13 @@ import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
+import net.sf.jasperreports.engine.type.ParameterEvaluationTimeEnum;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseParameter implements JRParameter, Serializable, JRChangeEventsSupport
 {
@@ -62,6 +62,7 @@ public class JRBaseParameter implements JRParameter, Serializable, JRChangeEvent
 	protected String nestedTypeName;
 	protected boolean isSystemDefined;
 	protected boolean isForPrompting = true;
+	protected ParameterEvaluationTimeEnum evaluationTime;
 
 	protected transient Class<?> valueClass;
 	protected transient Class<?> nestedType;
@@ -96,6 +97,7 @@ public class JRBaseParameter implements JRParameter, Serializable, JRChangeEvent
 		nestedTypeName = parameter.getNestedTypeName();
 		isSystemDefined = parameter.isSystemDefined();
 		isForPrompting = parameter.isForPrompting();
+		evaluationTime = parameter.getEvaluationTime();
 
 		defaultValueExpression = factory.getExpression(parameter.getDefaultValueExpression());
 		
@@ -103,25 +105,19 @@ public class JRBaseParameter implements JRParameter, Serializable, JRChangeEvent
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return this.name;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getDescription()
 	{
 		return this.description;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setDescription(String description)
 	{
 		Object old = this.description;
@@ -129,9 +125,7 @@ public class JRBaseParameter implements JRParameter, Serializable, JRChangeEvent
 		getEventSupport().firePropertyChange(PROPERTY_DESCRIPTION, old, this.description);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Class<?> getValueClass()
 	{
 		if (valueClass == null)
@@ -153,9 +147,7 @@ public class JRBaseParameter implements JRParameter, Serializable, JRChangeEvent
 		return valueClass;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getValueClassName()
 	{
 		return valueClassName;
@@ -174,6 +166,7 @@ public class JRBaseParameter implements JRParameter, Serializable, JRChangeEvent
 		return valueClassRealName;
 	}
 
+	@Override
 	public Class<?> getNestedType()
 	{
 		if (nestedTypeName != null && nestedType == null)
@@ -192,57 +185,59 @@ public class JRBaseParameter implements JRParameter, Serializable, JRChangeEvent
 	}
 
 
+	@Override
 	public String getNestedTypeName()
 	{
 		return nestedTypeName;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isSystemDefined()
 	{
-		return this.isSystemDefined;
+		return isSystemDefined;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isForPrompting()
 	{
-		return this.isForPrompting;
+		return isForPrompting;
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public ParameterEvaluationTimeEnum getEvaluationTime()
+	{
+		return evaluationTime;
+	}
+
+	@Override
 	public JRExpression getDefaultValueExpression()
 	{
-		return this.defaultValueExpression;
+		return defaultValueExpression;
 	}
 
 	
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return propertiesMap;
 	}
 
 	
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseParameter clone = null;
@@ -269,6 +264,7 @@ public class JRBaseParameter implements JRParameter, Serializable, JRChangeEvent
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

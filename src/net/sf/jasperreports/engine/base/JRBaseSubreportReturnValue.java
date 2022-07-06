@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,9 +36,8 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
  * Base implementation of {@link net.sf.jasperreports.engine.JRSubreportReturnValue JRSubreportReturnValue}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseSubreportReturnValue.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Serializable
+public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Serializable // do not extend BaseCommonReturnValue to avoid deserialization field issues 
 {
 
 	/**
@@ -76,18 +75,19 @@ public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Seria
 	{
 		factory.put(returnValue, this);
 
-		subreportVariable = returnValue.getSubreportVariable();
+		subreportVariable = returnValue.getFromVariable();
 		toVariable = returnValue.getToVariable();
-		calculationValue = returnValue.getCalculationValue();
+		calculationValue = returnValue.getCalculation();
 		incrementerFactoryClassName = returnValue.getIncrementerFactoryClassName();
 	}
 
 	/**
-	 * Returns the name of the subreport variable whose value should be copied.
+	 * Returns the name of the variable whose value should be copied.
 	 * 
-	 * @return the name of the subreport variable whose value should be copied.
+	 * @return the name of the variable whose value should be copied.
 	 */
-	public String getSubreportVariable()
+	@Override
+	public String getFromVariable()
 	{
 		return this.subreportVariable;
 	}
@@ -97,6 +97,7 @@ public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Seria
 	 * 
 	 * @return the name of the master report variable where the value should be copied.
 	 */
+	@Override
 	public String getToVariable()
 	{
 		return this.toVariable;
@@ -110,7 +111,8 @@ public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Seria
 	 * 
 	 * @return the calculation type.
 	 */
-	public CalculationEnum getCalculationValue()
+	@Override
+	public CalculationEnum getCalculation()
 	{
 		return calculationValue;
 	}
@@ -123,6 +125,7 @@ public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Seria
 	 * 
 	 * @return the incrementer factory class name.
 	 */
+	@Override
 	public String getIncrementerFactoryClassName()
 	{
 		return incrementerFactoryClassName;
@@ -137,6 +140,7 @@ public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Seria
 	 */
 	private byte calculation;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -148,9 +152,7 @@ public class JRBaseSubreportReturnValue implements JRSubreportReturnValue, Seria
 		
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		try

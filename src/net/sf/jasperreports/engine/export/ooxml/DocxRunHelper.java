@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,13 +32,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
-import net.sf.jasperreports.engine.fonts.FontFamily;
-import net.sf.jasperreports.engine.fonts.FontInfo;
-import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.type.ColorEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
@@ -46,30 +44,42 @@ import net.sf.jasperreports.engine.util.JRStringUtil;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: DocxRunHelper.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class DocxRunHelper extends BaseHelper
 {
 	/**
 	 *
 	 */
-	private String exporterKey;
+	private final BaseFontHelper docxFontHelper;
 	
 	/**
 	 *
 	 */
-	public DocxRunHelper(JasperReportsContext jasperReportsContext, Writer writer, String exporterKey)
+	public DocxRunHelper(
+		JasperReportsContext jasperReportsContext, 
+		Writer writer, 
+		BaseFontHelper docxFontHelper
+		)
 	{
 		super(jasperReportsContext, writer);
-		this.exporterKey = exporterKey;
+		this.docxFontHelper = docxFontHelper;
 	}
 
 
 	/**
 	 *
 	 */
-	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale, boolean hiddenText, String invalidCharReplacement, Color backcolor)
+	public void export(
+		JRStyle style, 
+		Map<Attribute,Object> attributes, 
+		String text, 
+		Locale locale, 
+		boolean hiddenText, 
+		String invalidCharReplacement, 
+		Color backcolor, 
+		boolean isNewLineAsParagraph
+		)
 	{
 		if (text != null)
 		{
@@ -80,7 +90,7 @@ public class DocxRunHelper extends BaseHelper
 					attributes, 
 					locale, 
 					hiddenText, 
-					highlightText 
+					highlightText
 				);
 			
 			StringTokenizer tkzer = new StringTokenizer(text, "\n", true);
@@ -89,7 +99,14 @@ public class DocxRunHelper extends BaseHelper
 				String token = tkzer.nextToken();
 				if ("\n".equals(token))
 				{
-					write("<w:br/>");
+					if(isNewLineAsParagraph)
+					{
+						write("<w:t xml:space=\"preserve\"><w:p/></w:t>\n");
+					}
+					else
+					{
+						write("<w:br/>");
+					}
 				}
 				else
 				{
@@ -105,41 +122,53 @@ public class DocxRunHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public void exportProps(JRStyle style, Locale locale)
+	public void exportProps(JRDefaultStyleProvider defaultStyleProvider, JRStyle style, Locale locale)
 	{
-		exportProps(getAttributes(style.getStyle()), getAttributes(style), locale, false, false);
+		JRStyle baseStyle = defaultStyleProvider.getStyleResolver().getBaseStyle(style);
+		exportProps(
+			getAttributes(baseStyle), 
+			getAttributes(style), 
+			locale, 
+			false, 
+			false
+			);
 	}
 
 	/**
 	 *
 	 */
-	public void exportProps(Map<Attribute,Object> parentAttrs,  Map<Attribute,Object> attrs, Locale locale, boolean hiddenText, boolean highlightText)
+	public void exportProps(
+		Map<Attribute,Object> parentAttrs, 
+		Map<Attribute,Object> attrs, 
+		Locale locale, 
+		boolean hiddenText, 
+		boolean highlightText
+		)
 	{
 		write("       <w:rPr>\n");
 		
-		Object value = attrs.get(TextAttribute.FAMILY);
-		Object oldValue = parentAttrs.get(TextAttribute.FAMILY);
+//		Object valueFamily = attrs.get(TextAttribute.FAMILY);
+//		Object oldValueFamily = parentAttrs.get(TextAttribute.FAMILY);
 		
-		if (value != null && !value.equals(oldValue))//FIXMEDOCX the text locale might be different from the report locale, resulting in different export font
-		{
-			String fontFamilyAttr = (String)value;
-			String fontFamily = fontFamilyAttr;
-			FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontFamilyAttr, locale);
-			if (fontInfo != null)
-			{
-				//fontName found in font extensions
-				FontFamily family = fontInfo.getFontFamily();
-				String exportFont = family.getExportFont(exporterKey);
-				if (exportFont != null)
-				{
-					fontFamily = exportFont;
-				}
-			}
+		Object valueWeight = attrs.get(TextAttribute.WEIGHT);
+		Object oldValueWeight = parentAttrs.get(TextAttribute.WEIGHT);
+		
+		Object valuePosture = attrs.get(TextAttribute.POSTURE);
+		Object oldValuePosture = parentAttrs.get(TextAttribute.POSTURE);
+		
+//		if (
+//			docxFontHelper.isEmbedFonts
+//			|| (valueFamily != null && !valueFamily.equals(oldValueFamily))
+//			|| (valueWeight != null && !valueWeight.equals(oldValueWeight))
+//			|| (valuePosture != null && !valuePosture.equals(oldValuePosture))
+//			)//FIXMEDOCX the text locale might be different from the report locale, resulting in different export font
+//		{
+			String fontFamily = docxFontHelper.resolveFontFamily(attrs, locale);
 			write("        <w:rFonts w:ascii=\"" + fontFamily + "\" w:hAnsi=\"" + fontFamily + "\" w:eastAsia=\"" + fontFamily + "\" w:cs=\"" + fontFamily + "\" />\n");
-		}
+//		}
 		
-		value = attrs.get(TextAttribute.FOREGROUND);
-		oldValue = parentAttrs.get(TextAttribute.FOREGROUND);
+		Object value = attrs.get(TextAttribute.FOREGROUND);
+		Object oldValue = parentAttrs.get(TextAttribute.FOREGROUND);
 		
 		if (value != null && !value.equals(oldValue))
 		{
@@ -162,25 +191,19 @@ public class DocxRunHelper extends BaseHelper
 		
 		if (value != null && !value.equals(oldValue))
 		{
-			float fontSize = ((Float)value).floatValue();
+			float fontSize = (Float)value;
 			fontSize = fontSize == 0 ? 0.5f : fontSize;// only the special EMPTY_CELL_STYLE would have font size zero
 			write("        <w:sz w:val=\"" + (int)(2 * fontSize) + "\" />\n");
 		}
 		
-		value = attrs.get(TextAttribute.WEIGHT);
-		oldValue = parentAttrs.get(TextAttribute.WEIGHT);
-		
-		if (value != null && !value.equals(oldValue))
+		if (valueWeight != null && !valueWeight.equals(oldValueWeight))
 		{
-			write("        <w:b w:val=\"" + value.equals(TextAttribute.WEIGHT_BOLD) + "\"/>\n");
+			write("        <w:b w:val=\"" + valueWeight.equals(TextAttribute.WEIGHT_BOLD) + "\"/>\n");
 		}
 		
-		value = attrs.get(TextAttribute.POSTURE);
-		oldValue = parentAttrs.get(TextAttribute.POSTURE);
-		
-		if (value != null && !value.equals(oldValue))
+		if (valuePosture != null && !valuePosture.equals(oldValuePosture))
 		{
-			write("        <w:i w:val=\"" + value.equals(TextAttribute.POSTURE_OBLIQUE) + "\"/>\n");
+			write("        <w:i w:val=\"" + valuePosture.equals(TextAttribute.POSTURE_OBLIQUE) + "\"/>\n");
 		}
 		
 		
@@ -231,20 +254,23 @@ public class DocxRunHelper extends BaseHelper
 	 */
 	private Map<Attribute,Object> getAttributes(JRStyle style)//FIXMEDOCX put this in util?
 	{
-		JRPrintText text = new JRBasePrintText(null);
-		text.setStyle(style);
-		
-		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); 
-		//JRFontUtil.getAttributes(styledTextAttributes, text, (Locale)null);//FIXMEDOCX getLocale());
-		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(styledTextAttributes, text);
-		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
-		if (text.getModeValue() == ModeEnum.OPAQUE)
+		Map<Attribute,Object> styledTextAttributes = new HashMap<>(); 
+
+		if (style != null)
 		{
-			styledTextAttributes.put(TextAttribute.BACKGROUND, text.getBackcolor());
+			JRPrintText text = new JRBasePrintText(null);
+			text.setStyle(style);
+			
+			//JRFontUtil.getAttributes(styledTextAttributes, text, (Locale)null);//FIXMEDOCX getLocale());
+			fontUtil.getAttributesWithoutAwtFont(styledTextAttributes, text);
+			styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
+			if (text.getModeValue() == ModeEnum.OPAQUE)
+			{
+				styledTextAttributes.put(TextAttribute.BACKGROUND, text.getBackcolor());
+			}
 		}
 
 		return styledTextAttributes;
 	}
-
 }
 

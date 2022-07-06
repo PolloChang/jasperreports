@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,12 +25,16 @@ package net.sf.jasperreports.components.headertoolbar.actions;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import net.sf.jasperreports.engine.JRConstants;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: EditTextElementData.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class EditTextElementData extends BaseColumnData {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	public static final String APPLY_TO_HEADING = "heading";
 	public static final String APPLY_TO_DETAIL_ROWS = "detailrows";
@@ -51,7 +55,6 @@ public class EditTextElementData extends BaseColumnData {
 	private String formatPattern;
 	private String mode;
 
-	private String dataType;
 	private String applyTo;
 	private String groupName;
 
@@ -60,10 +63,12 @@ public class EditTextElementData extends BaseColumnData {
 	public EditTextElementData() {
 	}
 
+	@JsonIgnore
 	public int getColumnIndex() {
 		return columnIndex;
 	}
 
+	@JsonProperty
 	public void setColumnIndex(int columnIndex) {
 		this.columnIndex = columnIndex;
 	}
@@ -156,26 +161,22 @@ public class EditTextElementData extends BaseColumnData {
 		this.mode = mode;
 	}
 
-	public String getDataType() {
-		return dataType;
-	}
-
-	public void setDataType(String dataType) {
-		this.dataType = dataType;
-	}
-
+	@JsonIgnore
 	public String getApplyTo() {
 		return applyTo;
 	}
 
+	@JsonProperty
 	public void setApplyTo(String applyTo) {
 		this.applyTo = applyTo;
 	}
 
+	@JsonIgnore
 	public String getGroupName() {
 		return groupName;
 	}
 
+	@JsonProperty
 	public void setGroupName(String groupName) {
 		this.groupName = groupName;
 	}

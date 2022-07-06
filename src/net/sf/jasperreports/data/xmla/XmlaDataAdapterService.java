@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,36 +39,28 @@ import org.olap4j.OlapConnection;
 import org.olap4j.OlapDatabaseMetaData;
 
 import net.sf.jasperreports.data.AbstractDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.olap.xmla.JRXmlaQueryExecuterFactory;
 import net.sf.jasperreports.olap.xmla.Olap4jXmlaQueryExecuter;
 import net.sf.jasperreports.util.SecretsUtil;
 
 /**
  * @author Veaceslov Chicu (schicu@users.sourceforge.net)
- * @version $Id: XmlaDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XmlaDataAdapterService extends AbstractDataAdapterService 
 {
 
 	private static final Log log = LogFactory.getLog(XmlaDataAdapterService.class);
 	
+	public static final String EXCEPTION_MESSAGE_KEY_XMLA_CONNECTION = "data.xmla.connection";
+	
 	/**
 	 * 
 	 */
-	public XmlaDataAdapterService(JasperReportsContext jasperReportsContext, XmlaDataAdapter dataAdapter) 
+	public XmlaDataAdapterService(ParameterContributorContext paramContribContext, XmlaDataAdapter dataAdapter) 
 	{
-		super(jasperReportsContext, dataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #XmlaDataAdapterService(JasperReportsContext, XmlaDataAdapter)}.
-	 */
-	public XmlaDataAdapterService(XmlaDataAdapter dataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataAdapter);
+		super(paramContribContext, dataAdapter);
 	}
 
 	public XmlaDataAdapter getXmlaDataAdapter()
@@ -106,7 +98,7 @@ public class XmlaDataAdapterService extends AbstractDataAdapterService
 	@Override
 	public void test() throws JRException
 	{
-		Map<String, Object> params = new HashMap<String, Object>();
+		Map<String, Object> params = new HashMap<>();
 		contributeParameters(params);
 		
 		Properties props = new Properties();
@@ -171,21 +163,13 @@ public class XmlaDataAdapterService extends AbstractDataAdapterService
 			
 			connection.close();
 		}
-		catch (ClassNotFoundException e)
+		catch (ClassNotFoundException | IllegalAccessException | InvocationTargetException | SQLException e)
 		{
-			throw new JRException("Error creating XMLA connection", e);
-		}
-		catch (IllegalAccessException e)
-		{
-			throw new JRException("Error creating XMLA connection", e);
-		} 
-		catch (InvocationTargetException e)
-		{
-			throw new JRException("Error creating XMLA connection", e);
-		}
-		catch (SQLException e)
-		{
-			throw new JRException("Error creating XMLA connection", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XMLA_CONNECTION, 
+					null, 
+					e);
 		} 
 		
 		dispose();

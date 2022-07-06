@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,21 +40,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.StringTokenizer;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
-import net.sf.jasperreports.engine.JRPrintHyperlink;
-import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
-import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.base.JRBasePrintHyperlink;
-import net.sf.jasperreports.engine.fonts.FontFamily;
-import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
-import net.sf.jasperreports.engine.util.JRStyledText.Run;
-import net.sf.jasperreports.extensions.ExtensionsEnvironment;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -67,29 +58,49 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import net.sf.jasperreports.engine.JRPrintHyperlink;
+import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
+import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.base.JRBasePrintHyperlink;
+import net.sf.jasperreports.engine.fonts.FontFamily;
+import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
+import net.sf.jasperreports.engine.util.JRStyledText.Run;
+import net.sf.jasperreports.extensions.ExtensionsEnvironment;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStyledTextParser.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRStyledTextParser implements ErrorHandler
 {
 	private static final Log log = LogFactory.getLog(JRStyledTextParser.class);
 
-	private static final Set<String> AVAILABLE_FONT_FACE_NAMES = new HashSet<String>();
+	private static final Set<String> AVAILABLE_FONT_FACE_NAMES = new HashSet<>();
 	static
 	{
-		//FIXMEFONT do some cache
-		List<FontFamily> families = ExtensionsEnvironment.getExtensionsRegistry().getExtensions(FontFamily.class);
-		for (Iterator<FontFamily> itf = families.iterator(); itf.hasNext();)
+		//FIXME doing this in a static block obscures exceptions, move it to some other place
+		try
 		{
-			FontFamily family =itf.next();
-			AVAILABLE_FONT_FACE_NAMES.add(family.getName());
-		}
+			//FIXMEFONT do some cache
+			//FIXME these should be taken from the current JasperReportsContext
+			List<FontFamily> families = ExtensionsEnvironment.getExtensionsRegistry().getExtensions(FontFamily.class);
+			for (Iterator<FontFamily> itf = families.iterator(); itf.hasNext();)
+			{
+				FontFamily family =itf.next();
+				AVAILABLE_FONT_FACE_NAMES.add(family.getName());
+			}
 			
-		AVAILABLE_FONT_FACE_NAMES.addAll(
-			Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())
-			);
+			//FIXME use JRGraphEnvInitializer
+			AVAILABLE_FONT_FACE_NAMES.addAll(
+				Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())
+				);
+		}
+		catch (Exception e)
+		{
+			log.error("Error while loading available fonts", e);
+			throw e;
+		}
 	}
 
 	/**
@@ -105,6 +116,8 @@ public class JRStyledTextParser implements ErrorHandler
 	private static final String NODE_sub = "sub";
 	private static final String NODE_font = "font";
 	private static final String NODE_br = "br";
+	private static final String NODE_ul = "ul";
+	private static final String NODE_ol = "ol";
 	private static final String NODE_li = "li";
 	private static final String NODE_a = "a";
 	private static final String NODE_param = "param";
@@ -126,6 +139,8 @@ public class JRStyledTextParser implements ErrorHandler
 	private static final String ATTRIBUTE_target = "target";
 	private static final String ATTRIBUTE_name = "name";
 	private static final String ATTRIBUTE_valueClass = "valueClass";
+	private static final String ATTRIBUTE_start = "start";
+	private static final String ATTRIBUTE_noBullet = "noBullet";
 
 	private static final String SPACE = " ";
 	private static final String EQUAL_QUOTE = "=\"";
@@ -137,12 +152,12 @@ public class JRStyledTextParser implements ErrorHandler
 	/**
 	 * Thread local soft cache of instances.
 	 */
-	private static final ThreadLocal<SoftReference<JRStyledTextParser>> threadInstances = new ThreadLocal<SoftReference<JRStyledTextParser>>();
+	private static final ThreadLocal<SoftReference<JRStyledTextParser>> threadInstances = new ThreadLocal<>();
 	
 	/**
 	 * 
 	 */
-	private static final ThreadLocal<Locale> threadLocale = new ThreadLocal<Locale>();
+	private static final ThreadLocal<Locale> threadLocale = new ThreadLocal<>();
 	
 	/**
 	 * Return a cached instance.
@@ -160,7 +175,7 @@ public class JRStyledTextParser implements ErrorHandler
 		if (instance == null)
 		{
 			instance = new JRStyledTextParser();
-			threadInstances.set(new SoftReference<JRStyledTextParser>(instance));
+			threadInstances.set(new SoftReference<>(instance));
 		}
 		return instance;
 	}
@@ -191,6 +206,14 @@ public class JRStyledTextParser implements ErrorHandler
 	 *
 	 */
 	private JRBasePrintHyperlink hyperlink;
+	
+	/**
+	 *
+	 */
+	private Stack<StyledTextListInfo> htmlListStack;
+	private boolean insideLi;
+	private boolean liStart;
+	private StyledTextListInfo justClosedList;
 
 
 	/**
@@ -201,6 +224,8 @@ public class JRStyledTextParser implements ErrorHandler
 		try
 		{
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setFeature(JRXmlUtils.FEATURE_DISALLOW_DOCTYPE, true);
+			
 			documentBuilder = factory.newDocumentBuilder();
 			documentBuilder.setErrorHandler(this);
 		}
@@ -230,6 +255,7 @@ public class JRStyledTextParser implements ErrorHandler
 		}
 		
 		hyperlink = null;
+		htmlListStack = new Stack<>();
 		
 		parseStyle(styledText, document.getDocumentElement());
 		
@@ -251,7 +277,11 @@ public class JRStyledTextParser implements ErrorHandler
 	public JRStyledText getStyledText(Map<Attribute,Object> parentAttributes, String text, boolean isStyledText, Locale locale)
 	{
 		JRStyledText styledText = null;
-		if (isStyledText)
+		if (
+			isStyledText 
+			&& text != null 
+			&& (text.indexOf('<') >= 0 || text.indexOf('&') >= 0)
+			)
 		{
 			try
 			{
@@ -297,36 +327,32 @@ public class JRStyledTextParser implements ErrorHandler
 	 */
 	public String write(Map<Attribute,Object> parentAttrs, AttributedCharacterIterator iterator, String text)
 	{
-		StringBuffer sbuffer = new StringBuffer();
+		StyledTextWriteContext context = new StyledTextWriteContext();
+		
+		StringBuilder sb = new StringBuilder();
+		XmlStyledTextListWriter xmlListWriter = new XmlStyledTextListWriter(sb);
 		
 		int runLimit = 0;
 
-		while(runLimit < iterator.getEndIndex() && (runLimit = iterator.getRunLimit()) <= iterator.getEndIndex())
+		while (runLimit < iterator.getEndIndex() && (runLimit = iterator.getRunLimit()) <= iterator.getEndIndex())
 		{
 			String chunk = text.substring(iterator.getIndex(), runLimit);
 			Map<Attribute,Object> attrs = iterator.getAttributes();
 			
-			StringBuffer styleBuffer = writeStyleAttributes(parentAttrs, attrs);
-			if (styleBuffer.length() > 0)
-			{
-				sbuffer.append(LESS);
-				sbuffer.append(NODE_style);
-				sbuffer.append(styleBuffer.toString());
-				sbuffer.append(GREATER);
-				writeChunk(sbuffer, parentAttrs, attrs, chunk);
-				sbuffer.append(LESS_SLASH);
-				sbuffer.append(NODE_style);
-				sbuffer.append(GREATER);
-			}
-			else
-			{
-				writeChunk(sbuffer, parentAttrs, attrs, chunk);
-			}
+			context.next(attrs);
+
+			context.writeLists(xmlListWriter);
+
+			writeChunk(context, sb, parentAttrs, attrs, chunk);
 
 			iterator.setIndex(runLimit);
 		}
 		
-		return sbuffer.toString();
+		context.next(null);
+
+		context.writeLists(xmlListWriter);
+		
+		return sb.toString();
 	}
 
 	/**
@@ -352,8 +378,18 @@ public class JRStyledTextParser implements ErrorHandler
 	/**
 	 *
 	 */
-	public void writeChunk(StringBuffer sbuffer, Map<Attribute,Object> parentAttrs, Map<Attribute,Object> attrs, String chunk)
+	public void writeChunk(StyledTextWriteContext context, StringBuilder sb, Map<Attribute,Object> parentAttrs, Map<Attribute,Object> attrs, String chunk)
 	{
+		StringBuilder styleBuilder = writeStyleAttributes(parentAttrs, attrs);
+		boolean isStyle = styleBuilder.length() > 0;
+		if (isStyle)
+		{
+			sb.append(LESS);
+			sb.append(NODE_style);
+			sb.append(styleBuilder.toString());
+			sb.append(GREATER);
+		}
+
 		Object value = attrs.get(TextAttribute.SUPERSCRIPT);
 		Object oldValue = parentAttrs.get(TextAttribute.SUPERSCRIPT);
 
@@ -370,90 +406,97 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (isSuper || isSub)
 		{
-			sbuffer.append(LESS);
-			sbuffer.append(scriptNode);
-			sbuffer.append(GREATER);
+			sb.append(LESS);
+			sb.append(scriptNode);
+			sb.append(GREATER);
 		}
 
 		JRPrintHyperlink hlink = (JRPrintHyperlink)attrs.get(JRTextAttribute.HYPERLINK);
 		if (hlink != null)
 		{
-			sbuffer.append(LESS);
-			sbuffer.append(NODE_a);
+			sb.append(LESS);
+			sb.append(NODE_a);
 
 			String href = hlink.getHyperlinkReference();
 			if (href != null && href.trim().length() > 0)
 			{
-				sbuffer.append(SPACE);
-				sbuffer.append(ATTRIBUTE_href);
-				sbuffer.append(EQUAL_QUOTE);
-				sbuffer.append(JRStringUtil.htmlEncode(href));
-				sbuffer.append(QUOTE);
+				sb.append(SPACE);
+				sb.append(ATTRIBUTE_href);
+				sb.append(EQUAL_QUOTE);
+				sb.append(JRStringUtil.htmlEncode(href));
+				sb.append(QUOTE);
 			}
 			
 			String type = hlink.getLinkType();
 			if (type != null && type.trim().length() > 0)
 			{
-				sbuffer.append(SPACE);
-				sbuffer.append(ATTRIBUTE_type);
-				sbuffer.append(EQUAL_QUOTE);
-				sbuffer.append(type);
-				sbuffer.append(QUOTE);
+				sb.append(SPACE);
+				sb.append(ATTRIBUTE_type);
+				sb.append(EQUAL_QUOTE);
+				sb.append(type);
+				sb.append(QUOTE);
 			}
 			
 			String target = hlink.getLinkTarget();
 			if (target != null && target.trim().length() > 0)
 			{
-				sbuffer.append(SPACE);
-				sbuffer.append(ATTRIBUTE_target);
-				sbuffer.append(EQUAL_QUOTE);
-				sbuffer.append(target);
-				sbuffer.append(QUOTE);
+				sb.append(SPACE);
+				sb.append(ATTRIBUTE_target);
+				sb.append(EQUAL_QUOTE);
+				sb.append(target);
+				sb.append(QUOTE);
 			}
 			
-			sbuffer.append(GREATER);
+			sb.append(GREATER);
 			
 			JRPrintHyperlinkParameters parameters = hlink.getHyperlinkParameters();
 			if (parameters != null && parameters.getParameters() != null)
 			{
 				for (JRPrintHyperlinkParameter parameter : parameters.getParameters())
 				{
-					sbuffer.append(LESS);
-					sbuffer.append(NODE_param);
-					sbuffer.append(SPACE);
-					sbuffer.append(ATTRIBUTE_name);
-					sbuffer.append(EQUAL_QUOTE);
-					sbuffer.append(parameter.getName());
-					sbuffer.append(QUOTE);
-					sbuffer.append(GREATER);
+					sb.append(LESS);
+					sb.append(NODE_param);
+					sb.append(SPACE);
+					sb.append(ATTRIBUTE_name);
+					sb.append(EQUAL_QUOTE);
+					sb.append(parameter.getName());
+					sb.append(QUOTE);
+					sb.append(GREATER);
 					
 					if (parameter.getValue() != null)
 					{
 						String strValue = JRValueStringUtils.serialize(parameter.getValueClass(), parameter.getValue());
-						sbuffer.append(JRStringUtil.xmlEncode(strValue));
+						sb.append(JRStringUtil.xmlEncode(strValue));
 					}
 
-					sbuffer.append(LESS_SLASH);
-					sbuffer.append(NODE_param);
-					sbuffer.append(GREATER);
+					sb.append(LESS_SLASH);
+					sb.append(NODE_param);
+					sb.append(GREATER);
 				}
 			}
 		}
 
-		sbuffer.append(JRStringUtil.xmlEncode(chunk));
+		sb.append(JRStringUtil.xmlEncode(chunk));
 
 		if (hlink != null)
 		{
-			sbuffer.append(LESS_SLASH);
-			sbuffer.append(NODE_a);
-			sbuffer.append(GREATER);
+			sb.append(LESS_SLASH);
+			sb.append(NODE_a);
+			sb.append(GREATER);
 		}
 
 		if (isSuper || isSub)
 		{
-			sbuffer.append(LESS_SLASH);
-			sbuffer.append(scriptNode);
-			sbuffer.append(GREATER);
+			sb.append(LESS_SLASH);
+			sb.append(scriptNode);
+			sb.append(GREATER);
+		}
+		
+		if (isStyle)
+		{
+			sb.append(LESS_SLASH);
+			sb.append(NODE_style);
+			sb.append(GREATER);
 		}
 	}
 
@@ -468,6 +511,9 @@ public class JRStyledTextParser implements ErrorHandler
 			Node node = nodeList.item(i);
 			if (node.getNodeType() == Node.TEXT_NODE)
 			{
+				liStart = false;
+				justClosedList = null;
+
 				styledText.append(node.getNodeValue());
 			}
 			else if (
@@ -477,7 +523,7 @@ public class JRStyledTextParser implements ErrorHandler
 			{
 				NamedNodeMap nodeAttrs = node.getAttributes();
 
-				Map<Attribute,Object> styleAttrs = new HashMap<Attribute,Object>();
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
 
 				if (nodeAttrs.getNamedItem(ATTRIBUTE_fontName) != null)
 				{
@@ -491,7 +537,7 @@ public class JRStyledTextParser implements ErrorHandler
 				{
 					styleAttrs.put(
 						TextAttribute.WEIGHT,
-						Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_isBold).getNodeValue()).booleanValue()
+						Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_isBold).getNodeValue())
 						? TextAttribute.WEIGHT_BOLD : TextAttribute.WEIGHT_REGULAR
 						);
 				}
@@ -500,7 +546,7 @@ public class JRStyledTextParser implements ErrorHandler
 				{
 					styleAttrs.put(
 						TextAttribute.POSTURE,
-						Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_isItalic).getNodeValue()).booleanValue()
+						Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_isItalic).getNodeValue())
 						? TextAttribute.POSTURE_OBLIQUE : TextAttribute.POSTURE_REGULAR
 						);
 				}
@@ -509,7 +555,7 @@ public class JRStyledTextParser implements ErrorHandler
 				{
 					styleAttrs.put(
 						TextAttribute.UNDERLINE,
-						Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_isUnderline).getNodeValue()).booleanValue()
+						Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_isUnderline).getNodeValue())
 						? TextAttribute.UNDERLINE_ON : null
 						);
 				}
@@ -518,7 +564,7 @@ public class JRStyledTextParser implements ErrorHandler
 				{
 					styleAttrs.put(
 						TextAttribute.STRIKETHROUGH,
-						Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_isStrikeThrough).getNodeValue()).booleanValue()
+						Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_isStrikeThrough).getNodeValue())
 						? TextAttribute.STRIKETHROUGH_ON : null
 						);
 				}
@@ -527,7 +573,7 @@ public class JRStyledTextParser implements ErrorHandler
 				{
 					styleAttrs.put(
 						TextAttribute.SIZE,
-						new Float(nodeAttrs.getNamedItem(ATTRIBUTE_size).getNodeValue())
+						Float.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_size).getNodeValue())
 						);
 				}
 
@@ -589,7 +635,7 @@ public class JRStyledTextParser implements ErrorHandler
 			}
 			else if (node.getNodeType() == Node.ELEMENT_NODE && NODE_bold.equalsIgnoreCase(node.getNodeName()))
 			{
-				Map<Attribute,Object> styleAttrs = new HashMap<Attribute,Object>();
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
 				styleAttrs.put(TextAttribute.WEIGHT, TextAttribute.WEIGHT_BOLD);
 
 				int startIndex = styledText.length();
@@ -600,7 +646,7 @@ public class JRStyledTextParser implements ErrorHandler
 			}
 			else if (node.getNodeType() == Node.ELEMENT_NODE && NODE_italic.equalsIgnoreCase(node.getNodeName()))
 			{
-				Map<Attribute,Object> styleAttrs = new HashMap<Attribute,Object>();
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
 				styleAttrs.put(TextAttribute.POSTURE, TextAttribute.POSTURE_OBLIQUE);
 
 				int startIndex = styledText.length();
@@ -611,7 +657,7 @@ public class JRStyledTextParser implements ErrorHandler
 			}
 			else if (node.getNodeType() == Node.ELEMENT_NODE && NODE_underline.equalsIgnoreCase(node.getNodeName()))
 			{
-				Map<Attribute,Object> styleAttrs = new HashMap<Attribute,Object>();
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
 				styleAttrs.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
 
 				int startIndex = styledText.length();
@@ -622,7 +668,7 @@ public class JRStyledTextParser implements ErrorHandler
 			}
 			else if (node.getNodeType() == Node.ELEMENT_NODE && NODE_sup.equalsIgnoreCase(node.getNodeName()))
 			{
-				Map<Attribute,Object> styleAttrs = new HashMap<Attribute,Object>();
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
 				styleAttrs.put(TextAttribute.SUPERSCRIPT, TextAttribute.SUPERSCRIPT_SUPER);
 
 				int startIndex = styledText.length();
@@ -633,7 +679,7 @@ public class JRStyledTextParser implements ErrorHandler
 			}
 			else if (node.getNodeType() == Node.ELEMENT_NODE && NODE_sub.equalsIgnoreCase(node.getNodeName()))
 			{
-				Map<Attribute,Object> styleAttrs = new HashMap<Attribute,Object>();
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
 				styleAttrs.put(TextAttribute.SUPERSCRIPT, TextAttribute.SUPERSCRIPT_SUB);
 
 				int startIndex = styledText.length();
@@ -646,13 +692,13 @@ public class JRStyledTextParser implements ErrorHandler
 			{
 				NamedNodeMap nodeAttrs = node.getAttributes();
 
-				Map<Attribute,Object> styleAttrs = new HashMap<Attribute,Object>();
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
 
 				if (nodeAttrs.getNamedItem(ATTRIBUTE_size) != null)
 				{
 					styleAttrs.put(
 						TextAttribute.SIZE,
-						new Float(nodeAttrs.getNamedItem(ATTRIBUTE_size).getNodeValue())
+						Float.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_size).getNodeValue())
 						);
 				}
 
@@ -700,39 +746,116 @@ public class JRStyledTextParser implements ErrorHandler
 				resizeRuns(styledText.getRuns(), startIndex, 1);
 
 				parseStyle(styledText, node);
-				styledText.addRun(new JRStyledText.Run(new HashMap<Attribute,Object>(), startIndex, styledText.length()));
+				styledText.addRun(new JRStyledText.Run(new HashMap<>(), startIndex, styledText.length()));
 
 				if (startIndex < styledText.length()) {
 					styledText.append("\n");
 					resizeRuns(styledText.getRuns(), startIndex, 1);
 				}
 			}
+			else if (
+				node.getNodeType() == Node.ELEMENT_NODE 
+				&& (NODE_ul.equalsIgnoreCase(node.getNodeName()) || NODE_ol.equalsIgnoreCase(node.getNodeName()))
+				)
+			{
+				boolean ordered = false;
+				String type = null;
+				Integer start = null;
+				if (NODE_ol.equalsIgnoreCase(node.getNodeName()))
+				{
+					ordered = true;
+					NamedNodeMap nodeAttrs = node.getAttributes();
+					if (nodeAttrs != null)
+					{
+						Node typeNode = nodeAttrs.getNamedItem(ATTRIBUTE_type);
+						if (typeNode != null)
+						{
+							type = typeNode.getNodeValue();
+						}
+						Node startNode = nodeAttrs.getNamedItem(ATTRIBUTE_start);
+						if (startNode != null)
+						{
+							start = Integer.valueOf(startNode.getNodeValue());
+						}
+					}
+				}
+				
+				StyledTextListInfo htmlList = 
+					new StyledTextListInfo(
+						ordered,
+						type,
+						start,
+						insideLi
+						);
+
+				htmlList.setAtLiStart(liStart);
+				
+				htmlListStack.push(htmlList);
+				
+				insideLi = false;
+				
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
+
+				styleAttrs.put(JRTextAttribute.HTML_LIST, htmlListStack.toArray(new StyledTextListInfo[htmlListStack.size()]));
+				styleAttrs.put(JRTextAttribute.HTML_LIST_ITEM, StyledTextListItemInfo.NO_LIST_ITEM_FILLER);
+				
+				int startIndex = styledText.length();
+
+				parseStyle(styledText, node);
+
+				styledText.addRun(new JRStyledText.Run(styleAttrs, startIndex, styledText.length()));
+				
+				justClosedList = htmlListStack.pop();
+			}
 			else if (node.getNodeType() == Node.ELEMENT_NODE && NODE_li.equalsIgnoreCase(node.getNodeName()))
 			{
-				String tmpText = styledText.getText();
-				if(tmpText.length() > 0 && !tmpText.endsWith("\n"))
-				{
-					styledText.append("\n");
-				}
-				styledText.append(" \u2022 ");
+				Map<Attribute,Object> styleAttrs = new HashMap<>();
 
-				int startIndex = styledText.length();
-				resizeRuns(styledText.getRuns(), startIndex, 1);
-				parseStyle(styledText, node);
-				styledText.addRun(new JRStyledText.Run(new HashMap<Attribute,Object>(), startIndex, styledText.length()));
+				StyledTextListInfo htmlList = null;
 				
-				// if the text in the next node does not start with a '\n', or 
-				// if the next node is not a <li /> one, we have to append a new line
-				Node nextNode = node.getNextSibling();
-				String textContent = getFirstTextOccurence(nextNode);
-				if(nextNode != null && 
-						!((nextNode.getNodeType() == Node.ELEMENT_NODE &&
-								NODE_li.equalsIgnoreCase(nextNode.getNodeName()) ||
-						(textContent != null && textContent.startsWith("\n")))
-						))
+				boolean ulAdded = false;
+				if (htmlListStack.size() == 0)
 				{
-					styledText.append("\n");
-					resizeRuns(styledText.getRuns(), startIndex, 1);
+					htmlList = new StyledTextListInfo(false, null, null, false);
+					htmlListStack.push(htmlList);
+					styleAttrs.put(JRTextAttribute.HTML_LIST, htmlListStack.toArray(new StyledTextListInfo[htmlListStack.size()]));
+					styleAttrs.put(JRTextAttribute.HTML_LIST_ITEM, StyledTextListItemInfo.NO_LIST_ITEM_FILLER);
+					ulAdded = true;
+				}
+				else
+				{
+					htmlList = htmlListStack.peek();
+				}
+				htmlList.setItemCount(htmlList.getItemCount() + 1);
+				insideLi = true;
+				liStart = true;
+				justClosedList = null;
+				
+				StyledTextListItemInfo listItem = new StyledTextListItemInfo(htmlList.getItemCount() - 1);
+				NamedNodeMap nodeAttrs = node.getAttributes();
+				if (nodeAttrs.getNamedItem(ATTRIBUTE_noBullet) != null)
+				{
+					listItem.setNoBullet(Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_noBullet).getNodeValue()));
+				}
+				
+				styleAttrs.put(JRTextAttribute.HTML_LIST_ITEM, listItem);
+				
+				int startIndex = styledText.length();
+
+				parseStyle(styledText, node);
+
+				styledText.addRun(new JRStyledText.Run(styleAttrs, startIndex, styledText.length()));
+				
+				insideLi = false;
+				liStart = false;
+				if (justClosedList != null)
+				{
+					justClosedList.setAtLiEnd(true);
+				}
+
+				if (ulAdded)
+				{
+					htmlListStack.pop();
 				}
 			}
 			else if (node.getNodeType() == Node.ELEMENT_NODE && NODE_a.equalsIgnoreCase(node.getNodeName()))
@@ -741,7 +864,7 @@ public class JRStyledTextParser implements ErrorHandler
 				{
 					NamedNodeMap nodeAttrs = node.getAttributes();
 
-					Map<Attribute,Object> styleAttrs = new HashMap<Attribute,Object>();
+					Map<Attribute,Object> styleAttrs = new HashMap<>();
 
 					hyperlink = new JRBasePrintHyperlink();
 					hyperlink.setHyperlinkType(HyperlinkTypeEnum.REFERENCE);
@@ -834,20 +957,20 @@ public class JRStyledTextParser implements ErrorHandler
 	/**
 	 *
 	 */
-	private StringBuffer writeStyleAttributes(Map<Attribute,Object> parentAttrs,  Map<Attribute,Object> attrs)
+	private StringBuilder writeStyleAttributes(Map<Attribute,Object> parentAttrs,  Map<Attribute,Object> attrs)
 	{
-		StringBuffer sbuffer = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		
 		Object value = attrs.get(TextAttribute.FAMILY);
 		Object oldValue = parentAttrs.get(TextAttribute.FAMILY);
 		
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_fontName);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value);
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_fontName);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value);
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(TextAttribute.WEIGHT);
@@ -855,11 +978,11 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_isBold);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value.equals(TextAttribute.WEIGHT_BOLD));
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_isBold);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value.equals(TextAttribute.WEIGHT_BOLD));
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(TextAttribute.POSTURE);
@@ -867,11 +990,11 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_isItalic);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value.equals(TextAttribute.POSTURE_OBLIQUE));
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_isItalic);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value.equals(TextAttribute.POSTURE_OBLIQUE));
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(TextAttribute.UNDERLINE);
@@ -882,11 +1005,11 @@ public class JRStyledTextParser implements ErrorHandler
 			|| (value != null && !value.equals(oldValue))
 			)
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_isUnderline);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value != null);
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_isUnderline);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value != null);
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(TextAttribute.STRIKETHROUGH);
@@ -897,11 +1020,11 @@ public class JRStyledTextParser implements ErrorHandler
 			|| (value != null && !value.equals(oldValue))
 			)
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_isStrikeThrough);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value != null);
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_isStrikeThrough);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value != null);
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(TextAttribute.SIZE);
@@ -909,11 +1032,11 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_size);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value);
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_size);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value);
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(JRTextAttribute.PDF_FONT_NAME);
@@ -921,11 +1044,11 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_pdfFontName);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value);
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_pdfFontName);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value);
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(JRTextAttribute.PDF_ENCODING);
@@ -933,11 +1056,11 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_pdfEncoding);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value);
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_pdfEncoding);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value);
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(JRTextAttribute.IS_PDF_EMBEDDED);
@@ -945,11 +1068,11 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_isPdfEmbedded);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(value);
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_isPdfEmbedded);
+			sb.append(EQUAL_QUOTE);
+			sb.append(value);
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(TextAttribute.FOREGROUND);
@@ -957,11 +1080,11 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_forecolor);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(JRColorUtil.getCssColor((Color)value));
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_forecolor);
+			sb.append(EQUAL_QUOTE);
+			sb.append(JRColorUtil.getCssColor((Color)value));
+			sb.append(QUOTE);
 		}
 
 		value = attrs.get(TextAttribute.BACKGROUND);
@@ -969,41 +1092,17 @@ public class JRStyledTextParser implements ErrorHandler
 
 		if (value != null && !value.equals(oldValue))
 		{
-			sbuffer.append(SPACE);
-			sbuffer.append(ATTRIBUTE_backcolor);
-			sbuffer.append(EQUAL_QUOTE);
-			sbuffer.append(JRColorUtil.getCssColor((Color)value));
-			sbuffer.append(QUOTE);
+			sb.append(SPACE);
+			sb.append(ATTRIBUTE_backcolor);
+			sb.append(EQUAL_QUOTE);
+			sb.append(JRColorUtil.getCssColor((Color)value));
+			sb.append(QUOTE);
 		}
 		
-		return sbuffer;
+		return sb;
 	}
 	
-	/**
-	 * The method returns the first text occurrence in a given node element
-	 * @param node
-	 * @return String
-	 */
-	private String getFirstTextOccurence(Node node){
-		if(node != null)
-		{
-			if(node.getNodeValue() != null)
-			{
-				return node.getNodeValue();
-			}
-			NodeList nodeList = node.getChildNodes();
-			for (int i=0; i< nodeList.getLength(); i++)
-			{
-				String firstOccurence = getFirstTextOccurence(nodeList.item(i));
-				if(firstOccurence != null)
-				{
-					return firstOccurence;
-				}
-			}
-		}
-		return null;
-	}
-
+	@Override
 	public void error(SAXParseException e) {
 		if(log.isErrorEnabled())
 		{
@@ -1011,6 +1110,7 @@ public class JRStyledTextParser implements ErrorHandler
 		}
 	}
 
+	@Override
 	public void fatalError(SAXParseException e) {
 		if(log.isFatalEnabled())
 		{
@@ -1018,6 +1118,7 @@ public class JRStyledTextParser implements ErrorHandler
 		}
 	}
 
+	@Override
 	public void warning(SAXParseException e) {
 		if(log.isWarnEnabled())
 		{
@@ -1025,4 +1126,75 @@ public class JRStyledTextParser implements ErrorHandler
 		}
 	}
 
+
+	protected class XmlStyledTextListWriter implements StyledTextListWriter
+	{
+		private StringBuilder sb;
+		
+		public XmlStyledTextListWriter(StringBuilder sb)
+		{
+			this.sb = sb;
+		}
+	
+		@Override
+		public void startUl() 
+		{
+			sb.append(LESS);
+			sb.append(NODE_ul);
+			sb.append(GREATER);
+		}
+	
+		@Override
+		public void endUl() 
+		{
+			sb.append(LESS_SLASH);
+			sb.append(NODE_ul);
+			sb.append(GREATER);
+		}
+	
+		@Override
+		public void startOl(String type, int cutStart) 
+		{
+			sb.append(LESS);
+			sb.append(NODE_ol);
+			if (type != null)
+			{
+				sb.append(" " + ATTRIBUTE_type + "=\"" + type + "\"");
+			}
+			if (cutStart > 1)
+			{
+				sb.append(" " + ATTRIBUTE_start + "=\"" + cutStart + "\"");
+			}
+			sb.append(GREATER);
+		}
+	
+		@Override
+		public void endOl() 
+		{
+			sb.append(LESS_SLASH);
+			sb.append(NODE_ol);
+			sb.append(GREATER);
+		}
+	
+		@Override
+		public void startLi(boolean noBullet) 
+		{
+			sb.append(LESS);
+			sb.append(NODE_li);
+			if (noBullet)
+			{
+				sb.append(" " + ATTRIBUTE_noBullet + "=\"true\"");
+			}
+			sb.append(GREATER);
+		}
+	
+		@Override
+		public void endLi() 
+		{
+			sb.append(LESS_SLASH);
+			sb.append(NODE_li);
+			sb.append(GREATER);
+		}
+	}
 }
+

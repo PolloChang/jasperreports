@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,10 +29,11 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BooleanSerializer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BooleanSerializer implements ObjectSerializer<Boolean>
 {
+	public static final String EXCEPTION_MESSAGE_KEY_UNEXPECTED_BOOLEAN_BYTE_VALUE = "engine.virtualization.unexpected.boolean.byte.value";
+
 	@Override
 	public int typeValue()
 	{
@@ -65,7 +66,10 @@ public class BooleanSerializer implements ObjectSerializer<Boolean>
 		byte byteValue = in.readByte();
 		if (byteValue != 0 && byteValue != 1)
 		{
-			throw new JRRuntimeException("Unexpected boolean byte value " + byteValue);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNEXPECTED_BOOLEAN_BYTE_VALUE,
+					new Object[]{byteValue});
 		}
 		return byteValue == 1;
 	}

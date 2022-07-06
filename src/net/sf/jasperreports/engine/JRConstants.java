@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.engine;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRConstants.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRConstants
 {
@@ -58,7 +57,11 @@ public interface JRConstants
 	
 	public static final int PSEUDO_SERIAL_VERSION_UID_5_5_2 = 50502;
 	
-	public static final int PSEUDO_SERIAL_VERSION_UID = PSEUDO_SERIAL_VERSION_UID_5_5_2;
+	public static final int PSEUDO_SERIAL_VERSION_UID_6_0_2 = 60002;
+	
+	public static final int PSEUDO_SERIAL_VERSION_UID_6_11_0 = 61100;
+	
+	public static final int PSEUDO_SERIAL_VERSION_UID = PSEUDO_SERIAL_VERSION_UID_6_11_0;
 	
 	public static final String VERSION_3_1_0 = "3.1.0";
 	
@@ -109,4 +112,37 @@ public interface JRConstants
 	public static final String VERSION_5_5_0 = "5.5.0";
 	
 	public static final String VERSION_5_5_2 = "5.5.2";
+	
+	public static final String VERSION_6_0_0 = "6.0.0";
+	
+	public static final String VERSION_6_0_2 = "6.0.2";
+	
+	public static final String VERSION_6_1_1 = "6.1.1";
+	
+	public static final String VERSION_6_2_0 = "6.2.0";
+	
+	public static final String VERSION_6_2_1 = "6.2.1";
+
+	public static final String VERSION_6_2_2 = "6.2.2";
+
+	public static final String VERSION_6_3_0 = "6.3.0";
+
+	public static final String VERSION_6_3_1 = "6.3.1";
+
+	public static final String VERSION_6_4_0 = "6.4.0";
+
+	public static final String VERSION_6_4_3 = "6.4.3";
+
+	public static final String VERSION_6_5_1 = "6.5.1";
+
+	public static final String VERSION_6_10_0 = "6.10.0";
+
+	public static final String VERSION_6_11_0 = "6.11.0";
+	
+	public static final String VERSION_6_12_0 = "6.12.0";
+	
+	public static final String VERSION_6_13_0 = "6.13.0";
+	
+	public static final String VERSION_6_19_0 = "6.19.0";
+	
 }

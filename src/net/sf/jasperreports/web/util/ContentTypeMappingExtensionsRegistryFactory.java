@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.extensions.ListExtensionRegistry;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: ContentTypeMappingExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ContentTypeMappingExtensionsRegistryFactory implements ExtensionsRegistryFactory {
 
@@ -46,12 +45,10 @@ public class ContentTypeMappingExtensionsRegistryFactory implements ExtensionsRe
 	 */
 	public final static String CONTENT_TYPE_MAPPING_PROPERTY_PREFIX = DefaultExtensionsRegistry.PROPERTY_REGISTRY_PREFIX + "content.type.mapping.";
 
-	/**
-	 * 
-	 */
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties) {
 		List<PropertySuffix> contentTypeMappingProperties = JRPropertiesUtil.getProperties(properties, CONTENT_TYPE_MAPPING_PROPERTY_PREFIX);
-		List<ContentTypeMapping> contentTypeMappings = new ArrayList<ContentTypeMapping>();
+		List<ContentTypeMapping> contentTypeMappings = new ArrayList<>();
 		for (Iterator<PropertySuffix> it = contentTypeMappingProperties.iterator(); it.hasNext();) {
 			PropertySuffix contentTypeMappingProp = it.next();
 			contentTypeMappings.add(new ContentTypeMapping(contentTypeMappingProp.getSuffix(),contentTypeMappingProp.getValue()));

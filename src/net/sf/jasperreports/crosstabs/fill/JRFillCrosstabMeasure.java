@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillCrosstabMeasure.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillCrosstabMeasure implements JRCrosstabMeasure
 {
@@ -57,46 +56,55 @@ public class JRFillCrosstabMeasure implements JRCrosstabMeasure
 		percentageCalculator = createPercentageCalculator();
 	}
 
+	@Override
 	public String getName()
 	{
 		return parentMeasure.getName();
 	}
 
+	@Override
 	public String getValueClassName()
 	{
 		return parentMeasure.getValueClassName();
 	}
 
+	@Override
 	public Class<?> getValueClass()
 	{
 		return parentMeasure.getValueClass();
 	}
 
+	@Override
 	public JRExpression getValueExpression()
 	{
 		return parentMeasure.getValueExpression();
 	}
 
+	@Override
 	public CalculationEnum getCalculationValue()
 	{
 		return parentMeasure.getCalculationValue();
 	}
 
+	@Override
 	public String getIncrementerFactoryClassName()
 	{
 		return parentMeasure.getIncrementerFactoryClassName();
 	}
 
+	@Override
 	public Class<?> getIncrementerFactoryClass()
 	{
 		return parentMeasure.getIncrementerFactoryClass();
 	}
 
+	@Override
 	public CrosstabPercentageEnum getPercentageType()
 	{
 		return parentMeasure.getPercentageType();
 	}
 
+	@Override
 	public JRVariable getVariable()
 	{
 		return variable;
@@ -153,19 +161,19 @@ public class JRFillCrosstabMeasure implements JRCrosstabMeasure
 		return percentageCalc;
 	}
 
+	@Override
 	public String getPercentageCalculatorClassName()
 	{
 		return parentMeasure.getPercentageCalculatorClassName();
 	}
 
+	@Override
 	public Class<?> getPercentageCalculatorClass()
 	{
 		return parentMeasure.getPercentageCalculatorClass();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

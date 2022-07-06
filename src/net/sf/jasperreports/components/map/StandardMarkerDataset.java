@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import net.sf.jasperreports.components.items.ItemData;
+import net.sf.jasperreports.components.items.StandardItemData;
+import net.sf.jasperreports.components.items.StandardItemProperty;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDatasetRun;
 import net.sf.jasperreports.engine.JRExpressionCollector;
@@ -40,8 +43,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @deprecated Replaced by {@link StandardItemData}.
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: StandardMarkerDataset.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class StandardMarkerDataset implements Serializable, MarkerDataset, JRChangeEventsSupport
 {//FIXMEMAP implement clone?
@@ -50,7 +52,7 @@ public class StandardMarkerDataset implements Serializable, MarkerDataset, JRCha
 	public static final String PROPERTY_MARKER = "marker";
 	public static final String PROPERTY_DATASET_RUN = "datasetRun";
 
-	private List<Marker> markerList = new ArrayList<Marker>();
+	private List<Marker> markerList = new ArrayList<>();
 	private JRDatasetRun datasetRun;
 	
 	private transient JRPropertyChangeSupport eventSupport;
@@ -72,7 +74,7 @@ public class StandardMarkerDataset implements Serializable, MarkerDataset, JRCha
 			return null;
 		}
 		
-		List<Marker> compiledMarkers = new ArrayList<Marker>(markers.size());
+		List<Marker> compiledMarkers = new ArrayList<>(markers.size());
 		for (Iterator<Marker> it = markers.iterator(); it.hasNext();)
 		{
 			Marker marker = it.next();
@@ -89,7 +91,7 @@ public class StandardMarkerDataset implements Serializable, MarkerDataset, JRCha
 			return null;
 		}
 		
-		List<MarkerProperty> compiledProperties = new ArrayList<MarkerProperty>(properties.size());
+		List<MarkerProperty> compiledProperties = new ArrayList<>(properties.size());
 		for (Iterator<MarkerProperty> it = properties.iterator(); it.hasNext();)
 		{
 			MarkerProperty property = it.next();
@@ -200,6 +202,7 @@ public class StandardMarkerDataset implements Serializable, MarkerDataset, JRCha
 		return null;
 	}
 
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -213,6 +216,7 @@ public class StandardMarkerDataset implements Serializable, MarkerDataset, JRCha
 		return eventSupport;
 	}
 
+	@Override
 	public Object clone()
 	{
 		StandardMarkerDataset clone = null;

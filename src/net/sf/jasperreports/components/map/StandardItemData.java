@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import net.sf.jasperreports.components.items.Item;
+import net.sf.jasperreports.components.items.ItemData;
+import net.sf.jasperreports.components.items.ItemProperty;
+import net.sf.jasperreports.components.items.StandardItemProperty;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRElementDataset;
 import net.sf.jasperreports.engine.JRExpressionCollector;
@@ -39,7 +43,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StandardItemData.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link net.sf.jasperreports.components.items.StandardItemData}.
  */
 public class StandardItemData implements Serializable, ItemData, JRChangeEventsSupport
 {//FIXMEMAP implement clone?
@@ -48,7 +52,7 @@ public class StandardItemData implements Serializable, ItemData, JRChangeEventsS
 	public static final String PROPERTY_ITEMS = "items";
 	public static final String PROPERTY_DATASET = "dataset";
 
-	private List<Item> itemsList = new ArrayList<Item>();
+	private List<Item> itemsList = new ArrayList<>();
 	private JRElementDataset dataset;
 	
 	private transient JRPropertyChangeSupport eventSupport;
@@ -70,7 +74,7 @@ public class StandardItemData implements Serializable, ItemData, JRChangeEventsS
 			return null;
 		}
 		
-		List<Item> compiledItems = new ArrayList<Item>(items.size());
+		List<Item> compiledItems = new ArrayList<>(items.size());
 		for (Iterator<Item> it = items.iterator(); it.hasNext();)
 		{
 			Item item = it.next();
@@ -87,7 +91,7 @@ public class StandardItemData implements Serializable, ItemData, JRChangeEventsS
 			return null;
 		}
 		
-		List<ItemProperty> compiledProperties = new ArrayList<ItemProperty>(properties.size());
+		List<ItemProperty> compiledProperties = new ArrayList<>(properties.size());
 		for (Iterator<ItemProperty> it = properties.iterator(); it.hasNext();)
 		{
 			ItemProperty property = it.next();
@@ -165,6 +169,7 @@ public class StandardItemData implements Serializable, ItemData, JRChangeEventsS
 		getEventSupport().firePropertyChange(PROPERTY_DATASET, old, this.dataset);
 	}
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -178,6 +183,7 @@ public class StandardItemData implements Serializable, ItemData, JRChangeEventsS
 		return eventSupport;
 	}
 
+	@Override
 	public Object clone()
 	{
 		StandardItemData clone = null;

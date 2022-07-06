@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,47 +23,42 @@
  */
 package net.sf.jasperreports.engine.type;
 
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRVariable;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: IncrementTypeEnum.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public enum IncrementTypeEnum implements JREnum
 {
 	/**
-	 * The variable is initialized only once, at the beginning of the report filling process, with the value returned by
-	 * the variable's initial value expression.
+	 * The variable never gets incremented during the report-filling process.
 	 */
 	REPORT((byte)1, "Report"),
 	
 	/**
-	 * The variable is reinitialized at the beginning of each new page.
+	 * The variable is incremented with each new page.
 	 */
 	PAGE((byte)2, "Page"),
 	
 	/**
-	 * The variable is reinitialized at the beginning of each new column.
+	 * The variable is incremented with each new column.
 	 */
 	COLUMN((byte)3, "Column"),
 	
 	/**
-	 * The variable is reinitialized every time the group specified by the {@link JRVariable#getResetGroup()} method breaks.
+	 * The variable is incremented every time the group specified by the {@link JRVariable#getIncrementGroup()} method breaks.
 	 */
 	GROUP((byte)4, "Group"),
 	
 	/**
-	 * The variable will never be initialized using its initial value expression and will only contain values obtained by
-	 * evaluating the variable's expression.
+	 * The variable is incremented with every record during the iteration through the data source.
 	 */
 	NONE((byte)5, "None");
 
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient byte value;
 	private final transient String name;
 
@@ -74,24 +69,22 @@ public enum IncrementTypeEnum implements JREnum
 	}
 
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
 	public Byte getValueByte()
 	{
-		return new Byte(value);
+		return value;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
+	@SuppressWarnings("deprecation")
 	public final byte getValue()
 	{
 		return value;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -102,11 +95,11 @@ public enum IncrementTypeEnum implements JREnum
 	 */
 	public static IncrementTypeEnum getByName(String name)
 	{
-		return (IncrementTypeEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static IncrementTypeEnum getByValue(Byte value)
 	{
@@ -114,11 +107,10 @@ public enum IncrementTypeEnum implements JREnum
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static IncrementTypeEnum getByValue(byte value)
 	{
-		return getByValue(new Byte(value));
+		return getByValue((Byte)value);
 	}
-
 }

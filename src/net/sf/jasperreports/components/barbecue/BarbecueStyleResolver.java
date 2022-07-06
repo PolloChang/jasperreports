@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,29 +24,47 @@
 package net.sf.jasperreports.components.barbecue;
 
 import net.sf.jasperreports.engine.JRComponentElement;
+import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.type.RotationEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 /**
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: BarbecueStyleResolver.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class BarbecueStyleResolver {
 	
-	private BarbecueStyleResolver() {
+	private BarbecueStyleResolver()
+	{
 	}
 	
 	/**
 	 * 
 	 */
-	public static RotationEnum getRotationValue(JRComponentElement element)	{
+	public static StyleResolver getStyleResolver(JRComponentElement element)
+	{
+		if (element != null)
+		{
+			JRDefaultStyleProvider defaultStyleProvider = element.getDefaultStyleProvider();
+			if (defaultStyleProvider != null)
+			{
+				return defaultStyleProvider.getStyleResolver();
+			}
+		}
+		return StyleResolver.getInstance();
+	}
+
+	/**
+	 * 
+	 */
+	public static RotationEnum getRotationValue(JRComponentElement element)
+	{
 		RotationEnum ownRotation = ((BarbecueComponent)element.getComponent()).getOwnRotation();
 		if (ownRotation != null) {
 			return ownRotation;
 		}
-		JRStyle style = JRStyleResolver.getBaseStyle(element);
+		JRStyle style = getStyleResolver(element).getBaseStyle(element);
 		if (style != null) {
 			RotationEnum rotation = style.getRotationValue();
 			if (rotation != null) {

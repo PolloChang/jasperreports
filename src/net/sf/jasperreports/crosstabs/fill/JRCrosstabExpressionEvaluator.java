@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,10 +38,11 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * Expression evaluator used for crosstabs at fill time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabExpressionEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCrosstabExpressionEvaluator implements JRFillExpressionEvaluator
 {
+	public static final String EXCEPTION_MESSAGE_KEY_EVALUATION_TYPE_NOT_SUPPORTED = "crosstabs.evaluation.type.not.supported";
+	
 	private final JREvaluator evaluator;
 	private JRFillDataset dataset;
 
@@ -52,21 +53,25 @@ public class JRCrosstabExpressionEvaluator implements JRFillExpressionEvaluator
 	}
 	
 	
+	@Override
 	public Object evaluate(JRExpression expression, byte evaluationType) throws JRException
 	{
 		if (evaluationType != JRExpression.EVALUATION_DEFAULT)
 		{
-			throw new JRException("The crosstab evaluator doesn't support old or estimated expression evaluation.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_EVALUATION_TYPE_NOT_SUPPORTED,  
+					(Object[])null
+					);
 		}
-		
 		return evaluator.evaluate(expression);
 	}
 
 	
 	public void init(Map<String, JRFillParameter> parametersMap, 
-			Map<String, JRFillVariable> variablesMap, WhenResourceMissingTypeEnum whenResourceMissingType) throws JRException
+			Map<String, JRFillVariable> variablesMap, WhenResourceMissingTypeEnum whenResourceMissingType, boolean ignoreNPE) throws JRException
 	{
-		evaluator.init(parametersMap, null, variablesMap, whenResourceMissingType);
+		evaluator.init(parametersMap, null, variablesMap, whenResourceMissingType, ignoreNPE);
 	}
 	
 	public void setFillDataset(JRFillDataset dataset)
@@ -74,6 +79,7 @@ public class JRCrosstabExpressionEvaluator implements JRFillExpressionEvaluator
 		this.dataset = dataset;
 	}
 
+	@Override
 	public JRFillDataset getFillDataset()
 	{
 		return dataset;

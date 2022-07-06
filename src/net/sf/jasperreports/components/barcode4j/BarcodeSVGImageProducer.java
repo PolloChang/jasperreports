@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,7 @@
  */
 package net.sf.jasperreports.components.barcode4j;
 
-import java.io.StringWriter;
+import java.io.ByteArrayOutputStream;
 
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
@@ -32,47 +32,49 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import net.sf.jasperreports.engine.JRComponentElement;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.renderers.BatikRenderer;
-
 import org.krysalis.barcode4j.BarcodeGenerator;
 import org.krysalis.barcode4j.output.svg.SVGCanvasProvider;
 import org.w3c.dom.Document;
 
+import net.sf.jasperreports.engine.JRComponentElement;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.SimpleRenderToImageAwareDataRenderer;
+
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeSVGImageProducer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeSVGImageProducer implements BarcodeImageProducer
 {
 
+	@Override
 	public Renderable createImage(
 		JasperReportsContext jasperReportsContext,
 		JRComponentElement componentElement,
 		BarcodeGenerator barcode, 
-		String message, 
-		int orientation
+		String message
 		)
 	{
 		try
 		{
-			SVGCanvasProvider provider = new SVGCanvasProvider(false, orientation);
+			SVGCanvasProvider provider = 
+				new SVGCanvasProvider(
+					false, 
+					((Barcode4jComponent)componentElement.getComponent()).getOrientationValue().getValue()
+					);
 			barcode.generateBarcode(provider, message);
 			Document svgDoc = provider.getDOM();
 
 			Source source = new DOMSource(svgDoc);
-			StringWriter outWriter = new StringWriter();
-			Result output = new StreamResult(outWriter);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			Result output = new StreamResult(baos);
 			Transformer transformer = TransformerFactory.newInstance()
 					.newTransformer();
 			transformer.transform(source, output);
 
-			String svgString = outWriter.toString();
-			return new BatikRenderer(svgString, null);
+			return SimpleRenderToImageAwareDataRenderer.getInstance(baos.toByteArray());
 		}
 		catch (Exception e)
 		{

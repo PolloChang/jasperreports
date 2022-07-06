@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * design time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignGenericElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignGenericElement extends JRDesignElement implements
 		JRGenericElement
@@ -61,7 +60,7 @@ public class JRDesignGenericElement extends JRDesignElement implements
 	public static final String PROPERTY_PARAMETERS = "parameters";
 	
 	private JRGenericElementType genericType;
-	private List<JRGenericElementParameter> parameters = new ArrayList<JRGenericElementParameter>();
+	private List<JRGenericElementParameter> parameters = new ArrayList<>();
 	private EvaluationTimeEnum evaluationTimeValue = EvaluationTimeEnum.NOW;
 	private String evaluationGroupName;
 	
@@ -75,6 +74,7 @@ public class JRDesignGenericElement extends JRDesignElement implements
 		super(defaultStyleProvider);
 	}
 
+	@Override
 	public JRGenericElementParameter[] getParameters()
 	{
 		return parameters.toArray(new JRGenericElementParameter[parameters.size()]);
@@ -155,6 +155,7 @@ public class JRDesignGenericElement extends JRDesignElement implements
 		return removed;
 	}
 
+	@Override
 	public JRGenericElementType getGenericType()
 	{
 		return genericType;
@@ -173,16 +174,19 @@ public class JRDesignGenericElement extends JRDesignElement implements
 		getEventSupport().firePropertyChange(PROPERTY_GENERIC_TYPE, old, this.genericType);
 	}
 
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitGenericElement(this);
 	}
 
+	@Override
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
 		return evaluationTimeValue;
@@ -214,6 +218,7 @@ public class JRDesignGenericElement extends JRDesignElement implements
 				old, this.evaluationTimeValue);
 	}
 
+	@Override
 	public String getEvaluationGroupName()
 	{
 		return evaluationGroupName;
@@ -233,9 +238,7 @@ public class JRDesignGenericElement extends JRDesignElement implements
 				old, this.evaluationGroupName);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignGenericElement clone = (JRDesignGenericElement)super.clone();
@@ -252,6 +255,7 @@ public class JRDesignGenericElement extends JRDesignElement implements
 	 */
 	private byte evaluationTime;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

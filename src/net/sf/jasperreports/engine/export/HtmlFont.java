@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,137 +23,60 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import java.awt.Font;
 import java.util.Locale;
 
-import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.fonts.FontFace;
-import net.sf.jasperreports.engine.fonts.FontFamily;
-import net.sf.jasperreports.engine.fonts.FontInfo;
-import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.util.JRDataUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: HtmlFont.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HtmlFont
 {
+	private static final String LOCALE_SEPARATOR = "_-";
 	private static final int IE_FONT_NAME_MAX_LENGTH = 31;
 	
+	private HtmlFontFamily family;
 	private Locale locale;
 	private String fontName;
 	private String ttf;
 	private String eot;
 	private String svg;
 	private String woff;
-	private int style;
+	private boolean isBold;
+	private boolean isItalic;
 	
 	private String id;
+	private String shortId;
 	
 	/**
 	 * 
 	 */
-	private HtmlFont(Locale locale, FontFace fontFace, int style)
+	private HtmlFont(
+		HtmlFontFamily family, 
+		Locale locale, 
+		FontFace fontFace, 
+		boolean isBold, 
+		boolean isItalic
+		)
 	{
+		this.family = family;
 		this.locale = locale;
 		this.fontName = fontFace.getName();
 		this.ttf = fontFace.getTtf();
 		this.eot = fontFace.getEot();
 		this.svg = fontFace.getSvg();
 		this.woff = fontFace.getWoff();
-		this.style = style;
+		this.isBold = isBold;
+		this.isItalic = isItalic;
 		
-		createId();
+		createIds();
 	}
 	
 	/**
 	 * 
 	 */
-	public static HtmlFont getInstance(Locale locale, FontInfo fontInfo, boolean isBold, boolean isItalic)
-	{
-		HtmlFont htmlFont = null;
-		
-		if (fontInfo != null)
-		{
-			FontFamily family = fontInfo.getFontFamily();
-			FontFace fontFace = fontInfo.getFontFace();
-			if (fontFace != null)
-			{
-				htmlFont = HtmlFont.getInstance(locale, fontFace, fontInfo.getStyle());
-			}
-			
-			if (htmlFont == null && isBold && isItalic)
-			{
-				fontFace = family.getBoldItalicFace();
-				if (fontFace != null)
-				{
-					htmlFont = HtmlFont.getInstance(locale, fontFace, Font.BOLD | Font.ITALIC);
-				}
-			}
-			
-			if (htmlFont == null && isBold)
-			{
-				fontFace = family.getBoldFace();
-				if (fontFace != null)
-				{
-					htmlFont = HtmlFont.getInstance(locale, fontFace, Font.BOLD);
-				}
-			}
-
-			if (htmlFont == null && isItalic)
-			{
-				fontFace = family.getItalicFace();
-				if (fontFace != null)
-				{
-					htmlFont = HtmlFont.getInstance(locale, fontFace, Font.ITALIC);
-				}
-			}
-
-			if (htmlFont == null)
-			{
-				fontFace = family.getNormalFace();
-				if (fontFace != null)
-				{
-					htmlFont = HtmlFont.getInstance(locale, fontFace, Font.PLAIN);
-				}
-			}
-		}
-		
-		return htmlFont;
-	}
-	
-	/**
-	 * 
-	 */
-	public static HtmlFont getInstance(JasperReportsContext jasperReportsContext, String htmlFontId)
-	{
-		int localeSeparatorPos = htmlFontId.lastIndexOf("-");
-		String faceName = htmlFontId.substring(0, localeSeparatorPos);
-		boolean isBold = false;
-		boolean isItalic = false;
-		if (faceName.endsWith("-Italic"))
-		{
-			faceName = faceName.substring(0, faceName.length() - "-Italic".length());
-			isItalic = true;
-		}
-		if (faceName.endsWith("-Bold"))
-		{
-			faceName = faceName.substring(0, faceName.length() - "-Bold".length());
-			isBold = true;
-		}
-		String localeCode = htmlFontId.substring(localeSeparatorPos + 1);
-		Locale locale = JRDataUtils.getLocale(localeCode);
-		
-		FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(faceName, locale);
-
-		return getInstance(locale, fontInfo, isBold, isItalic);
-	}
-	
-	/**
-	 * 
-	 */
-	private static HtmlFont getInstance(Locale locale, FontFace fontFace, int style)
+	public static HtmlFont getInstance(HtmlFontFamily family, Locale locale, FontFace fontFace, boolean isBold, boolean isItalic)
 	{
 		HtmlFont htmlFont = null;
 
@@ -164,7 +87,7 @@ public class HtmlFont
 			|| fontFace.getWoff() != null
 			)
 		{
-			htmlFont = new HtmlFont(locale, fontFace, style);
+			htmlFont = new HtmlFont(family, locale, fontFace, isBold, isItalic);
 		}
 
 		return htmlFont;
@@ -173,14 +96,16 @@ public class HtmlFont
 	/**
 	 * 
 	 */
-	private void createId()
+	private void createIds()
 	{
 		String prefix = fontName;
 		String suffix =
-			(((style & Font.BOLD) > 0 || (style & Font.ITALIC) > 0) ? "-" : "")
-			+ ((style & Font.BOLD) > 0 ? "Bold" : "")
-			+ ((style & Font.ITALIC) > 0 ? "Italic" : "")
-			+ (locale == null ? "" : ("-" + JRDataUtils.getLocaleCode(locale)));
+			((isBold || isItalic) ? "-" : "")
+			+ (isBold ? "Bold" : "")
+			+ (isItalic ? "Italic" : "")
+			+ (locale == null ? "" : (LOCALE_SEPARATOR + JRDataUtils.getLocaleCode(locale)));
+		
+		id = prefix + suffix;
 		
 		if (prefix.length() + suffix.length() > IE_FONT_NAME_MAX_LENGTH)
 		{
@@ -189,10 +114,10 @@ public class HtmlFont
 		if (prefix.length() + suffix.length() > IE_FONT_NAME_MAX_LENGTH)
 		{
 			suffix =
-				(((style & Font.BOLD) > 0 || (style & Font.ITALIC) > 0) ? "-" : "")
-				+ ((style & Font.BOLD) > 0 ? "B" : "")
-				+ ((style & Font.ITALIC) > 0 ? "I" : "")
-				+ (locale == null ? "" : ("-" + JRDataUtils.getLocaleCode(locale)));
+				((isBold || isItalic) ? "-" : "")
+				+ (isBold ? "B" : "")
+				+ (isItalic ? "I" : "")
+				+ (locale == null ? "" : (LOCALE_SEPARATOR + JRDataUtils.getLocaleCode(locale)));
 		}
 		if (prefix.length() + suffix.length() > IE_FONT_NAME_MAX_LENGTH)
 		{
@@ -203,7 +128,7 @@ public class HtmlFont
 			prefix = prefix.substring(0, IE_FONT_NAME_MAX_LENGTH - suffix.length());
 		}
 		
-		id = prefix + suffix;
+		shortId = prefix + suffix;
 	}
 	
 	/**
@@ -212,6 +137,19 @@ public class HtmlFont
 	public String getId()
 	{
 		return id;
+	}
+	
+	/**
+	 * 
+	 */
+	public String getShortId()
+	{
+		return shortId;
+	}
+	
+	public HtmlFontFamily getFamily()
+	{
+		return family;
 	}
 	
 	public Locale getLocale()
@@ -244,8 +182,13 @@ public class HtmlFont
 		return woff;
 	}
 	
-	public int getStyle()
+	public boolean isBold()
 	{
-		return style;
+		return isBold;
+	}
+	
+	public boolean isItalic()
+	{
+		return isItalic;
 	}
 }

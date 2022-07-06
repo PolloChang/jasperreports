@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,12 +28,12 @@ import java.io.Writer;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxParagraphHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxParagraphHelper extends BaseHelper
 {
@@ -44,6 +44,11 @@ public class XlsxParagraphHelper extends BaseHelper
 	private static final String HORIZONTAL_ALIGN_RIGHT = "right";
 	private static final String HORIZONTAL_ALIGN_CENTER = "center";
 	private static final String HORIZONTAL_ALIGN_JUSTIFY = "justify";
+
+	private static final String VERTICAL_ALIGN_TOP = "top";
+	private static final String VERTICAL_ALIGN_MIDDLE = "center";
+	private static final String VERTICAL_ALIGN_BOTTOM = "bottom";
+	private static final String VERTICAL_ALIGN_JUSTIFY = "justify";
 
 	/**
 	 *
@@ -69,7 +74,7 @@ public class XlsxParagraphHelper extends BaseHelper
 
 		exportAlignment(
 			getHorizontalAlignment(
-				style.getOwnHorizontalAlignmentValue() 
+				style.getOwnHorizontalTextAlign() 
 				)
 			);
 
@@ -81,11 +86,11 @@ public class XlsxParagraphHelper extends BaseHelper
 	 */
 	public void exportProps(JRPrintText text)
 	{
-		exportPropsHeader(text.getStyle() == null ? null : text.getStyle().getName());//FIXMEDOCX why getStyleNameReference is not working?
+		exportPropsHeader(text.getStyle() == null ? null : text.getStyle().getName()); //javadoc says getStyleNameReference is not supposed to work for print elements 
 
 		exportAlignment(
 			getHorizontalAlignment(
-				text.getOwnHorizontalAlignmentValue()
+				text.getOwnHorizontalTextAlign()
 				)
 			);
 		
@@ -149,7 +154,7 @@ public class XlsxParagraphHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public static String getHorizontalAlignment(HorizontalAlignEnum horizontalAlignment)
+	public static String getHorizontalAlignment(HorizontalTextAlignEnum horizontalAlignment)
 	{
 		if (horizontalAlignment != null)
 		{
@@ -164,6 +169,29 @@ public class XlsxParagraphHelper extends BaseHelper
 				case LEFT :
 				default :
 					return HORIZONTAL_ALIGN_LEFT;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 *
+	 */
+	public static String getVerticalAlignment(VerticalTextAlignEnum verticalAlignment)
+	{
+		if (verticalAlignment != null)
+		{
+			switch (verticalAlignment)
+			{
+				case JUSTIFIED :
+					return VERTICAL_ALIGN_JUSTIFY;
+				case BOTTOM :
+					return VERTICAL_ALIGN_BOTTOM;
+				case MIDDLE :
+					return VERTICAL_ALIGN_MIDDLE;
+				case TOP :
+				default :
+					return VERTICAL_ALIGN_TOP;
 			}
 		}
 		return null;

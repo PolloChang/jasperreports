@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,76 +27,38 @@
  * 
  * Contributors:
  * Majid Ali Khan - majidkk@users.sourceforge.net
- * Frank Sch�nheit - Frank.Schoenheit@Sun.COM
+ * Frank Schönheit - Frank.Schoenheit@Sun.COM
  */
 package net.sf.jasperreports.engine.export.oasis;
 
-import java.util.List;
-
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.export.LengthUtil;
-import net.sf.jasperreports.export.ExporterInput;
-import net.sf.jasperreports.export.ExporterInputItem;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StyleBuilder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StyleBuilder
 {
 	/**
 	 * 
 	 */
-	private ExporterInput exporterInput;
 	private WriterHelper writer;
 	
 	/**
 	 * 
 	 */
-	public StyleBuilder(ExporterInput exporterInput, WriterHelper writer)
+	public StyleBuilder(WriterHelper writer)
 	{
-		this.exporterInput = exporterInput;
 		this.writer = writer;
 	}
 
 	/**
 	 * 
 	 */
-	public void build()
-	{
-		List<ExporterInputItem> items = exporterInput.getItems();
-		
-		for(int reportIndex = 0; reportIndex < items.size(); reportIndex++)
-		{
-			ExporterInputItem item = items.get(reportIndex);
-			JasperPrint jasperPrint = item.getJasperPrint();
-
-			if (reportIndex == 0)
-			{
-				buildBeforeAutomaticStyles(jasperPrint);
-			}
-			
-			buildPageLayout(reportIndex, jasperPrint);
-		}
-
-		buildBetweenAutomaticAndMasterStyles();
-
-		for(int reportIndex = 0; reportIndex < items.size(); reportIndex++)
-		{
-			buildMasterPage(reportIndex);
-		}
-
-		buildAfterMasterStyles();
-		
-		writer.flush();
-	}
-	
-	/**
-	 * 
-	 */
-	private void buildBeforeAutomaticStyles(JasperPrint jasperPrint)
+	public void buildBeforeAutomaticStyles(JasperPrint jasperPrint)
 	{
 		writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 
@@ -133,7 +95,7 @@ public class StyleBuilder
 			"draw:style=\"rect\" draw:dots1=\"1\" draw:dots1-length=\"0.05cm\" draw:dots2=\"1\" " +
 			"draw:dots2-length=\"0.05cm\" draw:distance=\"0.05cm\"/>");
 		writer.write(" <style:default-style style:family=\"paragraph\"><style:paragraph-properties style:tab-stop-distance=\"" +
-				LengthUtil.inch(new JRBasePrintText(jasperPrint.getDefaultStyleProvider()).getParagraph().getTabStopWidth()) +
+				LengthUtil.inchFloor4Dec(new JRBasePrintText(jasperPrint.getDefaultStyleProvider()).getParagraph().getTabStopWidth()) +
 				"in\"/></style:default-style>\n");	
 		writer.write(" </office:styles>\n");	
 		writer.write(" <office:automatic-styles>\n");	
@@ -142,38 +104,20 @@ public class StyleBuilder
 	/**
 	 * 
 	 */
-	private void buildBetweenAutomaticAndMasterStyles()
-	{
-		writer.write(" </office:automatic-styles>\n");
-		writer.write(" <office:master-styles>\n");	
-	}
-	
-	/**
-	 * 
-	 */
-	private void buildAfterMasterStyles()
-	{
-		writer.write(" </office:master-styles>\n");	
-		writer.write("</office:document-styles>\n");
-	}
-
-	/**
-	 * 
-	 */
-	private void buildPageLayout(int reportIndex, JasperPrint jasperPrint) 
+	public void buildPageLayout(int pageFormatIndex, PrintPageFormat pageFormat) 
 	{
 			writer.write("<style:page-layout");
-			writer.write(" style:name=\"page_" + reportIndex + "\">\n");
+			writer.write(" style:name=\"page_" + pageFormatIndex + "\">\n");
 			
 			writer.write("<style:page-layout-properties");
-			writer.write(" fo:page-width=\"" + LengthUtil.inchRound(jasperPrint.getPageWidth()) +"in\"");
-			writer.write(" fo:page-height=\"" + LengthUtil.inchRound(jasperPrint.getPageHeight()) +"in\"");//FIXMEODT we probably need some actualHeight trick
+			writer.write(" fo:page-width=\"" + LengthUtil.inchRound4Dec(pageFormat.getPageWidth()) +"in\"");
+			writer.write(" fo:page-height=\"" + LengthUtil.inchRound4Dec(pageFormat.getPageHeight()) +"in\"");//FIXMEODT we probably need some actualHeight trick
 			writer.write(" fo:margin-top=\"0in\"");//FIXMEODT if first cell on page is for frame (nested table), this forcing of margins to zero does not work
 			writer.write(" fo:margin-bottom=\"0in\"");
 			writer.write(" fo:margin-left=\"0in\"");
 			writer.write(" fo:margin-right=\"0in\"");
 
-			switch (jasperPrint.getOrientationValue())
+			switch (pageFormat.getOrientation())
 			{
 				case LANDSCAPE:
 					writer.write(" style:print-orientation=\"landscape\"");
@@ -190,13 +134,22 @@ public class StyleBuilder
 	/**
 	 * 
 	 */
-	private void buildMasterPage(int reportIndex) 
+	public void buildMasterPages(int pageFormatCount) 
 	{
-		writer.write("<style:master-page style:name=\"master_");
-		writer.write(String.valueOf(reportIndex));
-		writer.write("\" style:page-layout-name=\"page_");
-		writer.write(String.valueOf(reportIndex));
-		writer.write("\"/>\n");
+		writer.write(" </office:automatic-styles>\n");
+		writer.write(" <office:master-styles>\n");	
+
+		for (int i = 0; i <= pageFormatCount; i++)
+		{
+			writer.write("<style:master-page style:name=\"master_");
+			writer.write(String.valueOf(i));
+			writer.write("\" style:page-layout-name=\"page_");
+			writer.write(String.valueOf(i));
+			writer.write("\"/>\n");
+		}
+
+		writer.write(" </office:master-styles>\n");	
+		writer.write("</office:document-styles>\n");
 	}
 
 }

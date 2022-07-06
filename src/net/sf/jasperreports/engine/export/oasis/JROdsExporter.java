@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,10 +27,12 @@
  *
  * Contributors:
  * Majid Ali Khan - majidkk@users.sourceforge.net
- * Frank Sch�nheit - Frank.Schoenheit@Sun.COM
+ * Frank Schönheit - Frank.Schoenheit@Sun.COM
  */
 package net.sf.jasperreports.engine.export.oasis;
 
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.geom.Dimension2D;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,6 +40,9 @@ import java.text.AttributedCharacterIterator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
@@ -50,12 +55,12 @@ import net.sf.jasperreports.engine.JRPrintGraphicElement;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintLine;
+import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.export.Cut;
 import net.sf.jasperreports.engine.export.CutsInfo;
@@ -72,15 +77,20 @@ import net.sf.jasperreports.engine.export.XlsRowLevelInfo;
 import net.sf.jasperreports.engine.export.zip.ExportZipEntry;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZipEntry;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.engine.util.ExifOrientationEnum;
+import net.sf.jasperreports.engine.util.ImageUtil;
+import net.sf.jasperreports.engine.util.ImageUtil.Insets;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.export.OdsExporterConfiguration;
 import net.sf.jasperreports.export.OdsReportConfiguration;
 import net.sf.jasperreports.export.XlsReportConfiguration;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
@@ -103,7 +113,6 @@ import org.apache.commons.logging.LogFactory;
  * @see net.sf.jasperreports.export.OdsReportConfiguration
  * @see net.sf.jasperreports.export.XlsReportConfiguration
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROdsExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration, OdsExporterConfiguration, JROdsExporterContext>
 {
@@ -122,23 +131,27 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	protected ExportZipEntry tempStyleEntry;
 	protected WriterHelper tempBodyWriter;
 	protected WriterHelper tempStyleWriter;
+	protected WriterHelper stylesWriter;
 
 	protected StyleCache styleCache;
 
 	protected DocumentBuilder documentBuilder;
 	protected TableBuilder tableBuilder;
+	protected StyleBuilder styleBuilder;
 
 	protected boolean startPage;
+	protected PrintPageFormat oldPageFormat;
+	protected int pageFormatIndex;
 	
-	protected StringBuffer namedExpressions;
+	protected StringBuilder namedExpressions;
 
-	protected Map<Integer, String> rowStyles = new HashMap<Integer, String>();
-	protected Map<Integer, String> columnStyles = new HashMap<Integer, String>();
+	protected Map<Integer, String> rowStyles = new HashMap<>();
+	protected Map<Integer, String> columnStyles = new HashMap<>();
 
 	@Override
 	protected void openWorkbook(OutputStream os) throws JRException, IOException
 	{
-		oasisZip = new FileBufferedOasisZip(OasisZip.MIME_TYPE_ODS);
+		oasisZip = new OdsZip();
 
 		tempBodyEntry = new FileBufferedZipEntry(null);
 		tempStyleEntry = new FileBufferedZipEntry(null);
@@ -150,32 +163,73 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 		columnStyles.clear();
 		documentBuilder = new OdsDocumentBuilder(oasisZip);
 		
-		styleCache = new StyleCache(documentBuilder, jasperReportsContext, tempStyleWriter, getExporterKey());
+		styleCache = new StyleCache(jasperReportsContext, tempStyleWriter, getExporterKey());
 
-		WriterHelper stylesWriter = new WriterHelper(jasperReportsContext, oasisZip.getStylesEntry().getWriter());
+		stylesWriter = new WriterHelper(jasperReportsContext, oasisZip.getStylesEntry().getWriter());
 
-		StyleBuilder styleBuilder = new StyleBuilder(exporterInput, stylesWriter);
-		styleBuilder.build();
+		styleBuilder = new StyleBuilder(stylesWriter);
+		styleBuilder.buildBeforeAutomaticStyles(jasperPrint);
 
-		stylesWriter.close();
+		namedExpressions = new StringBuilder("<table:named-expressions>\n");
 		
-		namedExpressions = new StringBuffer("<table:named-expressions>\n");
+		pageFormatIndex = -1;
+		
+		maxColumnIndex = 1023;
 	}
 
 	@Override
+	protected int exportPage(JRPrintPage page, CutsInfo xCuts, int startRow, String defaultSheetName) throws JRException
+	{
+		if (oldPageFormat != pageFormat)
+		{
+			styleBuilder.buildPageLayout(++pageFormatIndex, pageFormat);
+			oldPageFormat = pageFormat;
+		}
+
+		return super.exportPage(page, xCuts, startRow, defaultSheetName);
+	}
+	
+	@Override
 	protected void createSheet(CutsInfo xCuts, SheetInfo sheetInfo)
 	{
-		closeSheet();
-		
 		startPage = true;
+		
+//		CutsInfo xCuts = gridLayout.getXCuts();
+//		JRExporterGridCell[][] grid = gridLayout.getGrid();
 
-		tableBuilder = new OdsTableBuilder(documentBuilder, jasperPrint, reportIndex, pageIndex, tempBodyWriter, tempStyleWriter, styleCache, rowStyles, columnStyles, sheetInfo.sheetName);
+//		TableBuilder tableBuilder = frameIndex == null
+//			? new TableBuilder(reportIndex, pageIndex, tempBodyWriter, tempStyleWriter)
+//			: new TableBuilder(frameIndex.toString(), tempBodyWriter, tempStyleWriter);
+		tableBuilder = new OdsTableBuilder(
+							documentBuilder, 
+							jasperPrint, 
+							pageFormatIndex, 
+							pageIndex, 
+							tempBodyWriter, 
+							tempStyleWriter, 
+							styleCache, 
+							rowStyles, 
+							columnStyles, 
+							sheetInfo.sheetName,
+							sheetInfo.tabColor);
 
+//		tableBuilder.buildTableStyle(gridLayout.getWidth());
 		tableBuilder.buildTableStyle(xCuts.getLastCutOffset());//FIXMEODS
 		tableBuilder.buildTableHeader();
+
+//		for(int col = 1; col < xCuts.size(); col++)
+//		{
+//			tableBuilder.buildColumnStyle(
+//					col - 1,
+//					xCuts.getCutOffset(col) - xCuts.getCutOffset(col - 1)
+//					);
+//			tableBuilder.buildColumnHeader(col - 1);
+//			tableBuilder.buildColumnFooter();
+//		}
 	}
 
 
+	@Override
 	protected void closeSheet()
 	{
 		if (tableBuilder != null)
@@ -188,12 +242,14 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	@Override
 	protected void closeWorkbook(OutputStream os) throws JRException, IOException
 	{
-		closeSheet();
+		styleBuilder.buildMasterPages(pageFormatIndex);
 		
+		stylesWriter.flush();
 		tempBodyWriter.flush();
 		tempStyleWriter.flush();
 
 
+		stylesWriter.close();
 		tempBodyWriter.close();
 		tempStyleWriter.close();
 		namedExpressions.append("</table:named-expressions>\n");
@@ -240,6 +296,21 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	}
 
 	@Override
+	protected void addRowBreak(int rowIndex)
+	{
+		//FIXMEODS sheet.setRowBreak(rowIndex);
+	}
+
+//	@Override
+//	protected void setCell(
+//		JRExporterGridCell gridCell, 
+//		int colIndex,
+//		int rowIndex) 
+//	{
+//		//nothing to do
+//	}
+
+	@Override
 	protected void addBlankCell(
 		JRExporterGridCell gridCell, 
 		int colIndex,
@@ -256,7 +327,13 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 		{
 			tempBodyWriter.write(" table:style-name=\"" + styleCache.getCellStyle(gridCell) + "\"");
 		}
+//		if (emptyCellColSpan > 1)
+//		{
+//			tempBodyWriter.write(" table:number-columns-spanned=\"" + emptyCellColSpan + "\"");
+//		}
 		tempBodyWriter.write("/>\n");
+//
+//		exportOccupiedCells(emptyCellColSpan - 1);
 	}
 
 	@Override
@@ -278,7 +355,7 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 		int rowIndex
 		) throws JRException
 	{
-		tableBuilder.exportText(text, gridCell);
+		tableBuilder.exportText(text, gridCell, isShrinkToFit(text), isWrapText(text), isIgnoreTextFormatting(text));
 		XlsReportConfiguration configuration = getCurrentItemConfiguration();
 		if (!configuration.isIgnoreAnchors() && text.getAnchorName() != null)
 		{
@@ -301,13 +378,13 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 		) throws JRException 
 	{
 		int topPadding = 
-			Math.max(image.getLineBox().getTopPadding().intValue(), Math.round(image.getLineBox().getTopPen().getLineWidth().floatValue()));
+			Math.max(image.getLineBox().getTopPadding(), Math.round(image.getLineBox().getTopPen().getLineWidth()));
 		int leftPadding = 
-			Math.max(image.getLineBox().getLeftPadding().intValue(), Math.round(image.getLineBox().getLeftPen().getLineWidth().floatValue()));
+			Math.max(image.getLineBox().getLeftPadding(), Math.round(image.getLineBox().getLeftPen().getLineWidth()));
 		int bottomPadding = 
-			Math.max(image.getLineBox().getBottomPadding().intValue(), Math.round(image.getLineBox().getBottomPen().getLineWidth().floatValue()));
+			Math.max(image.getLineBox().getBottomPadding(), Math.round(image.getLineBox().getBottomPen().getLineWidth()));
 		int rightPadding = 
-			Math.max(image.getLineBox().getRightPadding().intValue(), Math.round(image.getLineBox().getRightPen().getLineWidth().floatValue()));
+			Math.max(image.getLineBox().getRightPadding(), Math.round(image.getLineBox().getRightPen().getLineWidth()));
 
 		int availableImageWidth = image.getWidth() - leftPadding - rightPadding;
 		availableImageWidth = availableImageWidth < 0 ? 0 : availableImageWidth;
@@ -315,172 +392,605 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 		int availableImageHeight = image.getHeight() - topPadding - bottomPadding;
 		availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
 
-		int width = availableImageWidth;
-		int height = availableImageHeight;
-
-		int xoffset = 0;
-		int yoffset = 0;
-
 		tableBuilder.buildCellHeader(styleCache.getCellStyle(gridCell), gridCell.getColSpan(), gridCell.getRowSpan());
 
-		Renderable renderer = image.getRenderable();
+		Renderable renderer = image.getRenderer();
 
 		if (
-			renderer != null &&
-			availableImageWidth > 0 &&
-			availableImageHeight > 0
+			renderer != null 
+			&& availableImageWidth > 0 
+			&& availableImageHeight > 0
 			)
 		{
-			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && !image.isLazy())
+			InternalImageProcessor imageProcessor = 
+				new InternalImageProcessor(
+					image, 
+					gridCell,
+					availableImageWidth,
+					availableImageHeight//,
+//					documentBuilder,
+//					jasperReportsContext
+					);
+				
+			InternalImageProcessorResult imageProcessorResult = null;
+			
+			try
 			{
-				// Non-lazy image renderers are all asked for their image data at some point.
-				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = RenderableUtil.getInstance(getJasperReportsContext()).getOnErrorRendererForImageData(renderer, image.getOnErrorTypeValue());
+				imageProcessorResult = imageProcessor.process(renderer);
 			}
-		}
-		else
-		{
-			renderer = null;
-		}
-
-		if (renderer != null)
-		{
-			float xalignFactor = tableBuilder.getXAlignFactor(image);
-			float yalignFactor = tableBuilder.getYAlignFactor(image);
-
-			switch (image.getScaleImageValue())
+			catch (Exception e)
 			{
-				case FILL_FRAME :
+				Renderable onErrorRenderer = getRendererUtil().handleImageError(e, image.getOnErrorTypeValue());
+				if (onErrorRenderer != null)
 				{
-					width = availableImageWidth;
-					height = availableImageHeight;
-					xoffset = 0;
-					yoffset = 0;
-					break;
-				}
-				case CLIP :
-				case RETAIN_SHAPE :
-				default :
-				{
-					double normalWidth = availableImageWidth;
-					double normalHeight = availableImageHeight;
-
-					if (!image.isLazy())
-					{
-						// Image load might fail.
-						Renderable tmpRenderer =
-							RenderableUtil.getInstance(getJasperReportsContext()).getOnErrorRendererForDimension(renderer, image.getOnErrorTypeValue());
-						Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(getJasperReportsContext());
-						// If renderer was replaced, ignore image dimension.
-						if (tmpRenderer == renderer && dimension != null)
-						{
-							normalWidth = dimension.getWidth();
-							normalHeight = dimension.getHeight();
-						}
-					}
-
-					if (availableImageHeight > 0)
-					{
-						double ratio = normalWidth / normalHeight;
-
-						if( ratio > availableImageWidth / (double)availableImageHeight )
-						{
-							width = availableImageWidth;
-							height = (int)(width/ratio);
-
-						}
-						else
-						{
-							height = availableImageHeight;
-							width = (int)(ratio * height);
-						}
-					}
-
-					xoffset = (int)(xalignFactor * (availableImageWidth - width));
-					yoffset = (int)(yalignFactor * (availableImageHeight - height));
+					imageProcessorResult = imageProcessor.process(onErrorRenderer);
 				}
 			}
-
-			XlsReportConfiguration configuration = getCurrentItemConfiguration();
 			
-			boolean isOnePagePerSheet = configuration.isOnePagePerSheet();
-
-			documentBuilder.insertPageAnchor(tableBuilder);
-			if (!configuration.isIgnoreAnchors() && image.getAnchorName() != null)
+			if (imageProcessorResult != null)
 			{
-				tableBuilder.exportAnchor(JRStringUtil.xmlEncode(image.getAnchorName()));
-				String cellAddress = "$&apos;" + tableBuilder.getTableName() + "&apos;." + getCellAddress(rowIndex, colIndex);
-				int lastCol = Math.max(0, colIndex + gridCell.getColSpan() - 1);
-				String cellRangeAddress = getCellAddress(rowIndex + gridCell.getRowSpan() -1, lastCol);
-				namedExpressions.append("<table:named-range table:name=\""+ image.getAnchorName() +"\" table:base-cell-address=\"" + cellAddress +"\" table:cell-range-address=\"" + cellAddress +":" + cellRangeAddress +"\"/>\n");
-			}
+				XlsReportConfiguration configuration = getCurrentItemConfiguration();
+				
+				boolean isOnePagePerSheet = configuration.isOnePagePerSheet();
+				
+//					tempBodyWriter.write("<text:p>");
+				documentBuilder.insertPageAnchor(tableBuilder);
+				if (!configuration.isIgnoreAnchors() && image.getAnchorName() != null)
+				{
+					tableBuilder.exportAnchor(JRStringUtil.xmlEncode(image.getAnchorName()));
+					String cellAddress = "$&apos;" + tableBuilder.getTableName() + "&apos;." + getCellAddress(rowIndex, colIndex);
+					int lastCol = Math.max(0, colIndex + gridCell.getColSpan() - 1);
+					String cellRangeAddress = getCellAddress(rowIndex + gridCell.getRowSpan() - 1, lastCol);
+					namedExpressions.append("<table:named-range table:name=\""+ image.getAnchorName() +"\" table:base-cell-address=\"" + cellAddress +"\" table:cell-range-address=\"" + cellAddress +":" + cellRangeAddress +"\"/>\n");
+				}
 
-			boolean startedHyperlink = tableBuilder.startHyperlink(image,false, isOnePagePerSheet);
+				boolean startedHyperlink = tableBuilder.startHyperlink(image,false, isOnePagePerSheet);
 
-			String cellAddress = getCellAddress(rowIndex + gridCell.getRowSpan() + 1, colIndex + gridCell.getColSpan());
-			cellAddress = cellAddress == null ? "" : "table:end-cell-address=\"" + cellAddress + "\" ";
+				//String cellAddress = getCellAddress(rowIndex + gridCell.getRowSpan(), colIndex + gridCell.getColSpan() - 1);
+				String cellAddress = getCellAddress(rowIndex + gridCell.getRowSpan(), colIndex + gridCell.getColSpan());
+				cellAddress = cellAddress == null ? "" : "table:end-cell-address=\"" + cellAddress + "\" ";
+				
+//				tempBodyWriter.write(
+//					"<draw:frame text:anchor-type=\"frame\" "
+//					+ "draw:style-name=\"" + styleCache.getGraphicStyle(image) + "\" "
+//					+ cellAddress
+////					+ "table:end-x=\"" + LengthUtil.inchRound(image.getWidth()) + "in\" "
+////					+ "table:end-y=\"" + LengthUtil.inchRound(image.getHeight()) + "in\" "
+//					+ "table:end-x=\"0in\" "
+//					+ "table:end-y=\"0in\" "
+////					+ "svg:x=\"" + LengthUtil.inch(image.getX() + leftPadding + imageProcessorResult.xoffset) + "in\" "
+////					+ "svg:y=\"" + LengthUtil.inch(image.getY() + topPadding + imageProcessorResult.yoffset) + "in\" "
+//					+ "svg:x=\"0in\" "
+//					+ "svg:y=\"0in\" "
+//					+ "svg:width=\"" + LengthUtil.inchRound(image.getWidth()) + "in\" "
+//					+ "svg:height=\"" + LengthUtil.inchRound(image.getHeight()) + "in\"" 
+//					+ ">"
+//					);
+				
+				
+				tempBodyWriter.write(
+					"<draw:frame text:anchor-type=\"paragraph\" "
+					+ "draw:style-name=\"" + styleCache.getGraphicStyle(
+							image, 
+							imageProcessorResult.cropTop, 
+							imageProcessorResult.cropLeft,
+							imageProcessorResult.cropBottom,
+							imageProcessorResult.cropRight
+							) + "\" "
+					// x and y offset of the svg do not seem to have any effect and it works the same regardless of their value; 
+					// probably because the image is anchored to the paragraph
+					+ "svg:x=\"0in\" "
+					+ "svg:y=\"0in\" "
+//					+ "svg:x=\"" + LengthUtil.inchFloor4Dec(leftPadding + imageProcessorResult.xoffset) + "in\" "
+//					+ "svg:y=\"" + LengthUtil.inchFloor4Dec(topPadding + imageProcessorResult.yoffset) + "in\" "
+					+ "svg:width=\"" + LengthUtil.inchFloor4Dec(imageProcessorResult.width) + "in\" "
+					+ "svg:height=\"" + LengthUtil.inchFloor4Dec(imageProcessorResult.height) + "in\" "
+					+ "draw:transform=\"rotate (" + imageProcessorResult.angle + ") "
+					+ "translate (" + LengthUtil.inchFloor4Dec(leftPadding + imageProcessorResult.xoffset) 
+					+ "in," + LengthUtil.inchFloor4Dec(topPadding + imageProcessorResult.yoffset) + "in)\">"
+					);				
+				tempBodyWriter.write("<draw:image ");
+				tempBodyWriter.write(" xlink:href=\"" + JRStringUtil.xmlEncode(imageProcessorResult.imagePath) + "\"");
+				tempBodyWriter.write(" xlink:type=\"simple\"");
+				tempBodyWriter.write(" xlink:show=\"embed\"");
+				tempBodyWriter.write(" xlink:actuate=\"onLoad\"");
+				tempBodyWriter.write("/>\n");
 
-			StringBuffer drawContent = new StringBuffer();
-
-			drawContent.append("<draw:frame text:anchor-type=\"frame\" ");
-			drawContent.append("draw:style-name=\"");
-			drawContent.append(styleCache.getGraphicStyle(image));
-			drawContent.append("\" ");
-			drawContent.append(cellAddress);
-			drawContent.append("table:end-x=\"0in\" ");
-			drawContent.append("table:end-y=\"0in\" ");
-			drawContent.append("svg:x=\"0in\" ");
-			drawContent.append("svg:y=\"0in\" ");
-			drawContent.append("svg:width=\"");
-			drawContent.append(LengthUtil.inchRound(image.getWidth()));
-			drawContent.append( "in\" ");
-			drawContent.append("svg:height=\"");
-			drawContent.append(LengthUtil.inchRound(image.getHeight()));
-			drawContent.append( "in\"");
-			drawContent.append(">");
-			
-			tempBodyWriter.write(drawContent.toString());
-			tempBodyWriter.write("<draw:image ");
-			String imagePath = documentBuilder.getImagePath(renderer, image, gridCell);
-			tempBodyWriter.write(" xlink:href=\"" + JRStringUtil.xmlEncode(imagePath) + "\"");
-			tempBodyWriter.write(" xlink:type=\"simple\"");
-			tempBodyWriter.write(" xlink:show=\"embed\"");
-			tempBodyWriter.write(" xlink:actuate=\"onLoad\"");
-			tempBodyWriter.write("/>\n");
-
-			tempBodyWriter.write("</draw:frame>");
-			if(startedHyperlink)
-			{
-				tableBuilder.endHyperlink(false);
+				tempBodyWriter.write("</draw:frame>");
+				if (startedHyperlink)
+				{
+					tableBuilder.endHyperlink(false);
+				}
+//					tempBodyWriter.write("</text:p>");
 			}
 		}
 
 		tableBuilder.buildCellFooter();
 	}
 	
+	private class InternalImageProcessor 
+	{
+		private final JRPrintImage imageElement;
+		private final RenderersCache imageRenderersCache;
+		private final JRExporterGridCell cell;
+		private final int availableImageWidth;
+		private final int availableImageHeight;
+		
+		protected InternalImageProcessor(
+			JRPrintImage imageElement,
+			JRExporterGridCell cell,
+			int availableImageWidth,
+			int availableImageHeight
+			)
+		{
+			this.imageElement = imageElement;
+			this.imageRenderersCache = imageElement.isUsingCache() ? documentBuilder.getRenderersCache() 
+					: new RenderersCache(getJasperReportsContext());
+			this.cell = cell;
+			this.availableImageWidth = availableImageWidth;
+			this.availableImageHeight = availableImageHeight;
+		}
+		
+		private InternalImageProcessorResult process(Renderable renderer) throws JRException
+		{
+//			boolean isLazy = RendererUtil.isLazy(renderer);
+//
+//			if (!isLazy)
+//			{
+				if (renderer instanceof ResourceRenderer)
+				{
+					renderer = imageRenderersCache.getLoadedRenderer((ResourceRenderer)renderer);
+				}
+//			}
+
+			// check dimension first, to avoid caching renderers that might not be used eventually, due to their dimension errors 
+
+			ExifOrientationEnum exifOrientation = ExifOrientationEnum.NORMAL;
+			if (renderer instanceof DataRenderable)
+			{
+				byte[] imageData = ((DataRenderable)renderer).getData(jasperReportsContext);
+				exifOrientation = ImageUtil.getExifOrientation(imageData);
+			}
+
+			int imageWidth = availableImageWidth;
+			int imageHeight = availableImageHeight;
+
+			int xoffset = 0;
+			int yoffset = 0;
+			
+			double cropTop = 0;
+			double cropLeft = 0;
+			double cropBottom = 0;
+			double cropRight = 0;
+			
+			double angle = 0;
+
+			switch (imageElement.getScaleImageValue())
+			{
+				case FILL_FRAME :
+				{
+					switch (ImageUtil.getRotation(imageElement.getRotation(), exifOrientation))
+					{
+						case LEFT:
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							xoffset = 0;
+							yoffset = availableImageHeight;
+							angle = Math.PI / 2;
+							break;
+						case RIGHT:
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							xoffset = availableImageWidth;
+							yoffset = 0;
+							angle = - Math.PI / 2;
+							break;
+						case UPSIDE_DOWN:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							xoffset = availableImageWidth;
+							yoffset = availableImageHeight;
+							angle = Math.PI;
+							break;
+						case NONE:
+						default:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							xoffset = 0;
+							yoffset = 0;
+							angle = 0;
+							break;
+					}
+					
+					break;
+				}
+				case CLIP :
+				{
+					double normalWidth = availableImageWidth;
+					double normalHeight = availableImageHeight;
+
+					DimensionRenderable dimensionRenderer = imageRenderersCache.getDimensionRenderable(renderer);
+					Dimension2D dimension = dimensionRenderer == null ? null :  dimensionRenderer.getDimension(getJasperReportsContext());
+					if (dimension != null)
+					{
+						normalWidth = dimension.getWidth();
+						normalHeight = dimension.getHeight();
+					}
+
+					switch (ImageUtil.getRotation(imageElement.getRotation(), exifOrientation))
+					{
+						case LEFT:
+							if (dimension == null)
+							{
+								normalWidth = availableImageHeight;
+								normalHeight = availableImageWidth;
+							}
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							switch (imageElement.getHorizontalImageAlign())
+							{
+								case RIGHT :
+									cropLeft = normalWidth - availableImageHeight;
+									cropRight = 0;
+									yoffset = imageWidth;
+									break;
+								case CENTER :
+									cropLeft = (normalWidth - availableImageHeight) / 2;
+									cropRight = cropLeft;
+									yoffset = availableImageHeight - (availableImageHeight - imageWidth) / 2;
+									break;
+								case LEFT :
+								default :
+									cropLeft = 0;
+									cropRight = normalWidth - availableImageHeight;
+									yoffset = availableImageHeight;
+									break;
+							}
+							switch (imageElement.getVerticalImageAlign())
+							{
+								case TOP :
+									cropTop = 0;
+									cropBottom = normalHeight - availableImageWidth;
+									xoffset = 0;
+									break;
+								case MIDDLE :
+									cropTop = (normalHeight - availableImageWidth) / 2;
+									cropBottom = cropTop;
+									xoffset = (availableImageWidth - imageHeight) / 2;
+									break;
+								case BOTTOM :
+								default :
+									cropTop = normalHeight - availableImageWidth;
+									cropBottom = 0;
+									xoffset = availableImageWidth - imageHeight;
+									break;
+							}
+							angle = Math.PI / 2;
+							break;
+						case RIGHT:
+							if (dimension == null)
+							{
+								normalWidth = availableImageHeight;
+								normalHeight = availableImageWidth;
+							}
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							switch (imageElement.getHorizontalImageAlign())
+							{
+								case RIGHT :
+									cropLeft = normalWidth - availableImageHeight;
+									cropRight = 0;
+									yoffset = availableImageHeight - imageWidth;
+									break;
+								case CENTER :
+									cropLeft = (normalWidth - availableImageHeight) / 2;
+									cropRight = cropLeft;
+									yoffset = (availableImageHeight - imageWidth) / 2;
+									break;
+								case LEFT :
+								default :
+									cropLeft = 0;
+									cropRight = normalWidth - availableImageHeight;
+									yoffset = 0;
+									break;
+							}
+							switch (imageElement.getVerticalImageAlign())
+							{
+								case TOP :
+									cropTop = 0;
+									cropBottom = normalHeight - availableImageWidth;
+									xoffset = availableImageWidth;
+									break;
+								case MIDDLE :
+									cropTop = (normalHeight - availableImageWidth) / 2;
+									cropBottom = cropTop;
+									xoffset = availableImageWidth - (availableImageWidth - imageHeight) / 2;
+									break;
+								case BOTTOM :
+								default :
+									cropTop = normalHeight - availableImageWidth;
+									cropBottom = 0;
+									xoffset = imageHeight;
+									break;
+							}
+							angle = - Math.PI / 2;
+							break;
+						case UPSIDE_DOWN:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							switch (imageElement.getHorizontalImageAlign())
+							{
+								case RIGHT :
+									cropLeft = normalWidth - availableImageWidth;
+									cropRight = 0;
+									xoffset = imageWidth;
+									break;
+								case CENTER :
+									cropLeft = (normalWidth - availableImageWidth) / 2;
+									cropRight = cropLeft;
+									xoffset = availableImageWidth - (availableImageWidth - imageWidth) / 2;
+									break;
+								case LEFT :
+								default :
+									cropLeft = 0;
+									cropRight = normalWidth - availableImageWidth;
+									xoffset = availableImageWidth;
+									break;
+							}
+							switch (imageElement.getVerticalImageAlign())
+							{
+								case TOP :
+									cropTop = 0;
+									cropBottom = normalHeight - availableImageHeight;
+									yoffset = availableImageHeight;
+									break;
+								case MIDDLE :
+									cropTop = (normalHeight - availableImageHeight) / 2;
+									cropBottom = cropTop;
+									yoffset = availableImageHeight - (availableImageHeight - imageHeight) / 2;
+									break;
+								case BOTTOM :
+								default :
+									cropTop = normalHeight - availableImageHeight;
+									cropBottom = 0;
+									yoffset = imageHeight;
+									break;
+							}
+							angle = Math.PI;
+							break;
+						case NONE:
+						default:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							switch (imageElement.getHorizontalImageAlign())
+							{
+								case RIGHT :
+									cropLeft = normalWidth - availableImageWidth;
+									cropRight = 0;
+									xoffset = availableImageWidth - imageWidth;
+									break;
+								case CENTER :
+									cropLeft = (normalWidth - availableImageWidth) / 2;
+									cropRight = cropLeft;
+									xoffset = (availableImageWidth - imageWidth) / 2;
+									break;
+								case LEFT :
+								default :
+									cropLeft = 0;
+									cropRight = normalWidth - availableImageWidth;
+									xoffset = 0;
+									break;
+							}
+							switch (imageElement.getVerticalImageAlign())
+							{
+								case TOP :
+									cropTop = 0;
+									cropBottom = normalHeight - availableImageHeight;
+									yoffset = 0;
+									break;
+								case MIDDLE :
+									cropTop = (normalHeight - availableImageHeight) / 2;
+									cropBottom = cropTop;
+									yoffset = (availableImageHeight - imageHeight) / 2;
+									break;
+								case BOTTOM :
+								default :
+									cropTop = normalHeight - availableImageHeight;
+									cropBottom = 0;
+									yoffset = availableImageHeight - imageHeight;
+									break;
+							}
+							angle = 0;
+							break;
+					}
+									
+					Insets exifCrop = ImageUtil.getExifCrop(imageElement, exifOrientation, cropTop, cropLeft, cropBottom, cropRight);
+					cropLeft = exifCrop.left;
+					cropRight = exifCrop.right;
+					cropTop = exifCrop.top;
+					cropBottom = exifCrop.bottom;
+
+					break;
+				}
+				case RETAIN_SHAPE :
+				default :
+				{
+					double normalWidth = availableImageWidth;
+					double normalHeight = availableImageHeight;
+
+					Dimension2D dimension = null;
+//					if (!isLazy)
+//					{
+						DimensionRenderable dimensionRenderer = imageRenderersCache.getDimensionRenderable(renderer);
+						dimension = dimensionRenderer == null ? null :  dimensionRenderer.getDimension(getJasperReportsContext());
+						if (dimension != null)
+						{
+							normalWidth = dimension.getWidth();
+							normalHeight = dimension.getHeight();
+						}
+//					}
+
+					double ratioX = 1f;
+					double ratioY = 1f;
+
+					switch (ImageUtil.getRotation(imageElement.getRotation(), exifOrientation))
+					{
+						case LEFT:
+							if (dimension == null)
+							{
+								normalWidth = availableImageHeight;
+								normalHeight = availableImageWidth;
+							}
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							ratioX = availableImageWidth / normalHeight;
+							ratioY = availableImageHeight / normalWidth;
+							ratioX = ratioX < ratioY ? ratioX : ratioY;
+							ratioY = ratioX;
+							xoffset = 0;
+							yoffset = availableImageHeight;
+							cropLeft = (int)(ImageUtil.getXAlignFactor(imageElement) * (normalWidth - availableImageHeight / ratioX));
+							cropRight = (int)((1f - ImageUtil.getXAlignFactor(imageElement)) * (normalWidth - availableImageHeight / ratioX));
+							cropTop = (int)(ImageUtil.getYAlignFactor(imageElement) * (normalHeight - availableImageWidth / ratioY));
+							cropBottom = (int)((1f - ImageUtil.getYAlignFactor(imageElement)) * (normalHeight - availableImageWidth / ratioY));
+							angle = Math.PI / 2;
+							break;
+						case RIGHT:
+							if (dimension == null)
+							{
+								normalWidth = availableImageHeight;
+								normalHeight = availableImageWidth;
+							}
+							imageWidth = availableImageHeight;
+							imageHeight = availableImageWidth;
+							ratioX = availableImageWidth / normalHeight;
+							ratioY = availableImageHeight / normalWidth;
+							ratioX = ratioX < ratioY ? ratioX : ratioY;
+							ratioY = ratioX;
+							xoffset = availableImageWidth;
+							yoffset = 0;
+							cropLeft = (int)(ImageUtil.getXAlignFactor(imageElement) * (normalWidth - availableImageHeight / ratioX));
+							cropRight = (int)((1f - ImageUtil.getXAlignFactor(imageElement)) * (normalWidth - availableImageHeight / ratioX));
+							cropTop = (int)(ImageUtil.getYAlignFactor(imageElement) * (normalHeight - availableImageWidth / ratioY));
+							cropBottom = (int)((1f - ImageUtil.getYAlignFactor(imageElement)) * (normalHeight - availableImageWidth / ratioY));
+							angle = - Math.PI / 2;
+							break;
+						case UPSIDE_DOWN:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							ratioX = availableImageWidth / normalWidth;
+							ratioY = availableImageHeight / normalHeight;
+							ratioX = ratioX < ratioY ? ratioX : ratioY;
+							ratioY = ratioX;
+							xoffset = availableImageWidth;
+							yoffset = availableImageHeight;
+							cropLeft = (int)(ImageUtil.getXAlignFactor(imageElement) * (normalWidth - availableImageWidth / ratioX));
+							cropRight = (int)((1f - ImageUtil.getXAlignFactor(imageElement)) * (normalWidth - availableImageWidth / ratioX));
+							cropTop = (int)(ImageUtil.getYAlignFactor(imageElement) * (normalHeight - availableImageHeight / ratioY));
+							cropBottom = (int)((1f - ImageUtil.getYAlignFactor(imageElement)) * (normalHeight - availableImageHeight / ratioY));
+							angle = Math.PI;
+							break;
+						case NONE:
+						default:
+							imageWidth = availableImageWidth;
+							imageHeight = availableImageHeight;
+							ratioX = availableImageWidth / normalWidth;
+							ratioY = availableImageHeight / normalHeight;
+							ratioX = ratioX < ratioY ? ratioX : ratioY;
+							ratioY = ratioX;
+							xoffset = 0;
+							yoffset = 0;
+							cropLeft = (int)(ImageUtil.getXAlignFactor(imageElement) * (normalWidth - availableImageWidth / ratioX));
+							cropRight = (int)((1f - ImageUtil.getXAlignFactor(imageElement)) * (normalWidth - availableImageWidth / ratioX));
+							cropTop = (int)(ImageUtil.getYAlignFactor(imageElement) * (normalHeight - availableImageHeight / ratioY));
+							cropBottom = (int)((1f - ImageUtil.getYAlignFactor(imageElement)) * (normalHeight - availableImageHeight / ratioY));
+							angle = 0;
+							break;
+					}
+					
+					Insets exifCrop = ImageUtil.getExifCrop(imageElement, exifOrientation, cropTop, cropLeft, cropBottom, cropRight);
+					cropLeft = exifCrop.left;
+					cropRight = exifCrop.right;
+					cropTop = exifCrop.top;
+					cropBottom = exifCrop.bottom;
+				}
+			}
+
+
+			String imagePath = 
+				documentBuilder.getImagePath(
+					renderer, 
+					new Dimension(imageWidth, imageHeight),
+					ModeEnum.OPAQUE == imageElement.getModeValue() ? imageElement.getBackcolor() : null,
+					cell,
+//					isLazy,
+					imageRenderersCache
+					);
+
+			return 
+				new InternalImageProcessorResult(
+					imagePath, 
+					imageWidth,
+					imageHeight,
+					xoffset,
+					yoffset,
+					cropTop,
+					cropLeft,
+					cropBottom,
+					cropRight,
+					angle
+					);
+		}
+	}
+
+	private class InternalImageProcessorResult 
+	{
+		protected final String imagePath;
+		protected final int width;
+		protected final int height;
+		protected final int xoffset;
+		protected final int yoffset;
+		protected final double cropTop;
+		protected final double cropLeft;
+		protected final double cropBottom;
+		protected final double cropRight;
+		protected final double angle;
+
+		protected InternalImageProcessorResult(
+			String imagePath, 
+			int width,
+			int height,
+			int xoffset,
+			int yoffset,
+			double cropTop,
+			double cropLeft,
+			double cropBottom,
+			double cropRight,
+			double angle
+			
+			)
+		{
+			this.imagePath = imagePath;
+			this.width = width;
+			this.height = height;
+			this.xoffset = xoffset;
+			this.yoffset = yoffset;
+			this.cropTop = cropTop;
+			this.cropLeft = cropLeft;
+			this.cropBottom = cropBottom;
+			this.cropRight = cropRight;
+			this.angle = angle;
+		}
+	}
+
 	protected String getCellAddress(int row, int col)
 	{
 		String address = null;
-
-		if(row > -1 && row < 1048577 && col > -1 && col < 16384)
+		if(row > -1 && row < 1048577 && col > -1 && col < maxColumnIndex)
 		{
-			address = "$" + getColumnName(col) + "$" + (row+1);
+			address = "$" + getColumIndexName(col, maxColumnIndex) + "$" + (row + 1);
 		}
 		return address == null ? DEFAULT_ADDRESS : address;
-	}
-	
-	protected String getColumnName(int colIndex)
-	{
-		String colName = null;
-		if(colIndex > -1 && colIndex < 16384)
-		{
-			colName = colIndex > 675 
-					? String.valueOf((char)(colIndex/676 +64)) + getColumnName(colIndex%676) 
-					: (colIndex > 25 
-							? String.valueOf((char)(colIndex/26 + 64)) + getColumnName(colIndex%26) 
-							: String.valueOf((char)(colIndex %26 + 65)));
-		}
-		return colName == null ? DEFAULT_COLUMN : colName;
 	}
 	
 	@Override
@@ -535,8 +1045,35 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 
 		tableBuilder.buildCellHeader(styleCache.getCellStyle(gridCell), gridCell.getColSpan(), gridCell.getRowSpan());
 
+//		double x1, y1, x2, y2;
+//
+//		if (line.getDirection() == JRLine.DIRECTION_TOP_DOWN)
+//		{
+//			x1 = Utility.translatePixelsToInches(0);
+//			y1 = Utility.translatePixelsToInches(0);
+//			x2 = Utility.translatePixelsToInches(line.getWidth() - 1);
+//			y2 = Utility.translatePixelsToInches(line.getHeight() - 1);
+//		}
+//		else
+//		{
+//			x1 = Utility.translatePixelsToInches(0);
+//			y1 = Utility.translatePixelsToInches(line.getHeight() - 1);
+//			x2 = Utility.translatePixelsToInches(line.getWidth() - 1);
+//			y2 = Utility.translatePixelsToInches(0);
+//		}
 
 		tempBodyWriter.write("<text:p>");
+//FIXMEODS		insertPageAnchor();
+//		tempBodyWriter.write(
+//				"<draw:line text:anchor-type=\"paragraph\" "
+//				+ "draw:style-name=\"" + styleCache.getGraphicStyle(line) + "\" "
+//				+ "svg:x1=\"" + x1 + "in\" "
+//				+ "svg:y1=\"" + y1 + "in\" "
+//				+ "svg:x2=\"" + x2 + "in\" "
+//				+ "svg:y2=\"" + y2 + "in\">"
+//				//+ "</draw:line>"
+//				+ "<text:p/></draw:line>"
+//				);
 		tempBodyWriter.write("</text:p>");
 		tableBuilder.buildCellFooter();
 	}
@@ -584,12 +1121,10 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	}
 
 	@Override
-	protected void setFreezePane(int rowIndex, int colIndex, boolean isRowEdge,
-			boolean isColumnEdge) {
-		// TODO Auto-generated method stub
-		
+	protected void setFreezePane(int rowIndex, int colIndex) {
+		// nothing to do here
 	}
-
+	
 	@Override
 	protected void setSheetName(String sheetName) {
 		// TODO Auto-generated method stub
@@ -604,12 +1139,6 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 
 	@Override
 	protected void setRowLevels(XlsRowLevelInfo levelInfo, String level) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	protected void setScale(Integer scale) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -634,6 +1163,7 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 			this.tableBuilder = tableBuidler;
 		}
 		
+		@Override
 		public TableBuilder getTableBuilder()
 		{
 			return tableBuilder;
@@ -699,19 +1229,55 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	
 	protected class OdsTableBuilder extends TableBuilder
 	{
-		protected OdsTableBuilder(DocumentBuilder documentBuilder, JasperPrint jasperPrint,
-				int reportIndex, int pageIndex, WriterHelper bodyWriter,
-				WriterHelper styleWriter, StyleCache styleCache, Map<Integer, String> rowStyles, Map<Integer, String> columnStyles) 
+		protected OdsTableBuilder(
+				DocumentBuilder documentBuilder, 
+				JasperPrint jasperPrint,
+				int pageFormatIndex, 
+				int pageIndex, 
+				WriterHelper bodyWriter,
+				WriterHelper styleWriter, 
+				StyleCache styleCache, 
+				Map<Integer, String> rowStyles, 
+				Map<Integer, String> columnStyles,
+				Color tabColor) 
 		{
-			super(documentBuilder, jasperPrint, reportIndex, pageIndex, bodyWriter, styleWriter, styleCache, rowStyles, columnStyles);
+			super(
+				documentBuilder, 
+				jasperPrint, 
+				pageFormatIndex, 
+				pageIndex, 
+				bodyWriter, 
+				styleWriter, 
+				styleCache, 
+				rowStyles, 
+				columnStyles, 
+				tabColor);
 		}
 		
-		protected OdsTableBuilder(DocumentBuilder documentBuilder, JasperPrint jasperPrint,
-			int reportIndex, int pageIndex, WriterHelper bodyWriter,
-			WriterHelper styleWriter, StyleCache styleCache, Map<Integer, String> rowStyles, Map<Integer, String> columnStyles, 
-			String sheetName) 
+		protected OdsTableBuilder(
+				DocumentBuilder documentBuilder, 
+				JasperPrint jasperPrint,
+				int pageFormatIndex, 
+				int pageIndex, 
+				WriterHelper bodyWriter,
+				WriterHelper styleWriter, 
+				StyleCache styleCache, 
+				Map<Integer, String> rowStyles, 
+				Map<Integer, String> columnStyles, 
+				String sheetName,
+				Color tabColor) 
 		{
-			super(documentBuilder, jasperPrint, reportIndex, pageIndex, bodyWriter, styleWriter, styleCache, rowStyles, columnStyles);
+			super(
+				documentBuilder, 
+				jasperPrint, 
+				pageFormatIndex, 
+				pageIndex, 
+				bodyWriter, 
+				styleWriter, 
+				styleCache, 
+				rowStyles, 
+				columnStyles,
+				tabColor);
 			this.tableName = sheetName;
 		}
 
@@ -728,6 +1294,7 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 			
 			String ignLnkPropName = getIgnoreHyperlinkProperty();
 			Boolean ignoreHyperlink = HyperlinkUtil.getIgnoreHyperlink(ignLnkPropName, textElement);
+			boolean isIgnoreTextFormatting = isIgnoreTextFormatting(textElement);
 			if (ignoreHyperlink == null)
 			{
 				ignoreHyperlink = getPropertiesUtil().getBooleanProperty(jasperPrint, ignLnkPropName, false);
@@ -740,7 +1307,7 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 
 			if (href == null)
 			{
-				exportStyledText(textElement, false);
+				exportStyledText(textElement, false, isIgnoreTextFormatting);
 			}
 			else
 			{
@@ -757,12 +1324,15 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 						// ODS does not like text:span inside text:a
 						// writing one text:a inside text:span for each style run
 						String runText = text.substring(iterator.getIndex(), runLimit);
-						startTextSpan(iterator.getAttributes(), runText, locale);
+						startTextSpan(
+								iterator.getAttributes(), 
+								runText, 
+								locale,
+								isIgnoreTextFormatting);
 						writeHyperlink(textElement, href, true);
 						writeText(runText);
 						endHyperlink(true);
 						endTextSpan();
-
 						iterator.setIndex(runLimit);
 					}
 				}
@@ -791,18 +1361,14 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<OdsExporterConfiguration> getConfigurationInterface()
 	{
 		return OdsExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<OdsReportConfiguration> getItemConfigurationInterface()
 	{
 		return OdsReportConfiguration.class;
@@ -813,6 +1379,14 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	protected void initExport()
 	{
 		super.initExport();
+
+//		macroTemplate =  macroTemplate == null ? getPropertiesUtil().getProperty(jasperPrint, PROPERTY_MACRO_TEMPLATE) : macroTemplate;
+//		
+//		password = 
+//			getStringParameter(
+//				JRXlsAbstractExporterParameter.PASSWORD,
+//				JRXlsAbstractExporterParameter.PROPERTY_PASSWORD
+//				);
 	}
 	
 
@@ -835,18 +1409,44 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 	}
 
 
-	/**
-	 *
-	 */
+//	/**
+//	 *
+//	 */
+//	protected void exportEllipse(TableBuilder tableBuilder, JRPrintEllipse ellipse, JRExporterGridCell gridCell) throws IOException
+//	{
+//		JRLineBox box = new JRBaseLineBox(null);
+//		JRPen pen = box.getPen();
+//		pen.setLineColor(ellipse.getLinePen().getLineColor());
+//		pen.setLineStyle(ellipse.getLinePen().getLineStyleValue());
+//		pen.setLineWidth(ellipse.getLinePen().getLineWidth());
+//
+//		gridCell.setBox(box);//CAUTION: only some exporters set the cell box
+//		
+//		tableBuilder.buildCellHeader(styleCache.getCellStyle(gridCell), gridCell.getColSpan(), gridCell.getRowSpan());
+//		tempBodyWriter.write("<text:p>");
+//		insertPageAnchor();
+////		tempBodyWriter.write(
+////			"<draw:ellipse text:anchor-type=\"paragraph\" "
+////			+ "draw:style-name=\"" + styleCache.getGraphicStyle(ellipse) + "\" "
+////			+ "svg:width=\"" + Utility.translatePixelsToInches(ellipse.getWidth()) + "in\" "
+////			+ "svg:height=\"" + Utility.translatePixelsToInches(ellipse.getHeight()) + "in\" "
+////			+ "svg:x=\"0in\" "
+////			+ "svg:y=\"0in\">"
+////			+ "<text:p/></draw:ellipse>"
+////			);
+//		tempBodyWriter.write("</text:p>");
+//		tableBuilder.buildCellFooter();
+//	}
+
+
+	@Override
 	public String getExporterKey()
 	{
 		return ODS_EXPORTER_KEY;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getExporterPropertiesPrefix()
 	{
 		return ODS_EXPORTER_PROPERTIES_PREFIX;
@@ -867,7 +1467,11 @@ public class JROdsExporter extends JRXlsAbstractExporter<OdsReportConfiguration,
 			startPage = false;
 		}
 	}
-
+	
+	@Override
+	protected void exportEmptyReport() throws JRException, IOException 
+	{
+		// does nothing in ODS export
+	}
 	
 }
-

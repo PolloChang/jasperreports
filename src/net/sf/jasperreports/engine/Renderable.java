@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,15 +35,17 @@ import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.util.JRTypeSniffer;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Graphics2DRenderable;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: Renderable.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link net.sf.jasperreports.renderers.Renderable}
  */
-@SuppressWarnings("deprecation")
-public interface Renderable extends JRRenderable
+public interface Renderable extends JRRenderable, net.sf.jasperreports.renderers.Renderable
 {
 	/**
 	 * Specifies the image resolution in dots-per-inch, for the images created by the engine when rasterizing SVGs or when clipping other renderers.
@@ -51,34 +53,27 @@ public interface Renderable extends JRRenderable
 	public static final String PROPERTY_IMAGE_DPI = JRPropertiesUtil.PROPERTY_PREFIX + "image.dpi";
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link DataRenderable} and {@link Graphics2DRenderable}.
 	 */
-	public String getId();
+	public net.sf.jasperreports.engine.type.RenderableTypeEnum getTypeValue();
 
 	/**
-	 *
-	 */
-	public RenderableTypeEnum getTypeValue();
-
-	/**
-	 *
+	 * @deprecated Replaced by {@link JRTypeSniffer#getImageTypeValue(byte[])}.
 	 */
 	public ImageTypeEnum getImageTypeValue();
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link DimensionRenderable#getDimension(JasperReportsContext)}.
 	 */
 	public Dimension2D getDimension(JasperReportsContext jasperReportsContext) throws JRException;
 
-
 	/**
-	 *
+	 * @deprecated Replaced by {@link DataRenderable#getData(JasperReportsContext)}.
 	 */
 	public byte[] getImageData(JasperReportsContext jasperReportsContext) throws JRException;
 
-
 	/**
-	 *
+	 * @deprecated Replaced by {@link Graphics2DRenderable#render(JasperReportsContext, Graphics2D, Rectangle2D)}.
 	 */
 	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) throws JRException;
 }

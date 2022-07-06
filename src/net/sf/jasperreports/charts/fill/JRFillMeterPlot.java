@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import java.util.List;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRFillMeterPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillMeterPlot extends JRFillChartPlot implements JRMeterPlot
 {
@@ -50,93 +49,72 @@ public class JRFillMeterPlot extends JRFillChartPlot implements JRMeterPlot
 		super(meterPlot, factory);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getDataRange()
 	{
 		return ((JRMeterPlot)parent).getDataRange();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRValueDisplay getValueDisplay()
 	{
 		return ((JRMeterPlot)parent).getValueDisplay();
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public MeterShapeEnum getShapeValue()
 	{
 		return ((JRMeterPlot)parent).getShapeValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public List<JRMeterInterval> getIntervals(){
 		return ((JRMeterPlot)parent).getIntervals();
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getMeterAngleInteger()
 	{
 		return ((JRMeterPlot)parent).getMeterAngleInteger();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getUnits()
 	{
 		return ((JRMeterPlot)parent).getUnits();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Double getTickIntervalDouble()
 	{
 		return ((JRMeterPlot)parent).getTickIntervalDouble();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getMeterBackgroundColor()
 	{
 		return ((JRMeterPlot)parent).getMeterBackgroundColor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getNeedleColor()
 	{
 		return ((JRMeterPlot)parent).getNeedleColor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getTickColor()
 	{
 		return ((JRMeterPlot)parent).getTickColor();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Integer getTickCount()
 	{
 		return ((JRMeterPlot)parent).getTickCount();
 	}
 
+	@Override
 	public JRFont getTickLabelFont()
 	{
 		return ((JRMeterPlot)parent).getTickLabelFont();

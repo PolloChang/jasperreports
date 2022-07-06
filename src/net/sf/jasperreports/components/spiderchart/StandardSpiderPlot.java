@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,8 +40,7 @@ import org.jfree.chart.plot.PlotOrientation;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: StandardSpiderPlot.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 {
@@ -133,6 +132,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the labelFont
 	 */
+	@Override
 	public JRFont getLabelFont() {
 		return labelFont;
 	}
@@ -140,6 +140,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the maxValueExpression
 	 */
+	@Override
 	public JRExpression getMaxValueExpression() {
 		return maxValueExpression;
 	}
@@ -147,6 +148,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the rotation
 	 */
+	@Override
 	public SpiderRotationEnum getRotation() {
 		return rotation;
 	}
@@ -154,6 +156,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the tableOrder
 	 */
+	@Override
 	public TableOrderEnum getTableOrder() {
 		return tableOrder;
 	}
@@ -161,6 +164,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the webFilled
 	 */
+	@Override
 	public Boolean getWebFilled() {
 		return webFilled;
 	}
@@ -168,6 +172,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the startAngle
 	 */
+	@Override
 	public Double getStartAngle() {
 		return startAngle;
 	}
@@ -175,6 +180,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the headPercent
 	 */
+	@Override
 	public Double getHeadPercent() {
 		return headPercent;
 	}
@@ -182,6 +188,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the interiorGap
 	 */
+	@Override
 	public Double getInteriorGap() {
 		return interiorGap;
 	}
@@ -189,6 +196,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the axisLineColor
 	 */
+	@Override
 	public Color getAxisLineColor() {
 		return axisLineColor;
 	}
@@ -196,6 +204,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the axisLineWidth
 	 */
+	@Override
 	public Float getAxisLineWidth() {
 		return axisLineWidth;
 	}
@@ -203,6 +212,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the labelGap
 	 */
+	@Override
 	public Double getLabelGap() {
 		return labelGap;
 	}
@@ -210,6 +220,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the labelColor
 	 */
+	@Override
 	public Color getLabelColor() {
 		return labelColor;
 	}
@@ -343,6 +354,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the backcolor
 	 */
+	@Override
 	public Color getBackcolor() {
 		return backcolor;
 	}
@@ -359,6 +371,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the backgroundAlpha
 	 */
+	@Override
 	public Float getBackgroundAlpha() {
 		return backgroundAlpha;
 	}
@@ -375,6 +388,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	/**
 	 * @return the foregroundAlpha
 	 */
+	@Override
 	public Float getForegroundAlpha() {
 		return foregroundAlpha;
 	}
@@ -388,6 +402,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_FOREGROUND_ALPHA, old, this.foregroundAlpha);
 	}
 	
+	@Override
 	public PlotOrientation getOrientation()
 	{
 		return null;
@@ -398,9 +413,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 		SpiderChartCompiler.collectExpressions(this, collector);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone()
 	{
 		StandardSpiderPlot clone = null;
@@ -420,6 +433,7 @@ public class StandardSpiderPlot implements SpiderPlot, JRChangeEventsSupport
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -57,7 +57,6 @@ import org.apache.commons.logging.LogFactory;
  * the screen.
  * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperDesignViewer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JasperDesignViewer extends javax.swing.JFrame 
 {
@@ -100,7 +99,7 @@ public class JasperDesignViewer extends javax.swing.JFrame
 	{
 		initComponents();
 
-		JRDesignViewer viewer = new JRDesignViewer(jasperReportsContext, sourceFile, isXML);
+		net.sf.jasperreports.swing.JRDesignViewer viewer = new net.sf.jasperreports.swing.JRDesignViewer(jasperReportsContext, sourceFile, isXML);
 		this.pnlMain.add(viewer, BorderLayout.CENTER);
 	}
 	
@@ -115,7 +114,7 @@ public class JasperDesignViewer extends javax.swing.JFrame
 	{
 		initComponents();
 
-		JRDesignViewer viewer = new JRDesignViewer(jasperReportsContext, is, isXML);
+		net.sf.jasperreports.swing.JRDesignViewer viewer = new net.sf.jasperreports.swing.JRDesignViewer(jasperReportsContext, is, isXML);
 		this.pnlMain.add(viewer, BorderLayout.CENTER);
 	}
 	
@@ -129,7 +128,7 @@ public class JasperDesignViewer extends javax.swing.JFrame
 	{
 		initComponents();
 
-		JRDesignViewer viewer = new JRDesignViewer(jasperReportsContext, report);
+		net.sf.jasperreports.swing.JRDesignViewer viewer = new net.sf.jasperreports.swing.JRDesignViewer(jasperReportsContext, report);
 		this.pnlMain.add(viewer, BorderLayout.CENTER);
 	}
 	
@@ -144,6 +143,7 @@ public class JasperDesignViewer extends javax.swing.JFrame
 		setTitle("JasperDesignViewer");
 		setIconImage(new javax.swing.ImageIcon(getClass().getResource("/net/sf/jasperreports/view/images/jricon.GIF")).getImage());
 		addWindowListener(new java.awt.event.WindowAdapter() {
+			@Override
 			public void windowClosing(java.awt.event.WindowEvent evt) {
 				exitForm();
 			}
@@ -158,7 +158,7 @@ public class JasperDesignViewer extends javax.swing.JFrame
 		Toolkit toolkit = java.awt.Toolkit.getDefaultToolkit();
 		java.awt.Dimension screenSize = toolkit.getScreenSize();
 		int screenResolution = toolkit.getScreenResolution();
-		float zoom = ((float) screenResolution) / JRViewer.REPORT_RESOLUTION;
+		float zoom = ((float) screenResolution) / net.sf.jasperreports.swing.JRViewerPanel.REPORT_RESOLUTION;
 		
 		int height = (int) (550 * zoom);
 		if (height > screenSize.getHeight())

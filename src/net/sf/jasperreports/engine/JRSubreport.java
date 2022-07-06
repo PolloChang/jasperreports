@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -54,7 +54,7 @@ import net.sf.jasperreports.engine.type.OverflowType;
  * <li><code>java.io.File</code></li>
  * <li><code>java.io.InputStream</code></li>
  * <li><code>java.net.URL</code></li>
- * <li><code>net.sf.jasperreports.engine.JasperReport</code></li>
+ * <li><code>{@link net.sf.jasperreports.engine.JasperReport}</code></li>
  * </ul>
  * <p/>
  * <b>Note:</b> When the subreport expression returns a <code>java.lang.String</code> value, the engine tries to see
@@ -208,7 +208,7 @@ import net.sf.jasperreports.engine.type.OverflowType;
  * <p/>
  * Switching between the preceding subreport runner implementation is not done through
  * direct instantiation, but rather through a configuration property called
- * <code>net.sf.jasperreports.subreport.runner.factory</code>. This configuration property
+ * {@link net.sf.jasperreports.engine.fill.JRSubreportRunnerFactory#SUBREPORT_RUNNER_FACTORY net.sf.jasperreports.subreport.runner.factory}. This configuration property
  * should point to a
  * {@link net.sf.jasperreports.engine.fill.JRSubreportRunnerFactory}
  * implementation able to produce the needed {@link net.sf.jasperreports.engine.fill.JRSubreportRunnable} 
@@ -237,20 +237,10 @@ import net.sf.jasperreports.engine.type.OverflowType;
  * @see net.sf.jasperreports.engine.fill.JRThreadSubreportRunner
  * @see net.sf.jasperreports.engine.fill.JRThreadSubreportRunnerFactory
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRSubreport extends JRElement
 {
 
-
-	/**
-	 * Indicates if the engine is loading the current subreport from cache.
-	 * Implementations of this method rely on default values that depend on the type of the subreport expression
-	 * if a value was not explicitly set of this flag.
-	 * @return true if the subreport should be loaded from cache, false otherwise
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public boolean isUsingCache();
 
 	/**
 	 *
@@ -286,17 +276,6 @@ public interface JRSubreport extends JRElement
 
 	
 
-	/**
-	 * Indicates if the engine is loading the current subreport from cache.
-	 * Implementations of this method return the actual value for the internal flag that was explicitly 
-	 * set on this subreport.
-	 * @return Boolean.TRUE if the subreport should be loaded from cache, Boolean.FALSE otherwise 
-	 * or null in case the flag was never explicitly set on this subreport element
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public Boolean isOwnUsingCache();
-	
-	
 	/**
 	 * Indicates if the engine is loading the current subreport from cache.
 	 * Implementations of this method return the actual value for the internal flag that was explicitly 

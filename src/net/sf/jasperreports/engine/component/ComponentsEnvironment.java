@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,14 +29,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.collections4.map.ReferenceMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.extensions.ExtensionsEnvironment;
-
-import org.apache.commons.collections.map.ReferenceMap;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /**
  * A class that provides access to {@link ComponentsBundle component bundles}.
@@ -47,15 +46,17 @@ import org.apache.commons.logging.LogFactory;
  * {@link ExtensionsEnvironment}).
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentsEnvironment.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class ComponentsEnvironment
 {
 	
 	private static final Log log = LogFactory.getLog(ComponentsEnvironment.class);
+	public static final String EXCEPTION_MESSAGE_KEY_BUNDLE_NOT_REGISTERED = "components.bundle.not.registered";
 	
-	private final ReferenceMap cache = new ReferenceMap(
-			ReferenceMap.WEAK, ReferenceMap.HARD);
+	private final ReferenceMap<Object, Map<String, ComponentsBundle>> cache = 
+		new ReferenceMap<>(
+			ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.HARD
+			);
 	
 	private JasperReportsContext jasperReportsContext;
 
@@ -66,15 +67,6 @@ public final class ComponentsEnvironment
 	private ComponentsEnvironment(JasperReportsContext jasperReportsContext)
 	{
 		this.jasperReportsContext = jasperReportsContext;
-	}
-	
-	
-	/**
-	 *
-	 */
-	private static ComponentsEnvironment getDefaultInstance()
-	{
-		return new ComponentsEnvironment(DefaultJasperReportsContext.getInstance());
 	}
 	
 	
@@ -103,7 +95,7 @@ public final class ComponentsEnvironment
 		Object cacheKey = ExtensionsEnvironment.getExtensionsCacheKey();
 		synchronized (cache)
 		{
-			Map<String, ComponentsBundle> components = (Map<String, ComponentsBundle>) cache.get(cacheKey);
+			Map<String, ComponentsBundle> components = cache.get(cacheKey);
 			if (components == null)
 			{
 				components = findBundles();
@@ -115,7 +107,7 @@ public final class ComponentsEnvironment
 
 	protected Map<String, ComponentsBundle> findBundles()
 	{
-		Map<String, ComponentsBundle> components = new HashMap<String, ComponentsBundle>();
+		Map<String, ComponentsBundle> components = new HashMap<>();
 		List<ComponentsBundle> bundles = jasperReportsContext.getExtensions(ComponentsBundle.class);
 		for (Iterator<ComponentsBundle> it = bundles.iterator(); it.hasNext();)
 		{
@@ -147,8 +139,10 @@ public final class ComponentsEnvironment
 		ComponentsBundle componentsBundle = components.get(namespace);
 		if (componentsBundle == null)
 		{
-			throw new JRRuntimeException("No components bundle registered for namespace " 
-					+ namespace);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_BUNDLE_NOT_REGISTERED,
+					new Object[]{namespace});
 		}
 		return componentsBundle;
 	}
@@ -169,45 +163,5 @@ public final class ComponentsEnvironment
 		
 		String name = componentKey.getName();
 		return componentsBundle.getComponentManager(name);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #getBundles()}.
-	 */
-	public static Collection<ComponentsBundle> getComponentBundles()
-	{
-		return getDefaultInstance().getBundles();
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #getCachedBundles()}.
-	 */
-	protected static Map<String, ComponentsBundle> getCachedComponentBundles()
-	{
-		return getDefaultInstance().getCachedBundles();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #findBundles()}. 
-	 */
-	protected static Map<String, ComponentsBundle> findComponentBundles()
-	{
-		return getDefaultInstance().findBundles();
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #getBundle(String)}.
-	 */
-	public static ComponentsBundle getComponentsBundle(String namespace)
-	{
-		return getDefaultInstance().getBundle(namespace);
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #getManager(ComponentKey)}.
-	 */
-	public static ComponentManager getComponentManager(ComponentKey componentKey)
-	{
-		return getDefaultInstance().getManager(componentKey);
 	}
 }

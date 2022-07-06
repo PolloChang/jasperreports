@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import net.sf.jasperreports.data.cache.DataCacheHandler;
 import net.sf.jasperreports.data.cache.DataRecorder;
@@ -37,17 +41,22 @@ import net.sf.jasperreports.data.cache.DataSnapshot;
 import net.sf.jasperreports.engine.Deduplicable;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintPage;
-import net.sf.jasperreports.engine.JRTemplate;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.query.JRQueryExecuter;
+import net.sf.jasperreports.engine.type.StretchTypeEnum;
 import net.sf.jasperreports.engine.util.DeduplicableRegistry;
 import net.sf.jasperreports.engine.util.FormatFactory;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 import net.sf.jasperreports.engine.util.Pair;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.repo.JasperDesignCache;
 
 /**
  * Context class shared by all the fillers involved in a report (master and subfillers).
@@ -55,23 +64,25 @@ import net.sf.jasperreports.engine.util.Pair;
  * The context is created by the master filler and inherited by the subfillers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillContext.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.fill.JRBaseFiller
  */
 public class JRFillContext
 {
-	private final JRBaseFiller masterFiller;
+	private static final Log log = LogFactory.getLog(JRFillContext.class);
 	
-	private Map<Object,JRPrintImage> loadedImages;
-	private Map<Object,JasperReport> loadedSubreports;
-	private Map<Object,JRTemplate> loadedTemplates;
+	private final BaseReportFiller masterFiller;
+	
+	private Map<Object,Renderable> loadedImageRenderers;
+	private RenderersCache renderersCache;
+	private Map<Object,JasperReportSource> loadedSubreports;
+	private Map<Object,ReportTemplateSource> loadedTemplates;
 	private DeduplicableRegistry deduplicableRegistry;
 	private boolean usingVirtualizer;
 	private JRPrintPage printPage;
-	private boolean ignorePagination;
 	private JRQueryExecuter queryExecuter;
 	
 	private JasperReportsContext jasperReportsContext;
+	private JRStyledTextUtil styledTextUtil;
 	private ReportContext reportContext;
 	private DataCacheHandler cacheHandler;
 	private DataSnapshot dataSnapshot;
@@ -89,83 +100,119 @@ public class JRFillContext
 	private final AtomicInteger fillerIdSeq = new AtomicInteger();
 	private final AtomicInteger fillElementSeq = new AtomicInteger();
 	
-	private Map<String, Object> fillCaches = new HashMap<String, Object>();
+	private Map<String, Object> fillCaches = new HashMap<>();
+
+	/**
+	 * @deprecated To be removed.
+	 */
+	private final boolean legacyElementStretchEnabled;
+
+	/**
+	 * @deprecated To be removed.
+	 */
+	private final boolean legacyBandEvaluationEnabled;
 
 	
 	/**
 	 * Constructs a fill context.
 	 */
-	public JRFillContext(JRBaseFiller masterFiller)
+	public JRFillContext(BaseReportFiller masterFiller)
 	{
 		this.masterFiller = masterFiller;
 		this.jasperReportsContext = masterFiller.getJasperReportsContext();
+		this.styledTextUtil = JRStyledTextUtil.getInstance(jasperReportsContext);
 		
-		loadedImages = new HashMap<Object,JRPrintImage>();
-		loadedSubreports = new HashMap<Object,JasperReport>();
-		loadedTemplates = new HashMap<Object,JRTemplate>();
+		loadedImageRenderers = new HashMap<>();
+		renderersCache = new RenderersCache(jasperReportsContext);
+		loadedSubreports = new HashMap<>();
+		loadedTemplates = new HashMap<>();
 		deduplicableRegistry = new DeduplicableRegistry();
 		
 		FontUtil.getInstance(jasperReportsContext).resetThreadMissingFontsCache();
+		
+		legacyElementStretchEnabled = 
+			JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(
+				StretchTypeEnum.PROPERTY_LEGACY_ELEMENT_STRETCH_ENABLED
+				);
+		
+		legacyBandEvaluationEnabled = 
+			JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(
+				JRCalculator.PROPERTY_LEGACY_BAND_EVALUATION_ENABLED
+				);
 	}
 
-	public JRBaseFiller getMasterFiller()
+	public BaseReportFiller getMasterFiller()
 	{
 		return masterFiller;
 	}
+	
+	protected JRStyledTextUtil getStyledTextUtil()
+	{
+		return styledTextUtil;
+	}
 
 	/**
-	 * Checks whether an image given by source has already been loaded and cached.
+	 * Checks whether an image renderer given by source has already been loaded and cached.
 	 * 
-	 * @param source the source of the image
-	 * @return whether the image has been cached
-	 * @see #getLoadedImage(Object)
-	 * @see #registerLoadedImage(Object, JRPrintImage)
+	 * @param source the source of the image renderer
+	 * @return whether the image renderer has been cached
+	 * @see #getLoadedRenderer(Object)
+	 * @see #registerLoadedRenderer(Object, Renderable)
 	 */
-	public boolean hasLoadedImage(Object source)
+	public boolean hasLoadedRenderer(Object source)
 	{
-		return loadedImages.containsKey(source); 
+		return loadedImageRenderers.containsKey(source); 
 	}
 	
 	
 	/**
-	 * Gets a cached image.
+	 * Gets a cached image renderer.
 	 * 
-	 * @param source the source of the image
-	 * @return the cached image
-	 * @see #registerLoadedImage(Object, JRPrintImage)
+	 * @param source the source renderer of the image
+	 * @return the cached image renderer
+	 * @see #registerLoadedRenderer(Object, Renderable)
 	 */
-	public JRPrintImage getLoadedImage(Object source)
+	public Renderable getLoadedRenderer(Object source)
 	{
-		return loadedImages.get(source); 
+		return loadedImageRenderers.get(source); 
 	}
 	
 	
 	/**
-	 * Registers an image loaded from a source.
+	 * Registers an image renderer loaded from a source.
 	 * <p>
-	 * The image is cached for further use.
+	 * The image renderer is cached for further use.
 	 * 
-	 * @param source the source that was used to load the image
-	 * @param image the loaded image
-	 * @see #getLoadedImage(Object)
+	 * @param source the source that was used to load the image renderer
+	 * @param renderer the loaded image renderer
+	 * @see #getLoadedRenderer(Object)
 	 */
-	public void registerLoadedImage(Object source, JRPrintImage image)
+	public void registerLoadedRenderer(Object source, Renderable renderer)
 	{
-		loadedImages.put(source, image);
+		loadedImageRenderers.put(source, renderer);
 		if (usingVirtualizer)
 		{
-			virtualizationContext.cacheRenderer(image);
+			virtualizationContext.cacheRenderer(renderer);
 		}
 	}
 
 	
+	/**
+	 * 
+	 */
+	public RenderersCache getRenderersCache()
+	{
+		return renderersCache;
+	}
+
+
 	/**
 	 * Checks whether a subreport given by source has already been loaded and cached.
 	 * 
 	 * @param source the source of the subreport
 	 * @return whether the subreport has been cached
 	 * @see #getLoadedSubreport(Object)
-	 * @see #registerLoadedSubreport(Object, JasperReport)
+	 * @see #registerLoadedSubreport(Object, JasperReportSource)
 	 */
 	public boolean hasLoadedSubreport(Object source)
 	{
@@ -178,9 +225,9 @@ public class JRFillContext
 	 * 
 	 * @param source the source of the subreport
 	 * @return the cached subreport
-	 * @see #registerLoadedSubreport(Object, JasperReport)
+	 * @see #registerLoadedSubreport(Object, JasperReportSource)
 	 */
-	public JasperReport getLoadedSubreport(Object source)
+	public JasperReportSource getLoadedSubreport(Object source)
 	{
 		return loadedSubreports.get(source); 
 	}
@@ -195,7 +242,7 @@ public class JRFillContext
 	 * @param subreport the loaded subreport
 	 * @see #getLoadedSubreport(Object)
 	 */
-	public void registerLoadedSubreport(Object source, JasperReport subreport)
+	public void registerLoadedSubreport(Object source, JasperReportSource subreport)
 	{
 		loadedSubreports.put(source, subreport);
 	}
@@ -255,27 +302,33 @@ public class JRFillContext
 	
 	
 	/**
-	 * Sets the flag that decides whether pagination should be ignored during filling.
-	 * 
-	 * @param ignorePagination
-	 * @see #isIgnorePagination()
+	 * Decides whether the filling should ignore pagination.
+	 *  
+	 * @return whether the filling should ignore pagination
+	 * @see net.sf.jasperreports.engine.JRParameter#IS_IGNORE_PAGINATION
+	 * @see JRBaseFiller#isIgnorePagination()
 	 */
-	public void setIgnorePagination(boolean ignorePagination)
+	public boolean isIgnorePagination()
 	{
-		this.ignorePagination  = ignorePagination;
+		return masterFiller.isIgnorePagination();
 	}
 	
 	
 	/**
-	 * Decides whether the filling should ignore pagination.
-	 *  
-	 * @return whether the filling should ignore pagination
-	 * @see #setIgnorePagination(boolean)
-	 * @see net.sf.jasperreports.engine.JRParameter#IS_IGNORE_PAGINATION
+	 * @deprecated To be removed.
 	 */
-	public boolean isIgnorePagination()
+	public boolean isLegacyElementStretchEnabled()
 	{
-		return ignorePagination;
+		return legacyElementStretchEnabled;
+	}
+	
+	
+	/**
+	 * @deprecated To be removed.
+	 */
+	public boolean isLegacyBandEvaluationEnabled()
+	{
+		return legacyBandEvaluationEnabled;
 	}
 	
 	
@@ -319,18 +372,6 @@ public class JRFillContext
 		
 		return false;
 	}
-
-
-	/**
-	 * Ensures that the master page is available when virtualization is used.
-	 */
-	public void ensureMasterPageAvailable()
-	{
-		if (usingVirtualizer)
-		{
-			printPage.getElements();
-		}
-	}
 	
 	
 	/**
@@ -341,6 +382,22 @@ public class JRFillContext
 	public JRVirtualizationContext getVirtualizationContext()
 	{
 		return virtualizationContext;
+	}
+	
+	public void lockVirtualizationContext()
+	{
+		if (virtualizationContext != null)
+		{
+			virtualizationContext.lock();
+		}
+	}
+	
+	public void unlockVirtualizationContext()
+	{
+		if (virtualizationContext != null)
+		{
+			virtualizationContext.unlock();
+		}
 	}
 
 	
@@ -386,7 +443,7 @@ public class JRFillContext
 	 * @param source the source of the template
 	 * @return whether the template has been cached
 	 * @see #getLoadedTemplate(Object)
-	 * @see #registerLoadedTemplate(Object, JRTemplate)
+	 * @see #registerLoadedTemplate(Object, ReportTemplateSource)
 	 */
 	public boolean hasLoadedTemplate(Object source)
 	{
@@ -397,11 +454,11 @@ public class JRFillContext
 	/**
 	 * Gets a cached template.
 	 * 
-	 * @param source the source of the templage
-	 * @return the cached templage
-	 * @see #registerLoadedTemplate(Object, JRTemplate)
+	 * @param source the source of the template
+	 * @return the cached template
+	 * @see #registerLoadedTemplate(Object, ReportTemplateSource)
 	 */
-	public JRTemplate getLoadedTemplate(Object source)
+	public ReportTemplateSource getLoadedTemplate(Object source)
 	{
 		return loadedTemplates.get(source); 
 	}
@@ -413,12 +470,12 @@ public class JRFillContext
 	 * The template is cached for further use.
 	 * 
 	 * @param source the source that was used to load the template
-	 * @param template the loaded templage
+	 * @param templateSource the loaded template
 	 * @see #getLoadedTemplate(Object)
 	 */
-	public void registerLoadedTemplate(Object source, JRTemplate template)
+	public void registerLoadedTemplate(Object source, ReportTemplateSource templateSource)
 	{
-		loadedTemplates.put(source, template);
+		loadedTemplates.put(source, templateSource);
 	}
 	
 	/**
@@ -472,7 +529,7 @@ public class JRFillContext
 			else if (cacheHandler.isRecordingEnabled())
 			{
 				dataRecorder = cacheHandler.createDataRecorder();
-				recordedData = new ArrayList<Pair<FillDatasetPosition,Object>>();
+				recordedData = new ArrayList<>();
 			}
 		}
 	}
@@ -510,7 +567,7 @@ public class JRFillContext
 
 	public void addDataRecordResult(FillDatasetPosition fillPosition, Object recorded)
 	{
-		recordedData.add(new Pair<FillDatasetPosition, Object>(fillPosition, recorded));
+		recordedData.add(new Pair<>(fillPosition, recorded));
 	}
 	
 	public void cacheDone()
@@ -537,12 +594,6 @@ public class JRFillContext
 		return canceled;
 	}
 	
-	public void updateBookmark(JRPrintElement element)
-	{
-		// bookmarks are in the master filler
-		masterFiller.updateBookmark(element);
-	}
-	
 	public Object getFillCache(String key)
 	{
 		return fillCaches.get(key);
@@ -567,5 +618,38 @@ public class JRFillContext
 	public static interface FillCacheDisposable
 	{
 		void dispose();
+	}
+
+	public boolean isCollectingBookmarks()
+	{
+		return getMasterFiller().bookmarkHelper != null;
+	}
+	
+	public void registerReportStyles(JasperReport jasperReport, UUID id, List<JRStyle> styles)
+	{
+		JasperDesignCache designCache = JasperDesignCache.getExistingInstance(reportContext);
+		if (designCache != null)
+		{
+			String reportURI = designCache.locateReport(jasperReport);
+			if (reportURI == null)
+			{
+				if (log.isDebugEnabled())
+				{
+					log.debug("Did not find report " + jasperReport.getName() + " " + jasperReport.getUUID());
+				}
+				return;
+			}
+			
+			designCache.setStyles(reportURI, id, styles);
+		}
+	}
+
+	public void registerReportStyles(String reportLocation, UUID id, List<JRStyle> styles)
+	{
+		JasperDesignCache designCache = JasperDesignCache.getExistingInstance(reportContext);
+		if (designCache != null)
+		{
+			designCache.setStyles(reportLocation, id, styles);
+		}
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.olap.result.JROlapResultAxis;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMondrianAxis.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRMondrianAxis implements JROlapResultAxis
 {
@@ -63,11 +62,13 @@ public class JRMondrianAxis implements JROlapResultAxis
 		}
 	}
 
+	@Override
 	public JROlapHierarchy[] getHierarchiesOnAxis()
 	{
 		return hierarchies;
 	}
 
+	@Override
 	public JROlapMemberTuple getTuple(int index)
 	{
 		if (index < 0 || index >= tuples.length)
@@ -78,6 +79,7 @@ public class JRMondrianAxis implements JROlapResultAxis
 		return tuples[index];
 	}
 
+	@Override
 	public int getTupleCount()
 	{
 		return tuples.length;

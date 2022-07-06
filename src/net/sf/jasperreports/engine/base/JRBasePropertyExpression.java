@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,6 @@ package net.sf.jasperreports.engine.base;
 
 import java.io.Serializable;
 
-import net.sf.jasperreports.engine.JRCloneable;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRPropertyExpression;
@@ -38,15 +37,18 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base implementation of {@link JRPropertyExpression}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBasePropertyExpression.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRBasePropertyExpression implements JRPropertyExpression, Serializable, JRChangeEventsSupport, JRCloneable
+public class JRBasePropertyExpression implements JRPropertyExpression, Serializable, JRChangeEventsSupport
 {
 	
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	public static final String PROPERTY_NAME = "name";
-	public static final String pROPERTY_VALUE_EXPRESSION = "valueExpression";
+	public static final String PROPERTY_VALUE_EXPRESSION = "valueExpression";
+	/**
+	 * @deprecated Replaced by {@link #PROPERTY_VALUE_EXPRESSION}. 
+	 */
+	public static final String pROPERTY_VALUE_EXPRESSION = PROPERTY_VALUE_EXPRESSION;
 
 	private String name;
 	private JRExpression valueExpression;
@@ -63,11 +65,13 @@ public class JRBasePropertyExpression implements JRPropertyExpression, Serializa
 		this.valueExpression = factory.getExpression(propertyExpression.getValueExpression());
 	}
 
+	@Override
 	public String getName()
 	{
 		return name;
 	}
 
+	@Override
 	public void setName(String name)
 	{
 		Object old = this.name;
@@ -75,6 +79,7 @@ public class JRBasePropertyExpression implements JRPropertyExpression, Serializa
 		getEventSupport().firePropertyChange(PROPERTY_NAME, old, this.name);
 	}
 
+	@Override
 	public JRExpression getValueExpression()
 	{
 		return valueExpression;
@@ -84,12 +89,10 @@ public class JRBasePropertyExpression implements JRPropertyExpression, Serializa
 	{
 		Object old = this.valueExpression;
 		this.valueExpression = valueExpression;
-		getEventSupport().firePropertyChange(pROPERTY_VALUE_EXPRESSION, old, this.valueExpression);
+		getEventSupport().firePropertyChange(PROPERTY_VALUE_EXPRESSION, old, this.valueExpression);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone()
 	{
 		JRBasePropertyExpression clone = null;
@@ -111,6 +114,7 @@ public class JRBasePropertyExpression implements JRPropertyExpression, Serializa
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

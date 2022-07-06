@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,6 +27,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import net.sf.jasperreports.charts.ChartCopyObjectFactory;
 import net.sf.jasperreports.charts.JRBarPlot;
 import net.sf.jasperreports.charts.JRItemLabel;
 import net.sf.jasperreports.engine.JRChart;
@@ -38,12 +39,10 @@ import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.base.JRBaseChartPlot;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseBarPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 {
@@ -94,12 +93,17 @@ public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 	 */
 	public JRBaseBarPlot(JRChartPlot plot, JRChart chart)
 	{
+		this(plot, chart, ChartCopyBaseObjectFactory.instance());
+	}
+
+	protected JRBaseBarPlot(JRChartPlot plot, JRChart chart, ChartCopyObjectFactory copyObjectFactory)
+	{
 		super(plot, chart);
 		
 		JRBarPlot barPlot = plot instanceof JRBarPlot ? (JRBarPlot)plot : null;
 		if (barPlot == null)
 		{
-			itemLabel = new JRBaseItemLabel(null, chart);
+			itemLabel = copyObjectFactory.copyItemLabel(null, chart);
 		}
 		else
 		{
@@ -107,7 +111,7 @@ public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 			categoryAxisTickLabelFont = barPlot.getCategoryAxisTickLabelFont();
 			valueAxisLabelFont = barPlot.getValueAxisLabelFont();
 			valueAxisTickLabelFont = barPlot.getValueAxisTickLabelFont();
-			itemLabel = new JRBaseItemLabel(barPlot.getItemLabel(), chart);
+			itemLabel = copyObjectFactory.copyItemLabel(barPlot.getItemLabel(), chart);
 		}
 	}
 
@@ -148,88 +152,66 @@ public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 		itemLabel = new JRBaseItemLabel(barPlot.getItemLabel(), factory);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getCategoryAxisLabelExpression(){
 		return categoryAxisLabelExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getCategoryAxisLabelFont()
 	{
 		return categoryAxisLabelFont;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getCategoryAxisLabelColor()
 	{
-		return JRStyleResolver.getCategoryAxisLabelColor(this, this);
+		return getStyleResolver().getCategoryAxisLabelColor(this, this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnCategoryAxisLabelColor()
 	{
 		return categoryAxisLabelColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getCategoryAxisTickLabelFont()
 	{
 		return categoryAxisTickLabelFont;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getCategoryAxisTickLabelColor()
 	{
-		return JRStyleResolver.getCategoryAxisTickLabelColor(this, this);
+		return getStyleResolver().getCategoryAxisTickLabelColor(this, this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnCategoryAxisTickLabelColor()
 	{
 		return categoryAxisTickLabelColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getCategoryAxisTickLabelMask()
 	{
 		return categoryAxisTickLabelMask;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean getCategoryAxisVerticalTickLabels()
 	{
 		return categoryAxisVerticalTickLabels;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Double getCategoryAxisTickLabelRotation()
 	{
 		return labelRotationDouble;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void setCategoryAxisTickLabelRotation(Double labelRotationDouble)
 	{
 		Object old = this.labelRotationDouble;
@@ -237,155 +219,115 @@ public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 		getEventSupport().firePropertyChange(PROPERTY_CATEGORY_AXIS_TICK_LABEL_ROTATION, old, this.labelRotationDouble);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getCategoryAxisLineColor()
 	{
-		return JRStyleResolver.getCategoryAxisLineColor(this, this);
+		return getStyleResolver().getCategoryAxisLineColor(this, this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnCategoryAxisLineColor()
 	{
 		return categoryAxisLineColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getValueAxisLabelExpression(){
 		return valueAxisLabelExpression;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRExpression getDomainAxisMinValueExpression(){
 		return domainAxisMinValueExpression;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRExpression getDomainAxisMaxValueExpression(){
 		return domainAxisMaxValueExpression;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRExpression getRangeAxisMinValueExpression(){
 		return rangeAxisMinValueExpression;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRExpression getRangeAxisMaxValueExpression(){
 		return rangeAxisMaxValueExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getValueAxisLabelFont()
 	{
 		return valueAxisLabelFont;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getValueAxisLabelColor()
 	{
-		return JRStyleResolver.getValueAxisLabelColor(this, this);
+		return getStyleResolver().getValueAxisLabelColor(this, this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnValueAxisLabelColor()
 	{
 		return valueAxisLabelColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getValueAxisTickLabelFont()
 	{
 		return valueAxisTickLabelFont;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getValueAxisTickLabelColor()
 	{
-		return JRStyleResolver.getValueAxisTickLabelColor(this, this);
+		return getStyleResolver().getValueAxisTickLabelColor(this, this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnValueAxisTickLabelColor()
 	{
 		return valueAxisTickLabelColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getValueAxisTickLabelMask()
 	{
 		return valueAxisTickLabelMask;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean getValueAxisVerticalTickLabels()
 	{
 		return valueAxisVerticalTickLabels;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getValueAxisLineColor()
 	{
-		return JRStyleResolver.getValueAxisLineColor(this, this);
+		return getStyleResolver().getValueAxisLineColor(this, this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnValueAxisLineColor()
 	{
 		return valueAxisLineColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean getShowLabels(){
 		return showLabels;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRItemLabel getItemLabel()
 	{
 		return itemLabel;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setShowLabels( Boolean showLabels ){
 		Boolean old = this.showLabels;
 		this.showLabels = showLabels;
@@ -393,17 +335,13 @@ public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean getShowTickMarks()
 	{
 		return showTickMarks;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setShowTickMarks(Boolean isShowTickMarks)
 	{
 		Boolean old = this.showTickMarks;
@@ -411,17 +349,13 @@ public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 		getEventSupport().firePropertyChange(PROPERTY_SHOW_TICK_MARKS, old, this.showTickMarks);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean getShowTickLabels()
 	{
 		return showTickLabels;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setShowTickLabels(Boolean showTickLabels)
 	{
 		Boolean old = this.showTickLabels;
@@ -429,17 +363,13 @@ public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 		getEventSupport().firePropertyChange(PROPERTY_SHOW_TICK_LABELS, old, this.showTickLabels);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone(JRChart parentChart)
 	{
 		JRBaseBarPlot clone = (JRBaseBarPlot)super.clone(parentChart);
@@ -477,9 +407,9 @@ public class JRBaseBarPlot extends JRBaseChartPlot implements JRBarPlot
 
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_1_0)
 		{
-			showTickMarks = Boolean.valueOf(isShowTickMarks);
-			showTickLabels = Boolean.valueOf(isShowTickLabels);
-			showLabels = Boolean.valueOf(isShowLabels);
+			showTickMarks = isShowTickMarks;
+			showTickLabels = isShowTickLabels;
+			showLabels = isShowLabels;
 		}
 	}
 

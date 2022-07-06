@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,19 +33,17 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPenContainer;
 import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JRStyleContainer;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.engine.util.ObjectUtils;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 
 /**
  * This is useful for drawing borders around text elements and images. Boxes can have borders and paddings, which can
  * have different width and colour on each side of the element.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePen.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEventsSupport, Deduplicable
 {
@@ -84,10 +82,8 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 	}
 	
 	
-	/**
-	 *
-	 */
-	public JRStyleContainer getStyleContainer()
+	@Override
+	public JRPenContainer getPenContainer()
 	{
 		return penContainer;
 	}
@@ -95,30 +91,28 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 	/**
 	 *
 	 */
+	protected StyleResolver getStyleResolver() 
+	{
+		if (getPenContainer().getDefaultStyleProvider() != null)
+		{
+			return getPenContainer().getDefaultStyleProvider().getStyleResolver();
+		}
+		return StyleResolver.getInstance();
+	}
+	
+	@Override
 	public Float getLineWidth()
 	{
-		return JRStyleResolver.getLineWidth(this, penContainer.getDefaultLineWidth());
+		return getStyleResolver().getLineWidth(this, penContainer.getDefaultLineWidth());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Float getOwnLineWidth()
 	{
 		return lineWidth;
 	}
 
-	/**
-	 *
-	 */
-	public void setLineWidth(float lineWidth)
-	{
-		setLineWidth(new Float(lineWidth));
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setLineWidth(Float lineWidth)
 	{
 		Object old = this.lineWidth;
@@ -126,25 +120,19 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 		getEventSupport().firePropertyChange(PROPERTY_LINE_WIDTH, old, this.lineWidth);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public LineStyleEnum getLineStyleValue()
 	{
-		return JRStyleResolver.getLineStyleValue(this);
+		return getStyleResolver().getLineStyleValue(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public LineStyleEnum getOwnLineStyleValue()
 	{
 		return lineStyleValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setLineStyle(LineStyleEnum lineStyleValue)
 	{
 		Object old = this.lineStyleValue;
@@ -152,25 +140,19 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 		getEventSupport().firePropertyChange(PROPERTY_LINE_STYLE, old, this.lineStyleValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getLineColor()
 	{
-		return JRStyleResolver.getLineColor(this, penContainer.getDefaultLineColor());
+		return getStyleResolver().getLineColor(this, penContainer.getDefaultLineColor());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnLineColor()
 	{
 		return lineColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setLineColor(Color lineColor)
 	{
 		Object old = this.lineColor;
@@ -184,9 +166,7 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 		return null;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRPen clone(JRPenContainer penContainer)
 	{
 		JRBasePen clone = null;
@@ -207,6 +187,7 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -230,6 +211,7 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 	 */
 	private Byte lineStyle;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -243,6 +225,7 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 	}
 
 
+	@Override
 	public int getHashCode()
 	{
 		ObjectUtils.HashCode hash = ObjectUtils.hash();
@@ -253,6 +236,7 @@ public class JRBasePen implements JRPen, Serializable, Cloneable, JRChangeEvents
 	}
 
 
+	@Override
 	public boolean isIdentical(Object object)
 	{
 		if (this == object)

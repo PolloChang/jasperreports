@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.engine.export;
 
+import java.lang.reflect.InvocationTargetException;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 
@@ -30,11 +32,13 @@ import net.sf.jasperreports.engine.util.JRClassLoader;
  * A {@link ExporterFilterFactory} utility class.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ExporterFilterFactoryUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class ExporterFilterFactoryUtil
 {
-	//FIXME this would add commons collections to applet jar
+	public static final String EXCEPTION_MESSAGE_KEY_FACTORY_CLASS_NOT_FOUND = "export.filter.factory.class.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_FACTORY_CLASS_INSTANCE_FAILURE = "export.filter.factory.class.instance.failure";
+	
+	//private static final JRSingletonCache cache = new JRSingletonCache(ExporterFilterFactory.class);
 
 	/**
 	 * Returns an exporter filter factory based on a factory class name.
@@ -45,22 +49,28 @@ public final class ExporterFilterFactoryUtil
 	 */
 	public static ExporterFilterFactory getFilterFactory(String factoryClassName) throws JRException
 	{
+		//return (ExporterFilterFactory) cache.getCachedInstance(factoryClassName);
 		try
 		{
 			Class<?> clazz = JRClassLoader.loadClassForName(factoryClassName);
-			return (ExporterFilterFactory)clazz.newInstance();
+			return (ExporterFilterFactory)clazz.getDeclaredConstructor().newInstance();
 		}
 		catch (ClassNotFoundException e)
 		{
-			throw new JRException("Class " + factoryClassName + " not found.", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_FACTORY_CLASS_NOT_FOUND,
+					new Object[]{factoryClassName}, 
+					e);
 		}
-		catch (InstantiationException e)
+		catch (InstantiationException | IllegalAccessException 
+			| NoSuchMethodException | InvocationTargetException e)
 		{
-			throw new JRException("Error instantiating class " + factoryClassName + ".", e);
-		}
-		catch (IllegalAccessException e)
-		{
-			throw new JRException("Error instantiating class " + factoryClassName + ".", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_FACTORY_CLASS_INSTANCE_FAILURE,
+					new Object[]{factoryClassName}, 
+					e);
 		}
 	}
 

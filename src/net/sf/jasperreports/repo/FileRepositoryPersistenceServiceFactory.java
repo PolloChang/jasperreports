@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FileRepositoryPersistenceServiceFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FileRepositoryPersistenceServiceFactory implements PersistenceServiceFactory
 {
@@ -42,9 +41,7 @@ public class FileRepositoryPersistenceServiceFactory implements PersistenceServi
 		return INSTANCE;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public <K extends RepositoryService, L extends Resource> PersistenceService getPersistenceService(
 		JasperReportsContext jasperReportsContext,
 		Class<K> repositoryServiceType, 
@@ -71,11 +68,7 @@ public class FileRepositoryPersistenceServiceFactory implements PersistenceServi
 			}
 			else if (DataAdapterResource.class.isAssignableFrom(resourceType))
 			{
-				return new CastorDataAdapterPersistenceService(jasperReportsContext);
-			}
-			else if (CastorResource.class.isAssignableFrom(resourceType))
-			{
-				return new CastorObjectPersistenceService(jasperReportsContext);
+				return new JacksonDataAdapterPersistenceService(jasperReportsContext);
 			}
 			else if (SerializableResource.class.isAssignableFrom(resourceType))
 			{

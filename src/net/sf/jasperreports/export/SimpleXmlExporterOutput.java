@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,17 +27,26 @@ import java.io.File;
 import java.io.OutputStream;
 import java.io.Writer;
 
+import net.sf.jasperreports.engine.export.FileXmlResourceHandler;
+import net.sf.jasperreports.engine.export.XmlResourceHandler;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleXmlExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implements XmlExporterOutput
 {
+	private static final String XML_FILES_SUFFIX = "_files";
+
 	/**
 	 * 
 	 */
+	private XmlResourceHandler imageHandler;
+	private boolean imageHandlerSet;
+
 	private Boolean isEmbeddingImages;
+	
+	private final File destFile;
 
 	
 	/**
@@ -46,6 +55,19 @@ public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implemen
 	public SimpleXmlExporterOutput(StringBuffer sbuffer)
 	{
 		super(sbuffer);
+		
+		destFile = null;
+	}
+
+	
+	/**
+	 * 
+	 */
+	public SimpleXmlExporterOutput(StringBuilder sbuilder)
+	{
+		super(sbuilder);
+		
+		destFile = null;
 	}
 
 	
@@ -55,6 +77,8 @@ public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implemen
 	public SimpleXmlExporterOutput(Writer writer)
 	{
 		super(writer);
+		
+		destFile = null;
 	}
 	
 
@@ -64,6 +88,8 @@ public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implemen
 	public SimpleXmlExporterOutput(OutputStream outputStream)
 	{
 		super(outputStream);
+		
+		destFile = null;
 	}
 
 	
@@ -73,6 +99,8 @@ public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implemen
 	public SimpleXmlExporterOutput(OutputStream outputStream, String encoding)
 	{
 		super(outputStream, encoding);
+		
+		destFile = null;
 	}
 	
 
@@ -82,6 +110,8 @@ public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implemen
 	public SimpleXmlExporterOutput(File file)
 	{
 		super(file);
+		
+		destFile = file;
 	}
 
 	
@@ -91,6 +121,8 @@ public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implemen
 	public SimpleXmlExporterOutput(File file, String encoding)
 	{
 		super(file, encoding);
+		
+		destFile = file;
 	}
 
 	
@@ -100,6 +132,8 @@ public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implemen
 	public SimpleXmlExporterOutput(String fileName)
 	{
 		super(fileName);
+		
+		destFile = fileName == null ? null : new File(fileName);
 	}
 
 	
@@ -109,12 +143,40 @@ public class SimpleXmlExporterOutput extends SimpleWriterExporterOutput implemen
 	public SimpleXmlExporterOutput(String fileName, String encoding)
 	{
 		super(fileName, encoding);
+		
+		destFile = fileName == null ? null : new File(fileName);
 	}
 
 	
+	
+	@Override
+	public XmlResourceHandler getImageHandler() 
+	{
+		if (
+			!imageHandlerSet
+			&& imageHandler == null
+			&& destFile != null
+			)
+		{
+			File imagesFolder = new File(destFile.getParent(), destFile.getName() + XML_FILES_SUFFIX);
+			imageHandler = new FileXmlResourceHandler(imagesFolder, imagesFolder.getName() + "/{0}");
+		}
+		
+		return imageHandler;
+	}
+
+
 	/**
 	 * 
 	 */
+	public void setImageHandler(XmlResourceHandler imageHandler)
+	{
+		this.imageHandler = imageHandler;
+		this.imageHandlerSet = true;
+	}
+
+
+	@Override
 	public Boolean isEmbeddingImages()
 	{
 		return isEmbeddingImages;

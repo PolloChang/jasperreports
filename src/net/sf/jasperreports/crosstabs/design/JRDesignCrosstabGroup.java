@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.crosstabs.design;
 
 import net.sf.jasperreports.crosstabs.JRCellContents;
+import net.sf.jasperreports.crosstabs.JRCrosstabGroup;
 import net.sf.jasperreports.crosstabs.base.JRBaseCrosstabGroup;
 import net.sf.jasperreports.crosstabs.type.CrosstabTotalPositionEnum;
 import net.sf.jasperreports.engine.design.JRDesignVariable;
@@ -35,7 +36,6 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
  * Base crosstab row/column group implementation to be used at design time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstabGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRDesignCrosstabGroup extends JRBaseCrosstabGroup implements JRChangeEventsSupport
 {
@@ -53,6 +53,8 @@ public abstract class JRDesignCrosstabGroup extends JRBaseCrosstabGroup implemen
 	public static final String PROPERTY_TOTAL_HEADER = "totalHeader";
 
 	public static final String PROPERTY_TOTAL_POSITION = "totalPosition";
+
+	public static final String PROPERTY_MERGE_HEADER_CELLS = "mergeHeaderCells";
 	
 	protected JRDesignVariable designVariable;
 	
@@ -148,6 +150,20 @@ public abstract class JRDesignCrosstabGroup extends JRBaseCrosstabGroup implemen
 		this.totalHeader = totalHeader;
 		getEventSupport().firePropertyChange(PROPERTY_TOTAL_HEADER, old, this.totalHeader);
 	}
+	
+	/**
+	 * Defines whether the header cell should span across entries in the group.
+	 * 
+	 * @param mergeHeaderCells whether the header cell should span across entries in the group; if <code>null</code>
+	 * the default will apply
+	 * @see JRCrosstabGroup#getMergeHeaderCells()
+	 */
+	public void setMergeHeaderCells(Boolean mergeHeaderCells)
+	{
+		Object old = this.mergeHeaderCells;
+		this.mergeHeaderCells = mergeHeaderCells;
+		getEventSupport().firePropertyChange(PROPERTY_MERGE_HEADER_CELLS, old, this.mergeHeaderCells);
+	}
 
 	/**
 	 * Returns the group parent crosstab.
@@ -174,9 +190,7 @@ public abstract class JRDesignCrosstabGroup extends JRBaseCrosstabGroup implemen
 		}
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignCrosstabGroup clone = (JRDesignCrosstabGroup) super.clone();
@@ -195,6 +209,7 @@ public abstract class JRDesignCrosstabGroup extends JRBaseCrosstabGroup implemen
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

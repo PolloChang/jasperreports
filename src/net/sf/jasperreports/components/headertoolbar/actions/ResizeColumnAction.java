@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.components.headertoolbar.actions;
 
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.web.actions.ActionException;
 import net.sf.jasperreports.web.commands.CommandException;
 import net.sf.jasperreports.web.commands.ResetInCacheCommand;
@@ -30,9 +31,10 @@ import net.sf.jasperreports.web.commands.ResetInCacheCommand;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: ResizeColumnAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ResizeColumnAction extends AbstractVerifiableTableAction {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	public ResizeColumnAction() {
 	}
@@ -49,6 +51,7 @@ public class ResizeColumnAction extends AbstractVerifiableTableAction {
 		return "resize_column_action";
 	}
 
+	@Override
 	public void performAction() throws ActionException
 	{
 		// execute command
@@ -62,7 +65,7 @@ public class ResizeColumnAction extends AbstractVerifiableTableAction {
 					)
 				);
 		} catch (CommandException e) {
-			 throw new ActionException(e.getMessage());
+			 throw new ActionException(e);
 		}
 	}
 

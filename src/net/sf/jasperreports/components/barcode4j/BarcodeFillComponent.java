@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,29 +30,26 @@ import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRStyle;
-import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.component.BaseFillComponent;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
 import net.sf.jasperreports.engine.fill.JRTemplateImage;
 import net.sf.jasperreports.engine.fill.JRTemplatePrintImage;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-
-import org.krysalis.barcode4j.impl.AbstractBarcodeBean;
+import net.sf.jasperreports.export.HtmlReportConfiguration;
+import net.sf.jasperreports.renderers.Renderable;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeFillComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeFillComponent extends BaseFillComponent
 {
 
 	private final BarcodeComponent barcodeComponent;
 	
-	private final Map<JRStyle, JRTemplateImage> printTemplates = new HashMap<JRStyle, JRTemplateImage>();
-	private AbstractBarcodeBean barcode;
-	private String message;
+	private final Map<JRStyle, JRTemplateImage> printTemplates = new HashMap<>();
+	private Renderable renderable;
 	
 	
 	public BarcodeFillComponent(BarcodeComponent barcodeComponent)
@@ -65,6 +62,7 @@ public class BarcodeFillComponent extends BaseFillComponent
 		this.barcodeComponent = barcode.barcodeComponent;
 	}
 	
+	@Override
 	public void evaluate(byte evaluation) throws JRException
 	{
 		if (isEvaluateNow())
@@ -83,13 +81,13 @@ public class BarcodeFillComponent extends BaseFillComponent
 	{
 		BarcodeEvaluator evaluator = new BarcodeEvaluator(fillContext, evaluation);
 		evaluator.evaluateBarcode();
-		barcode = evaluator.getBarcode();
-		message = evaluator.getMessage();
+		renderable = evaluator.getRenderable();
 	}
 	
+	@Override
 	public FillPrepareResult prepare(int availableHeight)
 	{
-		if (isEvaluateNow() && message == null)
+		if (isEvaluateNow() && renderable == null)
 		{
 			return FillPrepareResult.NO_PRINT_NO_OVERFLOW;
 		}
@@ -97,6 +95,7 @@ public class BarcodeFillComponent extends BaseFillComponent
 		return FillPrepareResult.PRINT_NO_STRETCH;
 	}
 
+	@Override
 	public JRPrintElement fill()
 	{
 		JRTemplateImage templateImage = getTemplateImage();
@@ -108,6 +107,8 @@ public class BarcodeFillComponent extends BaseFillComponent
 		image.setY(fillContext.getElementPrintY());
 		image.setWidth(element.getWidth());
 		image.setHeight(element.getHeight());
+		image.getPropertiesMap().setProperty(HtmlReportConfiguration.PROPERTY_EMBED_IMAGE, Boolean.TRUE.toString());
+		image.getPropertiesMap().setProperty(HtmlReportConfiguration.PROPERTY_EMBEDDED_SVG_USE_FONTS, Boolean.TRUE.toString());
 		
 		if (isEvaluateNow())
 		{
@@ -132,8 +133,10 @@ public class BarcodeFillComponent extends BaseFillComponent
 			templateImage = new JRTemplateImage(
 					fillContext.getElementOrigin(), 
 					fillContext.getDefaultStyleProvider());
-			templateImage.setStyle(elementStyle);
+			templateImage.setElement(fillContext.getComponentElement());
+			templateImage.setStyle(elementStyle);//already set by setElement, but keeping for safety
 			templateImage.setScaleImage(ScaleImageEnum.RETAIN_SHAPE);
+			templateImage.setUsingCache(false);
 
 			templateImage = deduplicate(templateImage);
 			printTemplates.put(elementStyle, templateImage);
@@ -143,18 +146,13 @@ public class BarcodeFillComponent extends BaseFillComponent
 	
 	protected void setBarcodeImage(JRTemplatePrintImage image)
 	{
-		if (message != null)
+		if (renderable != null)
 		{
-			BarcodeImageProducer imageProducer = BarcodeUtils.getInstance(fillContext.getFiller().getJasperReportsContext()).getProducer(
-					fillContext.getComponentElement());
-			Renderable barcodeImage = imageProducer.createImage(
-					fillContext.getFiller().getJasperReportsContext(),
-					fillContext.getComponentElement(), 
-					barcode, message, barcodeComponent.getOrientation());
-			image.setRenderable(barcodeImage);
+			image.setRenderer(renderable);
 		}
 	}
 
+	@Override
 	public void evaluateDelayedElement(JRPrintElement element, byte evaluation)
 			throws JRException
 	{

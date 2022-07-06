@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.JRConstants;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TimestampValues.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TimestampValues implements ColumnValues, Serializable
 {
@@ -64,11 +63,13 @@ public class TimestampValues implements ColumnValues, Serializable
 		this.nanoValues = (ColumnValues) in.readUnshared();
 	}
 
+	@Override
 	public int size()
 	{
 		return timeValues.size();
 	}
 
+	@Override
 	public ColumnValuesIterator iterator()
 	{
 		ColumnValuesIterator timeIterator = timeValues.iterator();
@@ -91,17 +92,20 @@ class TimestampValuesIterator implements ColumnValuesIterator
 		this.nanoIterator = nanoIterator;
 	}
 
+	@Override
 	public void moveFirst()
 	{
 		timeIterator.moveFirst();
 		nanoIterator.moveFirst();
 	}
 
+	@Override
 	public boolean next()
 	{
 		return timeIterator.next() && nanoIterator.next();
 	}
 
+	@Override
 	public Object get()
 	{
 		long time = ((Number) timeIterator.get()).longValue();

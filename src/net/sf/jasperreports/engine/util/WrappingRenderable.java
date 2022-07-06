@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,18 +29,14 @@ import java.awt.geom.Rectangle2D;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRRenderable;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: WrappingRenderable.java 7199 2014-08-27 13:58:10Z teodord $
  * @deprecated To be removed.
  */
-public class WrappingRenderable implements Renderable
+public class WrappingRenderable implements net.sf.jasperreports.engine.Renderable
 {
 	/**
 	 *
@@ -50,71 +46,82 @@ public class WrappingRenderable implements Renderable
 	/**
 	 *
 	 */
-	private JRRenderable renderable;
+	private net.sf.jasperreports.engine.JRRenderable renderable;
 	
 	
 	/**
 	 *
 	 */
-	public WrappingRenderable(JRRenderable renderable)
+	public WrappingRenderable(net.sf.jasperreports.engine.JRRenderable renderable)
 	{
 		this.renderable = renderable;
 	}
 
 
+	@Override
 	public String getId() {
 		return renderable.getId();
 	}
 
 
+	@Override
 	public byte getType() {
 		return renderable.getType();
 	}
 
 
+	@Override
 	public byte getImageType() {
 		return renderable.getImageType();
 	}
 
 
+	@Override
 	public Dimension2D getDimension() throws JRException {
 		return renderable.getDimension();
 	}
 
 
+	@Override
 	public byte[] getImageData() throws JRException {
 		return renderable.getImageData();
 	}
 
 
+	@Override
 	public void render(Graphics2D grx, Rectangle2D rectangle)
 			throws JRException {
 		renderable.render(grx, rectangle);
 	}
 
 
-	public RenderableTypeEnum getTypeValue() {
-		return RenderableTypeEnum.getByValue(renderable.getType());
+	@Override
+	public net.sf.jasperreports.engine.type.RenderableTypeEnum getTypeValue() {
+		return net.sf.jasperreports.engine.type.RenderableTypeEnum.getByValue(renderable.getType());
 	}
 
 
+	@Override
 	public ImageTypeEnum getImageTypeValue() {
 		return ImageTypeEnum.getByValue(renderable.getImageType());
 	}
 
 
+	@Override
 	public Dimension2D getDimension(JasperReportsContext jasperReportsContext)
 			throws JRException {
 		return renderable.getDimension();
 	}
 
 
+	@Override
 	public byte[] getImageData(JasperReportsContext jasperReportsContext)
 			throws JRException {
 		return renderable.getImageData();
 	}
 
 
+	@Override
 	public void render(JasperReportsContext jasperReportsContext,
 			Graphics2D grx, Rectangle2D rectangle) throws JRException {
 		renderable.render(grx, rectangle);

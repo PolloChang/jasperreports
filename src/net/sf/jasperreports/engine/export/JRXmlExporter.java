@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,17 +24,14 @@
 
 /*
  * Contributors:
- * Joakim Sandstr�m - sanjoa@users.sourceforge.net
+ * Joakim Sandström - sanjoa@users.sourceforge.net
  */
 package net.sf.jasperreports.engine.export;
 
 import java.awt.Dimension;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.HashMap;
@@ -43,6 +40,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRAnchor;
@@ -51,7 +50,6 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JROrigin;
 import net.sf.jasperreports.engine.JRParagraph;
@@ -73,10 +71,11 @@ import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
-import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.PrintBookmark;
-import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.engine.PrintPageFormat;
+import net.sf.jasperreports.engine.PrintPart;
+import net.sf.jasperreports.engine.PrintParts;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
@@ -84,8 +83,9 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
+import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRValueStringUtils;
 import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
 import net.sf.jasperreports.engine.util.VersionComparator;
@@ -93,11 +93,17 @@ import net.sf.jasperreports.engine.util.XmlNamespace;
 import net.sf.jasperreports.engine.xml.JRXmlBaseWriter;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
 import net.sf.jasperreports.engine.xml.XmlValueHandlerUtils;
+import net.sf.jasperreports.export.ExportInterruptedException;
 import net.sf.jasperreports.export.ExporterConfiguration;
 import net.sf.jasperreports.export.ReportExportConfiguration;
-import net.sf.jasperreports.export.WriterExporterOutput;
-
-import org.w3c.tools.codec.Base64Encoder;
+import net.sf.jasperreports.export.XmlExporterOutput;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.renderers.ResourceRenderer;
+import net.sf.jasperreports.renderers.util.RendererUtil;
+import net.sf.jasperreports.util.Base64Util;
 
 
 /**
@@ -160,14 +166,16 @@ import org.w3c.tools.codec.Base64Encoder;
  * @see net.sf.jasperreports.engine.JasperPrint
  * @see net.sf.jasperreports.engine.xml.JRPrintXmlLoader
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration, ExporterConfiguration, WriterExporterOutput, JRXmlExporterContext>
+public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration, ExporterConfiguration, XmlExporterOutput, JRXmlExporterContext>
 {
 	/**
 	 *
 	 */
 	private static final String XML_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.";
+	
+	public static final String EXCEPTION_MESSAGE_KEY_EMBEDDING_IMAGE_ERROR = "export.xml.embedding.image.error";
+	public static final String EXCEPTION_MESSAGE_KEY_REPORT_STYLE_NOT_FOUND = "export.xml.report.style.not.found";
 
 	/**
 	 * The exporter key, as used in
@@ -175,13 +183,37 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	 */
 	public static final String XML_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "xml";
 
-	private static final String PROPERTY_START_PAGE_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.start.page.index";
-	private static final String PROPERTY_END_PAGE_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.end.page.index";
-	private static final String PROPERTY_PAGE_COUNT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.page.count";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_0_1,
+			valueType = Integer.class
+			)
+	public static final String PROPERTY_START_PAGE_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.start.page.index";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_0_1,
+			valueType = Integer.class
+			)
+	public static final String PROPERTY_END_PAGE_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.end.page.index";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_0_0,
+			valueType = Integer.class
+			)
+	public static final String PROPERTY_PAGE_COUNT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.page.count";
 	
 	/**
 	 * Stores the text sequence used to replace invalid XML characters
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.QUESTION_MARK,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_4_7_1
+			)
 	public static final String PROPERTY_REPLACE_INVALID_CHARS = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.replace.invalid.chars";//FIXMEEXPORT do something about it
 	protected static final String DEFAULT_OBJECT_TYPE = "java.lang.String";
 	protected static final String IMAGE_PREFIX = "img_";
@@ -196,16 +228,15 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	protected String version;
 	protected VersionComparator versionComparator = new VersionComparator();
 	
-	protected Map<Renderable,String> rendererToImagePathMap;
+	protected Map<String,String> rendererToImagePathMap;
+	protected RenderersCache renderersCache;
 //	protected Map fontsMap = new HashMap();
-	protected Map<String,JRStyle> stylesMap = new HashMap<String,JRStyle>();
+	protected Map<String,JRStyle> stylesMap = new HashMap<>();
 
 	/**
 	 *
 	 */
 	protected boolean isEmbeddingImages = true;
-	protected File destFile;
-	protected File imagesDir;
 
 	/**
 	 * 
@@ -238,27 +269,21 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<ExporterConfiguration> getConfigurationInterface()
 	{
 		return ExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<ReportExportConfiguration> getItemConfigurationInterface()
 	{
 		return ReportExportConfiguration.class;
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	protected void ensureOutput()
 	{
@@ -274,9 +299,7 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public void exportReport() throws JRException
 	{
 		/*   */
@@ -287,10 +310,19 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 		
 		ensureOutput();
 
+		Boolean lcIsEmbeddingImages = getExporterOutput().isEmbeddingImages();
+		if (lcIsEmbeddingImages == null)
+		{
+			lcIsEmbeddingImages = Boolean.TRUE;
+		}
+		isEmbeddingImages = lcIsEmbeddingImages;
+		
 		if (!isEmbeddingImages)
 		{
-			rendererToImagePathMap = new HashMap<Renderable,String>();
+			rendererToImagePathMap = new HashMap<>();
 		}
+
+		renderersCache = new RenderersCache(getJasperReportsContext());
 
 		Writer writer = getExporterOutput().getWriter();
 
@@ -401,6 +433,17 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 
 		exportBookmarks(jasperPrint.getBookmarks());
 		
+		PrintParts parts = jasperPrint.getParts();
+		if (parts != null && parts.hasParts())
+		{
+			for (Iterator<Map.Entry<Integer, PrintPart>> it = parts.partsIterator(); it.hasNext();)
+			{
+				Map.Entry<Integer, PrintPart> partsEntry = it.next();
+				/*   */
+				exportPart(partsEntry.getKey(), partsEntry.getValue());
+			}
+		}
+
 		if (pages != null && pages.size() > 0)
 		{
 			JRPrintPage page = null;
@@ -408,7 +451,7 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 			{
 				if (Thread.interrupted())
 				{
-					throw new JRException("Current thread interrupted.");
+					throw new ExportInterruptedException();
 				}
 				
 				page = pages.get(i);
@@ -439,7 +482,19 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 					String value = propertiesMap.getProperty(propertyNames[i]);
 					if (value != null)
 					{
-						xmlWriter.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_value, value);
+						String encodedValue = JRStringUtil.encodeXmlAttribute(value);
+						if (
+							isNewerVersionOrEqual(JRConstants.VERSION_6_4_0)
+							&& encodedValue.length() != value.length()
+							&& value.trim().equals(value)
+							)
+						{
+							xmlWriter.writeCDATA(value);
+						}
+						else
+						{
+							xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_value, encodedValue);
+						}
 					}
 					xmlWriter.closeElement();
 				}
@@ -468,8 +523,8 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 			{
 				throw 
 					new JRRuntimeException(
-						"Referenced report style not found : " 
-						+ style.getStyle().getName()
+						EXCEPTION_MESSAGE_KEY_REPORT_STYLE_NOT_FOUND,  
+						new Object[]{style.getStyle().getName()} 
 						);
 			}
 		}
@@ -480,8 +535,15 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_fill, style.getOwnFillValue());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_radius, style.getOwnRadius());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_scaleImage, style.getOwnScaleImageValue());
-		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, style.getOwnHorizontalAlignmentValue());
-		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, style.getOwnVerticalAlignmentValue());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_hTextAlign, style.getOwnHorizontalTextAlign());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_hImageAlign, style.getOwnHorizontalImageAlign());
+		VerticalTextAlignEnum vTextAlign = style.getOwnVerticalTextAlign();
+		if (isOlderVersionThan(JRConstants.VERSION_6_2_1))
+		{
+			vTextAlign = vTextAlign == VerticalTextAlignEnum.JUSTIFIED ? VerticalTextAlignEnum.TOP : vTextAlign;
+		}
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_vTextAlign, vTextAlign);
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_vImageAlign, style.getOwnVerticalImageAlign());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_rotation, style.getOwnRotationValue());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_markup, style.getOwnMarkup());
 		//xmlWriter.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_pattern, style.getOwnPattern());//FIXME if pattern in text field is equal to this, then it should be removed there (inheritance)
@@ -543,6 +605,28 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 
 			xmlWriter.closeElement();
 		}
+	}
+
+
+	/**
+	 *
+	 */
+	protected void exportPart(Integer pageIndex, PrintPart part) throws JRException, IOException
+	{
+		xmlWriter.startElement(JRXmlConstants.ELEMENT_part);
+
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_pageIndex, pageIndex);
+		xmlWriter.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, part.getName());
+		PrintPageFormat pageFormat = part.getPageFormat();
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_pageWidth, pageFormat.getPageWidth());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_pageHeight, pageFormat.getPageHeight());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_topMargin, pageFormat.getTopMargin());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_leftMargin, pageFormat.getLeftMargin());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_bottomMargin, pageFormat.getBottomMargin());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_rightMargin, pageFormat.getRightMargin());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_orientation, pageFormat.getOrientation(), OrientationEnum.PORTRAIT);
+
+		xmlWriter.closeElement();
 	}
 
 
@@ -755,9 +839,18 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	{
 		xmlWriter.startElement(JRXmlConstants.ELEMENT_image);
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_scaleImage, image.getOwnScaleImageValue());
-		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, image.getOwnHorizontalAlignmentValue());
-		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, image.getOwnVerticalAlignmentValue());
-		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_isLazy, image.isLazy(), false);
+		if(isNewerVersionOrEqual(JRConstants.VERSION_6_10_0))
+		{
+			xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_rotation, image.getOwnRotation());
+		}
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, image.getOwnHorizontalImageAlign());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, image.getOwnVerticalImageAlign());
+		
+		Renderable renderer = image.getRenderer();
+		boolean isLazy = RendererUtil.isLazy(renderer);
+
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_isLazy, isLazy, false);
+
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_onErrorType, image.getOnErrorTypeValue(), OnErrorTypeEnum.ERROR);
 		
 		JRHyperlinkProducerFactory hyperlinkProducerFactory = getCurrentItemConfiguration().getHyperlinkProducerFactory();
@@ -778,7 +871,7 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 			}
 		}
 		
-		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_hyperlinkTarget, image.getLinkTarget(), HyperlinkTargetEnum.SELF.getName());//FIXMETARGET this exporter is used in the Flash viewer
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_hyperlinkTarget, image.getLinkTarget(), HyperlinkTargetEnum.SELF.getName());
 		xmlWriter.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_hyperlinkTooltip, image.getHyperlinkTooltip());
 		xmlWriter.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_anchorName, image.getAnchorName());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_bookmarkLevel, image.getBookmarkLevel(), JRAnchor.NO_BOOKMARK);
@@ -787,92 +880,97 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 		exportBox(image.getLineBox());
 		exportGraphicElement(image);
 		
-
-		Renderable renderer = image.getRenderable();
 		if (renderer != null)
 		{
 			xmlWriter.startElement(JRXmlConstants.ELEMENT_imageSource);
-			xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_isEmbedded, isEmbeddingImages && !image.isLazy(), false);
+			xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_isEmbedded, isEmbeddingImages && !isLazy, false);
 	
 			String imageSource = "";
 			
-			if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
+			if (isLazy)
 			{
-				renderer = 
-					new JRWrappingSvgRenderer(
-						renderer, 
-						new Dimension(image.getWidth(), image.getHeight()),
-						ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null
-						);
-			}
-				
-			if (image.isLazy())
-			{
-				imageSource = ((JRImageRenderer)renderer).getImageLocation();
-			}
-			else if (isEmbeddingImages)
-			{
-				try
-				{
-					ByteArrayInputStream bais = new ByteArrayInputStream(renderer.getImageData(jasperReportsContext));
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					
-					Base64Encoder encoder = new Base64Encoder(bais, baos);
-					encoder.process();
-					
-					String encoding = getExporterOutput().getEncoding();
-					imageSource = new String(baos.toByteArray(), encoding);
-				}
-				catch (IOException e)
-				{
-					throw new JRException("Error embedding image into XML.", e);
-				}
+				// we do not cache imagePath for lazy images because the short location string is already cached inside the render itself
+				imageSource = RendererUtil.getResourceLocation(renderer);
 			}
 			else
 			{
-				if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer))
+				if (renderer instanceof ResourceRenderer)
 				{
-					imageSource = rendererToImagePathMap.get(renderer);
+					RenderersCache imageRenderersCache = image.isUsingCache() ? renderersCache
+							//creating a fresh RenderersCache for a single call to preserve homogeneity with other exporters
+							: new RenderersCache(getJasperReportsContext());
+					renderer = imageRenderersCache.getLoadedRenderer((ResourceRenderer)renderer);
+				}
+
+				if (
+					!isEmbeddingImages //we do not cache imageSource for embedded images because it is too big
+					&& renderer instanceof DataRenderable //we do not cache imagePath for non-data renderers because they render width different width/height each time
+					&& rendererToImagePathMap.containsKey(renderer.getId())
+					)
+				{
+					imageSource = rendererToImagePathMap.get(renderer.getId());
 				}
 				else
 				{
-					String imageName = IMAGE_PREFIX + getNextImageId();
-					
-					byte[] imageData = renderer.getImageData(jasperReportsContext);
-
-					if (!imagesDir.exists())
+					if (isEmbeddingImages)
 					{
-						imagesDir.mkdir();
-					}
-
-					File imageFile = new File(imagesDir, imageName);
-
-					OutputStream fos = null;
-					try
-					{
-						fos = new FileOutputStream(imageFile);
-						fos.write(imageData, 0, imageData.length);
-					}
-					catch (IOException e)
-					{
-						throw new JRException("Error writing to image file : " + imageFile, e);
-					}
-					finally
-					{
-						if (fos != null)
+						DataRenderable dataRenderer = 
+							getRendererUtil().getDataRenderable(
+								renderer,
+								new Dimension(
+									Math.max(image.getWidth() - image.getLineBox().getLeftPadding() - image.getLineBox().getRightPadding(), 0), 
+									Math.max(image.getHeight() - image.getLineBox().getTopPadding() - image.getLineBox().getBottomPadding(), 0)
+									),
+								ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null
+								);
+							
+						try
 						{
-							try
+							ByteArrayInputStream bais = new ByteArrayInputStream(dataRenderer.getData(jasperReportsContext));
+							ByteArrayOutputStream baos = new ByteArrayOutputStream();
+							
+							Base64Util.encode(bais, baos);
+							
+							imageSource = new String(baos.toByteArray(), "UTF-8"); // UTF-8 is fine as we just need an ASCII compatible encoding for the Base64 array
+						}
+						catch (IOException e)
+						{
+							throw 
+								new JRException(
+									EXCEPTION_MESSAGE_KEY_EMBEDDING_IMAGE_ERROR,
+									null, 
+									e);
+						}
+						//don't cache the base64 encoded image as imageSource because they are too big
+					}
+					else
+					{
+						XmlResourceHandler imageHandler = getExporterOutput().getImageHandler();
+						if (imageHandler != null)
+						{
+							DataRenderable dataRenderer = 
+								getRendererUtil().getDataRenderable(
+									renderer,
+									new Dimension(
+										Math.max(image.getWidth() - image.getLineBox().getLeftPadding() - image.getLineBox().getRightPadding(), 0), 
+										Math.max(image.getHeight() - image.getLineBox().getTopPadding() - image.getLineBox().getBottomPadding(), 0)
+										),
+									ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null
+									);
+
+							String imageName = IMAGE_PREFIX + getNextImageId();
+							
+							imageHandler.handleResource(imageName, dataRenderer.getData(jasperReportsContext));
+							
+							imageSource = imageHandler.getResourceSource(imageName);
+
+							if (dataRenderer == renderer)
 							{
-								fos.close();
-							}
-							catch(IOException e)
-							{
+								//cache imagePath only for true DataRenderable instances because the wrapping ones render with different width/height each time
+								rendererToImagePathMap.put(renderer.getId(), imageSource);
 							}
 						}
 					}
-					
-					imageSource = imageFile.getPath();
-					rendererToImagePathMap.put(renderer, imageSource);
 				}
 			}
 			
@@ -896,8 +994,13 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	public void exportText(JRPrintText text) throws IOException
 	{
 		xmlWriter.startElement(JRXmlConstants.ELEMENT_text);
-		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_textAlignment, text.getOwnHorizontalAlignmentValue());
-		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_verticalAlignment, text.getOwnVerticalAlignmentValue());
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_textAlignment, text.getOwnHorizontalTextAlign());
+		VerticalTextAlignEnum vTextAlign = text.getOwnVerticalTextAlign();
+		if (isOlderVersionThan(JRConstants.VERSION_6_2_1))
+		{
+			vTextAlign = vTextAlign == VerticalTextAlignEnum.JUSTIFIED ? VerticalTextAlignEnum.TOP : vTextAlign;
+		}
+		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_verticalAlignment, vTextAlign);
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_textHeight, text.getTextHeight());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_rotation, text.getOwnRotationValue());
 		xmlWriter.addAttribute(JRXmlConstants.ATTRIBUTE_runDirection, text.getRunDirectionValue(), RunDirectionEnum.LTR);
@@ -951,7 +1054,7 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 		short[] lineBreakOffsets = text.getLineBreakOffsets();
 		if (lineBreakOffsets != null)
 		{
-			StringBuffer offsetsString = formatTextLineBreakOffsets(lineBreakOffsets);
+			StringBuilder offsetsString = formatTextLineBreakOffsets(lineBreakOffsets);
 			xmlWriter.writeCDATAElement(JRXmlConstants.ELEMENT_lineBreakOffsets, 
 					offsetsString.toString());
 		}
@@ -965,9 +1068,9 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	}
 
 
-	protected StringBuffer formatTextLineBreakOffsets(short[] lineBreakOffsets)
+	protected StringBuilder formatTextLineBreakOffsets(short[] lineBreakOffsets)
 	{
-		StringBuffer offsetsString = new StringBuffer();
+		StringBuilder offsetsString = new StringBuilder();
 		for (int i = 0; i < lineBreakOffsets.length; i++)
 		{
 			if (i > 0)
@@ -1199,18 +1302,14 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public String getExporterPropertiesPrefix()
 	{
 		return XML_EXPORTER_PROPERTIES_PREFIX;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getExporterKey()
 	{
 		return XML_EXPORTER_KEY;
@@ -1235,5 +1334,14 @@ public class JRXmlExporter extends JRAbstractExporter<ReportExportConfiguration,
 	protected boolean isNewerVersionOrEqual(String oldVersion)
 	{
 		return versionComparator.compare(version, oldVersion) >= 0;
+	}
+
+	
+	/**
+	 *
+	 */
+	protected boolean isOlderVersionThan(String version)
+	{
+		return versionComparator.compare(this.version, version) < 0;
 	}
 }

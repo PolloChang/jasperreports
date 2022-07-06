@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,29 +24,26 @@
 package net.sf.jasperreports.engine.type;
 
 
-
-
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: EnumUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class EnumUtil
 {
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static JREnum getByValue(JREnum[] values, Integer value)
 	{
 		if (values != null && value != null)
 		{
-			return getByValue(values, new Byte(value.byteValue()));
+			return getByValue(values, value.byteValue());
 		}
 		return null;
 	}
 
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static JREnum getByValue(JREnum[] values, Byte value)
 	{
@@ -66,11 +63,32 @@ public final class EnumUtil
 	/**
 	 *
 	 */
+	public static <T extends NamedValueEnum<?>> T getByValue(T[] values, Object value)
+	{
+		if (values != null && value != null)
+		{
+			for(T e:values)
+			{
+				if (value.equals(e.getValue()))
+				{
+					return e;
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * @deprecated Replaced by {@link #getEnumByName(NamedEnum[], String)}.
+	 */
 	public static JREnum getByName(JREnum[] values, String name)
 	{
 		return EnumUtil.<JREnum>getEnumByName(values, name);
 	}
 
+	/**
+	 *
+	 */
 	public static <T extends NamedEnum> T getEnumByName(T[] values, String name)
 	{
 		if (values != null && name != null)
@@ -87,7 +105,7 @@ public final class EnumUtil
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getByConstantName(Enum[], String)}.
 	 */
 	public static JREnum getByEnumConstantName(JREnum[] values, String name)
 	{
@@ -96,6 +114,24 @@ public final class EnumUtil
 			for(JREnum e:values)
 			{
 				if (name.equals(((Enum<?>)e).name()))
+				{
+					return e;
+				}
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 *
+	 */
+	public static <T extends Enum<?>> T getByConstantName(T[] values, String name)
+	{
+		if (values != null && name != null)
+		{
+			for(T e:values)
+			{
+				if (name.equals(e.name()))
 				{
 					return e;
 				}

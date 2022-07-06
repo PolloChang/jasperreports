@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,15 +36,14 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.engine.util.ObjectUtils;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 
 /**
  * This is useful for drawing borders around text elements and images. Boxes can have borders and paddings, which can
  * have different width and colour on each side of the element.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseLineBox.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChangeEventsSupport, Deduplicable
 {
@@ -99,9 +98,7 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider() 
 	{
 		if (boxContainer != null)
@@ -114,6 +111,16 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 	/**
 	 *
 	 */
+	protected StyleResolver getStyleResolver() 
+	{
+		if (getDefaultStyleProvider() != null)
+		{
+			return getDefaultStyleProvider().getStyleResolver();
+		}
+		return StyleResolver.getInstance();
+	}
+
+	@Override
 	public JRStyle getStyle() 
 	{
 		if (boxContainer != null)
@@ -123,9 +130,7 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 		return null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getStyleNameReference()
 	{
 		if (boxContainer != null)
@@ -135,25 +140,19 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 		return null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBoxContainer getBoxContainer()
 	{
 		return boxContainer;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Float getDefaultLineWidth()
 	{
 		return JRPen.LINE_WIDTH_0;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getDefaultLineColor()
 	{
 		if (boxContainer != null)
@@ -163,110 +162,79 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 		return Color.black;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBoxPen getPen()
 	{
 		return pen;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void copyPen(JRBoxPen pen)
 	{
 		this.pen = pen.clone(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBoxPen getTopPen()
 	{
 		return topPen;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void copyTopPen(JRBoxPen topPen)
 	{
 		this.topPen = topPen.clone(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBoxPen getLeftPen()
 	{
 		return leftPen;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void copyLeftPen(JRBoxPen leftPen)
 	{
 		this.leftPen = leftPen.clone(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBoxPen getBottomPen()
 	{
 		return bottomPen;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void copyBottomPen(JRBoxPen bottomPen)
 	{
 		this.bottomPen = bottomPen.clone(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBoxPen getRightPen()
 	{
 		return rightPen;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void copyRightPen(JRBoxPen rightPen)
 	{
 		this.rightPen = rightPen.clone(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getPadding()
 	{
-		return JRStyleResolver.getPadding(this);
+		return getStyleResolver().getPadding(this);
 	}
 
+	@Override
 	public Integer getOwnPadding()
 	{
 		return padding;
 	}
 	
-	/**
-	 *
-	 */
-	public void setPadding(int padding)
-	{
-		setPadding(Integer.valueOf(padding));
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setPadding(Integer padding)
 	{
 		Object old = this.padding;
@@ -274,33 +242,19 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 		getEventSupport().firePropertyChange(PROPERTY_PADDING, old, this.padding);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getTopPadding()
 	{
-		return JRStyleResolver.getTopPadding(this);
+		return getStyleResolver().getTopPadding(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getOwnTopPadding()
 	{
 		return topPadding;
 	}
 
-	/**
-	 *
-	 */
-	public void setTopPadding(int topPadding)
-	{
-		setTopPadding(Integer.valueOf(topPadding));
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setTopPadding(Integer topPadding)
 	{
 		Object old = this.topPadding;
@@ -308,33 +262,19 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 		getEventSupport().firePropertyChange(PROPERTY_TOP_PADDING, old, this.topPadding);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getLeftPadding()
 	{
-		return JRStyleResolver.getLeftPadding(this);
+		return getStyleResolver().getLeftPadding(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getOwnLeftPadding()
 	{
 		return leftPadding;
 	}
 
-	/**
-	 *
-	 */
-	public void setLeftPadding(int leftPadding)
-	{
-		setLeftPadding(Integer.valueOf(leftPadding));
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setLeftPadding(Integer leftPadding)
 	{
 		Object old = this.leftPadding;
@@ -342,33 +282,19 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 		getEventSupport().firePropertyChange(PROPERTY_LEFT_PADDING, old, this.leftPadding);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getBottomPadding()
 	{
-		return JRStyleResolver.getBottomPadding(this);
+		return getStyleResolver().getBottomPadding(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getOwnBottomPadding()
 	{
 		return bottomPadding;
 	}
 
-	/**
-	 *
-	 */
-	public void setBottomPadding(int bottomPadding)
-	{
-		setBottomPadding(Integer.valueOf(bottomPadding));
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setBottomPadding(Integer bottomPadding)
 	{
 		Object old = this.bottomPadding;
@@ -376,33 +302,19 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 		getEventSupport().firePropertyChange(PROPERTY_BOTTOM_PADDING, old, this.bottomPadding);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getRightPadding()
 	{
-		return JRStyleResolver.getRightPadding(this);
+		return getStyleResolver().getRightPadding(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getOwnRightPadding()
 	{
 		return rightPadding;
 	}
 
-	/**
-	 *
-	 */
-	public void setRightPadding(int rightPadding)
-	{
-		setRightPadding(Integer.valueOf(rightPadding));
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setRightPadding(Integer rightPadding)
 	{
 		Object old = this.rightPadding;
@@ -411,9 +323,7 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRLineBox clone(JRBoxContainer boxContainer)
 	{
 		JRBaseLineBox clone = null;
@@ -442,6 +352,7 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -456,6 +367,7 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 	}
 
 
+	@Override
 	public int getHashCode()
 	{
 		ObjectUtils.HashCode hash = ObjectUtils.hash();
@@ -472,6 +384,7 @@ public class JRBaseLineBox implements JRLineBox, Serializable, Cloneable, JRChan
 		return hash.getHashCode();
 	}
 
+	@Override
 	public boolean isIdentical(Object object)
 	{
 		if (this == object)

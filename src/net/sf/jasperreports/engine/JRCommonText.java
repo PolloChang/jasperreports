@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.engine;
 
-import net.sf.jasperreports.engine.type.LineSpacingEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 
 /**
@@ -94,7 +93,6 @@ import net.sf.jasperreports.engine.type.RotationEnum;
  * <code>/demo/samples/markup</code> sample provided with the project source files.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCommonText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCommonText extends JRCommonElement, JRBoxContainer, JRParagraphContainer
 {
@@ -125,21 +123,6 @@ public interface JRCommonText extends JRCommonElement, JRBoxContainer, JRParagra
 	public void setRotation(RotationEnum rotationEnum);
 	
 	/**
-	 * @deprecated Replaced by {@link JRParagraph#getLineSpacing()}.
-	 */
-	public LineSpacingEnum getLineSpacingValue();
-	
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#getOwnLineSpacing()}.
-	 */
-	public LineSpacingEnum getOwnLineSpacingValue();
-	
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#setLineSpacing(LineSpacingEnum)}.
-	 */
-	public void setLineSpacing(LineSpacingEnum lineSpacingEnum);
-	
-	/**
 	 * Returns the text markup.
 	 */
 	public String getMarkup();
@@ -149,10 +132,5 @@ public interface JRCommonText extends JRCommonElement, JRBoxContainer, JRParagra
 	public void setMarkup(String markup);
 
 	float getFontsize();
-
-	/**
-	 * @deprecated Replaced by {@link #getFontsize()}.
-	 */
-	int getFontSize();
 	
 }

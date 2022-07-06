@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,11 +24,14 @@
 package net.sf.jasperreports.components.iconlabel;
 
 import java.awt.Color;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-import net.sf.jasperreports.engine.JRAlignment;
 import net.sf.jasperreports.engine.JRBoxContainer;
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
+import net.sf.jasperreports.engine.JRImageAlignment;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRTextField;
@@ -40,15 +43,14 @@ import net.sf.jasperreports.engine.component.ContextAwareComponent;
 import net.sf.jasperreports.engine.design.JRDesignTextField;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: IconLabelComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class IconLabelComponent implements ContextAwareComponent, JRBoxContainer, JRAlignment, Serializable, JRChangeEventsSupport 
+public class IconLabelComponent implements ContextAwareComponent, JRBoxContainer, JRImageAlignment, Serializable, JRChangeEventsSupport 
 {
 
 	/**
@@ -66,11 +68,11 @@ public class IconLabelComponent implements ContextAwareComponent, JRBoxContainer
 	private JRTextField iconTextField;
 	private IconPositionEnum iconPosition;
 	private ContainerFillEnum labelFill;
-	private HorizontalAlignEnum horizontalAlign;
-	private VerticalAlignEnum verticalAlign;
+	private HorizontalImageAlignEnum horizontalImageAlign;
+	private VerticalImageAlignEnum verticalImageAlign;
 
 	private ComponentContext context;
-
+	
 	private transient JRPropertyChangeSupport eventSupport;
 	
 	public IconLabelComponent(JRDefaultStyleProvider defaultStyleProvider) 
@@ -88,25 +90,25 @@ public class IconLabelComponent implements ContextAwareComponent, JRBoxContainer
 		
 		this.iconPosition = component.getIconPosition();
 		this.labelFill = component.getLabelFill();
-		this.horizontalAlign = component.getOwnHorizontalAlignmentValue();
-		this.verticalAlign = component.getOwnVerticalAlignmentValue();
+		this.horizontalImageAlign = component.getOwnHorizontalImageAlign();
+		this.verticalImageAlign = component.getOwnVerticalImageAlign();
 
 		this.context = new BaseComponentContext(component.getContext(), objectFactory);
 	}
 
+	@Override
 	public void setContext(ComponentContext context)
 	{
 		this.context = context;
 	}
 	
+	@Override
 	public ComponentContext getContext()
 	{
 		return context;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
@@ -120,33 +122,33 @@ public class IconLabelComponent implements ContextAwareComponent, JRBoxContainer
 		this.lineBox = lineBox;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
-		return context == null ? null : context.getComponentElement().getDefaultStyleProvider();
+		return context == null ? labelTextField.getDefaultStyleProvider() : context.getComponentElement().getDefaultStyleProvider();
 	}
 	
 	/**
 	 *
 	 */
+	protected StyleResolver getStyleResolver()
+	{
+		return getDefaultStyleProvider().getStyleResolver();
+	}
+	
+	@Override
 	public JRStyle getStyle()
 	{
 		return context == null ? null : context.getComponentElement().getStyle();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getStyleNameReference()
 	{
 		return context == null ? null : context.getComponentElement().getStyleNameReference();
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return Color.black;
@@ -202,56 +204,44 @@ public class IconLabelComponent implements ContextAwareComponent, JRBoxContainer
 		getEventSupport().firePropertyChange(PROPERTY_ICON_POSITION, old, this.iconPosition);
 	}
 
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getHorizontalAlignmentValue()
+	@Override
+	public HorizontalImageAlignEnum getHorizontalImageAlign()
 	{
-		return JRStyleResolver.getHorizontalAlignmentValue(this);
+		return getStyleResolver().getHorizontalImageAlign(this);
+	}
+		
+	@Override
+	public HorizontalImageAlignEnum getOwnHorizontalImageAlign()
+	{
+		return horizontalImageAlign;
+	}
+		
+	@Override
+	public void setHorizontalImageAlign(HorizontalImageAlignEnum horizontalImageAlign)
+	{
+		Object old = this.horizontalImageAlign;
+		this.horizontalImageAlign = horizontalImageAlign;
+		getEventSupport().firePropertyChange(PROPERTY_HORIZONTAL_ALIGNMENT, old, this.horizontalImageAlign);
 	}
 
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue() 
+	@Override
+	public VerticalImageAlignEnum getVerticalImageAlign()
 	{
-		return horizontalAlign;
+		return getStyleResolver().getVerticalImageAlign(this);
 	}
-
-	/**
-	 *
-	 */
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlign) 
+		
+	@Override
+	public VerticalImageAlignEnum getOwnVerticalImageAlign()
 	{
-		HorizontalAlignEnum old = this.horizontalAlign;
-		this.horizontalAlign = horizontalAlign;
-		getEventSupport().firePropertyChange(PROPERTY_HORIZONTAL_ALIGNMENT, old, this.horizontalAlign);
+		return verticalImageAlign;
 	}
-
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getVerticalAlignmentValue()
+		
+	@Override
+	public void setVerticalImageAlign(VerticalImageAlignEnum verticalImageAlign)
 	{
-		return JRStyleResolver.getVerticalAlignmentValue(this);
-	}
-
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getOwnVerticalAlignmentValue() 
-	{
-		return verticalAlign;
-	}
-
-	/**
-	 *
-	 */
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlign) 
-	{
-		VerticalAlignEnum old = this.verticalAlign;
-		this.verticalAlign = verticalAlign;
-		getEventSupport().firePropertyChange(PROPERTY_VERTICAL_ALIGNMENT, old, this.verticalAlign);
+		Object old = this.verticalImageAlign;
+		this.verticalImageAlign = verticalImageAlign;
+		getEventSupport().firePropertyChange(PROPERTY_VERTICAL_ALIGNMENT, old, this.verticalImageAlign);
 	}
 
 	/**
@@ -272,9 +262,7 @@ public class IconLabelComponent implements ContextAwareComponent, JRBoxContainer
 		getEventSupport().firePropertyChange(PROPERTY_LABEL_FILL, old, this.labelFill);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPropertyChangeSupport getEventSupport() 
 	{
 		synchronized (this)
@@ -286,5 +274,34 @@ public class IconLabelComponent implements ContextAwareComponent, JRBoxContainer
 		}
 		
 		return eventSupport;
+	}
+
+
+	/*
+	 * These fields are only for serialization backward compatibility.
+	 */
+	private int PSEUDO_SERIAL_VERSION_UID = JRConstants.PSEUDO_SERIAL_VERSION_UID; //NOPMD
+	/**
+	 * @deprecated
+	 */
+	private net.sf.jasperreports.engine.type.HorizontalAlignEnum horizontalAlign;
+	/**
+	 * @deprecated
+	 */
+	private net.sf.jasperreports.engine.type.VerticalAlignEnum verticalAlign;
+	
+	@SuppressWarnings("deprecation")
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_6_0_2)
+		{
+			horizontalImageAlign = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getHorizontalImageAlignEnum(horizontalAlign);
+			verticalImageAlign = net.sf.jasperreports.engine.type.VerticalAlignEnum.getVerticalImageAlignEnum(verticalAlign);
+
+			horizontalAlign = null;
+			verticalAlign = null;
+		}
 	}
 }

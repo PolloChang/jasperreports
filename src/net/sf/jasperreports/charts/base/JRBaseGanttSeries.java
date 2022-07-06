@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Peter Risko (peter@risko.hu)
- * @version $Id: JRBaseGanttSeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseGanttSeries implements JRGanttSeries, Serializable
 {
@@ -80,72 +79,57 @@ public class JRBaseGanttSeries implements JRGanttSeries, Serializable
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getSeriesExpression()
 	{
 		return seriesExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getTaskExpression()
 	{
 		return taskExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getSubtaskExpression()
 	{
 		return subtaskExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getStartDateExpression()
 	{
 		return startDateExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getEndDateExpression()
 	{
 		return endDateExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getPercentExpression()
 	{
 		return percentExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getLabelExpression()
 	{
 		return labelExpression;
 	}
 
 
+	@Override
 	public JRHyperlink getItemHyperlink()
 	{
 		return itemHyperlink;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone()
 	{
 		JRBaseGanttSeries clone = null;

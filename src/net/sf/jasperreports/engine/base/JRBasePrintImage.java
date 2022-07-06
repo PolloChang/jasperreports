@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.engine.base;
 
-import java.awt.Color;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
@@ -37,22 +36,20 @@ import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.PrintElementVisitor;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePrintImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPrintImage
 {
@@ -68,10 +65,10 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 	 */
 	protected Renderable renderable;
 	protected ScaleImageEnum scaleImageValue;
+	protected RotationEnum rotation;
 	protected Boolean isUsingCache = Boolean.TRUE;
-	protected HorizontalAlignEnum horizontalAlignmentValue;
-	protected VerticalAlignEnum verticalAlignmentValue;
-	protected boolean isLazy;
+	protected HorizontalImageAlignEnum horizontalImageAlign;
+	protected VerticalImageAlignEnum verticalImageAlign;
 	protected OnErrorTypeEnum onErrorTypeValue = OnErrorTypeEnum.ERROR;
 	protected JRLineBox lineBox;
 	protected String anchorName;
@@ -101,169 +98,157 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 	
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getRenderer()}.
 	 */
-	public Renderable getRenderable()
+	@Override
+	public net.sf.jasperreports.engine.Renderable getRenderable()
 	{
-		return renderable;
+		return net.sf.jasperreports.engine.RenderableUtil.getWrappingRenderable(renderable);
 	}
 		
 	/**
-	 *
+	 * @deprecated Replaced by {@link #setRenderer(net.sf.jasperreports.renderers.Renderable)}.
 	 */
-	public void setRenderable(Renderable renderable)
+	@Override
+	public void setRenderable(net.sf.jasperreports.engine.Renderable renderable)
 	{
 		this.renderable = renderable;
 	}
 		
-	/**
-	 * @deprecated Replaced by {@link #getRenderable()}.
-	 */
-	public net.sf.jasperreports.engine.JRRenderable getRenderer()
+	@Override
+	public Renderable getRenderer()
 	{
-		return getRenderable();
+		return renderable;
 	}
 		
-	/**
-	 * @deprecated Replaced by {@link #setRenderable(Renderable)}.
-	 */
-	public void setRenderer(net.sf.jasperreports.engine.JRRenderable renderer)
+	@Override
+	public void setRenderer(Renderable renderable)
 	{
-		setRenderable(RenderableUtil.getWrappingRenderable(renderer));
+		this.renderable = renderable;
 	}
 		
-	/**
-	 * 
-	 */
+	@Override
 	public ScaleImageEnum getScaleImageValue()
 	{
-		return JRStyleResolver.getScaleImageValue(this);
+		return getStyleResolver().getScaleImageValue(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public ScaleImageEnum getOwnScaleImageValue()
 	{
 		return this.scaleImageValue;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void setScaleImage(ScaleImageEnum scaleImageValue)
 	{
 		this.scaleImageValue = scaleImageValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public RotationEnum getRotation()
+	{
+		return getStyleResolver().getRotation(this);
+	}
+		
+	@Override
+	public RotationEnum getOwnRotation()
+	{
+		return rotation;
+	}
+
+	@Override
+	public void setRotation(RotationEnum rotation)
+	{
+		this.rotation = rotation;
+	}
+
+	@Override
 	public boolean isUsingCache()
 	{
-		return isUsingCache == null ? true : isUsingCache.booleanValue();
+		return isUsingCache == null ? true : isUsingCache;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setUsingCache(boolean isUsingCache)
 	{
-		this.isUsingCache = (isUsingCache ? Boolean.TRUE : Boolean.FALSE);
+		this.isUsingCache = isUsingCache;
+	}
+
+	@Override
+	public HorizontalImageAlignEnum getHorizontalImageAlign()
+	{
+		return getStyleResolver().getHorizontalImageAlign(this);
+	}
+		
+	@Override
+	public HorizontalImageAlignEnum getOwnHorizontalImageAlign()
+	{
+		return horizontalImageAlign;
+	}
+		
+	@Override
+	public void setHorizontalImageAlign(HorizontalImageAlignEnum horizontalImageAlign)
+	{
+		this.horizontalImageAlign = horizontalImageAlign;
+	}
+
+	@Override
+	public VerticalImageAlignEnum getVerticalImageAlign()
+	{
+		return getStyleResolver().getVerticalImageAlign(this);
+	}
+		
+	@Override
+	public VerticalImageAlignEnum getOwnVerticalImageAlign()
+	{
+		return verticalImageAlign;
+	}
+		
+	@Override
+	public void setVerticalImageAlign(VerticalImageAlignEnum verticalImageAlign)
+	{
+		this.verticalImageAlign = verticalImageAlign;
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link ResourceRenderer}.
 	 */
-	public HorizontalAlignEnum getHorizontalAlignmentValue()
-	{
-		return JRStyleResolver.getHorizontalAlignmentValue(this);
-	}
-		
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue()
-	{
-		return horizontalAlignmentValue;
-	}
-		
-	/**
-	 *
-	 */
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlignmentValue)
-	{
-		this.horizontalAlignmentValue = horizontalAlignmentValue;
-	}
-
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getVerticalAlignmentValue()
-	{
-		return JRStyleResolver.getVerticalAlignmentValue(this);
-	}
-		
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getOwnVerticalAlignmentValue()
-	{
-		return verticalAlignmentValue;
-	}
-		
-	/**
-	 *
-	 */
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlignmentValue)
-	{
-		this.verticalAlignmentValue = verticalAlignmentValue;
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public boolean isLazy()
 	{
 		return isLazy;
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link ResourceRenderer}.
 	 */
+	@Override
 	public void setLazy(boolean isLazy)
 	{
 		this.isLazy = isLazy;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public OnErrorTypeEnum getOnErrorTypeValue()
 	{
 		return this.onErrorTypeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setOnErrorType(OnErrorTypeEnum onErrorTypeValue)
 	{
 		this.onErrorTypeValue = onErrorTypeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
@@ -277,105 +262,79 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 		this.lineBox = lineBox.clone(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Float getDefaultLineWidth() 
 	{
 		return JRPen.LINE_WIDTH_0;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getAnchorName()
 	{
 		return anchorName;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setAnchorName(String anchorName)
 	{
 		this.anchorName = anchorName;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTypeEnum getHyperlinkTypeValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTypeValue(getLinkType());
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkType(HyperlinkTypeEnum hyperlinkType)
 	{
 		setLinkType(JRHyperlinkHelper.getLinkType(hyperlinkType));
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTargetEnum getHyperlinkTargetValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTargetValue(getLinkTarget());
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkTarget(HyperlinkTargetEnum hyperlinkTarget)
 	{
 		setLinkTarget(JRHyperlinkHelper.getLinkTarget(hyperlinkTarget));
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getHyperlinkReference()
 	{
 		return hyperlinkReference;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkReference(String hyperlinkReference)
 	{
 		this.hyperlinkReference = hyperlinkReference;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getHyperlinkAnchor()
 	{
 		return hyperlinkAnchor;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkAnchor(String hyperlinkAnchor)
 	{
 		this.hyperlinkAnchor = hyperlinkAnchor;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public Integer getHyperlinkPage()
 	{
 		return hyperlinkPage;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkPage(Integer hyperlinkPage)
 	{
 		this.hyperlinkPage = hyperlinkPage;
@@ -389,25 +348,25 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 		this.hyperlinkPage = Integer.valueOf(hyperlinkPage);
 	}
 
-
+	@Override
 	public int getBookmarkLevel()
 	{
 		return bookmarkLevel;
 	}
 
-
+	@Override
 	public void setBookmarkLevel(int bookmarkLevel)
 	{
 		this.bookmarkLevel = bookmarkLevel;
 	}
 
-	
+	@Override
 	public JRPrintHyperlinkParameters getHyperlinkParameters()
 	{
 		return hyperlinkParameters;
 	}
 
-	
+	@Override
 	public void setHyperlinkParameters(JRPrintHyperlinkParameters hyperlinkParameters)
 	{
 		this.hyperlinkParameters = hyperlinkParameters;
@@ -430,36 +389,37 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 		hyperlinkParameters.addParameter(parameter);
 	}
 
-	
+	@Override
 	public String getLinkType()
 	{
 		return linkType;
 	}
 
-	
+	@Override
 	public void setLinkType(String linkType)
 	{
 		this.linkType = linkType;
 	}
 	
+	@Override
 	public String getLinkTarget()
 	{
 		return linkTarget;
 	}
 
-	
+	@Override
 	public void setLinkTarget(String linkTarget)
 	{
 		this.linkTarget = linkTarget;
 	}
 	
-	
+	@Override
 	public String getHyperlinkTooltip()
 	{
 		return hyperlinkTooltip;
 	}
 
-	
+	@Override
 	public void setHyperlinkTooltip(String hyperlinkTooltip)
 	{
 		this.hyperlinkTooltip = hyperlinkTooltip;
@@ -481,63 +441,11 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 	/**
 	 * @deprecated
 	 */
-	private Byte border;
+	private net.sf.jasperreports.engine.type.HorizontalAlignEnum horizontalAlignmentValue;
 	/**
 	 * @deprecated
 	 */
-	private Byte topBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte leftBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte bottomBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte rightBorder;
-	/**
-	 * @deprecated
-	 */
-	private Color borderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color topBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color leftBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color bottomBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color rightBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Integer padding;
-	/**
-	 * @deprecated
-	 */
-	private Integer topPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer leftPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer bottomPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer rightPadding;
+	private net.sf.jasperreports.engine.type.VerticalAlignEnum verticalAlignmentValue;
 	/**
 	 * @deprecated
 	 */
@@ -558,6 +466,10 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 	 * @deprecated
 	 */
 	private net.sf.jasperreports.engine.JRRenderable renderer;
+	/**
+	 * @deprecated
+	 */
+	private boolean isLazy;
 
 	
 	@SuppressWarnings("deprecation")
@@ -567,8 +479,8 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
-			horizontalAlignmentValue = HorizontalAlignEnum.getByValue(horizontalAlignment);
-			verticalAlignmentValue = VerticalAlignEnum.getByValue(verticalAlignment);
+			horizontalAlignmentValue = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getByValue(horizontalAlignment);
+			verticalAlignmentValue = net.sf.jasperreports.engine.type.VerticalAlignEnum.getByValue(verticalAlignment);
 			scaleImageValue = ScaleImageEnum.getByValue(scaleImage);
 			onErrorTypeValue = OnErrorTypeEnum.getByValue(onErrorType);
 
@@ -577,44 +489,6 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 			scaleImage = null;
 		}
 		
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setToBox(
-				border,
-				topBorder,
-				leftBorder,
-				bottomBorder,
-				rightBorder,
-				borderColor,
-				topBorderColor,
-				leftBorderColor,
-				bottomBorderColor,
-				rightBorderColor,
-				padding,
-				topPadding,
-				leftPadding,
-				bottomPadding,
-				rightPadding,
-				lineBox
-				);
-			border = null;
-			topBorder = null;
-			leftBorder = null;
-			bottomBorder = null;
-			rightBorder = null;
-			borderColor = null;
-			topBorderColor = null;
-			leftBorderColor = null;
-			bottomBorderColor = null;
-			rightBorderColor = null;
-			padding = null;
-			topPadding = null;
-			leftPadding = null;
-			bottomPadding = null;
-			rightPadding = null;
-		}
-
 		if (linkType == null)
 		{
 			 linkType = JRHyperlinkHelper.getLinkType(HyperlinkTypeEnum.getByValue(hyperlinkType));
@@ -633,12 +507,22 @@ public class JRBasePrintImage extends JRBasePrintGraphicElement implements JRPri
 			}
 			else
 			{
-				renderable = RenderableUtil.getWrappingRenderable(renderer);
+				renderable = net.sf.jasperreports.engine.RenderableUtil.getWrappingRenderable(renderer);
 			}
+		}
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_6_0_2)
+		{
+			horizontalImageAlign = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getHorizontalImageAlignEnum(horizontalAlignmentValue);
+			verticalImageAlign = net.sf.jasperreports.engine.type.VerticalAlignEnum.getVerticalImageAlignEnum(verticalAlignmentValue);
+
+			horizontalAlignmentValue = null;
+			verticalAlignmentValue = null;
 		}
 	}
 
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);

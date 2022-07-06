@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,103 +23,119 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
-import net.sf.jasperreports.engine.util.JRStyledText;
-
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.pdf.ColumnText;
-import com.lowagie.text.pdf.PdfWriter;
+import net.sf.jasperreports.export.pdf.PdfPhrase;
+import net.sf.jasperreports.export.pdf.PdfTextAlignment;
+import net.sf.jasperreports.export.pdf.TextDirection;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PdfTextRenderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PdfTextRenderer extends AbstractPdfTextRenderer
 {
 	/**
-	 * @deprecated Replaced by {@link #PdfTextRenderer(JasperReportsContext, boolean)}.
+	 * @deprecated Replaced by {@link #PdfTextRenderer(JasperReportsContext, boolean, boolean, boolean)}.
 	 */
-	public static PdfTextRenderer getInstance()
+	public PdfTextRenderer(
+		JasperReportsContext jasperReportsContext, 
+		boolean ignoreMissingFont
+		)
 	{
-		return 
-			new PdfTextRenderer(
-				DefaultJasperReportsContext.getInstance(),
-				JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT)
-				);
-	}
-	
-	
-	/**
-	 * @deprecated Replaced by {@link #PdfTextRenderer(JasperReportsContext, boolean)}. 
-	 */
-	public PdfTextRenderer(boolean ignoreMissingFont)
-	{
-		this(DefaultJasperReportsContext.getInstance(), ignoreMissingFont);
+		this(jasperReportsContext, ignoreMissingFont, true, false);
 	}
 	
 	
 	/**
 	 * 
 	 */
-	public PdfTextRenderer(JasperReportsContext jasperReportsContext, boolean ignoreMissingFont)
+	public PdfTextRenderer(
+		JasperReportsContext jasperReportsContext, 
+		boolean ignoreMissingFont,
+		boolean defaultIndentFirstLine,
+		boolean defaultJustifyLastLine
+		)
 	{
-		super(jasperReportsContext, ignoreMissingFont);
+		super(
+			jasperReportsContext, 
+			ignoreMissingFont, 
+			defaultIndentFirstLine,
+			defaultJustifyLastLine
+			);
 	}
 	
 	
-	/**
-	 * 
-	 */
+	@Override
 	public void draw()
 	{
 		TabSegment segment = segments.get(segmentIndex);
 		
-		float advance = segment.layout.getAdvance();
+		float advance = segment.layout.getVisibleAdvance();//getAdvance();
 		
-		ColumnText colText = new ColumnText(pdfContentByte);
-		colText.setSimpleColumn(
-			pdfExporter.getPhrase(segment.as, segment.text, text),
+		if (bulletChunk != null)
+		{
+			PdfPhrase phrase = pdfProducer.createPhrase();
+			pdfExporter.getPhrase(bulletChunk, bulletText, text, phrase);
+
+			phrase.go(
+				- htmlListIndent - 10 + x + drawPosX + leftOffsetFactor * advance,// + leftPadding
+				pdfExporter.getCurrentPageFormat().getPageHeight()
+					- y
+					- topPadding
+					- verticalAlignOffset
+					//- text.getLeadingOffset()
+					+ lineHeight
+					- drawPosY,
+				- 10 + x + drawPosX + leftOffsetFactor * advance,// + leftPadding
+				pdfExporter.getCurrentPageFormat().getPageHeight()
+					- y
+					- topPadding
+					- verticalAlignOffset
+					//- text.getLeadingOffset()
+					-400//+ lineHeight//FIXMETAB
+					- drawPosY,
+				lineHeight,
+				0,
+				PdfTextAlignment.RIGHT,
+				TextDirection.LTR
+				);
+		}
+
+		PdfPhrase phrase = pdfProducer.createPhrase();
+		pdfExporter.getPhrase(segment.as, segment.text, text, phrase);
+		
+		phrase.go(
 			x + drawPosX + leftOffsetFactor * advance,// + leftPadding
-			pdfExporter.getCurrentJasperPrint().getPageHeight()
+			pdfExporter.getCurrentPageFormat().getPageHeight()
 				- y
 				- topPadding
 				- verticalAlignOffset
 				//- text.getLeadingOffset()
 				+ lineHeight
 				- drawPosY,
-			x + drawPosX  + segment.layout.getAdvance() + rightOffsetFactor * advance,// + leftPadding
-			pdfExporter.getCurrentJasperPrint().getPageHeight()
+			x + drawPosX + advance + rightOffsetFactor * advance,// + leftPadding
+			pdfExporter.getCurrentPageFormat().getPageHeight()
 				- y
 				- topPadding
 				- verticalAlignOffset
 				//- text.getLeadingOffset()
 				-400//+ lineHeight//FIXMETAB
 				- drawPosY,
-			0,//text.getLineSpacingFactor(),// * text.getFont().getSize(),
-			horizontalAlignment
-			);
-
-		//colText.setLeading(0, text.getLineSpacingFactor());// * text.getFont().getSize());
-		colText.setLeading(lineHeight);
-		colText.setRunDirection(
+			lineHeight,//text.getLineSpacingFactor(),// * text.getFont().getSize(),
+			0,
+			horizontalAlignment == PdfTextAlignment.JUSTIFIED && (!segment.isLastLine || (isLastParagraph && justifyLastLine)) 
+				? PdfTextAlignment.JUSTIFIED_ALL : horizontalAlignment,
 			text.getRunDirectionValue() == RunDirectionEnum.LTR
-			? PdfWriter.RUN_DIRECTION_LTR : PdfWriter.RUN_DIRECTION_RTL
+				? TextDirection.LTR : TextDirection.RTL
 			);
-
-		try
-		{
-			colText.go();
-		}
-		catch (DocumentException e)
-		{
-			throw new JRRuntimeException(e);
-		}
 	}
-	
+
+
+	@Override
+	public boolean addActualText()
+	{
+		return false;
+	}
 
 }

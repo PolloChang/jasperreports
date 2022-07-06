@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,8 +31,7 @@ import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRFillItemLabel.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class JRFillItemLabel implements JRItemLabel
 {
@@ -59,25 +58,19 @@ public class JRFillItemLabel implements JRItemLabel
 		chart = (JRChart)factory.getVisitResult(itemLabel.getChart());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRChart getChart()
 	{
 		return chart;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getColor()
 	{
 		return parent.getColor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getBackgroundColor()
 	{
 		return parent.getBackgroundColor();
@@ -90,17 +83,13 @@ public class JRFillItemLabel implements JRItemLabel
 //		return parent.getMask();
 //	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getFont()
 	{
 		return parent.getFont();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

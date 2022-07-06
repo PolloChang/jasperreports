@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,15 +25,15 @@ package net.sf.jasperreports.engine.export;
 
 import java.io.UnsupportedEncodingException;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.fonts.FontFace;
+import net.sf.jasperreports.engine.fonts.FontFamily;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: HtmlFontUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HtmlFontUtil
 {
@@ -60,34 +60,43 @@ public class HtmlFontUtil
 	
 	
 	/**
-	 * @deprecated Replaced by {@link #handleHtmlFont(HtmlResourceHandler, HtmlFont)}.
+	 *
 	 */
-	public static void handleFont(HtmlResourceHandler resourceHandler, HtmlFont htmlFont)
+	private String getHtmlFont(
+		HtmlResourceHandler fontPathProvider,
+		HtmlResourceHandler fontResourceSaver,
+		HtmlFont htmlFont,
+		boolean useShortId,
+		boolean useLocal
+		)
 	{
-		getInstance(DefaultJasperReportsContext.getInstance()).handleHtmlFont(resourceHandler, htmlFont);
-	}
-	
-	
-	/**
-	 * 
-	 */
-	public void handleHtmlFont(HtmlResourceHandler resourceHandler, HtmlFont htmlFont)
-	{
-		StringBuffer sbuffer = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 
 		try
 		{
-			sbuffer.append("@charset \"UTF-8\";\n");
-			sbuffer.append("@font-face {\n");
-			sbuffer.append("\tfont-family: \'" + htmlFont.getId() + "';\n");
+			sb.append("@font-face {\n");
+			sb.append("\tfont-family: '");
+			sb.append(
+				useShortId 
+				? (htmlFont.getFamily() == null ? htmlFont.getShortId() : htmlFont.getFamily().getShortId())
+				: (htmlFont.getFamily() == null ? htmlFont.getId() : htmlFont.getFamily().getId())
+				);
+			sb.append("';\n");
 			if (htmlFont.getEot() != null)
 			{
 				String eotId = htmlFont.getId() + ".eot";
-				String eotFileName = resourceHandler.getResourcePath(eotId);
-				sbuffer.append("\tsrc: url('" + eotFileName + "');\n");
-				sbuffer.append("\tsrc: url('" + eotFileName + "?#iefix') format('embedded-opentype');\n");
+				String eotFileName = eotId;
+				if (fontPathProvider != null)
+				{
+					eotFileName = fontPathProvider.getResourcePath(eotId);
+				}
+				if (fontResourceSaver != null)
+				{
+					fontResourceSaver.handleResource(eotId, repositoryUtil.getBytesFromLocation(htmlFont.getEot()));
+				}
+				sb.append("\tsrc: url('" + eotFileName + "');\n");
+				sb.append("\tsrc: url('" + eotFileName + "?#iefix') format('embedded-opentype');\n");
 				//sbuffer.append("\tsrc: url('" + eotFileName + "?#iefix') format('eot');\n");
-				resourceHandler.handleResource(eotId, repositoryUtil.getBytesFromLocation(htmlFont.getEot()));
 			}
 			if (
 				htmlFont.getTtf() != null
@@ -95,49 +104,162 @@ public class HtmlFontUtil
 				|| htmlFont.getWoff() != null
 				)
 			{
-				sbuffer.append("\tsrc: local('☺')");
+				sb.append("\tsrc:");
+				boolean toAddComma = false;
+				if (useLocal)
+				{
+					sb.append(" local('\u263A')");
+					toAddComma = true;
+				}
 				if (htmlFont.getWoff() != null)
 				{
 					String woffId = htmlFont.getId() + ".woff";
-					String woffFileName = resourceHandler.getResourcePath(woffId);
-					sbuffer.append(",\n\t\turl('" + woffFileName + "') format('woff')"); 
-					resourceHandler.handleResource(woffId, repositoryUtil.getBytesFromLocation(htmlFont.getWoff()));
+					String woffFileName = woffId;
+					if (fontPathProvider != null)
+					{
+						woffFileName = fontPathProvider.getResourcePath(woffId);
+					}
+					if (fontResourceSaver != null)
+					{
+						fontResourceSaver.handleResource(woffId, repositoryUtil.getBytesFromLocation(htmlFont.getWoff()));
+					}
+					if (toAddComma)
+					{
+						sb.append(","); 
+					}
+					toAddComma = true;
+					sb.append("\n\t\turl('" + woffFileName + "') format('woff')"); 
 				}
 				if (htmlFont.getTtf() != null)
 				{
 					String ttfId = htmlFont.getId() + ".ttf";
-					String ttfFileName = resourceHandler.getResourcePath(ttfId);
-					sbuffer.append(",\n\t\turl('" + ttfFileName + "') format('truetype')"); 
-					resourceHandler.handleResource(ttfId, repositoryUtil.getBytesFromLocation(htmlFont.getTtf()));
+					String ttfFileName = ttfId;
+					if (fontPathProvider != null)
+					{
+						ttfFileName = fontPathProvider.getResourcePath(ttfId);
+					}
+					if (fontResourceSaver != null)
+					{
+						fontResourceSaver.handleResource(ttfId, repositoryUtil.getBytesFromLocation(htmlFont.getTtf()));
+					}
+					if (toAddComma)
+					{
+						sb.append(","); 
+					}
+					toAddComma = true;
+					sb.append("\n\t\turl('" + ttfFileName + "') format('truetype')"); 
 				}
 				if (htmlFont.getSvg() != null)
 				{
 					String svgId = htmlFont.getId() + ".svg";
-					String svgFileName = resourceHandler.getResourcePath(svgId);
-					sbuffer.append(",\n\t\turl('" + svgFileName + "') format('svg')");
-					resourceHandler.handleResource(svgId, repositoryUtil.getBytesFromLocation(htmlFont.getSvg()));
+					String svgFileName = svgId;
+					if (fontPathProvider != null)
+					{
+						svgFileName = fontPathProvider.getResourcePath(svgId);
+					}
+					if (fontResourceSaver != null)
+					{
+						fontResourceSaver.handleResource(svgId, repositoryUtil.getBytesFromLocation(htmlFont.getSvg()));
+					}
+					if (toAddComma)
+					{
+						sb.append(","); 
+					}
+					toAddComma = true;
+					sb.append("\n\t\turl('" + svgFileName + "') format('svg')");
 				}
-				sbuffer.append(";\n");
+				sb.append(";\n");
 			}
-			sbuffer.append("\tfont-weight: normal;\n");
-			sbuffer.append("\tfont-style: normal;\n");
-			sbuffer.append("}");
+			sb.append("\tfont-weight: " + (htmlFont.isBold() ? "bold" : "normal") + ";\n");
+			sb.append("\tfont-style: " + (htmlFont.isItalic() ? "italic" : "normal") + ";\n");
+			sb.append("}");
 		}
 		catch (JRException e)
 		{
 			throw new JRRuntimeException(e);
 		}
 		
-		if (resourceHandler != null)
+		return sb.toString();
+	}
+	
+	
+	/**
+	 * 
+	 */
+	public void handleHtmlFont(
+		HtmlResourceHandler cssResourceSaver,
+		HtmlResourceHandler fontPathProvider,
+		HtmlResourceHandler fontResourceSaver,
+		HtmlFontFamily htmlFontFamily,
+		boolean useShortId,
+		boolean useLocal
+		)
+	{
+		if (cssResourceSaver != null)
 		{
+			String fontCss = getHtmlFont(fontPathProvider, fontResourceSaver, htmlFontFamily, useShortId, useLocal);
+
 			try
 			{
-				resourceHandler.handleResource(htmlFont.getId(), sbuffer.toString().getBytes("UTF-8"));
+				cssResourceSaver.handleResource(htmlFontFamily.getId(), fontCss.getBytes("UTF-8"));
 			}
 			catch (UnsupportedEncodingException e)
 			{
 				throw new JRRuntimeException(e);
 			}
 		}
+	}
+	
+	
+	/**
+	 * 
+	 */
+	public String getHtmlFont(
+		HtmlResourceHandler fontPathProvider,
+		HtmlResourceHandler fontResourceSaver,
+		HtmlFontFamily htmlFontFamily,
+		boolean useShortId,
+		boolean useLocal
+		)
+	{
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("@charset \"UTF-8\";\n\n");
+
+		FontFamily fontFamily = htmlFontFamily.getFontFamily();
+		
+		FontFace fontFace = fontFamily.getNormalFace();
+		if (fontFace != null)
+		{
+			HtmlFont htmlFont = HtmlFont.getInstance(htmlFontFamily, htmlFontFamily.getLocale(), fontFace, false, false);
+			sb.append(getHtmlFont(fontPathProvider, fontResourceSaver, htmlFont, useShortId, useLocal));
+			sb.append("\n\n");
+		}
+		
+		fontFace = fontFamily.getBoldFace();
+		if (fontFace != null)
+		{
+			HtmlFont htmlFont = HtmlFont.getInstance(htmlFontFamily, htmlFontFamily.getLocale(), fontFace, true, false);
+			sb.append(getHtmlFont(fontPathProvider, fontResourceSaver, htmlFont, useShortId, useLocal));
+			sb.append("\n\n");
+		}
+		
+		fontFace = fontFamily.getItalicFace();
+		if (fontFace != null)
+		{
+			HtmlFont htmlFont = HtmlFont.getInstance(htmlFontFamily, htmlFontFamily.getLocale(), fontFace, false, true);
+			sb.append(getHtmlFont(fontPathProvider, fontResourceSaver, htmlFont, useShortId, useLocal));
+			sb.append("\n\n");
+		}
+		
+		fontFace = fontFamily.getBoldItalicFace();
+		if (fontFace != null)
+		{
+			HtmlFont htmlFont = HtmlFont.getInstance(htmlFontFamily, htmlFontFamily.getLocale(), fontFace, true, true);
+			sb.append(getHtmlFont(fontPathProvider, fontResourceSaver, htmlFont, useShortId, useLocal));
+			sb.append("\n\n");
+		}
+		
+		return sb.toString();
 	}
 }

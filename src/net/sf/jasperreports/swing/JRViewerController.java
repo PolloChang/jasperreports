@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,21 +32,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.util.LocalJasperReportsContext;
-import net.sf.jasperreports.engine.util.SimpleFileResolver;
 import net.sf.jasperreports.engine.xml.JRPrintXmlLoader;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.renderers.RenderersCache;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRViewerController.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRViewerController
 {
@@ -57,17 +56,21 @@ public class JRViewerController
 	protected static final int TYPE_OBJECT = 3;
 	
 	private JasperReportsContext jasperReportsContext;
-	private LocalJasperReportsContext localJasperReportsContext;
+	/**
+	 * @deprecated To be removed.
+	 */
+	private net.sf.jasperreports.engine.util.LocalJasperReportsContext localJasperReportsContext;
 	private ResourceBundle resourceBundle;
 	private Locale locale;
-	private final List<JRViewerListener> listeners = new ArrayList<JRViewerListener>();
+	private final List<JRViewerListener> listeners = new ArrayList<>();
 	
 	protected int type = TYPE_FILE_NAME;
 	protected boolean isXML;
 	protected String reportFileName;
 	protected boolean reloadSupported;
 	
-	private JasperPrint jasperPrint;
+	protected JasperPrint jasperPrint;
+	protected RenderersCache renderersCache;
 	private int pageIndex;
 	private float zoom;
 	private boolean fitPage;
@@ -134,7 +137,7 @@ public class JRViewerController
 		}
 	}
 	
-	public void loadReport(String fileName, boolean isXmlReport) throws JRException
+	protected void setReport(String fileName, boolean isXmlReport) throws JRException
 	{
 		if (isXmlReport)
 		{
@@ -145,15 +148,24 @@ public class JRViewerController
 			jasperPrint = (JasperPrint)JRLoader.loadObjectFromFile(fileName);
 		}
 
+		renderersCache = null;
+	}
+
+	@SuppressWarnings("deprecation")
+	public void loadReport(String fileName, boolean isXmlReport) throws JRException
+	{
+		setReport(fileName, isXmlReport);
+
 		type = TYPE_FILE_NAME;
 		this.isXML = isXmlReport;
 		reportFileName = fileName;
 
-		SimpleFileResolver fileResolver = new SimpleFileResolver(Arrays.asList(new File[]{new File(fileName).getParentFile(), new File(".")}));
+		net.sf.jasperreports.engine.util.SimpleFileResolver fileResolver = 
+			new net.sf.jasperreports.engine.util.SimpleFileResolver(Arrays.asList(new File[]{new File(fileName).getParentFile(), new File(".")}));
 		fileResolver.setResolveAbsolutePath(true);
 		if (localJasperReportsContext == null)
 		{
-			localJasperReportsContext = new LocalJasperReportsContext(jasperReportsContext);
+			localJasperReportsContext = new net.sf.jasperreports.engine.util.LocalJasperReportsContext(jasperReportsContext);
 			jasperReportsContext = localJasperReportsContext;
 		}
 		localJasperReportsContext.setFileResolver(fileResolver);
@@ -163,7 +175,7 @@ public class JRViewerController
 		setPageIndex(0);
 	}
 
-	public void loadReport(InputStream is, boolean isXmlReport) throws JRException
+	protected void setReport(InputStream is, boolean isXmlReport) throws JRException
 	{
 		if (isXmlReport)
 		{
@@ -173,6 +185,13 @@ public class JRViewerController
 		{
 			jasperPrint = (JasperPrint)JRLoader.loadObject(is);
 		}
+
+		renderersCache = null;
+	}
+
+	public void loadReport(InputStream is, boolean isXmlReport) throws JRException
+	{
+		setReport(is, isXmlReport);
 
 		type = TYPE_INPUT_STREAM;
 		this.isXML = isXmlReport;
@@ -184,6 +203,7 @@ public class JRViewerController
 	public void loadReport(JasperPrint jrPrint)
 	{
 		jasperPrint = jrPrint;
+		renderersCache = null;
 		type = TYPE_OBJECT;
 		isXML = false;
 		reloadSupported = false;
@@ -206,6 +226,7 @@ public class JRViewerController
 					log.debug("Reload failed.", e);
 				}
 				jasperPrint = null;
+				renderersCache = null;
 				setPageIndex(0);
 				refreshPage();
 
@@ -299,9 +320,24 @@ public class JRViewerController
 		return jasperPrint.getPages().size();
 	}
 	
+	public PrintPageFormat getPageFormat()
+	{
+		return getJasperPrint().getPageFormat(getPageIndex());
+	}
+	
+	protected RenderersCache getRenderersCache()
+	{
+		if (renderersCache == null)
+		{
+			renderersCache = new RenderersCache(getJasperReportsContext());
+		}
+		return renderersCache;
+	}
+
 	public void clear()
 	{
 		jasperPrint = null;
+		renderersCache = null;
 	}
 
 	public int getPageIndex()

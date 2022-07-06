@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -45,10 +45,12 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * </p> 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSqlAbstractInClause.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRSqlAbstractInClause implements JRClauseFunction
 {
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_IN_CLAUSE_DB_COLUMN_TOKEN_MISSING = "query.in.clause.db.column.token.missing";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_IN_CLAUSE_INVALID_PARAMETER_TYPE = "query.in.clause.invalid.parameter.type";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_IN_CLAUSE_PARAMETER_TOKEN_MISSING = "query.in.clause.parameter.token.missing";
 	
 	protected static final int POSITION_DB_COLUMN = 1;
 	protected static final int POSITION_PARAMETER = 2;
@@ -106,18 +108,25 @@ public abstract class JRSqlAbstractInClause implements JRClauseFunction
 	 * @param queryContext
 	 * 
 	 */
+	@Override
 	public void apply(JRClauseTokens clauseTokens, JRQueryClauseContext queryContext)
 	{
 		String col = clauseTokens.getToken(POSITION_DB_COLUMN);
 		String param = clauseTokens.getToken(POSITION_PARAMETER);
 		if (col == null)
 		{
-			throw new JRRuntimeException("SQL IN clause missing DB column token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_IN_CLAUSE_DB_COLUMN_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		if (param == null)
 		{
-			throw new JRRuntimeException("SQL IN clause missing parameter token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_IN_CLAUSE_PARAMETER_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		StringBuffer sbuffer = queryContext.queryBuffer();
@@ -144,7 +153,7 @@ public abstract class JRSqlAbstractInClause implements JRClauseFunction
 				boolean nullFound = false;
 				boolean notNullFound = false;
 				int idx = 0;
-				List<Object> notNullQueryParameters = new ArrayList<Object>();
+				List<Object> notNullQueryParameters = new ArrayList<>();
 				
 				while(it.hasNext())
 				{
@@ -232,7 +241,7 @@ public abstract class JRSqlAbstractInClause implements JRClauseFunction
 		if (paramValue.getClass().isArray())
 		{
 			int size = Array.getLength(paramValue);
-			ArrayList<Object> list = new ArrayList<Object>(size);
+			ArrayList<Object> list = new ArrayList<>(size);
 			for (int i = 0; i < size; i++)
 			{
 				list.add(Array.get(paramValue, i));
@@ -245,8 +254,10 @@ public abstract class JRSqlAbstractInClause implements JRClauseFunction
 		}
 		else
 		{
-			throw new JRRuntimeException("Invalid type " + paramValue.getClass().getName() + 
-					" for parameter " + paramName + " used in an IN clause; the value must be an array or a collection.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_IN_CLAUSE_INVALID_PARAMETER_TYPE,
+					new Object[]{paramValue.getClass().getName(), paramName});
 		}
 		return paramCollection;
 	}

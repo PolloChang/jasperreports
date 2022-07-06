@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRFillThermometerPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillThermometerPlot extends JRFillChartPlot implements JRThermometerPlot
 {
@@ -50,65 +49,43 @@ public class JRFillThermometerPlot extends JRFillChartPlot implements JRThermome
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getDataRange()
 	{
 		return ((JRThermometerPlot)parent).getDataRange();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRValueDisplay getValueDisplay()
 	{
 		return ((JRThermometerPlot)parent).getValueDisplay();
 	}
 
-	/**
-	 * @deprecated No longer used.
-	 */
-	public boolean isShowValueLines()
-	{
-		return ((JRThermometerPlot)parent).isShowValueLines();
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public ValueLocationEnum getValueLocationValue()
 	{
 		return ((JRThermometerPlot)parent).getValueLocationValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getMercuryColor()
 	{
 		return ((JRThermometerPlot)parent).getMercuryColor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getLowRange()
 	{
 		return ((JRThermometerPlot)parent).getLowRange();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getMediumRange()
 	{
 		return ((JRThermometerPlot)parent).getMediumRange();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getHighRange()
 	{
 		return ((JRThermometerPlot)parent).getHighRange();

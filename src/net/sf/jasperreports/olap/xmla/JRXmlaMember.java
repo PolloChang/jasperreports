@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import net.sf.jasperreports.olap.result.JROlapMember;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlaMember.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlaMember implements JROlapMember
 {
@@ -48,27 +47,32 @@ public class JRXmlaMember implements JROlapMember
 		this.depth = depth;
 	}
 	
+	@Override
 	public int getDepth()
 	{
 		return depth;
 	}
 
+	@Override
 	public String getName()
 	{
 		return name;
 	}
 
+	@Override
 	public JROlapMember getParentMember()
 	{
 		// not implemented
 		return null;
 	}
 
+	@Override
 	public Object getPropertyValue(String propertyName)
 	{
 		throw new UnsupportedOperationException("Member properties are not supported by the XML/A query executer");
 	}
 
+	@Override
 	public String getUniqueName()
 	{
 		return uniqueName;
@@ -85,6 +89,7 @@ public class JRXmlaMember implements JROlapMember
 		return dimensionName;
 	}
 
+	@Override
 	public Object getMember()
 	{
 		throw new UnsupportedOperationException("XML/A member cannot be converted to a Member");

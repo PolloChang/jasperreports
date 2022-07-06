@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -88,7 +88,7 @@ package net.sf.jasperreports.engine;
  * report definition:
  * <pre>
  * &lt;jasperReport ...&gt;
- *   &lt;template>"report_styles.jrtx"&lt;/template&gt;
+ *   &lt;template&gt;"report_styles.jrtx"&lt;/template&gt;
  *   &lt;!-- parameters can be used in style template expressions --&gt;
  *   &lt;template&gt;$P{BaseTemplateLocation} + "report_styles.jrtx"&lt;/template&gt;
  *   &lt;template class="java.net.URL"&gt;$P{StyleTemplateURL}&lt;/template&gt;
@@ -101,8 +101,8 @@ package net.sf.jasperreports.engine;
  * style template in a report is represented by a
  * {@link net.sf.jasperreports.engine.JRReportTemplate} instance. Such references can
  * be added to a {@link net.sf.jasperreports.engine.design.JasperDesign} object 
- * via the <code>addTemplate()</code> method, and the list of
- * template references can be obtained by calling the <code>getTemplates()</code> method.
+ * via the {@link net.sf.jasperreports.engine.design.JasperDesign#addTemplate(JRReportTemplate) addTemplate(JRReportTemplate)} method, and the list of
+ * template references can be obtained by calling the {@link net.sf.jasperreports.engine.design.JasperDesign#getTemplates() getTemplates()} method.
  * <p/>
  * In more complex cases, style templates can be injected into a report by using the built-in
  * {@link net.sf.jasperreports.engine.JRParameter#REPORT_TEMPLATES REPORT_TEMPLATES} report parameter. 
@@ -119,12 +119,11 @@ package net.sf.jasperreports.engine;
  * the templates referenced in the report definition, hence styles from the parameter
  * templates override styles with identical names from the statically referenced templates.
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTemplate.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRReport#getTemplates()
  * @see JRParameter#REPORT_TEMPLATES
  * @see JRStyleContainer#getStyleNameReference()
  */
-public interface JRTemplate extends JRDefaultStyleProvider
+public interface JRTemplate
 {
 
 	/**

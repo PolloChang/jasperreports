@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -52,9 +52,9 @@ import net.sf.jasperreports.export.PdfExporterConfiguration;
  * 			<li><a href="http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_win.html">http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_win.html</a></li>
  *		</ul> 
  * </li>
- * <li>Ifra profiles for newspaper publishing:
+ * <li>ICC profiles for standardised newspaper printing:
  * 		<ul>
- *			<li><a href="http://www.ifra.com/website/website.nsf/html/CONT_CONS_DL?OpenDocument&CTDL&xxx&">http://www.ifra.com/website/website.nsf/html/CONT_CONS_DL?OpenDocument&CTDL&xxx&</a></li>
+ *			<li><a href="https://www.wan-ifra.org/reports/1997/07/01/icc-profiles-for-standardised-newspaper-printing">https://www.wan-ifra.org/reports/1997/07/01/icc-profiles-for-standardised-newspaper-printing</a></li>
  * 		</ul> 		
  * </li>
  * </ul>
@@ -62,18 +62,20 @@ import net.sf.jasperreports.export.PdfExporterConfiguration;
  * After obtaining a valid ICC profile, use the path to the profile as value for the {@link PdfExporterConfiguration#getIccProfilePath()} configuration property.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JRPdfaIccProfileNotFoundException.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPdfaIccProfileNotFoundException extends JRRuntimeException
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-
+	
+	public static final String EXCEPTION_MESSAGE_KEY_ICC_PROFILE_NOT_AVAILABLE = "util.icc.profile.not.available";
 
 	/**
 	 * 
 	 */
 	public JRPdfaIccProfileNotFoundException()
 	{
-		super("The ICC profile is not available to the JVM. See the Javadoc for more details.");
+		super(
+			EXCEPTION_MESSAGE_KEY_ICC_PROFILE_NOT_AVAILABLE,
+			(Object[])null);
 	}
 }

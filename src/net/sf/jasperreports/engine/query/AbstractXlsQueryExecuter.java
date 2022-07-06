@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,6 +32,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
@@ -42,14 +45,10 @@ import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.AbstractXlsDataSource;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * Excel query executer implementation.
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: AbstractXlsQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 	
@@ -64,9 +63,19 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
 		Map<String,? extends JRValueParameter> parametersMap
+		)
+	{
+		this(SimpleQueryExecutionContext.of(jasperReportsContext),
+				dataset, parametersMap);
+	}
+	
+	protected AbstractXlsQueryExecuter(
+		QueryExecutionContext context, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parametersMap
 		) 
 	{
-		super(jasperReportsContext, dataset, parametersMap);
+		super(context, dataset, parametersMap);
 	}
 
 	protected AbstractXlsQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap) 
@@ -89,7 +98,7 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 			}
 			
 			if(columnNames != null) {
-				columnNamesList = new ArrayList<String>();
+				columnNamesList = new ArrayList<>();
 				columnNamesList.add(columnNames);
 			} else {
 				@SuppressWarnings("deprecation")
@@ -106,7 +115,7 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 					List<PropertySuffix> properties = getPropertiesUtil().getAllProperties(dataset, propertiesPrefix);
 					if (properties != null && !properties.isEmpty()) 
 					{
-						columnNamesList = new ArrayList<String>();
+						columnNamesList = new ArrayList<>();
 						for(int i = 0; i < properties.size(); i++) {
 							PropertySuffix property = properties.get(i);
 							columnNamesList.add(property.getValue());
@@ -118,7 +127,7 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 						properties = getPropertiesUtil().getAllProperties(dataset, propertiesPrefix);
 						if (properties != null && !properties.isEmpty()) 
 						{
-							columnNamesList = new ArrayList<String>();
+							columnNamesList = new ArrayList<>();
 							for(int i = 0; i < properties.size(); i++) {
 								PropertySuffix property = properties.get(i);
 								columnNamesList.add(property.getValue());
@@ -129,7 +138,7 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 							JRField[] fields = dataset.getFields();
 							if (fields != null && fields.length > 0)
 							{
-								columnNamesList = new ArrayList<String>();
+								columnNamesList = new ArrayList<>();
 								for (int i = 0; i < fields.length; i++)
 								{
 									columnNamesList.add(fields[i].getName());
@@ -141,7 +150,7 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 			}
 			List<String> splitColumnNamesList = null;
 			if (columnNamesList != null && columnNamesList.size() > 0) {
-				splitColumnNamesList = new ArrayList<String>();
+				splitColumnNamesList = new ArrayList<>();
 				for(int i = 0; i < columnNamesList.size(); i++) {
 					String names = columnNamesList.get(i);
 					for(String token: names.split(",")){
@@ -160,7 +169,7 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 			}
 			
 			if (columnIndexes != null) {
-				columnIndexesList = new ArrayList<Integer>();
+				columnIndexesList = new ArrayList<>();
 				for (String colIndex: columnIndexes.split(",")){
 					columnIndexesList.add(Integer.valueOf(colIndex.trim()));
 				}
@@ -179,7 +188,7 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 					List<PropertySuffix> properties = getPropertiesUtil().getAllProperties(dataset, propertiesPrefix);
 					if (properties != null && !properties.isEmpty()) 
 					{
-						columnIndexesList = new ArrayList<Integer>();
+						columnIndexesList = new ArrayList<>();
 						for(int i = 0; i < properties.size(); i++) {
 							String propertyValue = properties.get(i).getValue();
 							for (String colIndex: propertyValue.split(",")){
@@ -193,7 +202,7 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 						properties = getPropertiesUtil().getAllProperties(dataset, propertiesPrefix);
 						if (properties != null && !properties.isEmpty()) 
 						{
-							columnIndexesList = new ArrayList<Integer>();
+							columnIndexesList = new ArrayList<>();
 							for(int i = 0; i < properties.size(); i++) {
 								String propertyValue = properties.get(i).getValue();
 								for (String colIndex: propertyValue.split(",")){
@@ -273,7 +282,12 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 			}
 			datasource.setUseFirstRowAsHeader(useFirstRowAsHeader);
 			
-			Locale xlsLocale = (Locale) getParameterValue(JRParameter.REPORT_LOCALE, true);
+			@SuppressWarnings("deprecation")
+			Locale xlsLocale = (Locale) getParameterValue(JRXlsxQueryExecuterFactory.XLSX_LOCALE, true);
+			if (xlsLocale == null)
+			{
+				xlsLocale = (Locale) getParameterValue(AbstractXlsQueryExecuterFactory.XLS_LOCALE, true);
+			}
 			if (xlsLocale != null) {
 				datasource.setLocale(xlsLocale);
 			} else {
@@ -285,10 +299,20 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 				}
 				if (xlsLocaleCode != null) {
 					datasource.setLocale(xlsLocaleCode);
+				} else {
+					xlsLocale = (Locale) getParameterValue(JRParameter.REPORT_LOCALE, true);
+					if (xlsLocale != null) { //this is never null at this point, actually
+						datasource.setLocale(xlsLocale);
+					}
 				}
 			}
 			
-			TimeZone xlsTimezone = (TimeZone) getParameterValue(JRParameter.REPORT_TIME_ZONE, true);
+			@SuppressWarnings("deprecation")
+			TimeZone xlsTimezone = (TimeZone) getParameterValue(JRXlsxQueryExecuterFactory.XLSX_TIMEZONE, true);
+			if (xlsTimezone == null)
+			{
+				xlsTimezone = (TimeZone) getParameterValue(AbstractXlsQueryExecuterFactory.XLS_TIMEZONE, true);
+			}
 			if (xlsTimezone != null) {
 				datasource.setTimeZone(xlsTimezone);
 			} else {
@@ -300,6 +324,11 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 				}
 				if (xlsTimezoneId != null) {
 					datasource.setTimeZone(xlsTimezoneId);
+				} else {
+					xlsTimezone = (TimeZone) getParameterValue(JRParameter.REPORT_TIME_ZONE, true);
+					if (xlsTimezone != null) { //this is never null at this point, actually
+						datasource.setTimeZone(xlsTimezone);
+					}
 				}
 			}
 			
@@ -311,12 +340,14 @@ public abstract class AbstractXlsQueryExecuter extends JRAbstractQueryExecuter {
 		}
 	}
 
+	@Override
 	public void close() {
 		if(datasource != null){
 			datasource.close();
 		}
 	}
 
+	@Override
 	public boolean cancelQuery() throws JRException {
 		return false;
 	}

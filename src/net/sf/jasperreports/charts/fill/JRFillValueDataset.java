@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import org.jfree.data.general.DefaultValueDataset;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRFillValueDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillValueDataset extends JRFillChartDataset implements JRValueDataset
 {
@@ -60,70 +59,55 @@ public class JRFillValueDataset extends JRFillChartDataset implements JRValueDat
 		super(valueDataset, factory);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getValueExpression()
 	{
 		return ((JRValueDataset)parent).getValueExpression();
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customInitialize()
 	{
 		valueDataset = new DefaultValueDataset();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customEvaluate(JRCalculator calculator) throws JRExpressionEvalException
 	{
 		value = (Number)calculator.evaluate(getValueExpression());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customIncrement()
 	{
 		valueDataset.setValue(value);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Dataset getCustomDataset()
 	{
 		return valueDataset;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getLabelGenerator()
 	{
 		return null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.VALUE_DATASET;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

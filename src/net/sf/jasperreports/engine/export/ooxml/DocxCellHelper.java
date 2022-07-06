@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,20 +26,22 @@ package net.sf.jasperreports.engine.export.ooxml;
 import java.awt.Color;
 import java.io.Writer;
 
-import net.sf.jasperreports.engine.JRAlignment;
+import net.sf.jasperreports.engine.JRImageAlignment;
 import net.sf.jasperreports.engine.JRPrintElement;
+import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintText;
+import net.sf.jasperreports.engine.JRTextAlignment;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: DocxCellHelper.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class DocxCellHelper extends BaseHelper
 {
@@ -117,7 +119,7 @@ public class DocxCellHelper extends BaseHelper
 //		if (element instanceof JRCommonGraphicElement)
 //			borderHelper.export(((JRCommonGraphicElement)element).getLinePen());
 		
-		JRAlignment align = element instanceof JRAlignment ? (JRAlignment)element : null;
+		JRTextAlignment align = element instanceof JRTextAlignment ? (JRTextAlignment)element : null;
 		if (align != null)
 		{
 			JRPrintText text = element instanceof JRPrintText ? (JRPrintText)element : null;
@@ -125,11 +127,21 @@ public class DocxCellHelper extends BaseHelper
 			
 			String verticalAlignment = 
 				getVerticalAlignment(
-					align.getVerticalAlignmentValue() 
+					align.getVerticalTextAlign() 
 					);
 			String textRotation = getTextDirection(rotation);
 
 			exportAlignmentAndRotation(verticalAlignment, textRotation);
+		}
+		else if (element instanceof JRImageAlignment)
+		{
+			JRImageAlignment iAlign = (JRImageAlignment)element;
+			if (iAlign != null)
+			{
+				JRPrintImage image = element instanceof JRPrintImage ? (JRPrintImage)element : null;
+				String verticalAlignment = getVerticalImageAlign(image.getVerticalImageAlign());
+				exportAlignmentAndRotation(verticalAlignment, null);
+			}
 		}
 	}
 
@@ -222,7 +234,29 @@ public class DocxCellHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public static String getVerticalAlignment(VerticalAlignEnum verticalAlignment)
+	public static String getVerticalAlignment(VerticalTextAlignEnum verticalAlignment)
+	{
+		if (verticalAlignment != null)
+		{
+			switch (verticalAlignment)
+			{
+				case BOTTOM :
+					return VERTICAL_ALIGN_BOTTOM;
+				case MIDDLE :
+					return VERTICAL_ALIGN_MIDDLE;
+				case TOP :
+				case JUSTIFIED : //DOCX does not support vertical text justification
+				default :
+					return VERTICAL_ALIGN_TOP;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 *
+	 */
+	public static String getVerticalImageAlign(VerticalImageAlignEnum verticalAlignment)
 	{
 		if (verticalAlignment != null)
 		{

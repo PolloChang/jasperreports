@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,34 +24,25 @@
 package net.sf.jasperreports.components.table.fill;
 
 import net.sf.jasperreports.engine.JRDefaultScriptlet;
-import net.sf.jasperreports.engine.JRScriptletException;
+import net.sf.jasperreports.engine.fill.JRVerticalFiller;
 
 /**
+ * This scriptlet implementation for table component ended up not being used as a scriptlet,
+ * because its prior technique to detect the presence of at least one detail band on the page
+ * was not accurate in case the detail was overflowing onto the new page.
  * 
+ * Its current technique uses a flag in the report filler to detect the presence of a detail band
+ * and thus this scriptlet implementation itself is only used as a vehicle to add a built-in parameter
+ * to the table component subreport, to give access to the filler and its internal the flag.  
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableReportScriptlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableReportScriptlet extends JRDefaultScriptlet
 {
 
-	private boolean detailOnPage;
-	
-	@Override
-	public void afterDetailEval() throws JRScriptletException
-	{
-		detailOnPage = true;
-	}
-
-	@Override
-	public void afterPageInit() throws JRScriptletException
-	{
-		detailOnPage = false;
-	}
-
 	public boolean hasDetailOnPage()
 	{
-		return detailOnPage;
+		return ((JRVerticalFiller)dataset.getFiller()).hasDetailOnPage();
 	}
 	
 }

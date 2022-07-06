@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,7 @@ import net.sf.jasperreports.extensions.ListExtensionRegistry;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CastorMappingExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated To be removed.
  */
 public class CastorMappingExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
@@ -48,18 +48,35 @@ public class CastorMappingExtensionsRegistryFactory implements ExtensionsRegistr
 	public final static String CASTOR_MAPPING_PROPERTY_PREFIX = 
 		DefaultExtensionsRegistry.PROPERTY_REGISTRY_PREFIX + "castor.mapping.";
 	
-	/**
-	 * 
-	 */
+	public final static char CASTOR_MAPPING_VERSION_SEPARATOR = '@';
+	
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties)
 	{
 		List<PropertySuffix> castorMappingProperties = JRPropertiesUtil.getProperties(properties, CASTOR_MAPPING_PROPERTY_PREFIX);
-		List<CastorMapping> castorMappings = new ArrayList<CastorMapping>();
+		List<CastorMapping> castorMappings = new ArrayList<>();
 		for (Iterator<PropertySuffix> it = castorMappingProperties.iterator(); it.hasNext();)
 		{
 			PropertySuffix castorMappingProp = it.next();
+			
+			String key;
+			String version;
+			String suffix = castorMappingProp.getSuffix();
+			int versionSeparatorIndex = suffix.lastIndexOf(CASTOR_MAPPING_VERSION_SEPARATOR);
+			if (versionSeparatorIndex < 0)
+			{
+				key = suffix;
+				version = null;
+			} 
+			else
+			{
+				key = suffix.substring(0, versionSeparatorIndex);
+				version = suffix.substring(versionSeparatorIndex + 1, suffix.length());
+			}
+			
 			String castorMappingPath = castorMappingProp.getValue();
-			castorMappings.add(new CastorMapping(castorMappingPath));
+			CastorMapping mapping = new CastorMapping(key, version, castorMappingPath);
+			castorMappings.add(mapping);
 		}
 		
 		return new ListExtensionRegistry<CastorMapping>(CastorMapping.class, castorMappings);

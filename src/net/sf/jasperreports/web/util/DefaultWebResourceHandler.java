@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,8 @@
 package net.sf.jasperreports.web.util;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -33,6 +35,9 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
@@ -41,13 +46,9 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.util.MessageUtil;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: DefaultWebResourceHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultWebResourceHandler extends AbstractWebResourceHandler 
 {
@@ -69,6 +70,7 @@ public class DefaultWebResourceHandler extends AbstractWebResourceHandler
 		return true;
 	}
 
+	@Override
 	public WebResource getResource(JasperReportsContext jasperReportsContext, HttpServletRequest request, String resourceUri) 
 	{
 		SimpleWebResource resource = null;
@@ -89,7 +91,7 @@ public class DefaultWebResourceHandler extends AbstractWebResourceHandler
 			{
 				if (resourceUri.indexOf(".vm.") != -1 && (isDynamicResource || resourceBundleName != null || locale != null)) 
 				{
-					Map<String, Object> contextMap = new HashMap<String, Object>();
+					Map<String, Object> contextMap = new HashMap<>();
 					contextMap.put("path", request.getContextPath() + webUtil.getResourcesBasePath());
 					locale = locale == null ? Locale.getDefault() : locale;
 					contextMap.put("msgProvider", MessageUtil.getInstance(jasperReportsContext).getLocalizedMessageProvider(resourceBundleName, locale)); 
@@ -101,9 +103,7 @@ public class DefaultWebResourceHandler extends AbstractWebResourceHandler
 				} else {
 					bytes = JRLoader.loadBytesFromResource(resourceUri);
 				}
-			} catch (IOException e) {
-				throw new JRRuntimeException(e);
-			} catch (JRException e) {
+			} catch (IOException | JRException e) {
 				throw new JRRuntimeException(e);
 			}
 			
@@ -123,6 +123,15 @@ public class DefaultWebResourceHandler extends AbstractWebResourceHandler
 	 */
 	protected boolean checkResourceName(JasperReportsContext jasperReportsContext, String resourceName) 
 	{
+		try
+		{
+			resourceName = new URI(null, null, resourceName, null).normalize().getPath();
+		}
+		catch (URISyntaxException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+		
 		boolean matched = false;
 
 		List<PropertySuffix> patternProps = JRPropertiesUtil.getInstance(jasperReportsContext).getProperties(PROPERTIES_WEB_RESOURCE_PATTERN_PREFIX);//FIXMESORT cache this

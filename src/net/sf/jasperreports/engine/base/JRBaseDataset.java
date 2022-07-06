@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,7 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.UUID;
 
+import net.sf.jasperreports.engine.DatasetPropertyExpression;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRExpression;
@@ -50,7 +51,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * The base implementation of {@link net.sf.jasperreports.engine.JRDataset JRDataset}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSupport
 {
@@ -73,6 +73,8 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 	protected WhenResourceMissingTypeEnum whenResourceMissingTypeValue = WhenResourceMissingTypeEnum.NULL;
 	protected JRPropertiesMap propertiesMap;
 	protected JRExpression filterExpression;
+
+	private DatasetPropertyExpression[] propertyExpressions;
 	
 	protected JRBaseDataset(boolean isMain)
 	{
@@ -93,6 +95,7 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 
 		/*   */
 		this.propertiesMap = dataset.getPropertiesMap().cloneProperties();
+		propertyExpressions = factory.getPropertyExpressions(dataset.getPropertyExpressions());
 
 		query = factory.getQuery(dataset.getQuery());
 
@@ -168,6 +171,7 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 	}
 
 	
+	@Override
 	public UUID getUUID()
 	{
 		if (uuid == null)
@@ -177,93 +181,79 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 		return uuid;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getScriptletClass()
 	{
 		return scriptletClass;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRQuery getQuery()
 	{
 		return query;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRScriptlet[] getScriptlets()
 	{
 		return scriptlets;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRParameter[] getParameters()
 	{
 		return parameters;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRField[] getFields()
 	{
 		return fields;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRSortField[] getSortFields()
 	{
 		return sortFields;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRVariable[] getVariables()
 	{
 		return variables;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup[] getGroups()
 	{
 		return groups;
 	}
 
+	@Override
 	public boolean isMainDataset()
 	{
 		return isMain;
 	}
 
+	@Override
 	public String getResourceBundle()
 	{
 		return resourceBundle;
 	}
 
+	@Override
 	public WhenResourceMissingTypeEnum getWhenResourceMissingTypeValue()
 	{
 		return whenResourceMissingTypeValue;
 	}
 
+	@Override
 	public void setWhenResourceMissingType(WhenResourceMissingTypeEnum whenResourceMissingTypeValue)
 	{
 		Object old = this.whenResourceMissingTypeValue;
@@ -271,29 +261,37 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 		getEventSupport().firePropertyChange(PROPERTY_WHEN_RESOURCE_MISSING_TYPE, old, this.whenResourceMissingTypeValue);
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
 	}
 
+	@Override
+	public DatasetPropertyExpression[] getPropertyExpressions()
+	{
+		return propertyExpressions;
+	}
+
+	@Override
 	public JRExpression getFilterExpression()
 	{
 		return filterExpression;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseDataset clone = null;
@@ -313,10 +311,12 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 		{
 			clone.propertiesMap = (JRPropertiesMap)propertiesMap.clone();
 		}
+		clone.propertyExpressions = JRCloneUtils.cloneArray(propertyExpressions);
 
 		clone.parameters = JRCloneUtils.cloneArray(parameters);
 		clone.fields = JRCloneUtils.cloneArray(fields);
 		clone.sortFields = JRCloneUtils.cloneArray(sortFields);
+		//FIXME use CloneStore to preserve variable and group references
 		clone.variables = JRCloneUtils.cloneArray(variables);
 		clone.groups = JRCloneUtils.cloneArray(groups);
 		
@@ -328,6 +328,7 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -351,6 +352,7 @@ public class JRBaseDataset implements JRDataset, Serializable, JRChangeEventsSup
 	 */
 	private byte whenResourceMissingType;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

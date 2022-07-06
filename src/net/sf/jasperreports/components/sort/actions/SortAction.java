@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.components.sort.actions;
 
 import java.util.UUID;
 
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.design.JRDesignDataset;
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.repo.JasperDesignCache;
@@ -37,10 +38,11 @@ import net.sf.jasperreports.web.commands.ResetInCacheCommand;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortAction extends AbstractAction 
 {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	private SortData sortData;
 
@@ -55,6 +57,7 @@ public class SortAction extends AbstractAction
 		this.sortData = sortData;
 	}
 
+	@Override
 	public void performAction() throws ActionException
 	{
 		if (sortData != null) 
@@ -81,7 +84,7 @@ public class SortAction extends AbstractAction
 							)
 						);
 				} catch (CommandException e) {
-					 throw new ActionException(e.getMessage());
+					 throw new ActionException(e);
 				}
 			}
 		}

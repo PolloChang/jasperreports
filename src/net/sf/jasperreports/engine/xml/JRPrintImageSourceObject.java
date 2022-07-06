@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,21 +26,20 @@ package net.sf.jasperreports.engine.xml;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPrintImage;
-import net.sf.jasperreports.engine.RenderableUtil;
-
-import org.w3c.tools.codec.Base64Decoder;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.ResourceRenderer;
+import net.sf.jasperreports.renderers.SimpleDataRenderer;
+import net.sf.jasperreports.util.Base64Util;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintImageSourceObject.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrintImageSourceObject
 {
+	public static final String EXCEPTION_MESSAGE_KEY_DECODING_ERROR = "xml.print.image.decoding.error";
 
 
 	/**
@@ -51,8 +50,27 @@ public class JRPrintImageSourceObject
 	/**
 	 *
 	 */
+	private final boolean isLazy;
 	private boolean isEmbedded;
 
+
+	/**
+	 * @deprecated Replaced by {@link #JRPrintImageSourceObject(boolean)}.
+	 */
+	public JRPrintImageSourceObject()
+	{
+		this(false);
+	}
+	
+
+	/**
+	 *
+	 */
+	public JRPrintImageSourceObject(boolean isLazy)
+	{
+		this.isLazy = isLazy;
+	}
+	
 
 	/**
 	 *
@@ -77,27 +95,41 @@ public class JRPrintImageSourceObject
 	 */
 	public void setImageSource(String imageSource) throws JRException
 	{
-		if (isEmbedded)
+		Renderable renderable = null;
+		
+		if (isLazy)
 		{
-			try
-			{
-				ByteArrayInputStream bais = new ByteArrayInputStream(imageSource.getBytes("UTF-8"));//FIXMENOW other encodings ?
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				
-				Base64Decoder decoder = new Base64Decoder(bais, baos);
-				decoder.process();
-				
-				printImage.setRenderable(JRImageRenderer.getInstance(baos.toByteArray()));//, JRImage.ON_ERROR_TYPE_ERROR));
-			}
-			catch (Exception e)
-			{
-				throw new JRException("Error decoding embedded image.", e);
-			}
+			renderable = ResourceRenderer.getInstance(imageSource, true);
 		}
 		else
 		{
-			printImage.setRenderable(RenderableUtil.getInstance(DefaultJasperReportsContext.getInstance()).getRenderable(imageSource));//FIXMECONTEXT this might just be OK since the image is lazy anyway
+			if (isEmbedded)
+			{
+				try
+				{
+					ByteArrayInputStream bais = new ByteArrayInputStream(imageSource.getBytes("UTF-8"));//UTF-8 is fine here as Base64 only has ASCII characters anyway
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					
+					Base64Util.decode(bais, baos);
+					
+					renderable = SimpleDataRenderer.getInstance(baos.toByteArray());//, JRImage.ON_ERROR_TYPE_ERROR));
+				}
+				catch (Exception e)
+				{
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_DECODING_ERROR,
+							null,
+							e);
+				}
+			}
+			else
+			{
+				renderable = ResourceRenderer.getInstance(imageSource, false);
+			}
 		}
+
+		printImage.setRenderer(renderable);
 	}
 	
 

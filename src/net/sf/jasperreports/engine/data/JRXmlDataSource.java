@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,32 +32,35 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRField;
-import net.sf.jasperreports.engine.JRRewindableDataSource;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.util.JRXmlUtils;
-import net.sf.jasperreports.engine.util.xml.JRXPathExecuter;
-import net.sf.jasperreports.engine.util.xml.JRXPathExecuterUtils;
-import net.sf.jasperreports.repo.RepositoryUtil;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.JRXmlUtils;
+import net.sf.jasperreports.engine.util.xml.JRXPathExecuter;
+import net.sf.jasperreports.engine.util.xml.JRXPathExecuterUtils;
+import net.sf.jasperreports.repo.RepositoryContext;
+import net.sf.jasperreports.repo.RepositoryUtil;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 /**
  * XML data source implementation that allows to access the data from a xml
  * document using XPath expressions.
  * <p>
  * The data source is constructed around a node set (record set) selected
- * by an XPath expression from the xml document.
+ * by an XPath expression from the XML document.
  * </p>
  * <p>
- * Each field can provide an additional XPath expresion that will be used to
- * select its value. This expression must be specified using the "fieldDescription"
- * element of the field. The expression is evaluated in the context of the current
+ * Each field can provide an additional XPath expression that will be used to
+ * select its value. This expression must be specified using the {@link #PROPERTY_FIELD_EXPRESSION} 
+ * custom property at field level. The use of the {@link net.sf.jasperreports.engine.JRField#getDescription() field description} to specify the XPath expression 
+ * is still supported, but is now discouraged, the above mentioned custom property taking precedence 
+ * over the field description. 
+ * The expression is evaluated in the context of the current
  * node thus the expression should be relative to the current node.
  * </p>
  * <p>
@@ -106,7 +109,7 @@ import org.xml.sax.InputSource;
  * </ul>
  * </p>
  * <p>
- * Generally the full power of XPath expression is available. As an example, "/A/B[@id > 0"] will select all the
+ * Generally the full power of XPath expression is available. As an example, "/A/B[@id &gt; 0"] will select all the
  * nodes of type /A/B having the id greater than 0. 
  * You'll find a short XPath tutorial <a href="http://www.zvon.org/xxl/XPathTutorial/General/examples.html" target="_blank">here</a>.
  * 
@@ -117,10 +120,10 @@ import org.xml.sax.InputSource;
  * consider implementing a custom data source that directly accesses the Document through the DOM API. 
  * </p>
  * @author Peter Severin (peter_p_s@sourceforge.net, contact@jasperassistant.com)
- * @version $Id: JRXmlDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRXPathExecuterUtils
  */
-public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewindableDataSource {
+public class JRXmlDataSource extends AbstractXmlDataSource<JRXmlDataSource>
+{
 
 	// the xml document
 	private Document document;
@@ -313,15 +316,25 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 			String uri, 
 			String selectExpression,
 			boolean isNamespaceAware
+			) throws JRException
+	{
+		this(SimpleRepositoryContext.of(jasperReportsContext), uri, selectExpression, isNamespaceAware);
+	}
+
+	public JRXmlDataSource(
+			RepositoryContext context, 
+			String uri, 
+			String selectExpression,
+			boolean isNamespaceAware
 			) throws JRException 
 	{
 		this(
-			jasperReportsContext, 
-			RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(uri), 
+			context.getJasperReportsContext(), 
+			RepositoryUtil.getInstance(context).getInputStreamFromLocation(uri), 
 			selectExpression,
 			isNamespaceAware
 			);
-		this.closeInputStream = true;
+		this.closeInputStream = true;//FIXME close the stream immediately
 	}
 
 	/**
@@ -399,14 +412,21 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 	 * 
 	 * @see net.sf.jasperreports.engine.JRRewindableDataSource#moveFirst()
 	 */
+	@Override
 	public void moveFirst() throws JRException {
 		if (document == null)
 		{
-			throw new JRException("document cannot be null");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_NULL_DOCUMENT,
+					(Object[])null);
 		}
 		if (selectExpression == null)
 		{
-			throw new JRException("selectExpression cannot be null");
+			throw 
+			new JRException(
+				EXCEPTION_MESSAGE_KEY_NULL_SELECT_EXPRESSION,
+				(Object[])null);
 		}
 
 		currentNode = null;
@@ -422,6 +442,7 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 	 * 
 	 * @see net.sf.jasperreports.engine.JRDataSource#next()
 	 */
+	@Override
 	public boolean next() 
 	{
 		if(currentNodeIndex == nodeListLength - 1)
@@ -432,59 +453,42 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 		return true;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see net.sf.jasperreports.engine.JRDataSource#getFieldValue(net.sf.jasperreports.engine.JRField)
-	 */
-	public Object getFieldValue(JRField jrField) throws JRException 
+	@Override
+	public int recordCount()
 	{
-		if(currentNode == null)
-		{
-			return null;
-		}
-		String expression = jrField.getDescription();
-		if (expression == null || expression.length() == 0)
-		{
-			return null;
-		}
-		Object value = null;
-		
-		Class<?> valueClass = jrField.getValueClass();
-		Object selectedObject = xPathExecuter.selectObject(currentNode, expression);
+		return nodeListLength;
+	}
 
-		if(Object.class != valueClass) 
+	@Override
+	public int currentIndex()
+	{
+		return currentNodeIndex;
+	}
+
+	@Override
+	public void moveToRecord(int index) throws NoRecordAtIndexException
+	{
+		if (index >= 0 && index < nodeListLength)
 		{
-			if (selectedObject != null) 
-			{
-				if (selectedObject instanceof Node) 
-				{
-					String text = getText((Node) selectedObject);
-					if (text != null) 
-					{
-						value = convertStringValue(text, valueClass);
-					}
-				} 
-				else if (selectedObject instanceof Boolean && valueClass.equals(Boolean.class)) 
-				{
-					value = selectedObject;
-				}
-				else if (selectedObject instanceof Number && Number.class.isAssignableFrom(valueClass)) 
-				{
-					value = convertNumber((Number) selectedObject, valueClass);
-				} 
-				else 
-				{
-					String text = selectedObject.toString();
-					value = convertStringValue(text, valueClass);
-				}
-			}
+			currentNodeIndex = index;
+			currentNode = nodeList.item(index);
 		}
 		else
 		{
-			value = selectedObject;
+			throw new NoRecordAtIndexException(index);
 		}
-		return value;
+	}
+
+	@Override
+	public Node getCurrentNode() 
+	{
+		return currentNode;
+	}
+
+	@Override
+	public Object getSelectObject(Node currentNode, String expression) throws JRException 
+	{
+		return xPathExecuter.selectObject(currentNode, expression);
 	}
 
 	/**
@@ -497,6 +501,7 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 	 * @throws JRException if the sub data source couldn't be created
 	 * @see JRXmlDataSource#JRXmlDataSource(Document, String)
 	 */
+	@Override
 	public JRXmlDataSource subDataSource(String selectExpr)
 			throws JRException {
 		// create a new document from the current node
@@ -506,18 +511,10 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 		return subDataSource;
 	}
 
-	/**
-	 * Creates a sub data source using the current node (record) as the root
-	 * of the document. The data source will contain exactly one record consisting 
-	 * of the document node itself.
-	 * 
-	 * @return the xml sub data source
-	 * @throws JRException if the data source cannot be created
-	 * @see JRXmlDataSource#subDataSource(String)
-	 * @see JRXmlDataSource#JRXmlDataSource(Document)
-	 */
-	public JRXmlDataSource subDataSource() throws JRException {
-		return subDataSource(".");
+	@Override
+	public JRXmlDataSource subDataSource() throws JRException // need to override this method here to keep binary compatibility with older releases 
+	{
+		return super.subDataSource();
 	}
 
 	
@@ -527,11 +524,15 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 	 * @return a document having the current node as root
 	 * @throws JRException
 	 */
+	@Override
 	public Document subDocument() throws JRException
 	{
 		if(currentNode == null)
 		{
-			throw new JRException("No node available. Iterate or rewind the data source.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_NODE_NOT_AVAILABLE,
+					(Object[])null);
 		}
 		
 		// create a new document from the current node
@@ -549,6 +550,7 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 	 * @throws JRException if the sub data source couldn't be created
 	 * @see JRXmlDataSource#JRXmlDataSource(Document, String)
 	 */
+	@Override
 	public JRXmlDataSource dataSource(String selectExpr)
 			throws JRException {
 		JRXmlDataSource subDataSource = new JRXmlDataSource(document, selectExpr);
@@ -556,71 +558,12 @@ public class JRXmlDataSource extends JRAbstractTextDataSource implements JRRewin
 		return subDataSource;
 	}
 
-	/**
-	 * Creates a sub data source using as root document the document used by "this" data source.
-	 * The data source will contain exactly one record consisting  of the document node itself.
-	 * 
-	 * @return the xml sub data source
-	 * @throws JRException if the data source cannot be created
-	 * @see JRXmlDataSource#dataSource(String)
-	 * @see JRXmlDataSource#JRXmlDataSource(Document)
-	 */
-	public JRXmlDataSource dataSource() throws JRException {
-		return dataSource(".");
+	@Override
+	public JRXmlDataSource dataSource() throws JRException // need to override this method here to keep binary compatibility with older releases 
+	{
+		return super.dataSource();
 	}
 
-	/**
-	 * Return the text that a node contains. This routine:
-	 * <ul>
-	 * <li>Ignores comments and processing instructions.
-	 * <li>Concatenates TEXT nodes, CDATA nodes, and the results of recursively
-	 * processing EntityRef nodes.
-	 * <li>Ignores any element nodes in the sublist. (Other possible options
-	 * are to recurse into element sublists or throw an exception.)
-	 * </ul>
-	 * 
-	 * @param node a DOM node
-	 * @return a String representing node contents or null
-	 */
-	public String getText(Node node) {
-		if (!node.hasChildNodes())
-		{
-			return node.getNodeValue();
-		}
-		StringBuffer result = new StringBuffer();
-
-		NodeList list = node.getChildNodes();
-		for (int i = 0; i < list.getLength(); i++) {
-			Node subnode = list.item(i);
-			if (subnode.getNodeType() == Node.TEXT_NODE) 
-			{
-				String value = subnode.getNodeValue();
-				if(value != null)
-				{
-					result.append(value);
-				}
-			} 
-			else if (subnode.getNodeType() == Node.CDATA_SECTION_NODE) 
-			{
-				String value = subnode.getNodeValue();
-				if(value != null)
-				{
-					result.append(value);
-				}
-			} else if (subnode.getNodeType() == Node.ENTITY_REFERENCE_NODE) {
-				// Recurse into the subtree for text
-				// (and ignore comments)
-				String value = getText(subnode);
-				if(value != null)
-				{
-					result.append(value);
-				}
-			}
-		}
-
-		return result.toString();
-	}
-	
 	/**
 	 * Closes the reader. Users of this data source should close it after usage.
 	 */

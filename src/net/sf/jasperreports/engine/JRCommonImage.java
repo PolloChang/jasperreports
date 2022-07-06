@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
 
 
@@ -82,7 +83,7 @@ import net.sf.jasperreports.engine.type.ScaleImageEnum;
  * fill time. For images that use image files as sources, the image size will always be
  * known. For images that use other type of renderers, the image size is determined by
  * calling the <code>getDimension()</code> method on the image renderer object, which is an instance
- * of a class that implements {@link net.sf.jasperreports.engine.Renderable}. If the
+ * of a class that implements {@link net.sf.jasperreports.renderers.Renderable}. If the
  * method returns a null dimension, the actual image size will not be known and the image
  * will not stretch, but will render inside the area given by the design image width and
  * height.
@@ -112,11 +113,10 @@ import net.sf.jasperreports.engine.type.ScaleImageEnum;
  * always be at least as tall as the design image element, its height can only be increased
  * when the report is filled.
  * 
- * @see net.sf.jasperreports.engine.Renderable
+ * @see net.sf.jasperreports.renderers.Renderable
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCommonImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRCommonImage extends JRCommonGraphicElement, JRBoxContainer
+public interface JRCommonImage extends JRImageAlignment, JRCommonGraphicElement, JRBoxContainer
 {
 
 	/**
@@ -136,5 +136,24 @@ public interface JRCommonImage extends JRCommonGraphicElement, JRBoxContainer
 	 * @param scaleImageEnum a value representing one of the scale type constants in {@link ScaleImageEnum}
 	 */
 	public void setScaleImage(ScaleImageEnum scaleImageEnum);
+
+	/**
+	 * Gets the image rotation.
+	 * @return a value representing one of the image rotation constants in {@link RotationEnum}
+	 */
+	public RotationEnum getRotation();
+	
+	/**
+	 * Gets the image own rotation.
+	 * @return a value representing one of the image rotation constants in {@link RotationEnum}
+	 */
+	public RotationEnum getOwnRotation();
+	
+	/**
+	 * Sets the image rotation.
+	 * @param rotationEnum a value representing one of the image rotation constants in {@link RotationEnum}
+	 */
+	public void setRotation(RotationEnum rotationEnum);
+	
 
 }

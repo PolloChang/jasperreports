@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ package net.sf.jasperreports.engine.component;
  * The default {@link ComponentsXmlParser} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultComponentXmlParser.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultComponentXmlParser implements ComponentsXmlParser
 {
@@ -38,6 +37,7 @@ public class DefaultComponentXmlParser implements ComponentsXmlParser
 	private String internalSchemaResource;
 	private XmlDigesterConfigurer digesterConfigurer;
 	
+	@Override
 	public String getNamespace()
 	{
 		return namespace;
@@ -54,6 +54,7 @@ public class DefaultComponentXmlParser implements ComponentsXmlParser
 		this.namespace = namespace;
 	}
 	
+	@Override
 	public XmlDigesterConfigurer getDigesterConfigurer()
 	{
 		return digesterConfigurer;
@@ -70,6 +71,7 @@ public class DefaultComponentXmlParser implements ComponentsXmlParser
 		this.digesterConfigurer = digesterConfigurer;
 	}
 
+	@Override
 	public String getPublicSchemaLocation()
 	{
 		return publicSchemaLocation;
@@ -86,6 +88,7 @@ public class DefaultComponentXmlParser implements ComponentsXmlParser
 		this.publicSchemaLocation = publicSchemaLocation;
 	}
 
+	@Override
 	public String getInternalSchemaResource()
 	{
 		return internalSchemaResource;

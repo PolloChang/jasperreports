@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.query.JRHibernateQueryExecuter;
  * The query result can be paginated by not retrieving all the rows at once.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRHibernateListDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.query.JRHibernateQueryExecuterFactory#PROPERTY_HIBERNATE_QUERY_LIST_PAGE_SIZE
  */
 public class JRHibernateListDataSource extends JRHibernateAbstractDataSource implements JRRewindableDataSource
@@ -74,6 +73,7 @@ public class JRHibernateListDataSource extends JRHibernateAbstractDataSource imp
 		initIterator();
 	}
 
+	@Override
 	public boolean next()
 	{
 		if (iterator == null)
@@ -96,6 +96,7 @@ public class JRHibernateListDataSource extends JRHibernateAbstractDataSource imp
 		return hasNext;
 	}
 
+	@Override
 	public void moveFirst()
 	{
 		if (pageCount == 1)

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BigIntegerStore.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BigIntegerStore implements BufferColumnStore
 {
@@ -46,7 +45,7 @@ public class BigIntegerStore implements BufferColumnStore
 	
 	public BigIntegerStore(int size)
 	{
-		this.rawStore = new ObjectArrayStore<BigInteger>(BigInteger.class, size);
+		this.rawStore = new ObjectArrayStore<>(BigInteger.class, size);
 		reset();
 		
 		if (log.isDebugEnabled())
@@ -69,6 +68,7 @@ public class BigIntegerStore implements BufferColumnStore
 		return BigInteger.class;
 	}
 
+	@Override
 	public void addValue(Object object)
 	{
 		if (!(object instanceof BigInteger))
@@ -83,16 +83,19 @@ public class BigIntegerStore implements BufferColumnStore
 		max = max.max(value);
 	}
 
+	@Override
 	public boolean full()
 	{
 		return rawStore.full();
 	}
 	
+	@Override
 	public void resetValues()
 	{
 		reset();
 	}
 	
+	@Override
 	public ColumnValues createValues()
 	{
 		int count = rawStore.count();
@@ -184,6 +187,7 @@ public class BigIntegerStore implements BufferColumnStore
 		return primitiveValues;
 	}
 
+	@Override
 	public String toString()
 	{
 		return "BigIntegerStore@" + hashCode();

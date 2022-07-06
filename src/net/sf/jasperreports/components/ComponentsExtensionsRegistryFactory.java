@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -71,7 +71,6 @@ import net.sf.jasperreports.extensions.ListExtensionsRegistry;
  * This registry factory is registered by default in JasperReports.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentsExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  * @see ListComponent
  */
 public class ComponentsExtensionsRegistryFactory implements
@@ -91,7 +90,7 @@ public class ComponentsExtensionsRegistryFactory implements
 	public static final List<String> BARCODE4J_COMPONENT_NAMES = Collections.unmodifiableList(Arrays.asList(
 			"Codabar", "Code128", "EAN128", "DataMatrix", "Code39", "Interleaved2Of5",
 			"UPCA", "UPCE", "EAN13", "EAN8", "USPSIntelligentMail", "RoyalMailCustomer", 
-			"POSTNET", "PDF417"));
+			"POSTNET", "PDF417", "QRCode"));
 	public static final String SPIDERCHART_COMPONENT_NAME = "spiderChart";
 	public static final String MAP_COMPONENT_NAME = "map";
 	public static final String SORT_COMPONENT_NAME = "sort";
@@ -110,7 +109,7 @@ public class ComponentsExtensionsRegistryFactory implements
 		parser.setDigesterConfigurer(new ComponentsXmlDigesterConfigurer());
 		bundle.setXmlParser(parser);
 		
-		HashMap<String, ComponentManager> componentManagers = new HashMap<String, ComponentManager>();
+		HashMap<String, ComponentManager> componentManagers = new HashMap<>();
 		
 		ComponentsManager listManager = new ComponentsManager();
 		listManager.setDesignConverter(new ListDesignConverter());
@@ -178,6 +177,7 @@ public class ComponentsExtensionsRegistryFactory implements
 		REGISTRY = registry;
 	}
 	
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId,
 			JRPropertiesMap properties)
 	{

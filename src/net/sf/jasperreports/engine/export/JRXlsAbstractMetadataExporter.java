@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,6 +29,7 @@
 
 package net.sf.jasperreports.engine.export;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.charts.type.EdgeEnum;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
@@ -53,20 +56,17 @@ import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
-import net.sf.jasperreports.engine.type.RotationEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.export.ExportInterruptedException;
 import net.sf.jasperreports.export.ExporterInputItem;
 import net.sf.jasperreports.export.XlsMetadataExporterConfiguration;
 import net.sf.jasperreports.export.XlsMetadataReportConfiguration;
-import net.sf.jasperreports.export.XlsReportConfiguration;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRXlsAbstractMetadataExporter.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReportConfiguration, C extends XlsMetadataExporterConfiguration, E extends JRExporterContext> 
 	extends JRXlsAbstractExporter<RC, C, E>
@@ -77,6 +77,11 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_0_2
+			)
 	public static final String PROPERTY_COLUMN_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.column.name";
 	
 	/**
@@ -88,6 +93,13 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_0_2,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_REPEAT_VALUE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.repeat.value";
 	
 	/**
@@ -98,6 +110,11 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.TEXT_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_0_2
+			)
 	public static final String PROPERTY_DATA = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.data";
 
 	/**
@@ -125,6 +142,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 	public JRXlsAbstractMetadataExporter(JasperReportsContext jasperReportsContext)
 	{
 		super(jasperReportsContext);
+		maxColumnIndex = 255;
 	}
 
 
@@ -133,8 +151,8 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 	{
 		super.initExport();
 		
-		currentRow = new HashMap<String, Object>();//FIXMEEXPORT check these two
-		repeatedValues = new HashMap<String, Object>();
+		currentRow = new HashMap<>();//FIXMEEXPORT check these two
+		repeatedValues = new HashMap<>();
 		onePagePerSheetMap.clear();
 		sheetsBeforeCurrentReport = 0;
 		sheetsBeforeCurrentReportMap.clear();
@@ -159,8 +177,8 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 		
 		hasDefinedColumns = (columnNamesArray != null && columnNamesArray.length > 0);
 
-		columnNames = new ArrayList<String>();
-		columnNamesMap = new HashMap<String, Integer>();
+		columnNames = new ArrayList<>();
+		columnNamesMap = new HashMap<>();
 
 		List<String> columnNamesList = JRStringUtil.split(columnNamesArray, ",");
 		if (columnNamesList != null)
@@ -177,10 +195,12 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 	}
 	
 	@Override
-	protected void exportReportToStream(OutputStream os) throws JRException
+	protected void exportReportToStream(OutputStream os) throws JRException, IOException
 	{
 		openWorkbook(os);
 		sheetNamesMap = new HashMap<String,Integer>();
+		definedNamesMap = new HashMap<NameScope, String>();
+		boolean pageExported = false;
 
 		List<ExporterInputItem> items = exporterInput.getItems();
 
@@ -198,6 +218,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 			}
 
 			XlsMetadataReportConfiguration configuration = getCurrentItemConfiguration();
+			configureDefinedNames(configuration.getDefinedNames());
 
 			List<JRPrintPage> pages = jasperPrint.getPages();
 			if (pages != null && pages.size() > 0)
@@ -213,13 +234,14 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 					{
 						if (Thread.interrupted())
 						{
-							throw new JRException("Current thread interrupted.");
+							throw new ExportInterruptedException();
 						}
 
 						JRPrintPage page = pages.get(pageIndex);
 
-						SheetInfo sheetInfo = new SheetInfo();
-						sheetInfo.sheetName = getSheetName(null);
+						pageFormat = jasperPrint.getPageFormat(pageIndex);
+
+						SheetInfo sheetInfo = getSheetInfo(configuration, null);
 						createSheet(sheetInfo);
 
 						// we need to count all sheets generated for all exported documents
@@ -228,7 +250,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 						rowIndex = 0;
 						resetAutoFilters();
 						
-						setFreezePane(gridRowFreezeIndex, gridColumnFreezeIndex);
+						setFreezePane(sheetInfo.rowFreezeIndex, sheetInfo.columnFreezeIndex);
 						
 						/*   */
 						exportPage(page);
@@ -236,9 +258,10 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 				}
 				else
 				{
+					pageFormat = jasperPrint.getPageFormat(startPageIndex);
+					
 					// Create the sheet before looping.
-					SheetInfo sheetInfo = new SheetInfo();
-					sheetInfo.sheetName = getSheetName(jasperPrint.getName());
+					SheetInfo sheetInfo = getSheetInfo(configuration, jasperPrint.getName());
 					createSheet(sheetInfo);
 
 					// we need to count all sheets generated for all exported documents
@@ -246,7 +269,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 					sheetNamesIndex++;
 					resetAutoFilters();
 					
-					setFreezePane(gridRowFreezeIndex, gridColumnFreezeIndex);
+					setFreezePane(sheetInfo.rowFreezeIndex, sheetInfo.columnFreezeIndex);
 					
 					if (filter instanceof ResetableExporterFilter)
 					{
@@ -256,14 +279,21 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 					{
 						if (Thread.interrupted())
 						{
-							throw new JRException("Current thread interrupted.");
+							throw new ExportInterruptedException();
 						}
 						JRPrintPage page = pages.get(pageIndex);
+						pageFormat = jasperPrint.getPageFormat(pageIndex);
 						exportPage(page);
 					}
 					
 				}
+				pageExported = true;
 			}
+			else if(reportIndex == items.size() -1 && !pageExported)
+			{
+				exportEmptyReport();
+			}
+			
 			sheetsBeforeCurrentReport = configuration.isOnePagePerSheet() ? sheetIndex : sheetsBeforeCurrentReport + 1;
 		}
 
@@ -278,12 +308,13 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 		XlsMetadataReportConfiguration configuration = getCurrentItemConfiguration();
 		
 		List<JRPrintElement> elements = page.getElements();
-		currentRow = new HashMap<String, Object>();
+		currentRow = new HashMap<>();
 		rowIndex += configuration.isWriteHeader() ? 1 : 0;
 		
 		for (int i = 0; i < elements.size(); ++i) 
 		{
 			JRPrintElement element = elements.get(i);
+			updateSheet(element);
 			
 			String sheetName = element.getPropertiesMap().getProperty(JRXlsAbstractExporter.PROPERTY_SHEET_NAME);
 			if(sheetName != null)
@@ -325,7 +356,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 			String rowFreeze = getPropertiesUtil().getProperty(element, JRXlsAbstractExporter.PROPERTY_FREEZE_ROW_EDGE);
 			
 			int rowFreezeIndex = rowFreeze == null 
-				? 0 
+				? -1 
 				: (EdgeEnum.BOTTOM.getName().equals(rowFreeze) 
 						? rowIndex + 1
 						: rowIndex
@@ -334,7 +365,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 			String columnFreeze = getPropertiesUtil().getProperty(element, JRXlsAbstractExporter.PROPERTY_FREEZE_COLUMN_EDGE);
 				
 			int columnFreezeIndex = columnFreeze == null 
-				? 0 
+				? -1 
 				: (EdgeEnum.RIGHT.getName().equals(columnFreeze) 
 						? columnNamesMap.get(currentColumnName) + 1
 						: columnNamesMap.get(currentColumnName)
@@ -342,13 +373,24 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 
 			if(rowFreezeIndex > 0 || columnFreezeIndex > 0)
 			{
-				setFreezePane(rowFreezeIndex, columnFreezeIndex, rowFreezeIndex > 0, columnFreezeIndex > 0);
+				setFreezePane(rowFreezeIndex, columnFreezeIndex);
 			}
+			
+		}
+		if(columnNames.size() > maxColumnIndex+1)
+		{
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_COLUMN_INDEX_BEYOND_LIMIT, 
+					new Object[]{columnNames.size(), maxColumnIndex+1});
 			
 		}
 		// write last row
 		if (columnNames.size() > 0)
 		{
+			if(rowIndex == 1 && getCurrentItemConfiguration().isWriteHeader()) {
+				writeReportHeader();
+			}
 			writeCurrentRow(currentRow, repeatedValues);
 		}
 
@@ -373,153 +415,16 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	protected JRStyledText getStyledText(JRPrintText textElement)
 	{
 		return textElement.getFullStyledText(noneSelector);
 	}
 
-	/**
-	 *
-	 */
-	protected static TextAlignHolder getTextAlignHolder(JRPrintText textElement)
-	{
-		HorizontalAlignEnum horizontalAlignment;
-		VerticalAlignEnum verticalAlignment;
-		RotationEnum rotation = textElement.getRotationValue();
-
-		switch (textElement.getRotationValue())
-		{
-			case LEFT :
-			{
-				switch (textElement.getHorizontalAlignmentValue())
-				{
-					case LEFT :
-					{
-						verticalAlignment = VerticalAlignEnum.BOTTOM;
-						break;
-					}
-					case CENTER :
-					{
-						verticalAlignment = VerticalAlignEnum.MIDDLE;
-						break;
-					}
-					case RIGHT :
-					{
-						verticalAlignment = VerticalAlignEnum.TOP;
-						break;
-					}
-					case JUSTIFIED :
-					{
-						verticalAlignment = VerticalAlignEnum.JUSTIFIED;
-						break;
-					}
-					default :
-					{
-						verticalAlignment = VerticalAlignEnum.BOTTOM;
-					}
-				}
-
-				switch (textElement.getVerticalAlignmentValue())
-				{
-					case TOP :
-					{
-						horizontalAlignment = HorizontalAlignEnum.LEFT;
-						break;
-					}
-					case MIDDLE :
-					{
-						horizontalAlignment = HorizontalAlignEnum.CENTER;
-						break;
-					}
-					case BOTTOM :
-					{
-						horizontalAlignment = HorizontalAlignEnum.RIGHT;
-						break;
-					}
-					default :
-					{
-						horizontalAlignment = HorizontalAlignEnum.LEFT;
-					}
-				}
-
-				break;
-			}
-			case RIGHT :
-			{
-				switch (textElement.getHorizontalAlignmentValue())
-				{
-					case LEFT :
-					{
-						verticalAlignment = VerticalAlignEnum.TOP;
-						break;
-					}
-					case CENTER :
-					{
-						verticalAlignment = VerticalAlignEnum.MIDDLE;
-						break;
-					}
-					case RIGHT :
-					{
-						verticalAlignment = VerticalAlignEnum.BOTTOM;
-						break;
-					}
-					case JUSTIFIED :
-					{
-						verticalAlignment = VerticalAlignEnum.JUSTIFIED;
-						break;
-					}
-					default :
-					{
-						verticalAlignment = VerticalAlignEnum.TOP;
-					}
-				}
-
-				switch (textElement.getVerticalAlignmentValue())
-				{
-					case TOP :
-					{
-						horizontalAlignment = HorizontalAlignEnum.RIGHT;
-						break;
-					}
-					case MIDDLE :
-					{
-						horizontalAlignment = HorizontalAlignEnum.CENTER;
-						break;
-					}
-					case BOTTOM :
-					{
-						horizontalAlignment = HorizontalAlignEnum.LEFT;
-						break;
-					}
-					default :
-					{
-						horizontalAlignment = HorizontalAlignEnum.RIGHT;
-					}
-				}
-
-				break;
-			}
-			case UPSIDE_DOWN:
-			case NONE :
-			default :
-			{
-				horizontalAlignment = textElement.getHorizontalAlignmentValue();
-				verticalAlignment = textElement.getVerticalAlignmentValue();
-			}
-		}
-
-		return new TextAlignHolder(horizontalAlignment, verticalAlignment, rotation);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	protected int getImageBorderCorrection(JRPen pen)
 	{
-		float lineWidth = pen.getLineWidth().floatValue();
+		float lineWidth = pen.getLineWidth();
 		
 		if (lineWidth > 0f)
 		{
@@ -552,13 +457,13 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 		}
 
 		// sheet name specified; assuming it is first occurrence
-		int crtIndex = Integer.valueOf(1);
+		int crtIndex = 1;
 		String txtIndex = "";
 
 		if(sheetNamesMap.containsKey(sheetName))
 		{
 			// sheet names must be unique; altering sheet name using number of occurrences
-			crtIndex = sheetNamesMap.get(sheetName).intValue() + 1;
+			crtIndex = sheetNamesMap.get(sheetName) + 1;
 			txtIndex = String.valueOf(crtIndex);
 		}
 
@@ -578,43 +483,25 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 		return name;
 	}
 
-	/**
-	 * 
-	 */
-	protected boolean isWrapText(JRPrintElement element)
+	private SheetInfo getSheetInfo(XlsMetadataReportConfiguration configuration, String name)
 	{
-		if (
-			element.hasProperties()
-			&& element.getPropertiesMap().containsProperty(XlsReportConfiguration.PROPERTY_WRAP_TEXT)
-			)
-		{
-			// we make this test to avoid reaching the global default value of the property directly
-			// and thus skipping the report level one, if present
-			return getPropertiesUtil().getBooleanProperty(element, XlsReportConfiguration.PROPERTY_WRAP_TEXT, getCurrentItemConfiguration().isWrapText());
-		}
-		return getCurrentItemConfiguration().isWrapText();
+		SheetInfo sheetInfo = new SheetInfo();
+		sheetInfo.sheetName = getSheetName(name);
+		sheetInfo.rowFreezeIndex = configuration.getFreezeRow() == null ? -1 : configuration.getFreezeRow(); 
+		sheetInfo.columnFreezeIndex = configuration.getFreezeColumn() == null ? -1 : getColumnIndex(configuration.getFreezeColumn()); 
+		sheetInfo.ignoreCellBackground = configuration.isIgnoreCellBackground();
+		sheetInfo.ignoreCellBorder = configuration.isIgnoreCellBorder();
+		sheetInfo.whitePageBackground = configuration.isWhitePageBackground();
+		sheetInfo.sheetFirstPageIndex = pageIndex;
+		sheetInfo.sheetFirstPageNumber = configuration.getFirstPageNumber();		
+		sheetInfo.sheetPageScale = configuration.getPageScale();		
+		sheetInfo.sheetShowGridlines = configuration.isShowGridLines() ;
+		sheetInfo.tabColor = configuration.getSheetTabColor();
+		sheetInfo.columnWidthRatio = configuration.getColumnWidthRatio();
+		return sheetInfo;
 	}
 
-	/**
-	 * 
-	 */
-	protected boolean isCellLocked(JRPrintElement element)
-	{
-		if (
-			element.hasProperties()
-			&& element.getPropertiesMap().containsProperty(XlsReportConfiguration.PROPERTY_CELL_LOCKED)
-			)
-		{
-			// we make this test to avoid reaching the global default value of the property directly
-			// and thus skipping the report level one, if present
-			return getPropertiesUtil().getBooleanProperty(element, XlsReportConfiguration.PROPERTY_CELL_LOCKED, getCurrentItemConfiguration().isCellLocked());
-		}
-		return getCurrentItemConfiguration().isCellLocked();
-	}
-
-	/**
-	 * 
-	 */
+	@Override
 	protected String getFormula(JRPrintText text)
 	{
 		String formula = text.getPropertiesMap().getProperty(JRXlsAbstractExporter.PROPERTY_CELL_FORMULA);
@@ -629,23 +516,6 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 		return formula;
 	}
 	
-	/**
-	 * 
-	 */
-	protected boolean isCellHidden(JRPrintElement element)
-	{
-		if (
-			element.hasProperties()
-			&& element.getPropertiesMap().containsProperty(XlsReportConfiguration.PROPERTY_CELL_HIDDEN)
-			)
-		{
-			// we make this test to avoid reaching the global default value of the property directly
-			// and thus skipping the report level one, if present
-			return getPropertiesUtil().getBooleanProperty(element, XlsReportConfiguration.PROPERTY_CELL_HIDDEN, getCurrentItemConfiguration().isCellHidden());
-		}
-		return getCurrentItemConfiguration().isCellHidden();
-	}
-
 	/**
 	 * Compares the highest index of the currentRow's columns with the index of the column to be inserted
 	 * to determine if the current column is read in the proper order
@@ -666,34 +536,42 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 		return indexOfLastFilledColumn < columnNames.indexOf(currentColumnName);
 	}
 	
+	@Override
 	protected void exportText(JRPrintText text, JRExporterGridCell cell, int colIndex, int rowIndex) throws JRException
 	{
 	}
 
+	@Override
 	public void exportImage(JRPrintImage image, JRExporterGridCell cell, int colIndex, int rowIndex, int emptyCols, int yCutsRow, JRGridLayout layout) throws JRException
 	{
 	}
 
+	@Override
 	protected void exportRectangle(JRPrintGraphicElement element, JRExporterGridCell cell, int colIndex, int rowIndex) throws JRException
 	{
 	}
 
+	@Override
 	protected void exportLine(JRPrintLine line, JRExporterGridCell cell, int colIndex, int rowIndex) throws JRException
 	{
 	}
 
+	@Override
 	protected void exportFrame(JRPrintFrame frame, JRExporterGridCell cell, int colIndex, int rowIndex) throws JRException
 	{
 	}
 
+	@Override
 	protected void exportGenericElement(JRGenericPrintElement element, JRExporterGridCell cell, int colIndex, int rowIndex, int emptyCols, int yCutsRow, JRGridLayout layout) throws JRException
 	{
 	}
 	
+	@Override
 	protected void addBlankCell(JRExporterGridCell gridCell, int colIndex, int rowIndex) throws JRException
 	{
 	}
 
+	@Override
 	protected void addOccupiedCell(OccupiedGridCell occupiedGridCell, int colIndex, int rowIndex) throws JRException
 	{
 	}
@@ -702,10 +580,13 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 //	{
 //	}
 	
+	@Override
 	protected abstract ExporterNature getNature();
 
+	@Override
 	protected abstract void openWorkbook(OutputStream os) throws JRException;
 
+	@Override
 	protected void createSheet(CutsInfo xCuts, SheetInfo sheetInfo)
 	{
 		createSheet(sheetInfo);
@@ -713,6 +594,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 
 	protected abstract void createSheet(SheetInfo sheetInfo);
 
+	@Override
 	protected abstract void closeWorkbook(OutputStream os) throws JRException;
 
 	protected void setColumnWidth(int col, int width)
@@ -720,6 +602,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 		setColumnWidth(col, width, false);
 	}
 
+	@Override
 	protected abstract void setColumnWidth(int col, int width, boolean autoFit);
 
 	protected void setRowHeight(int rowIndex, int lastRowHeight) throws JRException
@@ -727,6 +610,7 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 		setRowHeight(rowIndex, lastRowHeight, null, null);
 	}
 
+	@Override
 	protected abstract void setRowHeight(int rowIndex, int lastRowHeight, Cut yCut, XlsRowLevelInfo levelInfo) throws JRException;
 
 	protected abstract void exportText(JRPrintText textElement) throws JRException;
@@ -742,5 +626,9 @@ public abstract class JRXlsAbstractMetadataExporter<RC extends XlsMetadataReport
 	protected abstract void exportGenericElement(JRGenericPrintElement element) throws JRException;
 	
 	protected abstract void writeCurrentRow(Map<String, Object> currentRow, Map<String, Object> repeatedValues)  throws JRException;
+	
+	protected abstract void writeReportHeader() throws JRException;
+	
+	protected abstract void updateSheet(JRPrintElement element);
 
 }

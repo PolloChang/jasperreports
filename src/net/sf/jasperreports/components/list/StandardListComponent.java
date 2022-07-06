@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Standard {@link ListComponent} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardListComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StandardListComponent implements Serializable, ListComponent, JRChangeEventsSupport
 {
@@ -70,6 +69,7 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 		this.ignoreWidth = list.getIgnoreWidth();
 	}
 	
+	@Override
 	public JRDatasetRun getDatasetRun()
 	{
 		return datasetRun;
@@ -88,6 +88,7 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 		getEventSupport().firePropertyChange(PROPERTY_DATASET_RUN, old, this.datasetRun);
 	}
 	
+	@Override
 	public ListContents getContents()
 	{
 		return contents;
@@ -104,6 +105,7 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 		this.contents = contents;
 	}
 	
+	@Override
 	public Object clone()
 	{
 		StandardListComponent clone = null;
@@ -122,9 +124,7 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 		return clone;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public PrintOrderEnum getPrintOrderValue()
 	{
 		return printOrderValue;
@@ -149,6 +149,7 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -162,6 +163,7 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 		return eventSupport;
 	}
 
+	@Override
 	public Boolean getIgnoreWidth()
 	{
 		return ignoreWidth;
@@ -187,7 +189,7 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 	 */
 	public void setIgnoreWidth(boolean ignoreWidth)
 	{
-		setIgnoreWidth(Boolean.valueOf(ignoreWidth));
+		setIgnoreWidth((Boolean)ignoreWidth);
 	}
 	
 	/*
@@ -199,6 +201,7 @@ public class StandardListComponent implements Serializable, ListComponent, JRCha
 	 */
 	private Byte printOrder;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

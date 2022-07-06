@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,6 @@ package net.sf.jasperreports.export.parameters;
 
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
@@ -35,15 +34,16 @@ import net.sf.jasperreports.export.ExporterOutput;
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractParametersExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractParametersExporterOutput implements ExporterOutput
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NO_OUTPUT_SPECIFIED = "export.parameters.no.output.specified";
+
 	/**
 	 * 
 	 */
 	private final JRPropertiesUtil propertiesUtil;
-	protected final Map<JRExporterParameter, Object> parameters;
+	protected final Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters;
 	private ParameterResolver parameterResolver;
 	
 	/**
@@ -51,7 +51,7 @@ public abstract class AbstractParametersExporterOutput implements ExporterOutput
 	 */
 	public AbstractParametersExporterOutput(
 		JasperReportsContext jasperReportsContext,
-		Map<JRExporterParameter, Object> parameters,
+		Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters,
 		JasperPrint jasperPrint
 		)
 	{
@@ -59,14 +59,16 @@ public abstract class AbstractParametersExporterOutput implements ExporterOutput
 		this.parameters = parameters;
 
 		boolean parametersOverrideHints;
-		Boolean param = (Boolean) parameters.get(JRExporterParameter.PARAMETERS_OVERRIDE_REPORT_HINTS);
+		Boolean param = (Boolean) parameters.get(net.sf.jasperreports.engine.JRExporterParameter.PARAMETERS_OVERRIDE_REPORT_HINTS);
 		if (param == null)
 		{
-			parametersOverrideHints = getPropertiesUtil().getBooleanProperty(JRExporterParameter.PROPERTY_EXPORT_PARAMETERS_OVERRIDE_REPORT_HINTS);
+			parametersOverrideHints = getPropertiesUtil().getBooleanProperty(
+				net.sf.jasperreports.engine.JRExporterParameter.PROPERTY_EXPORT_PARAMETERS_OVERRIDE_REPORT_HINTS
+				);
 		}
 		else
 		{
-			parametersOverrideHints = param.booleanValue();
+			parametersOverrideHints = param;
 		}
 		
 		if (parametersOverrideHints)

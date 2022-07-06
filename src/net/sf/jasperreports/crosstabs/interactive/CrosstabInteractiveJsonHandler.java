@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,21 +31,20 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.engine.export.GenericElementJsonHandler;
 import net.sf.jasperreports.engine.export.JsonExporterContext;
-import net.sf.jasperreports.web.util.JacksonUtil;
+import net.sf.jasperreports.util.JacksonUtil;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CrosstabInteractiveJsonHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CrosstabInteractiveJsonHandler implements GenericElementJsonHandler
 {
 	
 	public static final String PROPERTY_CROSSTAB_ID = JRPropertiesUtil.PROPERTY_PREFIX + "export.crosstab.crosstabId";
-	
+
 	public static final String ATTRIBUTE_CROSSTAB_ID = "data-jrxtid";
-	
+
 	public static final String PROPERTY_COLUMN_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "export.crosstab.columnIndex";
-	
+
 	public static final String ATTRIBUTE_COLUMN_INDEX = "data-jrxtcolidx";
 
 	public static final String ELEMENT_PARAMETER_CROSSTAB_ID = "crosstabId";
@@ -57,7 +56,9 @@ public class CrosstabInteractiveJsonHandler implements GenericElementJsonHandler
 	public static final String ELEMENT_PARAMETER_ROW_GROUPS = "rowGroups";
 
 	public static final String ELEMENT_PARAMETER_DATA_COLUMNS = "dataColumns";
-	
+
+	public static final String ELEMENT_PARAMETER_FLOATING_HEADERS = "hasFloatingHeaders";
+
 	@Override
 	public boolean toExport(JRGenericPrintElement element)
 	{
@@ -71,7 +72,7 @@ public class CrosstabInteractiveJsonHandler implements GenericElementJsonHandler
 		String jsonFragment = null;
 		if (reportContext != null)
 		{
-			Map<String, Object> elementInfo = new LinkedHashMap<String, Object>();
+			Map<String, Object> elementInfo = new LinkedHashMap<>();
 			
 			String crosstabId = (String) element.getParameterValue(ELEMENT_PARAMETER_CROSSTAB_ID);
 			String crosstabFragmentId = (String) element.getParameterValue(ELEMENT_PARAMETER_CROSSTAB_FRAGMENT_ID);
@@ -84,9 +85,11 @@ public class CrosstabInteractiveJsonHandler implements GenericElementJsonHandler
 			elementInfo.put("type", "crosstab");
 			elementInfo.put("module", "jive.crosstab");
 			elementInfo.put("uimodule", "jive.crosstab.interactive");
-			elementInfo.put("id", crosstabId);
+			elementInfo.put("id", crosstabFragmentId);
 			elementInfo.put("fragmentId", crosstabFragmentId);
+			elementInfo.put("crosstabId", crosstabId);
 			elementInfo.put("startColumnIndex", element.getParameterValue(ELEMENT_PARAMETER_START_COLUMN_INDEX));			
+			elementInfo.put("hasFloatingHeaders", element.getParameterValue(ELEMENT_PARAMETER_FLOATING_HEADERS));
 			elementInfo.put("rowGroups", element.getParameterValue(ELEMENT_PARAMETER_ROW_GROUPS));
 			elementInfo.put("dataColumns", element.getParameterValue(ELEMENT_PARAMETER_DATA_COLUMNS));
 			

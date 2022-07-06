@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,16 +31,17 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.analytics.data.MultiAxisDataSource;
 import net.sf.jasperreports.engine.fill.JRCalculator;
 import net.sf.jasperreports.engine.fill.JRExpressionEvalException;
+import net.sf.jasperreports.engine.fill.JRFillCloneFactory;
 import net.sf.jasperreports.engine.fill.JRFillElementDataset;
 import net.sf.jasperreports.engine.fill.JRFillExpressionEvaluator;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillMultiAxisDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillMultiAxisDataset extends JRFillElementDataset
 {
+	public static final String EXCEPTION_MESSAGE_KEY_CANNOT_CREATE_BUCKETING_SERVICE = "engine.analytics.dataset.cannot.create.bucketing.service";
 	
 	private final JasperReportsContext jasperReportsContext;
 	private final MultiAxisData data;
@@ -57,6 +58,15 @@ public class FillMultiAxisDataset extends JRFillElementDataset
 		
 		factory.registerElementDataset(this);
 	}
+	
+	public FillMultiAxisDataset(FillMultiAxisDataset dataset, JRFillCloneFactory factory)
+	{
+		super(dataset, factory);
+		
+		this.jasperReportsContext = dataset.jasperReportsContext;
+		this.data = dataset.data;
+		this.expressionEvaluator = dataset.expressionEvaluator;
+	}
 
 	@Override
 	protected void customInitialize()
@@ -69,7 +79,11 @@ public class FillMultiAxisDataset extends JRFillElementDataset
 			}
 			catch (JRException e)
 			{
-				throw new JRRuntimeException("Could not create bucketing service", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_CANNOT_CREATE_BUCKETING_SERVICE,
+						(Object[])null,
+						e);
 			}
 		}
 		else
@@ -103,6 +117,10 @@ public class FillMultiAxisDataset extends JRFillElementDataset
 
 	public MultiAxisDataSource getDataSource() throws JRException
 	{
+		//a final increment is needed when incrementType=Group
+		//FIXME perform the increment when the data set ends instead of here
+		increment();
+		
 		return dataService.createDataSource();
 	}
 	

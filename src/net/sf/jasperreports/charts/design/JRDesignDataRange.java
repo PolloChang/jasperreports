@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
  * for a meter or thermometer, and to divide those charts up into subsections.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRDesignDataRange.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignDataRange extends JRBaseDataRange implements JRChangeEventsSupport
 {
@@ -85,9 +84,7 @@ public class JRDesignDataRange extends JRBaseDataRange implements JRChangeEvents
 		getEventSupport().firePropertyChange(PROPERTY_HIGH_EXPRESSION, old, this.highExpression);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignDataRange clone = (JRDesignDataRange)super.clone();
@@ -97,6 +94,7 @@ public class JRDesignDataRange extends JRBaseDataRange implements JRChangeEvents
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

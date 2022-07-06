@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.util.JRValueStringUtils;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: OrderByColumnOrderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class OrderByColumnOrderer implements BucketOrderer
 {
@@ -67,7 +66,7 @@ public class OrderByColumnOrderer implements BucketOrderer
 	private void initBucketValues()
 	{
 		List<ColumnValueInfo> columnValues = orderInfo.getColumnValues();
-		bucketValues = new ArrayList<Bucket>(columnValues.size());
+		bucketValues = new ArrayList<>(columnValues.size());
 		
 		// TODO lucianc handle cases when the values no longer match the groups
 		for (ListIterator<ColumnValueInfo> it = columnValues.listIterator(); it.hasNext();)

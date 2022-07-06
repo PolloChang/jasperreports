@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,13 +28,14 @@ import java.util.Locale;
 
 import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElementUtils;
 import net.sf.jasperreports.components.table.util.TableUtil;
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.engine.design.JRDesignExpression;
 import net.sf.jasperreports.engine.design.JRDesignStaticText;
 import net.sf.jasperreports.engine.design.JRDesignTextElement;
 import net.sf.jasperreports.engine.design.JRDesignTextField;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.engine.util.JRStringUtil;
@@ -42,10 +43,11 @@ import net.sf.jasperreports.web.commands.Command;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: EditTextElementCommand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class EditTextElementCommand implements Command
 {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	private EditTextElementData editTextElementData;
 	private EditTextElementData oldEditTextElementData;
@@ -61,6 +63,7 @@ public class EditTextElementCommand implements Command
 	}
 
 
+	@Override
 	public void execute() {
 		if (textElement != null) {
 			Locale locale = (Locale)reportContext.getParameterValue(JRParameter.REPORT_LOCALE);
@@ -101,12 +104,12 @@ public class EditTextElementCommand implements Command
 		}
 		
 		textElement.setFontName(textElementData.getFontName());
-		textElement.setFontSize(textElementData.getFontSize() != null ? textElementData.getFloatFontSize() : null);
+		textElement.setFontSize(textElementData.getFloatFontSize());
 		textElement.setBold(textElementData.getFontBold());
 		textElement.setItalic(textElementData.getFontItalic());
 		textElement.setUnderline(textElementData.getFontUnderline());
 		textElement.setForecolor(textElementData.getFontColor() != null ? JRColorUtil.getColor("#" + textElementData.getFontColor(), textElement.getForecolor()) : null);
-		textElement.setHorizontalAlignment(HorizontalAlignEnum.getByName(textElementData.getFontHAlign()));
+		textElement.setHorizontalTextAlign(HorizontalTextAlignEnum.getByName(textElementData.getFontHAlign()));
 		textElement.setBackcolor(textElementData.getFontBackColor() != null ? JRColorUtil.getColor("#" + textElementData.getFontBackColor(), Color.white) : null);
 		textElement.setMode(ModeEnum.getByName(textElementData.getMode()));
 		
@@ -116,6 +119,7 @@ public class EditTextElementCommand implements Command
 	}
 
 
+	@Override
 	public void undo() {
 		if (oldEditTextElementData != null) {
 			applyColumnHeaderData(oldEditTextElementData, textElement, false);
@@ -123,6 +127,7 @@ public class EditTextElementCommand implements Command
 	}
 
 
+	@Override
 	public void redo() {
 		applyColumnHeaderData(editTextElementData, textElement, true);
 	}

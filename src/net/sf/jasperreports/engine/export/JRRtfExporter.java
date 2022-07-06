@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -45,6 +45,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
@@ -63,31 +66,33 @@ import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.base.JRBaseFont;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
-import net.sf.jasperreports.engine.fonts.FontFamily;
-import net.sf.jasperreports.engine.fonts.FontInfo;
-import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.util.FileBufferedWriter;
+import net.sf.jasperreports.engine.util.ImageUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
+import net.sf.jasperreports.engine.util.JRTypeSniffer;
+import net.sf.jasperreports.engine.util.StyledTextWriteContext;
+import net.sf.jasperreports.export.ExportInterruptedException;
 import net.sf.jasperreports.export.ExporterInputItem;
 import net.sf.jasperreports.export.RtfExporterConfiguration;
 import net.sf.jasperreports.export.RtfReportConfiguration;
 import net.sf.jasperreports.export.WriterExporterOutput;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 /**
  * Exports a JasperReports document to RTF format. 
@@ -110,20 +115,16 @@ import org.apache.commons.logging.LogFactory;
  * 
  * @see net.sf.jasperreports.export.RtfReportConfiguration
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRRtfExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, RtfExporterConfiguration, WriterExporterOutput, JRRtfExporterContext>
 {
 	private static final Log log = LogFactory.getLog(JRRtfExporter.class);
 	
-	private static final String RTF_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.rtf.";
+	public static final String RTF_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.rtf.";
 	
-	private static final int LINE_SPACING_FACTOR = 240; //(int)(240 * 2/3f);
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_TEXT_HEIGHT = "export.rtf.invalid.text.height";
 
-	/**
-	 * @deprecated Replaced by {@link RtfReportConfiguration#PROPERTY_IGNORE_HYPERLINK}.
-	 */
-	public static final String PROPERTY_IGNORE_HYPERLINK = RtfReportConfiguration.PROPERTY_IGNORE_HYPERLINK;
+	private static final int LINE_SPACING_FACTOR = 240; //(int)(240 * 2/3f);
 
 	/**
 	 * The exporter key, as used in
@@ -149,6 +150,8 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 	// z order of the graphical objects in .rtf file
 	private int zorder = 1;
 
+	protected RenderersCache renderersCache;
+	
 	protected class ExporterContext extends BaseExporterContext implements JRRtfExporterContext
 	{
 	}
@@ -174,27 +177,21 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<RtfExporterConfiguration> getConfigurationInterface()
 	{
 		return RtfExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<RtfReportConfiguration> getItemConfigurationInterface()
 	{
 		return RtfReportConfiguration.class;
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	protected void ensureOutput()
 	{
@@ -210,17 +207,15 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 	}
 	
 
-	/**
-	 * Export report in .rtf format
-	 */
+	@Override
 	public void exportReport() throws JRException
 	{
 		/*   */
 		ensureJasperReportsContext();
 		ensureInput();
 
-		fonts = new ArrayList<String>();
-		colors = new ArrayList<Color>();
+		fonts = new ArrayList<>();
+		colors = new ArrayList<>();
 		colors.add(null);
 
 		initExport();
@@ -235,7 +230,11 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Error writing to output writer : " + jasperPrint.getName(), e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_OUTPUT_WRITER_ERROR,
+					new Object[]{jasperPrint.getName()}, 
+					e);
 		}
 		finally
 		{
@@ -256,6 +255,8 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 	protected void initReport()
 	{
 		super.initReport();
+		
+		renderersCache = new RenderersCache(getJasperReportsContext());
 	}
 	
 
@@ -272,12 +273,12 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 
 		List<ExporterInputItem> items = exporterInput.getItems();
 
-		for(reportIndex = 0; reportIndex < items.size(); reportIndex++ )
+		for (reportIndex = 0; reportIndex < items.size(); reportIndex++ )
 		{
 			ExporterInputItem item = items.get(reportIndex);
 
 			setCurrentExporterInputItem(item);
-			
+
 			List<JRPrintPage> pages = jasperPrint.getPages();
 			if (pages != null && pages.size() > 0)
 			{
@@ -285,14 +286,12 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 				int startPageIndex = (pageRange == null || pageRange.getStartPageIndex() == null) ? 0 : pageRange.getStartPageIndex();
 				int endPageIndex = (pageRange == null || pageRange.getEndPageIndex() == null) ? (pages.size() - 1) : pageRange.getEndPageIndex();
 
-				JRPrintPage page = null;
-
 				contentWriter.write("{\\info{\\nofpages");
 				contentWriter.write(String.valueOf(pages.size()));
 				contentWriter.write("}}\n");
 
 				contentWriter.write("\\viewkind1\\paperw");
-				contentWriter.write(String.valueOf(LengthUtil.twip(jasperPrint.getPageWidth())));
+				contentWriter.write(String.valueOf(LengthUtil.twip(jasperPrint.getPageWidth())));//FIXMEPART rtf does not work in batch mode
 				contentWriter.write("\\paperh");
 				contentWriter.write(String.valueOf(LengthUtil.twip(jasperPrint.getPageHeight())));
 
@@ -312,13 +311,18 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 				}
 
 
-				for (int pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++) {
-					contentWriter.write("\n");
-					if(Thread.interrupted()){
-						throw new JRException("Current thread interrupted");
+				for (int pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++) 
+				{
+					if (Thread.interrupted())
+					{
+						throw 
+							new ExportInterruptedException();
 					}
 
-					page = pages.get(pageIndex);
+					JRPrintPage page = pages.get(pageIndex);
+
+					contentWriter.write("\n");
+
 					writeAnchor(JR_PAGE_ANCHOR_PREFIX + reportIndex + "_" + (pageIndex + 1));
 
 					boolean lastPageFlag = false;
@@ -390,19 +394,7 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 	 */
 	private int getFontIndex(JRFont font, Locale locale) throws IOException
 	{
-		String fontName = font.getFontName();
-
-		FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontName, locale);
-		if (fontInfo != null)
-		{
-			//fontName found in font extensions
-			FontFamily family = fontInfo.getFontFamily();
-			String exportFont = family.getExportFont(getExporterKey());
-			if (exportFont != null)
-			{
-				fontName = exportFont;
-			}
-		}
+		String fontName = fontUtil.getExportFontFamily(font.getFontName(), locale, getExporterKey());
 
 		int fontIndex = fonts.indexOf(fontName);
 
@@ -495,7 +487,7 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		contentWriter.write(String.valueOf(getColorRGB(pen.getLineColor())));
 		contentWriter.write("}}");
 
-		float lineWidth = pen.getLineWidth().floatValue();
+		float lineWidth = pen.getLineWidth();
 		
 		if (lineWidth == 0f)
 		{
@@ -519,6 +511,7 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 				contentWriter.write("{\\sp{\\sn lineDashing}{\\sv 1}}");
 				break;
 			}
+			default :
 		}
 
 		contentWriter.write("{\\sp{\\sn lineWidth}{\\sv ");
@@ -664,9 +657,8 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 	 * @param text JasperReports text object (JRPrintText)
 	 * @throws JRException
 	 */
-	public void exportText(JRPrintText text) throws IOException, JRException {
-
-
+	public void exportText(JRPrintText text) throws IOException, JRException 
+	{
 		// use styled text
 		JRStyledText styledText = getStyledText(text);
 		if (styledText == null)
@@ -681,7 +673,11 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 
 		if(textHeight <= 0) {
 			if(height <= 0 ){
-				throw new JRException("Invalid text height");
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_INVALID_TEXT_HEIGHT,  
+						(Object[])null 
+						);
 			}
 			textHeight = height;
 		}
@@ -690,10 +686,10 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		startElement(text);
 
 		// padding for the text
-		int topPadding = text.getLineBox().getTopPadding().intValue();
-		int leftPadding = text.getLineBox().getLeftPadding().intValue();
-		int bottomPadding = text.getLineBox().getBottomPadding().intValue();
-		int rightPadding = text.getLineBox().getRightPadding().intValue();
+		int topPadding = text.getLineBox().getTopPadding();
+		int leftPadding = text.getLineBox().getLeftPadding();
+		int bottomPadding = text.getLineBox().getBottomPadding();
+		int rightPadding = text.getLineBox().getRightPadding();
 
 		String rotation = null;
 
@@ -701,10 +697,11 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		{
 			case LEFT :
 			{
-				switch (text.getVerticalAlignmentValue())
+				switch (text.getVerticalTextAlign())
 				{
-					case TOP:
+					case BOTTOM:
 					{
+						leftPadding = Math.max(leftPadding, width - rightPadding - textHeight);
 						break;
 					}
 					case MIDDLE:
@@ -712,10 +709,10 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 						leftPadding = Math.max(leftPadding, (width - rightPadding - textHeight) / 2);
 						break;
 					}
-					case BOTTOM:
+					case TOP:
+					case JUSTIFIED:
+					default:
 					{
-						leftPadding = Math.max(leftPadding, width - rightPadding - textHeight);
-						break;
 					}
 				}
 				rotation = "{\\sp{\\sn txflTextFlow}{\\sv 2}}";
@@ -723,10 +720,11 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 			}
 			case RIGHT :
 			{
-				switch (text.getVerticalAlignmentValue())
+				switch (text.getVerticalTextAlign())
 				{
-					case TOP:
+					case BOTTOM:
 					{
+						rightPadding = Math.max(rightPadding, width - leftPadding - textHeight);
 						break;
 					}
 					case MIDDLE:
@@ -734,10 +732,10 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 						rightPadding = Math.max(rightPadding, (width - leftPadding - textHeight) / 2);
 						break;
 					}
-					case BOTTOM:
+					case TOP:
+					case JUSTIFIED:
+					default:
 					{
-						rightPadding = Math.max(rightPadding, width - leftPadding - textHeight);
-						break;
 					}
 				}
 				rotation = "{\\sp{\\sn txflTextFlow}{\\sv 3}}";
@@ -745,7 +743,7 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 			}
 			case UPSIDE_DOWN :
 			{
-				switch (text.getVerticalAlignmentValue())
+				switch (text.getVerticalTextAlign())
 				{
 					case TOP:
 					{
@@ -758,8 +756,9 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 						break;
 					}
 					case BOTTOM:
+					case JUSTIFIED:
+					default:
 					{
-						break;
 					}
 				}
 				rotation = "";
@@ -768,10 +767,11 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 			case NONE :
 			default :
 			{
-				switch (text.getVerticalAlignmentValue())
+				switch (text.getVerticalTextAlign())
 				{
-					case TOP:
+					case BOTTOM:
 					{
+						topPadding = Math.max(topPadding, height - bottomPadding - textHeight);
 						break;
 					}
 					case MIDDLE:
@@ -779,10 +779,10 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 						topPadding = Math.max(topPadding, (height - bottomPadding - textHeight) / 2);
 						break;
 					}
-					case BOTTOM:
+					case TOP:
+					case JUSTIFIED:
+					default:
 					{
-						topPadding = Math.max(topPadding, height - bottomPadding - textHeight);
-						break;
 					}
 				}
 				rotation = "";
@@ -805,11 +805,11 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		contentWriter.write("{\\sp{\\sn fLine}{\\sv 0}}");
 		contentWriter.write("{\\shptxt{\\pard ");
 
-		contentWriter.write("\\fi" + LengthUtil.twip(text.getParagraph().getFirstLineIndent().intValue()) + " ");
-		contentWriter.write("\\li" + LengthUtil.twip(text.getParagraph().getLeftIndent().intValue()) + " ");
-		contentWriter.write("\\ri" + LengthUtil.twip(text.getParagraph().getRightIndent().intValue()) + " ");
-		contentWriter.write("\\sb" + LengthUtil.twip(text.getParagraph().getSpacingBefore().intValue()) + " ");
-		contentWriter.write("\\sa" + LengthUtil.twip(text.getParagraph().getSpacingAfter().intValue()) + " ");
+		contentWriter.write("\\fi" + LengthUtil.twip(text.getParagraph().getFirstLineIndent()) + " ");
+		contentWriter.write("\\li" + LengthUtil.twip(text.getParagraph().getLeftIndent()) + " ");
+		contentWriter.write("\\ri" + LengthUtil.twip(text.getParagraph().getRightIndent()) + " ");
+		contentWriter.write("\\sb" + LengthUtil.twip(text.getParagraph().getSpacingBefore()) + " ");
+		contentWriter.write("\\sa" + LengthUtil.twip(text.getParagraph().getSpacingAfter()) + " ");
 
 		TabStop[] tabStops = text.getParagraph().getTabStops();
 		if (tabStops != null && tabStops.length > 0)
@@ -862,7 +862,7 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 //		writer.write("\\fs");
 //		writer.write(String.valueOf(font.getFontSize() * 2));
 
-		switch (text.getHorizontalAlignmentValue())
+		switch (text.getHorizontalTextAlign())
 		{
 			case LEFT:
 				contentWriter.write("\\ql");
@@ -885,19 +885,19 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		{
 			case AT_LEAST:
 			{
-				contentWriter.write("\\sl" + LengthUtil.twip(text.getParagraph().getLineSpacingSize().floatValue()));
+				contentWriter.write("\\sl" + LengthUtil.twip(text.getParagraph().getLineSpacingSize()));
 				contentWriter.write(" \\slmult0 ");
 				break;
 			}
 			case FIXED:
 			{
-				contentWriter.write("\\sl-" + LengthUtil.twip(text.getParagraph().getLineSpacingSize().floatValue()));
+				contentWriter.write("\\sl-" + LengthUtil.twip(text.getParagraph().getLineSpacingSize()));
 				contentWriter.write(" \\slmult0 ");
 				break;
 			}
 			case PROPORTIONAL:
 			{
-				contentWriter.write("\\sl" + (int)(text.getParagraph().getLineSpacingSize().floatValue() * LINE_SPACING_FACTOR));
+				contentWriter.write("\\sl" + (int)(text.getParagraph().getLineSpacingSize() * LINE_SPACING_FACTOR));
 				contentWriter.write(" \\slmult1 ");
 				break;
 			}
@@ -929,6 +929,8 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 
 		boolean startedHyperlink = exportHyperlink(text);
 
+		StyledTextWriteContext context = new StyledTextWriteContext();
+
 		// add parameters in case of styled text element
 		String plainText = styledText.getText();
 		int runLimit = 0;
@@ -939,59 +941,28 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 			&& (runLimit = iterator.getRunLimit()) <= styledText.length()
 			)
 		{
-
 			Map<Attribute,Object> styledTextAttributes = iterator.getAttributes();
-			JRFont styleFont = new JRBaseFont(styledTextAttributes);
-			Color styleForeground = (Color) styledTextAttributes.get(TextAttribute.FOREGROUND);
-			Color styleBackground = (Color) styledTextAttributes.get(TextAttribute.BACKGROUND);
 
-			contentWriter.write("\\f");
-			contentWriter.write(String.valueOf(getFontIndex(styleFont, getTextLocale(text))));
-			contentWriter.write("\\fs");
-			contentWriter.write(String.valueOf((int)(2 * styleFont.getFontsize())));
+			String runText = plainText.substring(iterator.getIndex(), runLimit);
 
-			if (styleFont.isBold())
+			context.next(styledTextAttributes, runText);
+			
+			if (context.listItemStartsWithNewLine() && !context.isListItemStart() && (context.isListItemEnd() || context.isListStart() || context.isListEnd()))
 			{
-				contentWriter.write("\\b");
-			}
-			if (styleFont.isItalic())
-			{
-				contentWriter.write("\\i");
-			}
-			if (styleFont.isUnderline())
-			{
-				contentWriter.write("\\ul");
-			}
-			if (styleFont.isStrikeThrough())
-			{
-				contentWriter.write("\\strike");
+				runText = runText.substring(1);
 			}
 
-			if (TextAttribute.SUPERSCRIPT_SUPER.equals(styledTextAttributes.get(TextAttribute.SUPERSCRIPT)))
+			if (runText.length() > 0)
 			{
-				contentWriter.write("\\super");
-			}
-			else if (TextAttribute.SUPERSCRIPT_SUB.equals(styledTextAttributes.get(TextAttribute.SUPERSCRIPT)))
-			{
-				contentWriter.write("\\sub");
-			}
+				String bulletText = JRStyledTextUtil.getIndentedBulletText(context);
 
-			if(!(null == styleBackground || styleBackground.equals(text.getBackcolor()))){
-				contentWriter.write("\\highlight");
-				contentWriter.write(String.valueOf(getColorIndex(styleBackground)));
+				exportStyledTextRun(
+					styledTextAttributes, 
+					(bulletText == null ? "" : bulletText) + runText, 
+					getTextLocale(text),
+					text.getBackcolor()
+					);
 			}
-			contentWriter.write("\\cf");
-			contentWriter.write(String.valueOf(getColorIndex(styleForeground)));
-			contentWriter.write(" ");
-
-			contentWriter.write(
-				handleUnicodeText(
-					plainText.substring(iterator.getIndex(), runLimit)					
-					)
-				);
-
-			// reset all styles in the paragraph
-			contentWriter.write("\\plain");
 
 			iterator.setIndex(runLimit);
 		}
@@ -1008,13 +979,76 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 
 
 	/**
+	 * 
+	 */
+	protected void exportStyledTextRun(
+		Map<AttributedCharacterIterator.Attribute, Object> styledTextAttributes, 
+		String text,
+		Locale locale,
+		Color backcolor
+		) throws IOException, JRException 
+	{
+		JRFont styleFont = new JRBaseFont(styledTextAttributes);
+		Color styleForeground = (Color) styledTextAttributes.get(TextAttribute.FOREGROUND);
+		Color styleBackground = (Color) styledTextAttributes.get(TextAttribute.BACKGROUND);
+
+		contentWriter.write("\\f");
+		contentWriter.write(String.valueOf(getFontIndex(styleFont, locale)));
+		contentWriter.write("\\fs");
+		contentWriter.write(String.valueOf((int)(2 * styleFont.getFontsize())));
+
+		if (styleFont.isBold())
+		{
+			contentWriter.write("\\b");
+		}
+		if (styleFont.isItalic())
+		{
+			contentWriter.write("\\i");
+		}
+		if (styleFont.isUnderline())
+		{
+			contentWriter.write("\\ul");
+		}
+		if (styleFont.isStrikeThrough())
+		{
+			contentWriter.write("\\strike");
+		}
+
+		if (TextAttribute.SUPERSCRIPT_SUPER.equals(styledTextAttributes.get(TextAttribute.SUPERSCRIPT)))
+		{
+			contentWriter.write("\\super");
+		}
+		else if (TextAttribute.SUPERSCRIPT_SUB.equals(styledTextAttributes.get(TextAttribute.SUPERSCRIPT)))
+		{
+			contentWriter.write("\\sub");
+		}
+
+		if (!(null == styleBackground || styleBackground.equals(backcolor)))
+		{
+			contentWriter.write("\\highlight");
+			contentWriter.write(String.valueOf(getColorIndex(styleBackground)));
+		}
+		contentWriter.write("\\cf");
+		contentWriter.write(String.valueOf(getColorIndex(styleForeground)));
+		contentWriter.write(" ");
+
+		contentWriter.write(
+			handleUnicodeText(text)
+			);
+
+		// reset all styles in the paragraph
+		contentWriter.write("\\plain");
+	}
+
+
+	/**
 	 * Replace Unicode characters with RTF Unicode control words
 	 * @param source source text
 	 * @return text with Unicode characters replaced
 	 */
 	private String handleUnicodeText(String sourceText)
 	{
-		StringBuffer unicodeText = new StringBuffer();
+		StringBuilder unicodeText = new StringBuilder();
 		
 		for(int i = 0; i < sourceText.length(); i++ )
 		{
@@ -1049,10 +1083,10 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 	 */
 	public void exportImage(JRPrintImage printImage) throws JRException, IOException
 	{
-		int leftPadding = printImage.getLineBox().getLeftPadding().intValue();
-		int topPadding = printImage.getLineBox().getTopPadding().intValue();
-		int rightPadding = printImage.getLineBox().getRightPadding().intValue();
-		int bottomPadding = printImage.getLineBox().getBottomPadding().intValue();
+		int leftPadding = printImage.getLineBox().getLeftPadding();
+		int topPadding = printImage.getLineBox().getTopPadding();
+		int rightPadding = printImage.getLineBox().getRightPadding();
+		int bottomPadding = printImage.getLineBox().getBottomPadding();
 
 		int availableImageWidth = printImage.getWidth() - leftPadding - rightPadding;
 		availableImageWidth = availableImageWidth < 0 ? 0 : availableImageWidth;
@@ -1060,222 +1094,398 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		int availableImageHeight = printImage.getHeight() - topPadding - bottomPadding;
 		availableImageHeight = availableImageHeight < 0 ? 0 : availableImageHeight;
 
-		Renderable renderer = printImage.getRenderable();
+		Renderable renderer = printImage.getRenderer();
 
 		if (
-			renderer != null &&
-			availableImageWidth > 0 &&
-			availableImageHeight > 0
+			renderer != null 
+			&& availableImageWidth > 0 
+			&& availableImageHeight > 0
 			)
 		{
-			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE)
-			{
-				// Image renderers are all asked for their image data at some point.
-				// Better to test and replace the renderer now, in case of lazy load error.
-				renderer = RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForImageData(renderer, printImage.getOnErrorTypeValue());
-			}
-		}
-		else
-		{
-			renderer = null;
-		}
-
-		if (renderer != null)
-		{
-			if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
-			{
-				renderer =
-					new JRWrappingSvgRenderer(
-						renderer,
-						new Dimension(printImage.getWidth(), printImage.getHeight()),
-						ModeEnum.OPAQUE == printImage.getModeValue() ? printImage.getBackcolor() : null
-						);
-			}
-
-			int normalWidth = availableImageWidth;
-			int normalHeight = availableImageHeight;
-
-			// Image load might fail.
-			Renderable tmpRenderer =
-				RenderableUtil.getInstance(jasperReportsContext).getOnErrorRendererForDimension(renderer, printImage.getOnErrorTypeValue());
-			Dimension2D dimension = tmpRenderer == null ? null : tmpRenderer.getDimension(jasperReportsContext);
-			// If renderer was replaced, ignore image dimension.
-			if (tmpRenderer == renderer && dimension != null)
-			{
-				normalWidth = (int) dimension.getWidth();
-				normalHeight = (int) dimension.getHeight();
-			}
-
-			int imageWidth = 0;
-			int imageHeight = 0;
-			int xoffset = 0;
-			int yoffset = 0;
-			int cropTop = 0;
-			int cropLeft = 0;
-			int cropBottom = 0;
-			int cropRight = 0;
-
-			switch (printImage.getScaleImageValue())
-			{
-				case CLIP:
-				{
-					switch (printImage.getHorizontalAlignmentValue())
-					{
-						case RIGHT :
-						{
-							cropLeft = 65536 * (- availableImageWidth + normalWidth) / availableImageWidth;
-							cropRight = 0;
-							break;
-						}
-						case CENTER :
-						{
-							cropLeft = 65536 * (- availableImageWidth + normalWidth) / availableImageWidth / 2;
-							cropRight = cropLeft;
-							break;
-						}
-						case LEFT :
-						default :
-						{
-							cropLeft = 0;
-							cropRight = 65536 * (- availableImageWidth + normalWidth) / availableImageWidth;
-							break;
-						}
-					}
-					switch (printImage.getVerticalAlignmentValue())
-					{
-						case TOP :
-						{
-							cropTop = 0;
-							cropBottom = 65536 * (- availableImageHeight + normalHeight) / normalHeight;
-							break;
-						}
-						case MIDDLE :
-						{
-							cropTop = 65536 * (- availableImageHeight + normalHeight) / normalHeight / 2;
-							cropBottom = cropTop;
-							break;
-						}
-						case BOTTOM :
-						default :
-						{
-							cropTop = 65536 * (- availableImageHeight + normalHeight) / normalHeight;
-							cropBottom = 0;
-							break;
-						}
-					}
-					imageWidth = availableImageWidth;
-					imageHeight = availableImageHeight;
-					break;
-				}
-				case FILL_FRAME:
-				{
-					normalWidth = availableImageWidth;
-					normalHeight = availableImageHeight;
-					imageWidth = availableImageWidth;
-					imageHeight = availableImageHeight;
-					break;
-				}
-				case RETAIN_SHAPE:
-				default:
-				{
-					if (printImage.getHeight() > 0)
-					{
-						double ratio = (double) normalWidth / (double) normalHeight;
-
-						if (ratio > (double) availableImageWidth / (double) availableImageHeight)
-						{
-							normalWidth = availableImageWidth;
-							normalHeight = (int) (availableImageWidth / ratio);
-						}
-						else
-						{
-							normalWidth = (int) (availableImageHeight * ratio);
-							normalHeight = availableImageHeight;
-						}
-
-						xoffset = (int) (getXAlignFactor(printImage) * (availableImageWidth - normalWidth));
-						yoffset = (int) (getYAlignFactor(printImage) * (availableImageHeight - normalHeight));
-						imageWidth = normalWidth;
-						imageHeight = normalHeight;
-					}
-
-					break;
-				}
-			}
-
-			startElement(printImage);
-			exportPen(printImage.getForecolor());//FIXMEBORDER should we have lineColor here, if at all needed?
-			finishElement();
-			boolean startedHyperlink = exportHyperlink(printImage);
-
-			contentWriter.write("{\\shp{\\*\\shpinst\\shpbxpage\\shpbypage\\shpwr5\\shpfhdr0\\shpfblwtxt0\\shpz");
-			contentWriter.write(String.valueOf(zorder++));
-			contentWriter.write("\\shpleft");
-			contentWriter.write(String.valueOf(LengthUtil.twip(printImage.getX() + leftPadding + xoffset + getOffsetX())));
-			contentWriter.write("\\shpright");
-			contentWriter.write(String.valueOf(LengthUtil.twip(printImage.getX() + leftPadding + xoffset + getOffsetX() + imageWidth)));
-			contentWriter.write("\\shptop");
-			contentWriter.write(String.valueOf(LengthUtil.twip(printImage.getY() + topPadding + yoffset + getOffsetY())));
-			contentWriter.write("\\shpbottom");
-			contentWriter.write(String.valueOf(LengthUtil.twip(printImage.getY() + topPadding + yoffset + getOffsetY() + imageHeight)));
-			contentWriter.write("{\\sp{\\sn shapeType}{\\sv 75}}");
-			contentWriter.write("{\\sp{\\sn fFilled}{\\sv 0}}");
-			contentWriter.write("{\\sp{\\sn fLockAspectRatio}{\\sv 0}}");
-
-			contentWriter.write("{\\sp{\\sn cropFromTop}{\\sv ");
-			contentWriter.write(String.valueOf(cropTop));
-			contentWriter.write("}}");
-			contentWriter.write("{\\sp{\\sn cropFromLeft}{\\sv ");
-			contentWriter.write(String.valueOf(cropLeft));
-			contentWriter.write("}}");
-			contentWriter.write("{\\sp{\\sn cropFromBottom}{\\sv ");
-			contentWriter.write(String.valueOf(cropBottom));
-			contentWriter.write("}}");
-			contentWriter.write("{\\sp{\\sn cropFromRight}{\\sv ");
-			contentWriter.write(String.valueOf(cropRight));
-			contentWriter.write("}}");
+			InternalImageProcessor imageProcessor = 
+				new InternalImageProcessor(
+					printImage, 
+					availableImageWidth,
+					availableImageHeight
+					);
+				
+			InternalImageProcessorResult imageProcessorResult = null;
 			
-			writeShapeHyperlink(printImage);
-
-			if(printImage.getAnchorName() != null)
+			try
 			{
-				writeAnchor(printImage.getAnchorName());
+				imageProcessorResult = imageProcessor.process(renderer);
+			}
+			catch (Exception e)
+			{
+				Renderable onErrorRenderer = getRendererUtil().handleImageError(e, printImage.getOnErrorTypeValue());
+				if (onErrorRenderer != null)
+				{
+					imageProcessorResult = imageProcessor.process(onErrorRenderer);
+				}
 			}
 			
-			contentWriter.write("{\\sp{\\sn pib}{\\sv {\\pict");
-			if (renderer.getImageTypeValue() == ImageTypeEnum.JPEG)
+			if (imageProcessorResult != null)//FIXMERTF draw image background for null images, like the other exporters do
 			{
-				contentWriter.write("\\jpegblip");
-			}
-			else
-			{
-				contentWriter.write("\\pngblip");
-			}
-			contentWriter.write("\n");
+				int imageWidth = 0;
+				int imageHeight = 0;
+				int xoffset = 0;
+				int yoffset = 0;
+				float cropTop = 0;
+				float cropLeft = 0;
+				float cropBottom = 0;
+				float cropRight = 0;
+				int angle = 0;
 
-			ByteArrayInputStream bais = new ByteArrayInputStream(renderer.getImageData(jasperReportsContext));
-
-			int count = 0;
-			int current = 0;
-			while ((current = bais.read()) != -1)
-			{
-				String helperStr = Integer.toHexString(current);
-				if (helperStr.length() < 2)
+				switch (printImage.getScaleImageValue())
 				{
-					helperStr = "0" + helperStr;
-				}
-				contentWriter.write(helperStr);
-				count++;
-				if (count == 64)
-				{
-					contentWriter.write("\n");
-					count = 0;
-				}
-			}
+					case CLIP:
+					{
+						float normalWidth = availableImageWidth;
+						float normalHeight = availableImageHeight;
 
-			contentWriter.write("\n}}}");
-			contentWriter.write("}}\n");
-			endHyperlink(startedHyperlink);
+						Dimension2D dimension = imageProcessorResult.dimension;
+						if (dimension != null)
+						{
+							normalWidth = (int) dimension.getWidth();
+							normalHeight = (int) dimension.getHeight();
+						}
+
+						switch (printImage.getRotation())
+						{
+							case LEFT:
+								if (dimension == null)
+								{
+									normalWidth = availableImageHeight;
+									normalHeight = availableImageWidth;
+								}
+								switch (printImage.getHorizontalImageAlign())
+								{
+									case RIGHT :
+										cropLeft = (- availableImageHeight + normalWidth) / normalWidth;
+										cropRight = 0;
+										break;
+									case CENTER :
+										cropLeft = (- availableImageHeight + normalWidth) / normalWidth / 2;
+										cropRight = cropLeft;
+										break;
+									case LEFT :
+									default :
+										cropLeft = 0;
+										cropRight = (- availableImageHeight + normalWidth) / normalWidth;
+										break;
+								}
+								switch (printImage.getVerticalImageAlign())
+								{
+									case TOP :
+										cropTop = 0;
+										cropBottom = (- availableImageWidth + normalHeight) / normalHeight;
+										break;
+									case MIDDLE :
+										cropTop = (- availableImageWidth + normalHeight) / normalHeight / 2;
+										cropBottom = cropTop;
+										break;
+									case BOTTOM :
+									default :
+										cropTop = (- availableImageWidth + normalHeight) / normalHeight;
+										cropBottom = 0;
+										break;
+								}
+								angle = -90;
+								break;
+							case RIGHT:
+								if (dimension == null)
+								{
+									normalWidth = availableImageHeight;
+									normalHeight = availableImageWidth;
+								}
+								switch (printImage.getHorizontalImageAlign())
+								{
+									case RIGHT :
+										cropLeft = (- availableImageHeight + normalWidth) / normalWidth;
+										cropRight = 0;
+										break;
+									case CENTER :
+										cropLeft = (- availableImageHeight + normalWidth) / normalWidth / 2;
+										cropRight = cropLeft;
+										break;
+									case LEFT :
+									default :
+										cropLeft = 0;
+										cropRight = (- availableImageHeight + normalWidth) / normalWidth;
+										break;
+								}
+								switch (printImage.getVerticalImageAlign())
+								{
+									case TOP :
+										cropTop = 0;
+										cropBottom = (- availableImageWidth + normalHeight) / normalHeight;
+										break;
+									case MIDDLE :
+										cropTop = (- availableImageWidth + normalHeight) / normalHeight / 2;
+										cropBottom = cropTop;
+										break;
+									case BOTTOM :
+									default :
+										cropTop = (- availableImageWidth + normalHeight) / normalHeight;
+										cropBottom = 0;
+										break;
+								}
+								angle = 90;
+								break;
+							case UPSIDE_DOWN:
+								switch (printImage.getHorizontalImageAlign())
+								{
+									case RIGHT :
+										cropLeft = (- availableImageWidth + normalWidth) / normalWidth;
+										cropRight = 0;
+										break;
+									case CENTER :
+										cropLeft = (- availableImageWidth + normalWidth) / normalWidth / 2;
+										cropRight = cropLeft;
+										break;
+									case LEFT :
+									default :
+										cropLeft = 0;
+										cropRight = (- availableImageWidth + normalWidth) / normalWidth;
+										break;
+								}
+								switch (printImage.getVerticalImageAlign())
+								{
+									case TOP :
+										cropTop = 0;
+										cropBottom = (- availableImageHeight + normalHeight) / normalHeight;
+										break;
+									case MIDDLE :
+										cropTop = (- availableImageHeight + normalHeight) / normalHeight / 2;
+										cropBottom = cropTop;
+										break;
+									case BOTTOM :
+									default :
+										cropTop = (- availableImageHeight + normalHeight) / normalHeight;
+										cropBottom = 0;
+										break;
+								}
+								angle = 180;
+								break;
+							case NONE:
+							default:
+								switch (printImage.getHorizontalImageAlign())
+								{
+									case RIGHT :
+										cropLeft = (- availableImageWidth + normalWidth) / normalWidth;
+										cropRight = 0;
+										break;
+									case CENTER :
+										cropLeft = (- availableImageWidth + normalWidth) / normalWidth / 2;
+										cropRight = cropLeft;
+										break;
+									case LEFT :
+									default :
+										cropLeft = 0;
+										cropRight = (- availableImageWidth + normalWidth) / normalWidth;
+										break;
+								}
+								switch (printImage.getVerticalImageAlign())
+								{
+									case TOP :
+										cropTop = 0;
+										cropBottom = (- availableImageHeight + normalHeight) / normalHeight;
+										break;
+									case MIDDLE :
+										cropTop = (- availableImageHeight + normalHeight) / normalHeight / 2;
+										cropBottom = cropTop;
+										break;
+									case BOTTOM :
+									default :
+										cropTop = (- availableImageHeight + normalHeight) / normalHeight;
+										cropBottom = 0;
+										break;
+								}
+								angle = 0;
+								break;
+						}
+
+						imageWidth = availableImageWidth;
+						imageHeight = availableImageHeight;
+
+						break;
+					}
+					case FILL_FRAME:
+					{
+						imageWidth = availableImageWidth;
+						imageHeight = availableImageHeight;
+						switch (printImage.getRotation())
+						{
+							case LEFT:
+								angle = -90;
+								break;
+							case RIGHT:
+								angle = 90;
+								break;
+							case UPSIDE_DOWN:
+								angle = 180;
+								break;
+							case NONE:
+							default:
+								angle = 0;
+								break;
+						}
+						break;
+					}
+					case RETAIN_SHAPE:
+					default:
+					{
+						float normalWidth = availableImageWidth;
+						float normalHeight = availableImageHeight;
+
+						Dimension2D dimension = imageProcessorResult.dimension;
+						if (dimension != null)
+						{
+							normalWidth = (int) dimension.getWidth();
+							normalHeight = (int) dimension.getHeight();
+						}
+
+						float ratioX = 1f;
+						float ratioY = 1f;
+
+						switch (printImage.getRotation())
+						{
+							case LEFT:
+								if (dimension == null)
+								{
+									normalWidth = availableImageHeight;
+									normalHeight = availableImageWidth;
+								}
+								ratioX = availableImageWidth / normalHeight;
+								ratioY = availableImageHeight / normalWidth;
+								ratioX = ratioX < ratioY ? ratioX : ratioY;
+								ratioY = ratioX;
+								imageWidth = (int)(normalHeight * ratioX);
+								imageHeight = (int)(normalWidth * ratioY);
+								xoffset = (int) (ImageUtil.getYAlignFactor(printImage) * (availableImageWidth - imageWidth));
+								yoffset = (int) ((1f - ImageUtil.getXAlignFactor(printImage)) * (availableImageHeight - imageHeight));
+								angle = -90;
+								break;
+							case RIGHT:
+								if (dimension == null)
+								{
+									normalWidth = availableImageHeight;
+									normalHeight = availableImageWidth;
+								}
+								ratioX = availableImageWidth / normalHeight;
+								ratioY = availableImageHeight / normalWidth;
+								ratioX = ratioX < ratioY ? ratioX : ratioY;
+								ratioY = ratioX;
+								imageWidth = (int)(normalHeight * ratioX);
+								imageHeight = (int)(normalWidth * ratioY);
+								xoffset = (int) ((1f - ImageUtil.getYAlignFactor(printImage)) * (availableImageWidth - imageWidth));
+								yoffset = (int) (ImageUtil.getXAlignFactor(printImage) * (availableImageHeight - imageHeight));
+								angle = 90;
+								break;
+							case UPSIDE_DOWN:
+								ratioX = availableImageWidth / normalWidth;
+								ratioY = availableImageHeight / normalHeight;
+								ratioX = ratioX < ratioY ? ratioX : ratioY;
+								ratioY = ratioX;
+								imageWidth = (int)(normalWidth * ratioX);
+								imageHeight = (int)(normalHeight * ratioY);
+								xoffset = (int) ((1f - ImageUtil.getXAlignFactor(printImage)) * (availableImageWidth - imageWidth));
+								yoffset = (int) ((1f - ImageUtil.getYAlignFactor(printImage)) * (availableImageHeight - imageHeight));
+								angle = 180;
+								break;
+							case NONE:
+							default:
+								ratioX = availableImageWidth / normalWidth;
+								ratioY = availableImageHeight / normalHeight;
+								ratioX = ratioX < ratioY ? ratioX : ratioY;
+								ratioY = ratioX;
+								imageWidth = (int)(normalWidth * ratioX);
+								imageHeight = (int)(normalHeight * ratioY);
+								xoffset = (int) (ImageUtil.getXAlignFactor(printImage) * (availableImageWidth - imageWidth));
+								yoffset = (int) (ImageUtil.getYAlignFactor(printImage) * (availableImageHeight - imageHeight));
+								angle = 0;
+								break;
+						}
+
+						break;
+					}
+				}
+
+				startElement(printImage);
+				exportPen(printImage.getForecolor());//FIXMEBORDER should we have lineColor here, if at all needed?
+				finishElement();
+				boolean startedHyperlink = exportHyperlink(printImage);
+
+				contentWriter.write("{\\shp{\\*\\shpinst\\shpbxpage\\shpbypage\\shpwr5\\shpfhdr0\\shpfblwtxt0\\shpz");
+				contentWriter.write(String.valueOf(zorder++));
+				contentWriter.write("\\shpleft");
+				contentWriter.write(String.valueOf(LengthUtil.twip(printImage.getX() + leftPadding + xoffset + getOffsetX())));
+				contentWriter.write("\\shpright");
+				contentWriter.write(String.valueOf(LengthUtil.twip(printImage.getX() + leftPadding + xoffset + getOffsetX() + imageWidth)));
+				contentWriter.write("\\shptop");
+				contentWriter.write(String.valueOf(LengthUtil.twip(printImage.getY() + topPadding + yoffset + getOffsetY())));
+				contentWriter.write("\\shpbottom");
+				contentWriter.write(String.valueOf(LengthUtil.twip(printImage.getY() + topPadding + yoffset + getOffsetY() + imageHeight)));
+				contentWriter.write("{\\sp{\\sn shapeType}{\\sv 75}}");
+				contentWriter.write("{\\sp{\\sn fFilled}{\\sv 0}}");
+				contentWriter.write("{\\sp{\\sn Rotation}{\\sv " + (65536 * angle) + "}}");
+				contentWriter.write("{\\sp{\\sn fLockAspectRatio}{\\sv 0}}");
+
+				contentWriter.write("{\\sp{\\sn cropFromTop}{\\sv ");
+				contentWriter.write(String.valueOf((int)(65536 * cropTop)));
+				contentWriter.write("}}");
+				contentWriter.write("{\\sp{\\sn cropFromLeft}{\\sv ");
+				contentWriter.write(String.valueOf((int)(65536 * cropLeft)));
+				contentWriter.write("}}");
+				contentWriter.write("{\\sp{\\sn cropFromBottom}{\\sv ");
+				contentWriter.write(String.valueOf((int)(65536 * cropBottom)));
+				contentWriter.write("}}");
+				contentWriter.write("{\\sp{\\sn cropFromRight}{\\sv ");
+				contentWriter.write(String.valueOf((int)(65536 * cropRight)));
+				contentWriter.write("}}");
+				
+				writeShapeHyperlink(printImage);
+
+				if(printImage.getAnchorName() != null)
+				{
+					writeAnchor(printImage.getAnchorName());
+				}
+				
+				contentWriter.write("{\\sp{\\sn pib}{\\sv {\\pict");
+				if (imageProcessorResult.imageType == ImageTypeEnum.JPEG)
+				{
+					contentWriter.write("\\jpegblip");
+				}
+				else
+				{
+					contentWriter.write("\\pngblip");
+				}
+				contentWriter.write("\n");
+
+				ByteArrayInputStream bais = new ByteArrayInputStream(imageProcessorResult.imageData);
+
+				int count = 0;
+				int current = 0;
+				while ((current = bais.read()) != -1)
+				{
+					String helperStr = Integer.toHexString(current);
+					if (helperStr.length() < 2)
+					{
+						helperStr = "0" + helperStr;
+					}
+					contentWriter.write(helperStr);
+					count++;
+					if (count == 64)
+					{
+						contentWriter.write("\n");
+						count = 0;
+					}
+				}
+
+				contentWriter.write("\n}}}");
+				contentWriter.write("}}\n");
+				endHyperlink(startedHyperlink);
+			}
 		}
 
 		int x = printImage.getX() + getOffsetX();
@@ -1284,13 +1494,13 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		int height = printImage.getHeight();
 
 		if (
-			printImage.getLineBox().getTopPen().getLineWidth().floatValue() <= 0f &&
-			printImage.getLineBox().getLeftPen().getLineWidth().floatValue() <= 0f &&
-			printImage.getLineBox().getBottomPen().getLineWidth().floatValue() <= 0f &&
-			printImage.getLineBox().getRightPen().getLineWidth().floatValue() <= 0f
+			printImage.getLineBox().getTopPen().getLineWidth() <= 0f &&
+			printImage.getLineBox().getLeftPen().getLineWidth() <= 0f &&
+			printImage.getLineBox().getBottomPen().getLineWidth() <= 0f &&
+			printImage.getLineBox().getRightPen().getLineWidth() <= 0f
 			)
 		{
-			if (printImage.getLinePen().getLineWidth().floatValue() > 0f)
+			if (printImage.getLinePen().getLineWidth() > 0f)
 			{
 				exportPen(printImage.getLinePen(), x, y, width, height);
 			}
@@ -1298,6 +1508,85 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		else
 		{
 			exportBox(printImage.getLineBox(), x, y, width, height);
+		}
+	}
+
+	private class InternalImageProcessor
+	{
+		private final JRPrintElement imageElement;
+		private final RenderersCache imageRenderersCache;
+		private final boolean needDimension; 
+		private final int availableImageWidth; 
+		private final int availableImageHeight; 
+
+		protected InternalImageProcessor(
+			JRPrintImage imageElement,
+			int availableImageWidth,
+			int availableImageHeight
+			)
+		{
+			this.imageElement = imageElement;
+			this.imageRenderersCache = imageElement.isUsingCache() ? renderersCache : new RenderersCache(getJasperReportsContext());
+			this.needDimension = imageElement.getScaleImageValue() != ScaleImageEnum.FILL_FRAME;
+			if (
+				imageElement.getRotation() == RotationEnum.LEFT
+				|| imageElement.getRotation() == RotationEnum.RIGHT
+				)
+			{
+				this.availableImageWidth = availableImageHeight;
+				this.availableImageHeight = availableImageWidth;
+			}
+			else
+			{
+				this.availableImageWidth = availableImageWidth;
+				this.availableImageHeight = availableImageHeight;
+			}
+		}
+		
+		private InternalImageProcessorResult process(Renderable renderer) throws JRException
+		{
+			if (renderer instanceof ResourceRenderer)
+			{
+				renderer = imageRenderersCache.getLoadedRenderer((ResourceRenderer)renderer);
+			}
+			
+			Dimension2D dimension = null;
+			if (needDimension)
+			{
+				DimensionRenderable dimensionRenderer = imageRenderersCache.getDimensionRenderable(renderer);
+				dimension = dimensionRenderer == null ? null :  dimensionRenderer.getDimension(jasperReportsContext);
+			}
+			
+			DataRenderable imageRenderer = 
+				getRendererUtil().getImageDataRenderable(
+					imageRenderersCache,
+					renderer,
+					new Dimension(availableImageWidth, availableImageHeight),
+					ModeEnum.OPAQUE == imageElement.getModeValue() ? imageElement.getBackcolor() : null
+					);
+
+			byte[] imageData = imageRenderer.getData(jasperReportsContext);
+			
+			return 
+				new InternalImageProcessorResult(
+					imageData, 
+					dimension, 
+					JRTypeSniffer.getImageTypeValue(imageData)
+					);
+		}
+	}
+
+	private class InternalImageProcessorResult
+	{
+		protected final byte[] imageData;
+		protected final Dimension2D dimension;
+		protected final ImageTypeEnum imageType;
+		
+		protected InternalImageProcessorResult(byte[] imageData, Dimension2D dimension, ImageTypeEnum imageType)
+		{
+			this.imageData = imageData;
+			this.dimension = dimension;
+			this.imageType = imageType;
 		}
 	}
 
@@ -1392,13 +1681,13 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		int height
 		) throws IOException
 	{
-		if (topPen.getLineWidth().floatValue() > 0f) 
+		if (topPen.getLineWidth() > 0f) 
 		{
 			exportBorder(
 				topPen, 
-				x - leftPen.getLineWidth().floatValue() / 2, 
+				x - leftPen.getLineWidth() / 2, 
 				y, 
-				width + (leftPen.getLineWidth().floatValue() + rightPen.getLineWidth().floatValue()) / 2, 
+				width + (leftPen.getLineWidth() + rightPen.getLineWidth()) / 2, 
 				0
 				);
 			//exportBorder(topPen, x, y + getAdjustment(topPen), width, 0);
@@ -1418,14 +1707,14 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		int height
 		) throws IOException
 	{
-		if (leftPen.getLineWidth().floatValue() > 0f) 
+		if (leftPen.getLineWidth() > 0f) 
 		{
 			exportBorder(
 				leftPen, 
 				x, 
-				y - topPen.getLineWidth().floatValue() / 2, 
+				y - topPen.getLineWidth() / 2, 
 				0, 
-				height + (topPen.getLineWidth().floatValue() + bottomPen.getLineWidth().floatValue()) / 2
+				height + (topPen.getLineWidth() + bottomPen.getLineWidth()) / 2
 				);
 			//exportBorder(leftPen, x + getAdjustment(leftPen), y, 0, height);
 		}
@@ -1444,13 +1733,13 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		int height
 		) throws IOException
 	{
-		if (bottomPen.getLineWidth().floatValue() > 0f) 
+		if (bottomPen.getLineWidth() > 0f) 
 		{
 			exportBorder(
 				bottomPen, 
-				x - leftPen.getLineWidth().floatValue() / 2, 
+				x - leftPen.getLineWidth() / 2, 
 				y + height, 
-				width + (leftPen.getLineWidth().floatValue() + rightPen.getLineWidth().floatValue()) / 2, 
+				width + (leftPen.getLineWidth() + rightPen.getLineWidth()) / 2, 
 				0
 				);
 			//exportBorder(bottomPen, x, y + height - getAdjustment(bottomPen), width, 0);
@@ -1470,14 +1759,14 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		int height
 		) throws IOException
 	{
-		if (rightPen.getLineWidth().floatValue() > 0f) 
+		if (rightPen.getLineWidth() > 0f) 
 		{
 			exportBorder(
 				rightPen, 
 				x + width, 
-				y - topPen.getLineWidth().floatValue() / 2, 
+				y - topPen.getLineWidth() / 2, 
 				0, 
-				height + (topPen.getLineWidth().floatValue() + bottomPen.getLineWidth().floatValue()) / 2
+				height + (topPen.getLineWidth() + bottomPen.getLineWidth()) / 2
 				);
 			//exportBorder(rightPen, x + width - getAdjustment(rightPen), y, 0, height);
 		}
@@ -1718,67 +2007,13 @@ public class JRRtfExporter extends JRAbstractExporter<RtfReportConfiguration, Rt
 		contentWriter.write("}");
 	}
 
-	private float getXAlignFactor(JRPrintImage image)
-	{
-		float xalignFactor = 0f;
-		switch (image.getHorizontalAlignmentValue())
-		{
-			case RIGHT :
-			{
-				xalignFactor = 1f;
-				break;
-			}
-			case CENTER :
-			{
-				xalignFactor = 0.5f;
-				break;
-			}
-			case LEFT :
-			default :
-			{
-				xalignFactor = 0f;
-				break;
-			}
-		}
-		return xalignFactor;
-	}
-
-	private float getYAlignFactor(JRPrintImage image)
-	{
-		float yalignFactor = 0f;
-		switch (image.getVerticalAlignmentValue())
-		{
-			case BOTTOM :
-			{
-				yalignFactor = 1f;
-				break;
-			}
-			case MIDDLE :
-			{
-				yalignFactor = 0.5f;
-				break;
-			}
-			case TOP :
-			default :
-			{
-				yalignFactor = 0f;
-				break;
-			}
-		}
-		return yalignFactor;
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public String getExporterKey()
 	{
 		return RTF_EXPORTER_KEY;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getExporterPropertiesPrefix()
 	{
 		return RTF_EXPORTER_PROPERTIES_PREFIX;

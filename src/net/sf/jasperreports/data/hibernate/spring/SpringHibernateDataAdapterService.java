@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,19 +27,17 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.StringTokenizer;
 
-import net.sf.jasperreports.data.AbstractDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.query.JRHibernateQueryExecuterFactory;
-import net.sf.jasperreports.engine.util.JRClassLoader;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import net.sf.jasperreports.data.AbstractDataAdapterService;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.ParameterContributorContext;
+import net.sf.jasperreports.engine.query.JRHibernateQueryExecuterFactory;
+import net.sf.jasperreports.engine.util.JRClassLoader;
+
 /**
- * @author Veaceslov Chicu (schicu@users.sourceforge.net)
- * @version $Id: SpringHibernateDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Veaceslav Chicu (schicu@users.sourceforge.net)
  */
 public class SpringHibernateDataAdapterService extends
 		AbstractDataAdapterService {
@@ -50,17 +48,9 @@ public class SpringHibernateDataAdapterService extends
 	/**
 	 * 
 	 */
-	public SpringHibernateDataAdapterService(JasperReportsContext jasperReportsContext, SpringHibernateDataAdapter jsonDataAdapter) 
+	public SpringHibernateDataAdapterService(ParameterContributorContext paramContribContext, SpringHibernateDataAdapter jsonDataAdapter) 
 	{
-		super(jasperReportsContext, jsonDataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #SpringHibernateDataAdapterService(JasperReportsContext, SpringHibernateDataAdapter)}.
-	 */
-	public SpringHibernateDataAdapterService(SpringHibernateDataAdapter jsonDataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), jsonDataAdapter);
+		super(paramContribContext, jsonDataAdapter);
 	}
 
 	public SpringHibernateDataAdapter getHibernateDataAdapter() {
@@ -84,7 +74,7 @@ public class SpringHibernateDataAdapterService extends
 						configs[iCount++] = parser.nextToken();
 					}
 					Object configure = clazz.getConstructor(String[].class)
-							.newInstance(configs);
+							.newInstance((Object) configs);
 					if (configure != null) {
 						Object bsf = clazz.getMethod("getBean", String.class)
 								.invoke(configure, hbmDA.getBeanId());
@@ -100,19 +90,8 @@ public class SpringHibernateDataAdapterService extends
 										session);
 					}
 				}
-			} catch (ClassNotFoundException e) {
-				throw new JRException(e);
-			} catch (InstantiationException e) {
-				throw new JRException(e);
-			} catch (IllegalAccessException e) {
-				throw new JRException(e);
-			} catch (IllegalArgumentException e) {
-				throw new JRException(e);
-			} catch (SecurityException e) {
-				throw new JRException(e);
-			} catch (InvocationTargetException e) {
-				throw new JRException(e);
-			} catch (NoSuchMethodException e) {
+			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException 
+					| IllegalArgumentException | SecurityException | InvocationTargetException | NoSuchMethodException e) {
 				throw new JRException(e);
 			}
 		}

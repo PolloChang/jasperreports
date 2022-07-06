@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,24 +23,27 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRException;
+import org.apache.commons.collections4.map.ReferenceMap;
 
-import org.apache.commons.collections.map.ReferenceMap;
+import net.sf.jasperreports.engine.JRException;
 
 
 /**
  * Utility to use as a soft cache of singleton instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSingletonCache.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRSingletonCache<T>
 {
 	private static final Object CONTEXT_KEY_NULL = new Object();
+	public static final String EXCEPTION_MESSAGE_KEY_CLASS_NOT_COMPATIBLE = "util.singleton.cache.class.not.compatible";
+	public static final String EXCEPTION_MESSAGE_KEY_CLASS_NOT_FOUND = "util.singleton.cache.class.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_INSTANCE_ERROR = "util.singleton.cache.instance.error";
 	
-	private final ReferenceMap cache;
+	private final ReferenceMap<Object, Map<String,T>> cache;
 	private final Class<T> itf;
 
 	/**
@@ -50,7 +53,7 @@ public class JRSingletonCache<T>
 	 */
 	public JRSingletonCache(Class<T> itf)
 	{
-		cache = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.SOFT);
+		cache = new ReferenceMap<>(ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.SOFT);
 		this.itf = itf;
 	}
 
@@ -85,33 +88,40 @@ public class JRSingletonCache<T>
 			Class<? extends T> clazz = (Class<? extends T>) JRClassLoader.loadClassForName(className);
 			if (itf != null && !itf.isAssignableFrom(clazz))
 			{
-				throw new JRException("Class \"" + className + "\" should be compatible with \"" + itf.getName() + "\"");
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_CLASS_NOT_COMPATIBLE,
+						new Object[]{className, itf.getName()});
 			}
 
-			return clazz.newInstance();
+			return clazz.getDeclaredConstructor().newInstance();
 		}
 		catch (ClassNotFoundException e)
 		{
-			throw new JRException("Class " + className + " not found.", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_CLASS_NOT_FOUND,
+					new Object[]{className},
+					e);
 		}
-		catch (InstantiationException e)
+		catch (InstantiationException | IllegalAccessException 
+			| NoSuchMethodException | InvocationTargetException e)
 		{
-			throw new JRException("Error instantiating class " + className + ".", e);
-		}
-		catch (IllegalAccessException e)
-		{
-			throw new JRException("Error instantiating class " + className + ".", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_INSTANCE_ERROR,
+					new Object[]{className},
+					e);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	protected Map<String,T> getContextInstanceCache()
 	{
 		Object contextKey = getContextKey();
-		Map<String,T> contextCache = (Map<String,T>) cache.get(contextKey);
+		Map<String,T> contextCache = cache.get(contextKey);
 		if (contextCache == null)
 		{
-			contextCache = new ReferenceMap();
+			contextCache = new ReferenceMap<>();
 			cache.put(contextKey, contextCache);
 		}
 		return contextCache;

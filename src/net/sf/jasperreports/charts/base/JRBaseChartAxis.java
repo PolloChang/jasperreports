@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,12 +33,12 @@ import net.sf.jasperreports.engine.JRChart;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
+import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * Base read-only implementation of {@link JRChartAxis JRChartAxis}.
  *
  * @author Barry Klawans (barry@users.sourceforge.net)
- * @version $Id: JRBaseChartAxis.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseChartAxis implements JRChartAxis, Serializable
 {
@@ -75,6 +75,7 @@ public class JRBaseChartAxis implements JRChartAxis, Serializable
 	 *
 	 * @return the position of this axis
 	 */
+	@Override
 	public AxisPositionEnum getPositionValue()
 	{
 		return positionValue;
@@ -87,14 +88,13 @@ public class JRBaseChartAxis implements JRChartAxis, Serializable
 	 *
 	 * @return the chart that contains the dataset and plot for this axis
 	 */
+	@Override
 	public JRChart getChart()
 	{
 		return chart;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseChartAxis clone = null;
@@ -108,6 +108,8 @@ public class JRBaseChartAxis implements JRChartAxis, Serializable
 			throw new JRRuntimeException(e);
 		}
 		
+		clone.chart = JRCloneUtils.nullSafeClone(chart);
+		
 		return clone;
 	}
 
@@ -115,7 +117,6 @@ public class JRBaseChartAxis implements JRChartAxis, Serializable
 	public JRChartAxis clone(JRChart parentChart)
 	{
 		JRBaseChartAxis clone = (JRBaseChartAxis) clone();
-		clone.chart = parentChart;
 		return clone;
 	}
 	
@@ -132,6 +133,7 @@ public class JRBaseChartAxis implements JRChartAxis, Serializable
 	 */
 	private Byte positionByte;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

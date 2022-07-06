@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,8 +23,10 @@
  */
 package net.sf.jasperreports.crosstabs.fill;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,17 +37,18 @@ import net.sf.jasperreports.engine.fill.JRCalculable;
  * Factory for percentage calculators.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPercentageCalculatorFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRPercentageCalculatorFactory
 {
+	public static final String EXCEPTION_MESSAGE_KEY_PERCENTAGE_CALCULATOR_INSTANCE_ERROR = "crosstabs.percentage.calculator.instance.error";
+	
 	private static final Map<String, JRPercentageCalculator> builtInCalculators;
 
 	private static final Map<String, JRPercentageCalculator> cachedCalculators;
 
 	static
 	{
-		builtInCalculators = new HashMap<String, JRPercentageCalculator>();
+		builtInCalculators = new HashMap<>();
 		builtInCalculators.put(Float.class.getName(), new FloatPercentageCalculator());
 		builtInCalculators.put(Double.class.getName(), new DoublePercentageCalculator());
 		builtInCalculators.put(Integer.class.getName(), new IntegerPercentageCalculator());
@@ -55,7 +58,7 @@ public final class JRPercentageCalculatorFactory
 		builtInCalculators.put(BigDecimal.class.getName(), new BigDecimalPercentageCalculator());
 		builtInCalculators.put(BigInteger.class.getName(), new BigIntegerPercentageCalculator());
 
-		cachedCalculators = new HashMap<String, JRPercentageCalculator>();
+		cachedCalculators = new HashMap<>();
 	}
 
 	
@@ -83,6 +86,8 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static JRPercentageCalculator getPercentageCalculator(Class<?> percentageCalculatorClass, Class<?> valueClass)
 	{
+		final String EXCEPTION_MESSAGE_KEY_PERCENTAGE_CALCULATOR_CLASS_NOT_SPECIFIED = "crosstabs.percentage.calculator.class.not.specified";
+
 		JRPercentageCalculator calculator;
 
 		if (percentageCalculatorClass == null)
@@ -90,7 +95,10 @@ public final class JRPercentageCalculatorFactory
 			calculator = builtInCalculators.get(valueClass.getName());
 			if (calculator == null)
 			{
-				throw new JRRuntimeException("Measure with type " + valueClass.getName() + " should specify a percentage calculator class.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_PERCENTAGE_CALCULATOR_CLASS_NOT_SPECIFIED,
+						new Object[]{valueClass.getName()});
 			}
 		}
 		else
@@ -101,16 +109,17 @@ public final class JRPercentageCalculatorFactory
 			{
 				try
 				{
-					calculator = (JRPercentageCalculator) percentageCalculatorClass.newInstance();
+					calculator = (JRPercentageCalculator) percentageCalculatorClass.getDeclaredConstructor().newInstance();
 					cachedCalculators.put(percentageCalculatorClass.getName(), calculator);
 				}
-				catch (InstantiationException e)
+				catch (InstantiationException | IllegalAccessException 
+					| NoSuchMethodException | InvocationTargetException e)
 				{
-					throw new JRRuntimeException("Error while creating percentage calculator instance of " + percentageCalculatorClass + ".", e);
-				}
-				catch (IllegalAccessException e)
-				{
-					throw new JRRuntimeException("Error while creating percentage calculator instance of " + percentageCalculatorClass + ".", e);
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_PERCENTAGE_CALCULATOR_INSTANCE_ERROR,
+							new Object[]{percentageCalculatorClass},
+							e);
 				}
 			}
 		}
@@ -124,17 +133,18 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static class BytePercentageCalculator implements JRPercentageCalculator
 	{
+		@Override
 		public Object calculatePercentage(JRCalculable value, JRCalculable total)
 		{
 			Byte totalVal = (Byte) total.getValue();
 			Byte val = (Byte) value.getValue();
 			byte percentage = 0;
-			if (totalVal != null && totalVal.byteValue() != 0)
+			if (totalVal != null && totalVal != 0)
 			{
-				percentage = (byte) (100 * val.byteValue() / totalVal.byteValue());
+				percentage = (byte) (100 * val / totalVal);
 			}
 
-			return new Byte(percentage);
+			return percentage;
 		}
 	}
 
@@ -144,17 +154,18 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static class ShortPercentageCalculator implements JRPercentageCalculator
 	{
+		@Override
 		public Object calculatePercentage(JRCalculable value, JRCalculable total)
 		{
 			Short totalVal = (Short) total.getValue();
 			Short val = (Short) value.getValue();
 			short percentage = 0;
-			if (totalVal != null && totalVal.shortValue() != 0)
+			if (totalVal != null && totalVal != 0)
 			{
-				percentage = (short) (100 * val.shortValue() / totalVal.shortValue());
+				percentage = (short) (100 * val / totalVal);
 			}
 
-			return new Short(percentage);
+			return percentage;
 		}
 	}
 
@@ -164,17 +175,18 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static class IntegerPercentageCalculator implements JRPercentageCalculator
 	{
+		@Override
 		public Object calculatePercentage(JRCalculable value, JRCalculable total)
 		{
 			Integer totalVal = (Integer) total.getValue();
 			Integer val = (Integer) value.getValue();
 			int percentage = 0;
-			if (totalVal != null && totalVal.intValue() != 0)
+			if (totalVal != null && totalVal != 0)
 			{
-				percentage = 100 * val.intValue() / totalVal.intValue();
+				percentage = 100 * val / totalVal;
 			}
 
-			return Integer.valueOf(percentage);
+			return percentage;
 		}
 	}
 
@@ -184,17 +196,18 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static class LongPercentageCalculator implements JRPercentageCalculator
 	{
+		@Override
 		public Object calculatePercentage(JRCalculable value, JRCalculable total)
 		{
 			Long totalVal = (Long) total.getValue();
 			Long val = (Long) value.getValue();
 			long percentage = 0L;
-			if (totalVal != null && totalVal.longValue() != 0)
+			if (totalVal != null && totalVal != 0)
 			{
-				percentage = 100L * val.longValue() / totalVal.longValue();
+				percentage = 100L * val / totalVal;
 			}
 
-			return new Long(percentage);
+			return percentage;
 		}
 	}
 
@@ -204,17 +217,18 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static class FloatPercentageCalculator implements JRPercentageCalculator
 	{
+		@Override
 		public Object calculatePercentage(JRCalculable value, JRCalculable total)
 		{
 			Float totalVal = (Float) total.getValue();
 			Float val = (Float) value.getValue();
 			float percentage = 0f;
-			if (totalVal != null && totalVal.floatValue() != 0)
+			if (totalVal != null && totalVal != 0)
 			{
-				percentage = 100f * val.floatValue() / totalVal.floatValue();
+				percentage = 100f * val / totalVal;
 			}
 
-			return new Float(percentage);
+			return percentage;
 		}
 	}
 
@@ -223,17 +237,18 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static class DoublePercentageCalculator implements JRPercentageCalculator
 	{
+		@Override
 		public Object calculatePercentage(JRCalculable value, JRCalculable total)
 		{
 			Double totalVal = (Double) total.getValue();
 			Double val = (Double) value.getValue();
 			double percentage = 0d;
-			if (totalVal != null && totalVal.doubleValue() != 0)
+			if (totalVal != null && totalVal != 0)
 			{
-				percentage = 100d * val.doubleValue() / totalVal.doubleValue();
+				percentage = 100d * val / totalVal;
 			}
 
-			return new Double(percentage);
+			return percentage;
 		}
 	}
 
@@ -243,6 +258,7 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static class BigDecimalPercentageCalculator implements JRPercentageCalculator
 	{
+		@Override
 		public Object calculatePercentage(JRCalculable value, JRCalculable total)
 		{
 			BigDecimal totalVal = (BigDecimal) total.getValue();
@@ -250,7 +266,7 @@ public final class JRPercentageCalculatorFactory
 			BigDecimal percentage;
 			if (totalVal != null && totalVal.doubleValue() != 0)
 			{
-				percentage = val.multiply(BigDecimal.valueOf(100L)).divide(totalVal, BigDecimal.ROUND_HALF_UP);
+				percentage = val.multiply(BigDecimal.valueOf(100L)).divide(totalVal, RoundingMode.HALF_UP);
 			}
 			else
 			{
@@ -267,6 +283,7 @@ public final class JRPercentageCalculatorFactory
 	 */
 	public static class BigIntegerPercentageCalculator implements JRPercentageCalculator
 	{
+		@Override
 		public Object calculatePercentage(JRCalculable value, JRCalculable total)
 		{
 			BigInteger totalVal = (BigInteger) total.getValue();

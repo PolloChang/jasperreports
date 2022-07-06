@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,18 +23,16 @@
  */
 package net.sf.jasperreports.charts.type;
 
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.type.EnumUtil;
-import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
 
 import org.jfree.chart.plot.PlotOrientation;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: PlotOrientationEnum.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
-public enum PlotOrientationEnum implements JREnum
+public enum PlotOrientationEnum implements NamedEnum
 {
 	/**
 	 *
@@ -50,7 +48,6 @@ public enum PlotOrientationEnum implements JREnum
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient PlotOrientation value;
 	private final transient String name;
 
@@ -60,25 +57,7 @@ public enum PlotOrientationEnum implements JREnum
 		this.name = name;
 	}
 
-	/**
-	 *
-	 */
-	public Byte getValueByte()
-	{
-		return new Byte(getValue());
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
-	{
-		return (byte)-1;
-	}
-	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -97,11 +76,11 @@ public enum PlotOrientationEnum implements JREnum
 	 */
 	public static PlotOrientationEnum getByName(String name)
 	{
-		return (PlotOrientationEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static PlotOrientationEnum getByValue(PlotOrientation orientation)
 	{
@@ -118,5 +97,4 @@ public enum PlotOrientationEnum implements JREnum
 		}
 		return null;
 	}
-	
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,10 +28,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Factory of {@link ElementKeyExporterFilter} instances.
@@ -40,7 +43,6 @@ import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
  * be filtered on export.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ElementKeyExporterFilterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ElementKeyExporterFilterFactory implements ExporterFilterFactory
 {
@@ -52,6 +54,12 @@ public class ElementKeyExporterFilterFactory implements ExporterFilterFactory
 	 * in element exclusion properties such as
 	 * <code>net.sf.jasperreports.export.xls.exclude.key.*</code>. 
 	 */
+	@Property(
+			name = "net.sf.jasperreports.export.{format}.exclude.key.{suffix}",
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_0_1
+			)
 	public static final String PROPERTY_EXCLUDED_KEY_PREFIX = "exclude.key.";
 	
 	/**
@@ -66,6 +74,7 @@ public class ElementKeyExporterFilterFactory implements ExporterFilterFactory
 	 * 
 	 * @see #PROPERTY_EXCLUDED_KEY_PREFIX
 	 */
+	@Override
 	public ExporterFilter getFilter(JRExporterContext exporterContext)
 			throws JRException
 	{
@@ -80,11 +89,13 @@ public class ElementKeyExporterFilterFactory implements ExporterFilterFactory
 		{
 			String excludeKeyPrefix = 
 				exporter.getExporterPropertiesPrefix() + PROPERTY_EXCLUDED_KEY_PREFIX;
-			List<PropertySuffix> props = JRPropertiesUtil.getProperties(
+			JRPropertiesUtil propsUtil = JRPropertiesUtil.getInstance(
+					exporterContext.getJasperReportsContext());
+			List<PropertySuffix> props = propsUtil.getAllProperties(
 					exporterContext.getExportedReport(), excludeKeyPrefix);
 			if (!props.isEmpty())
 			{
-				Set<String> excludedKeys = new HashSet<String>();
+				Set<String> excludedKeys = new HashSet<>();
 				for (Iterator<PropertySuffix> it = props.iterator(); it.hasNext();)
 				{
 					PropertySuffix prop = it.next();

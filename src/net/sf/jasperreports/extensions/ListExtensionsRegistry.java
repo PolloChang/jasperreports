@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import java.util.Map;
  * An extension registry that contains several lists of extensions.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ListExtensionsRegistry.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ListExtensionsRegistry implements ExtensionsRegistry
 {
@@ -41,7 +40,7 @@ public class ListExtensionsRegistry implements ExtensionsRegistry
 	
 	public ListExtensionsRegistry()
 	{
-		extensions = new HashMap<Class<?>, List<Object>>();
+		extensions = new HashMap<>();
 	}
 
 	/**
@@ -56,7 +55,7 @@ public class ListExtensionsRegistry implements ExtensionsRegistry
 		List<Object> list = extensions.get(type);
 		if (list == null)
 		{
-			list = new ArrayList<Object>();
+			list = new ArrayList<>();
 			extensions.put(type, list);
 		}
 		
@@ -64,6 +63,7 @@ public class ListExtensionsRegistry implements ExtensionsRegistry
 		return this;
 	}
 	
+	@Override
 	public <T> List<T> getExtensions(Class<T> extensionType)
 	{
 		@SuppressWarnings("unchecked")

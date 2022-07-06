@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,10 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.type.TextAdjustEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 //import java.text.Format;
 
@@ -130,25 +134,161 @@ package net.sf.jasperreports.engine;
  * 
  * @see net.sf.jasperreports.engine.JREvaluation
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTextField.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRTextField extends JRTextElement, JREvaluation, JRAnchor, JRHyperlink
 {
 
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_5_0_0
+			)
 	public static final String PROPERTY_FORMAT_TIMEZONE = JRPropertiesUtil.PROPERTY_PREFIX + "pattern.timezone";
 
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.DATASET},
+			sinceVersion = PropertyConstants.VERSION_6_1_1
+			)
+	public static final String PROPERTY_SQL_DATE_FORMAT_TIMEZONE = JRPropertiesUtil.PROPERTY_PREFIX + "sql.date.pattern.timezone";
+
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.DATASET},
+			sinceVersion = PropertyConstants.VERSION_6_1_1
+			)
+	public static final String PROPERTY_SQL_TIMESTAMP_FORMAT_TIMEZONE = JRPropertiesUtil.PROPERTY_PREFIX + "sql.timestamp.pattern.timezone";
+
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.DATASET},
+			sinceVersion = PropertyConstants.VERSION_6_1_1
+			)
+	public static final String PROPERTY_SQL_TIME_FORMAT_TIMEZONE = JRPropertiesUtil.PROPERTY_PREFIX + "sql.time.pattern.timezone";
+
 	public static final String FORMAT_TIMEZONE_SYSTEM = "System";
+
+	/**
+	 * Provides a default pattern to be used for <code>java.sql.Date</code> values.
+	 * 
+	 * <p>
+	 * Locale specific values can be configured by appending _&lt;locale code&gt; to the property name.
+	 * </p>
+	 * 
+	 * <p>
+	 * The property can be set at global/JasperReports context level.
+	 * </p>
+	 * @since 6.0.0
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_0_0
+			)
+	public static final String PROPERTY_PATTERN_DATE = JRPropertiesUtil.PROPERTY_PREFIX + "text.pattern.date";
+
+	/**
+	 * Provides a default pattern to be used for <code>java.sql.Time</code> values.
+	 * 
+	 * <p>
+	 * Locale specific values can be configured by appending _&lt;locale code&gt; to the property name.
+	 * </p>
+	 * 
+	 * <p>
+	 * The property can be set at global/JasperReports context level.
+	 * </p>
+	 * @since 6.0.0
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_0_0
+			)
+	public static final String PROPERTY_PATTERN_TIME = JRPropertiesUtil.PROPERTY_PREFIX + "text.pattern.time";
+
+	/**
+	 * Provides a default pattern to be used for <code>java.util.Date</code> values other than
+	 * <code>java.sql.Date</code> and <code>java.sql.Time</code>.
+	 * 
+	 * <p>
+	 * Locale specific values can be configured by appending _&lt;locale code&gt; to the property name.
+	 * </p>
+	 * 
+	 * <p>
+	 * The property can be set at global/JasperReports context level.
+	 * </p>
+	 * @since 6.0.0
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_0_0
+			)
+	public static final String PROPERTY_PATTERN_DATETIME = JRPropertiesUtil.PROPERTY_PREFIX + "text.pattern.datetime";
+
+	/**
+	 * Provides a default pattern to be used for numerical values that are known to be integer,
+	 * i.e. integer primitive wrapper types and <code>java.math.BigInteger</code>.
+	 * 
+	 * <p>
+	 * Locale specific values can be configured by appending _&lt;locale code&gt; to the property name.
+	 * </p>
+	 * 
+	 * <p>
+	 * The property can be set at global/JasperReports context level.
+	 * </p>
+	 * @since 6.0.0
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_0_0
+			)
+	public static final String PROPERTY_PATTERN_INTEGER = JRPropertiesUtil.PROPERTY_PREFIX + "text.pattern.integer";
+
+	/**
+	 * Provides a default pattern to be used for numerical values other than the integer types.
+	 * 
+	 * <p>
+	 * Locale specific values can be configured by appending _&lt;locale code&gt; to the property name.
+	 * </p>
+	 * 
+	 * <p>
+	 * The property can be set at global/JasperReports context level.
+	 * </p>
+	 * @since 6.0.0
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_0_0
+			)
+	public static final String PROPERTY_PATTERN_NUMBER = JRPropertiesUtil.PROPERTY_PREFIX + "text.pattern.number";
 	
 	/**
 	 * Specifies whether the text field will stretch vertically if its text does not fit in one line.
 	 * @return true if the text field will stretch vertically, false otherwise
+	 * @deprecated Replaced by {@link #getTextAdjust()}.
 	 */
 	public boolean isStretchWithOverflow();
 
 	/**
 	 * Set to true if the text field should stretch vertically if its text does not fit in one line.
+	 * @deprecated Replaced by {@link #setTextAdjust(TextAdjustEnum)}.
 	 */
 	public void setStretchWithOverflow(boolean isStretchWithOverflow);
+		
+	/**
+	 * Gets the text adjust type.
+	 * @return a value representing one of the text adjust constants in {@link TextAdjustEnum}
+	 */
+	public TextAdjustEnum getTextAdjust();
+
+	/**
+	 * Sets the text adjust type.
+	 * @param textAdjust a value representing one of the text adjust type constants in {@link TextAdjustEnum}
+	 */
+	public void setTextAdjust(TextAdjustEnum textAdjust);
 		
 	/**
 	 * Gets the pattern used for this text field. The pattern will be used in a <tt>SimpleDateFormat</tt> for dates

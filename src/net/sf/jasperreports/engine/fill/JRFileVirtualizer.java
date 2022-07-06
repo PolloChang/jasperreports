@@ -1,7 +1,9 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2005 - 2014 Works, Inc. All rights reserved.
+ * Copyright (C) 2005 Works, Inc. All rights reserved.
  * http://www.works.com
+ * Copyright (C) 2005 - 2022 TIBCO Software Inc. All rights reserved.
+ * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
  * the following license terms apply:
@@ -35,12 +37,17 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRVirtualizable;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Virtualizes data to the filesystem. When this object is finalized, it removes
@@ -49,7 +56,6 @@ import org.apache.commons.logging.LogFactory;
  * using it are only weakly referenced.
  * 
  * @author John Bindel
- * @version $Id: JRFileVirtualizer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 	
@@ -67,8 +73,16 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 	 * Temporary files will be deleted by explicitly calling {@link #cleanup() cleanup()} or from the virtualizer
 	 * <code>finalize()</code> method.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_1_2_3,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_TEMP_FILES_SET_DELETE_ON_EXIT = JRPropertiesUtil.PROPERTY_PREFIX + "virtualizer.files.delete.on.exit";
 
+	private final JasperReportsContext jasperReportsContext;
 	private final String directory;
 
 	/**
@@ -79,7 +93,7 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 	 *            cache.
 	 */
 	public JRFileVirtualizer(int maxSize) {
-		this(maxSize, null);
+		this(DefaultJasperReportsContext.getInstance(), maxSize, null);
 	}
 
 	/**
@@ -91,8 +105,23 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 	 *            is to be stored
 	 */
 	public JRFileVirtualizer(int maxSize, String directory) {
+		this(DefaultJasperReportsContext.getInstance(), maxSize, directory);
+	}
+
+	/**
+	 * @param jasperReportsContext
+	 *            the JasperReportsContext to use for reading configuration from.
+	 * @param maxSize
+	 *            the maximum size (in JRVirtualizable objects) of the paged in
+	 *            cache.
+	 * @param directory
+	 *            the base directory in the filesystem where the paged out data
+	 *            is to be stored
+	 */
+	public JRFileVirtualizer(JasperReportsContext jasperReportsContext, int maxSize, String directory) {
 		super(maxSize);
 		
+		this.jasperReportsContext = jasperReportsContext;
 		this.directory = directory;
 	}
 
@@ -105,32 +134,24 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 		return "virt" + virtualId;
 	}
 
+	@Override
 	protected void pageOut(JRVirtualizable o) throws IOException {
 		// Store data to a file.
 		String filename = makeFilename(o);
 		File file = new File(directory, filename);
 		
 		if (file.createNewFile()) {
-			@SuppressWarnings("deprecation")
-			boolean deleteOnExit = net.sf.jasperreports.engine.util.JRProperties.getBooleanProperty(PROPERTY_TEMP_FILES_SET_DELETE_ON_EXIT);
+			boolean deleteOnExit = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(PROPERTY_TEMP_FILES_SET_DELETE_ON_EXIT);
 			if (deleteOnExit) {
 				file.deleteOnExit();
 			}
 
-			FileOutputStream fos = null;
-			try {
-				fos = new FileOutputStream(file);
-				BufferedOutputStream bufferedOut = new BufferedOutputStream(fos);
+			try (BufferedOutputStream bufferedOut = new BufferedOutputStream(new FileOutputStream(file))) {
 				writeData(o, bufferedOut);
 			}
 			catch (FileNotFoundException e) {
 				log.error("Error virtualizing object", e);
 				throw new JRRuntimeException(e);
-			}
-			finally {
-				if (fos != null) {
-					fos.close();
-				}
 			}
 		} else {
 			if (!isReadOnly(o)) {
@@ -141,25 +162,18 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 		}
 	}
 
+	@Override
 	protected void pageIn(JRVirtualizable o) throws IOException {
 		// Load data from a file.
 		String filename = makeFilename(o);
 		File file = new File(directory, filename);
 
-		FileInputStream fis = null;
-		try {
-			fis = new FileInputStream(file);
-			BufferedInputStream bufferedIn = new BufferedInputStream(fis);
+		try (BufferedInputStream bufferedIn = new BufferedInputStream(new FileInputStream(file))) {
 			readData(o, bufferedIn);
 		}
 		catch (FileNotFoundException e) {
 			log.error("Error devirtualizing object", e);
 			throw new JRRuntimeException(e);
-		}
-		finally {
-			if (fis != null) {
-				fis.close();
-			}
 		}
 
 		if (!isReadOnly(o)) {
@@ -168,6 +182,7 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 		}
 	}
 
+	@Override
 	protected void dispose(String virtualId) {
 		String filename = makeFilename(virtualId);
 		File file = new File(directory, filename);
@@ -179,6 +194,7 @@ public class JRFileVirtualizer extends JRAbstractLRUVirtualizer {
 	 * Called when we are done with the virtualizer and wish to
 	 * cleanup any resources it has.
 	 */
+	@Override
 	public synchronized void cleanup()
 	{
 		disposeAll();

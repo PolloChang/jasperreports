@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,11 +35,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperCompileManager;
-import net.sf.jasperreports.engine.design.JRCompiler;
-import net.sf.jasperreports.engine.xml.JRReportSaxParserFactory;
-
 import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -48,6 +43,11 @@ import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.resources.FileResource;
 import org.apache.tools.ant.util.RegexpPatternMapper;
 import org.apache.tools.ant.util.SourceFileScanner;
+
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.design.JRCompiler;
+import net.sf.jasperreports.engine.xml.JRReportSaxParserFactory;
 
 
 /**
@@ -72,7 +72,6 @@ import org.apache.tools.ant.util.SourceFileScanner;
  * is older than the XML file will be compiled.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAntCompileTask.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRAntCompileTask extends JRBaseAntTask
 {
@@ -84,7 +83,7 @@ public class JRAntCompileTask extends JRBaseAntTask
 	private Path src;
 	private File destdir;
 	private File tempdir;
-	private boolean keepjava;
+	private Boolean keepjava;
 	private String compiler;
 	private Path classpath;
 	private boolean xmlvalidation = true;
@@ -161,7 +160,7 @@ public class JRAntCompileTask extends JRBaseAntTask
 	 * 
 	 * @param keepjava flag for preventing the deletion of generated Java source files
 	 */
-	public void setKeepjava(boolean keepjava)
+	public void setKeepjava(Boolean keepjava)
 	{
 		this.keepjava = keepjava;
 	}
@@ -174,7 +173,7 @@ public class JRAntCompileTask extends JRBaseAntTask
 	 * The specified class should be an implementation of the 
 	 * {@link net.sf.jasperreports.engine.design.JRCompiler} interface.
 	 * When specified, this value will temporarily override the value of the
-	 * <code>jasper.reports.compiler.class</code> system property.
+	 * {@link net.sf.jasperreports.engine.design.JRCompiler#COMPILER_CLASS net.sf.jasperreports.compiler.class} system property.
 	 * 
 	 * @param compiler report compiler class name
 	 */
@@ -214,18 +213,22 @@ public class JRAntCompileTask extends JRBaseAntTask
 	/**
 	 * Executes the task.
 	 */
+	@Override
 	public void execute() throws BuildException
 	{
 		checkParameters();
 
-		reportFilesMap = new HashMap<String, String>();
+		reportFilesMap = new HashMap<>();
 
 		if (tempdir != null)
 		{
 			jasperReportsContext.setProperty(JRCompiler.COMPILER_TEMP_DIR, String.valueOf(tempdir));
 		}
 
-		jasperReportsContext.setProperty(JRCompiler.COMPILER_KEEP_JAVA_FILE, String.valueOf(keepjava));
+		if (keepjava != null)
+		{
+			jasperReportsContext.setProperty(JRCompiler.COMPILER_KEEP_JAVA_FILE, String.valueOf(keepjava));
+		}
 
 		setCompilerClass(compiler);
 
@@ -313,8 +316,7 @@ public class JRAntCompileTask extends JRBaseAntTask
 	 */
 	protected void scanSrc() throws BuildException
 	{
-		for(@SuppressWarnings("unchecked")
-		Iterator<Resource> it = src.iterator(); it.hasNext();)
+		for(Iterator<Resource> it = src.iterator(); it.hasNext();)
 		{
 			Resource resource = it.next();
 			FileResource fileResource = resource instanceof FileResource ? (FileResource)resource : null;

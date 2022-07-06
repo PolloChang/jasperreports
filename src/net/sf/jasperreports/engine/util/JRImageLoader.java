@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,18 +24,20 @@
 package net.sf.jasperreports.engine.util;
 
 import java.awt.Image;
+import java.lang.reflect.InvocationTargetException;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRImageLoader.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRImageLoader
 {
@@ -45,14 +47,25 @@ public final class JRImageLoader
 	 * Configuration property specifying the name of the class implementing the {@link JRImageReader} interface
 	 * to be used by the engine. If not set, the engine will try to an image reader implementation that corresponds to the JVM version.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_2_0_5
+			)
 	public static final String PROPERTY_IMAGE_READER = JRPropertiesUtil.PROPERTY_PREFIX + "image.reader";
 
 	/**
 	 * Configuration property specifying the name of the class implementing the {@link JRImageEncoder} interface
 	 * to be used by the engine. If not set, the engine will try to an image encoder implementation that corresponds to the JVM version.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_2_0_5
+			)
 	public static final String PROPERTY_IMAGE_ENCODER = JRPropertiesUtil.PROPERTY_PREFIX + "image.encoder";
 
+	public static final String PIXEL_IMAGE_RESOURCE = "net/sf/jasperreports/engine/images/pixel.GIF";
 	public static final String NO_IMAGE_RESOURCE = "net/sf/jasperreports/engine/images/image-16.png";
 	public static final String SUBREPORT_IMAGE_RESOURCE = "net/sf/jasperreports/engine/images/subreport-16.png";
 	public static final String CHART_IMAGE_RESOURCE = "net/sf/jasperreports/engine/images/chart-16.png";
@@ -81,15 +94,6 @@ public final class JRImageLoader
 	/**
 	 *
 	 */
-	private static JRImageLoader getDefaultInstance()
-	{
-		return new JRImageLoader(DefaultJasperReportsContext.getInstance());
-	}
-	
-	
-	/**
-	 *
-	 */
 	public static JRImageLoader getInstance(JasperReportsContext jasperReportsContext)
 	{
 		return new JRImageLoader(jasperReportsContext);
@@ -108,9 +112,10 @@ public final class JRImageLoader
 			try 
 			{
 				Class<?> clazz = JRClassLoader.loadClassForRealName(readerClassName);	
-				imageReader = (JRImageReader) clazz.newInstance();
+				imageReader = (JRImageReader) clazz.getDeclaredConstructor().newInstance();
 			}
-			catch (Exception e)
+			catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException 
+				| IllegalAccessException | InstantiationException e)
 			{
 				throw new JRRuntimeException(e);
 			}
@@ -127,22 +132,14 @@ public final class JRImageLoader
 			try 
 			{
 				Class<?> clazz = JRClassLoader.loadClassForRealName(encoderClassName);	
-				imageEncoder = (JRImageEncoder) clazz.newInstance();
+				imageEncoder = (JRImageEncoder) clazz.getDeclaredConstructor().newInstance();
 			}
-			catch (Exception e)
+			catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException 
+				| IllegalAccessException | InstantiationException e)
 			{
 				throw new JRRuntimeException(e);
 			}
 		}
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link #loadBytesFromAwtImage(Image, ImageTypeEnum)}.
-	 */
-	public byte[] loadBytesFromAwtImage(Image image, byte imageType) throws JRException
-	{
-		return loadBytesFromAwtImage(image, ImageTypeEnum.getByValue(imageType));
 	}
 
 
@@ -165,23 +162,5 @@ public final class JRImageLoader
 	public Image loadAwtImageFromBytes(byte[] bytes) throws JRException
 	{
 		return imageReader.readImage(bytes);
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link #loadBytesFromAwtImage(Image, byte)}.
-	 */
-	public static byte[] loadImageDataFromAWTImage(Image image, byte imageType) throws JRException
-	{
-		return getDefaultInstance().loadBytesFromAwtImage(image, imageType);
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link #loadAwtImageFromBytes(byte[])}.
-	 */
-	public static Image loadImage(byte[] bytes) throws JRException
-	{
-		return getDefaultInstance().loadAwtImageFromBytes(bytes);
 	}
 }

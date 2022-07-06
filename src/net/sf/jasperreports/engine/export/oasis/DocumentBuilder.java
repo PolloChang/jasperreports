@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,37 +27,36 @@
  * 
  * Contributors:
  * Majid Ali Khan - majidkk@users.sourceforge.net
- * Frank Sch�nheit - Frank.Schoenheit@Sun.COM
+ * Frank Schönheit - Frank.Schoenheit@Sun.COM
  */
 package net.sf.jasperreports.engine.export.oasis;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPrintElementIndex;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
-import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.export.JRHyperlinkProducer;
 import net.sf.jasperreports.engine.export.zip.FileBufferedZipEntry;
-import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.renderers.util.RendererUtil;
 
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocumentBuilder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class DocumentBuilder 
 {
@@ -71,7 +70,8 @@ public abstract class DocumentBuilder
 	/**
 	 *
 	 */
-	protected final Map<String, String> rendererToImagePathMap = new HashMap<String, String>();
+	protected final Map<String, String> rendererToImagePathMap = new HashMap<>();
+	protected final RenderersCache renderersCache = new RenderersCache(getJasperReportsContext());
 	protected final OasisZip oasisZip;
 	
 	
@@ -99,7 +99,10 @@ public abstract class DocumentBuilder
 	{
 		if (!imageName.startsWith(IMAGE_NAME_PREFIX))
 		{
-			throw new JRRuntimeException("Invalid image name: " + imageName);
+			throw 
+				new JRRuntimeException(
+					JRAbstractExporter.EXCEPTION_MESSAGE_KEY_INVALID_IMAGE_NAME,
+					new Object[]{imageName});
 		}
 
 		return JRPrintElementIndex.parsePrintElementIndex(imageName.substring(IMAGE_NAME_PREFIX_LEGTH));
@@ -188,62 +191,74 @@ public abstract class DocumentBuilder
 	/**
 	 *
 	 */
-	protected String getImagePath(Renderable renderer, JRPrintImage image, JRExporterGridCell gridCell) throws JRException
+	protected RenderersCache getRenderersCache()
 	{
-		String imagePath = null;
-
-		if (renderer != null)
-		{
-			if (renderer.getTypeValue() == RenderableTypeEnum.IMAGE && rendererToImagePathMap.containsKey(renderer.getId()))
-			{
-				imagePath = rendererToImagePathMap.get(renderer.getId());
-			}
-			else
-			{
-				if (image.isLazy())
-				{
-					imagePath = ((JRImageRenderer)renderer).getImageLocation();
-				}
-				else
-				{
-					JRPrintElementIndex imageIndex = getElementIndex(gridCell);
-					processImage(image, imageIndex);
-
-					String imageName = DocumentBuilder.getImageName(imageIndex);
-					imagePath = "Pictures/" + imageName;
-				}
-
-				rendererToImagePathMap.put(renderer.getId(), imagePath);
-			}
-		}
-
-		return imagePath;
+		return renderersCache;
 	}
 
 	/**
 	 *
 	 */
-	protected void processImage(JRPrintImage image, JRPrintElementIndex imageIndex) throws JRException
+	protected String getImagePath(
+		Renderable renderer, 
+		Dimension dimension, 
+		Color backcolor, 
+		JRExporterGridCell gridCell,
+//		boolean isLazy,
+		RenderersCache imageRenderersCache
+		) throws JRException
 	{
-		Renderable renderer = image.getRenderable();
-		if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
-		{
-			renderer =
-				new JRWrappingSvgRenderer(
-					renderer,
-					new Dimension(image.getWidth(), image.getHeight()),
-					ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null
-					);
-		}
-
-		oasisZip.addEntry(//FIXMEODT optimize with a different implementation of entry
-			new FileBufferedZipEntry(
-				"Pictures/" + DocumentBuilder.getImageName(imageIndex),
-				renderer.getImageData(getJasperReportsContext())
+		String imagePath = null;
+		
+//		if (isLazy)  // honouring lazy images in ods/odt is unlike any other export except html and xml
+//		{
+//			// we do not cache imagePath for lazy images because the short location string is already cached inside the render itself
+//			imagePath = RendererUtil.getResourceLocation(renderer);
+//		}
+//		else
+//		{
+			// by the time we get here, the resource renderer has already been loaded from cache
+			
+			if (
+				renderer instanceof DataRenderable //we do not cache imagePath for non-data renderers because they render width different width/height each time
+				&& rendererToImagePathMap.containsKey(renderer.getId())
 				)
-			);
+			{
+				imagePath = rendererToImagePathMap.get(renderer.getId());
+			}
+			else
+			{
+				JRPrintElementIndex imageIndex = getElementIndex(gridCell);
+				
+				DataRenderable imageRenderer = 
+					RendererUtil.getInstance(getJasperReportsContext()).getImageDataRenderable(
+						imageRenderersCache,
+						renderer, 
+						dimension, 
+						backcolor
+						);
+
+				oasisZip.addEntry(//FIXMEODT optimize with a different implementation of entry
+					new FileBufferedZipEntry(
+						"Pictures/" + DocumentBuilder.getImageName(imageIndex),
+						imageRenderer.getData(getJasperReportsContext())
+						)
+					);
+
+				String imageName = DocumentBuilder.getImageName(imageIndex);
+				imagePath = "Pictures/" + imageName;
+
+				if (imageRenderer == renderer)
+				{
+					//cache imagePath only for true ImageRenderable instances because the wrapping ones render with different width/height each time
+					rendererToImagePathMap.put(renderer.getId(), imagePath);
+				}
+			}
+//		}
+
+		return imagePath;
 	}
-	
+
 	/**
 	 *
 	 */

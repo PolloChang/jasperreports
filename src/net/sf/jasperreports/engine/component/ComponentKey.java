@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,6 @@ import net.sf.jasperreports.engine.xml.JRXmlWriter;
  * (via {@link JRXmlWriter}).
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentKey.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRComponentElement#getComponentKey()
  */
 public class ComponentKey implements Serializable
@@ -66,6 +65,7 @@ public class ComponentKey implements Serializable
 		this.name = name;
 	}
 	
+	@Override
 	public int hashCode()
 	{
 		int hash = 17;
@@ -75,6 +75,7 @@ public class ComponentKey implements Serializable
 		return hash;
 	}
 	
+	@Override
 	public boolean equals(Object o)
 	{
 		if (o == this)

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,12 +29,10 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRRectangle;
 import net.sf.jasperreports.engine.JRVisitor;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillRectangle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 {
@@ -59,29 +57,19 @@ public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public int getRadius()
 	{
-		return JRStyleResolver.getRadius(this);
+		return getStyleResolver().getRadius(this);
 	}
 		
+	@Override
 	public Integer getOwnRadius()
 	{
 		return providerStyle == null || providerStyle.getOwnRadius() == null ? ((JRRectangle)this.parent).getOwnRadius() : providerStyle.getOwnRadius();
 	}
 
-	/**
-	 *
-	 */
-	public void setRadius(int radius)
-	{
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setRadius(Integer radius)
 	{
 	}
@@ -95,6 +83,7 @@ public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 	}
 
 
+	@Override
 	protected JRTemplateElement createElementTemplate()
 	{
 		return new JRTemplateRectangle(
@@ -105,9 +94,7 @@ public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void evaluate(
 		byte evaluation
 		) throws JRException
@@ -122,9 +109,7 @@ public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected JRPrintElement fill()
 	{
 		JRPrintRectangle printRectangle = null;
@@ -141,31 +126,26 @@ public class JRFillRectangle extends JRFillGraphicElement implements JRRectangle
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitRectangle(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void resolveElement (JRPrintElement element, byte evaluation)
 	{
 		// nothing
 	}
 
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillRectangle(this, factory);

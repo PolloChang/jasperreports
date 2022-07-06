@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JEditorPaneRtfMarkupProcessor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JEditorPaneRtfMarkupProcessor extends JEditorPaneMarkupProcessor
 {
@@ -60,15 +59,13 @@ public class JEditorPaneRtfMarkupProcessor extends JEditorPaneMarkupProcessor
 		return instance;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String convert(String srcText)
 	{
 		JEditorPane editorPane = new JEditorPane("text/rtf", srcText);
 		editorPane.setEditable(false);
 
-		List<Element> elements = new ArrayList<Element>();
+		List<Element> elements = new ArrayList<>();
 
 		Document document = editorPane.getDocument();
 
@@ -84,7 +81,7 @@ public class JEditorPaneRtfMarkupProcessor extends JEditorPaneMarkupProcessor
 		int endOffset = 0;
 		
 		JRStyledText styledText = new JRStyledText();
-		styledText.setGlobalAttributes(new HashMap<Attribute,Object>());
+		styledText.setGlobalAttributes(new HashMap<>());
 		for(int i = 0; i < elements.size(); i++)
 		{
 			if (chunk != null)

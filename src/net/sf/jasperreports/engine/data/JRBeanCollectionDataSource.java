@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,11 +37,10 @@ import net.sf.jasperreports.engine.JRField;
  * Hibernate, or JDO. Such applications may need to generate reports using data they
  * already have available as arrays or collections of in-memory JavaBean objects.
  * </p><p>
- * This JavaBean-compliant data source cand be used when data comes in a 
+ * This JavaBean-compliant data source can be used when data comes in a 
  * <code>java.util.Collection</code> of JavaBean objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBeanCollectionDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBeanCollectionDataSource extends JRAbstractBeanDataSource
 {
@@ -80,9 +79,7 @@ public class JRBeanCollectionDataSource extends JRAbstractBeanDataSource
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean next()
 	{
 		boolean hasNext = false;
@@ -101,18 +98,14 @@ public class JRBeanCollectionDataSource extends JRAbstractBeanDataSource
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(JRField field) throws JRException
 	{
 		return getFieldValue(currentBean, field);
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void moveFirst()
 	{
 		if (this.data != null)

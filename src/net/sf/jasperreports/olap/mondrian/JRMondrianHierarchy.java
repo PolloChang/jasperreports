@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.olap.result.JROlapHierarchyLevel;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMondrianHierarchy.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRMondrianHierarchy implements JROlapHierarchy
 {
@@ -58,17 +57,20 @@ public class JRMondrianHierarchy implements JROlapHierarchy
 		}
 	}
 
+	@Override
 	public String getDimensionName()
 	{
 		return hierarchy == null ? null : hierarchy.getDimension().getName();
 	}
 
+	@Override
 	public JROlapHierarchyLevel[] getLevels()
 	{
 		return levels;
 	}
 
 	// MPenningroth 21-April-2009 deal with case when dimension is <dimension>.<hierarchy> form
+	@Override
 	public String getHierarchyUniqueName()
 	{
 		return hierarchy == null ? null : hierarchy.getUniqueName();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,6 @@ import net.sf.jasperreports.engine.xml.JRXmlWriter;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeXmlWriter implements BarcodeVisitor
 {
@@ -78,7 +77,6 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 				componentKey.getNamespacePrefix(),
 				ComponentsExtensionsRegistryFactory.XSD_LOCATION);
 		xmlWriteHelper.startElement(componentKey.getName(), namespace);
-		writeBaseAttributes(barcode);
 	}
 	
 	protected void endBarcode() throws IOException
@@ -88,32 +86,51 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 	
 	protected void writeBaseAttributes(BarcodeComponent barcode)
 	{
-		if (barcode.getEvaluationTimeValue() != EvaluationTimeEnum.NOW)
-		{
-			xmlWriteHelper.addAttribute(JRXmlConstants.ATTRIBUTE_evaluationTime, 
-					barcode.getEvaluationTimeValue());
-		}
+		xmlWriteHelper.addAttribute(JRXmlConstants.ATTRIBUTE_evaluationTime, 
+				barcode.getEvaluationTimeValue(), EvaluationTimeEnum.NOW);
 		xmlWriteHelper.addAttribute(JRXmlConstants.ATTRIBUTE_evaluationGroup, 
 				barcode.getEvaluationGroup());
+	}
+	
+	protected void writeBaseAttributes(Barcode4jComponent barcode)
+	{
+		writeBaseAttributes((BarcodeComponent)barcode);
 		
-		xmlWriteHelper.addAttribute("orientation", barcode.getOrientation(), 0);
 		xmlWriteHelper.addAttribute("moduleWidth", barcode.getModuleWidth());
-		xmlWriteHelper.addAttribute("textPosition", barcode.getTextPosition());
+		
+		if (isNewerVersionOrEqual(version, JRConstants.VERSION_6_0_2))
+		{
+			xmlWriteHelper.addAttribute("orientation", barcode.getOrientationValue(), OrientationEnum.UP);
+		}
+		else
+		{
+			xmlWriteHelper.addAttribute("orientation", barcode.getOrientationValue().getValue(), (Integer)0);
+		}
+		
+		xmlWriteHelper.addAttribute("textPosition", barcode.getTextPositionValue());
 		xmlWriteHelper.addAttribute("quietZone", barcode.getQuietZone());
 		xmlWriteHelper.addAttribute("verticalQuietZone", barcode.getVerticalQuietZone());
 	}
-	
+
 	protected void writeBaseContents(BarcodeComponent barcode) throws IOException
 	{
 		writeExpression("codeExpression", barcode.getCodeExpression(), false);
+	}
+	
+	protected void writeBaseContents(Barcode4jComponent barcode) throws IOException
+	{
+		writeBaseContents((BarcodeComponent)barcode);
+		
 		writeExpression("patternExpression", barcode.getPatternExpression(), false);
 	}
 	
+	@Override
 	public void visitCodabar(CodabarComponent codabar)
 	{
 		try
 		{
 			startBarcode(codabar);
+			writeBaseAttributes(codabar);
 			xmlWriteHelper.addAttribute("wideFactor", codabar.getWideFactor());
 			writeBaseContents(codabar);
 			endBarcode();
@@ -124,11 +141,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitCode128(Code128Component code128)
 	{
 		try
 		{
 			startBarcode(code128);
+			writeBaseAttributes(code128);
 			writeBaseContents(code128);
 			endBarcode();
 		}
@@ -138,12 +157,22 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitDataMatrix(DataMatrixComponent dataMatrix)
 	{
 		try
 		{
 			startBarcode(dataMatrix);
-			xmlWriteHelper.addAttribute("shape", dataMatrix.getShape());
+			writeBaseAttributes(dataMatrix);
+			xmlWriteHelper.addAttribute(DataMatrixComponent.PROPERTY_SHAPE, dataMatrix.getShape());
+			if(isNewerVersionOrEqual(version, JRConstants.VERSION_6_11_0))
+			{
+				xmlWriteHelper.addAttribute(DataMatrixComponent.PROPERTY_MIN_SYMBOL_WIDTH, dataMatrix.getMinSymbolWidth());
+				xmlWriteHelper.addAttribute(DataMatrixComponent.PROPERTY_MAX_SYMBOL_WIDTH, dataMatrix.getMaxSymbolWidth());
+				xmlWriteHelper.addAttribute(DataMatrixComponent.PROPERTY_MIN_SYMBOL_HEIGHT, dataMatrix.getMinSymbolHeight());
+				xmlWriteHelper.addAttribute(DataMatrixComponent.PROPERTY_MAX_SYMBOL_HEIGHT, dataMatrix.getMaxSymbolHeight());
+			}
+			
 			writeBaseContents(dataMatrix);
 			endBarcode();
 		}
@@ -153,11 +182,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitEANCode128(EAN128Component ean128)
 	{
 		try
 		{
 			startBarcode(ean128);
+			writeBaseAttributes(ean128);
 			xmlWriteHelper.addAttribute("checksumMode", ean128.getChecksumMode());
 			writeBaseContents(ean128);
 			if(isNewerVersionOrEqual(version, JRConstants.VERSION_5_1_2))
@@ -172,11 +203,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitCode39(Code39Component code39)
 	{
 		try
 		{
 			startBarcode(code39);
+			writeBaseAttributes(code39);
 			xmlWriteHelper.addAttribute("checksumMode", code39.getChecksumMode());
 			xmlWriteHelper.addAttribute("displayChecksum", code39.isDisplayChecksum());
 			xmlWriteHelper.addAttribute("displayStartStop", code39.isDisplayStartStop());
@@ -192,11 +225,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitUPCA(UPCAComponent upcA)
 	{
 		try
 		{
 			startBarcode(upcA);
+			writeBaseAttributes(upcA);
 			xmlWriteHelper.addAttribute("checksumMode", upcA.getChecksumMode());
 			writeBaseContents(upcA);
 			endBarcode();
@@ -207,11 +242,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitUPCE(UPCEComponent upcE)
 	{
 		try
 		{
 			startBarcode(upcE);
+			writeBaseAttributes(upcE);
 			xmlWriteHelper.addAttribute("checksumMode", upcE.getChecksumMode());
 			writeBaseContents(upcE);
 			endBarcode();
@@ -222,11 +259,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitEAN13(EAN13Component ean13)
 	{
 		try
 		{
 			startBarcode(ean13);
+			writeBaseAttributes(ean13);
 			xmlWriteHelper.addAttribute("checksumMode", ean13.getChecksumMode());
 			writeBaseContents(ean13);
 			endBarcode();
@@ -237,11 +276,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitEAN8(EAN8Component ean8)
 	{
 		try
 		{
 			startBarcode(ean8);
+			writeBaseAttributes(ean8);
 			xmlWriteHelper.addAttribute("checksumMode", ean8.getChecksumMode());
 			writeBaseContents(ean8);
 			endBarcode();
@@ -252,11 +293,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitInterleaved2Of5(Interleaved2Of5Component interleaved2Of5)
 	{
 		try
 		{
 			startBarcode(interleaved2Of5);
+			writeBaseAttributes(interleaved2Of5);
 			xmlWriteHelper.addAttribute("checksumMode", interleaved2Of5.getChecksumMode());
 			xmlWriteHelper.addAttribute("displayChecksum", interleaved2Of5.isDisplayChecksum());
 			xmlWriteHelper.addAttribute("wideFactor", interleaved2Of5.getWideFactor());
@@ -277,12 +320,14 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		xmlWriteHelper.addAttribute("trackHeight", barcode.getTrackHeight());
 	}
 	
+	@Override
 	public void visitRoyalMailCustomer(
 			RoyalMailCustomerComponent royalMailCustomer)
 	{
 		try
 		{
 			startBarcode(royalMailCustomer);
+			writeBaseAttributes(royalMailCustomer);
 			writeFourStateAttributes(royalMailCustomer);
 			writeBaseContents(royalMailCustomer);
 			endBarcode();
@@ -293,12 +338,14 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitUSPSIntelligentMail(
 			USPSIntelligentMailComponent intelligentMail)
 	{
 		try
 		{
 			startBarcode(intelligentMail);
+			writeBaseAttributes(intelligentMail);
 			writeFourStateAttributes(intelligentMail);
 			writeBaseContents(intelligentMail);
 			endBarcode();
@@ -309,11 +356,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitPostnet(POSTNETComponent postnet)
 	{
 		try
 		{
 			startBarcode(postnet);
+			writeBaseAttributes(postnet);
 			xmlWriteHelper.addAttribute("shortBarHeight", postnet.getShortBarHeight());
 			xmlWriteHelper.addAttribute("baselinePosition", postnet.getBaselinePosition());
 			xmlWriteHelper.addAttribute("checksumMode", postnet.getChecksumMode());
@@ -328,11 +377,13 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 
+	@Override
 	public void visitPDF417(PDF417Component pdf417)
 	{
 		try
 		{
 			startBarcode(pdf417);
+			writeBaseAttributes(pdf417);
 			xmlWriteHelper.addAttribute("minColumns", pdf417.getMinColumns());
 			xmlWriteHelper.addAttribute("maxColumns", pdf417.getMaxColumns());
 			xmlWriteHelper.addAttribute("minRows", pdf417.getMinRows());
@@ -348,6 +399,30 @@ public class BarcodeXmlWriter implements BarcodeVisitor
 		}
 	}
 	
+	@Override
+	public void visitQRCode(QRCodeComponent qrCode)
+	{
+		try
+		{
+			startBarcode(qrCode);
+			writeBaseAttributes(qrCode);
+			xmlWriteHelper.addAttribute("margin", qrCode.getMargin());
+			xmlWriteHelper.addAttribute(QRCodeComponent.PROPERTY_ERROR_CORRECTION_LEVEL, 
+					qrCode.getErrorCorrectionLevel(), 
+					ErrorCorrectionLevelEnum.L);
+			if(isNewerVersionOrEqual(version, JRConstants.VERSION_6_12_0))
+			{
+				xmlWriteHelper.addAttribute("qrVersion", qrCode.getQrVersion());
+			}
+			writeBaseContents(qrCode);
+			endBarcode();
+		}
+		catch (IOException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+	}
+
 	@SuppressWarnings("deprecation")
 	protected void writeExpression(String name, JRExpression expression, boolean writeClass)  throws IOException
 	{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,48 +23,51 @@
  */
 package net.sf.jasperreports.export.parameters;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
-
+import java.util.Map;
 
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParameterResolver.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface ParameterResolver
 {
 	/**
 	 * 
 	 */
-	public String getStringParameter(JRExporterParameter parameter, String property);
+	public String getStringParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property);
 	
 	/**
 	 * 
 	 */
-	public String[] getStringArrayParameter(JRExporterParameter parameter, String propertyPrefix);
+	public String[] getStringArrayParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String propertyPrefix);
 
 	/**
 	 * 
 	 */
-	public String getStringParameterOrDefault(JRExporterParameter parameter, String property);
+	public String getStringParameterOrDefault(net.sf.jasperreports.engine.JRExporterParameter parameter, String property);
 	
 	/**
 	 * 
 	 */
-	public boolean getBooleanParameter(JRExporterParameter parameter, String property, boolean defaultValue);
+	public boolean getBooleanParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property, boolean defaultValue);
 	
 	/**
 	 * 
 	 */
-	public int getIntegerParameter(JRExporterParameter parameter, String property, int defaultValue);
+	public int getIntegerParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property, int defaultValue);
 
 	/**
 	 * 
 	 */
-	public float getFloatParameter(JRExporterParameter parameter, String property, float defaultValue);
+	public float getFloatParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property, float defaultValue);
 
 	/**
 	 * 
 	 */
-	public Character getCharacterParameter(JRExporterParameter parameter, String property);
+	public Character getCharacterParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property);
+	
+	/**
+	 * 
+	 */
+	public Map<String,String> getMapParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property);
 }

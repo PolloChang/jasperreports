@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,8 @@ package net.sf.jasperreports.components;
 
 import java.io.IOException;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
@@ -38,10 +40,10 @@ import net.sf.jasperreports.engine.util.VersionComparator;
 import net.sf.jasperreports.engine.util.XmlNamespace;
 import net.sf.jasperreports.engine.xml.JRXmlBaseWriter;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractComponentXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
  * @see ComponentsExtensionsRegistryFactory
  */
 public abstract class AbstractComponentXmlWriter implements ComponentXmlWriter
@@ -54,6 +56,12 @@ public abstract class AbstractComponentXmlWriter implements ComponentXmlWriter
 	/**
 	 * 
 	 */
+	@Property(
+			name = "net.sf.jasperreports.components.{built_in_component_name}.version",
+			category = PropertyConstants.CATEGORY_OTHER,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.PART, PropertyScope.COMPONENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String PROPERTY_COMPONENTS_VERSION_SUFFIX = ".version";
 
 	protected final JasperReportsContext jasperReportsContext;

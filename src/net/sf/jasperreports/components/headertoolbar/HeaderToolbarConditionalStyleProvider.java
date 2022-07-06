@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,19 +38,18 @@ import net.sf.jasperreports.engine.style.StyleProviderContext;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.engine.util.JRDataUtils;
-import net.sf.jasperreports.web.util.JacksonUtil;
+import net.sf.jasperreports.util.JacksonUtil;
 
 /**
- * 
- * 
+ *
+ *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: HeaderToolbarConditionalStyleProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HeaderToolbarConditionalStyleProvider implements StyleProvider
 {
 	private final StyleProviderContext context;
 	private JasperReportsContext jasperreportsContext;
-	
+
 	public HeaderToolbarConditionalStyleProvider(StyleProviderContext context, JasperReportsContext jasperreportsContext)
 	{
 		this.context = context;
@@ -66,12 +65,23 @@ public class HeaderToolbarConditionalStyleProvider implements StyleProvider
 			if (srlzdConditionalFormattingData != null)
 			{
 				JRStyle style = null;
-				
+
 				ConditionalFormattingData cfd = JacksonUtil.getInstance(jasperreportsContext).loadObject(srlzdConditionalFormattingData, ConditionalFormattingData.class);
-				if (cfd.getConditions().size() > 0) 
+				if (cfd.getConditions().size() > 0)
 				{
-					JRExpression expression = context.getElement() instanceof JRTextField ? ((JRTextField)context.getElement()).getExpression() : null;
-					Object compareTo = context.evaluateExpression(expression, evaluation);
+					Object compareTo;
+
+					if (context.getElement().getPropertiesMap().containsProperty(HeaderToolbarElement.PROPERTY_COLUMN_FIELD)) {
+						String fieldName = context.getElement().getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_COLUMN_FIELD);
+						compareTo = context.getFieldValue(fieldName, evaluation);
+					} else if (context.getElement().getPropertiesMap().containsProperty(HeaderToolbarElement.PROPERTY_COLUMN_VARIABLE)) {
+						String variableName = context.getElement().getPropertiesMap().getProperty(HeaderToolbarElement.PROPERTY_COLUMN_VARIABLE);
+						compareTo = context.getVariableValue(variableName, evaluation);
+					} else {
+						JRExpression expression = context.getElement() instanceof JRTextField ? ((JRTextField)context.getElement()).getExpression() : null;
+						compareTo = context.evaluateExpression(expression, evaluation);
+					}
+
 					boolean bgColorSet = false;
 					boolean fontBoldSet = false;
 					boolean fontItalicSet = false;

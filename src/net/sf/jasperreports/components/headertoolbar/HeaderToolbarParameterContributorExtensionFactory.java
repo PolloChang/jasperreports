@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.extensions.SingletonExtensionRegistry;
  * Extension factory for {@link HeaderToolbarParameterContributorFactory}.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: HeaderToolbarParameterContributorExtensionFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HeaderToolbarParameterContributorExtensionFactory implements ExtensionsRegistryFactory
 {
@@ -42,6 +41,7 @@ public class HeaderToolbarParameterContributorExtensionFactory implements Extens
 			new SingletonExtensionRegistry<ParameterContributorFactory>(ParameterContributorFactory.class, 
 					HeaderToolbarParameterContributorFactory.getInstance());
 
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties)
 	{
 		return REGISTRY;

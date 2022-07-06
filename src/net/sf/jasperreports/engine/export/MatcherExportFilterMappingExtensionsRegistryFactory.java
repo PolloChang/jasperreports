@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: MatcherExportFilterMappingExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MatcherExportFilterMappingExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
@@ -62,13 +61,11 @@ public class MatcherExportFilterMappingExtensionsRegistryFactory implements Exte
 	 */
 	public final static String MATCHER_EXPORT_FILTER_MAPPING_EXCLUDES_PROPERTY_SUFFIX = ".excludes";
 	
-	/**
-	 * 
-	 */
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties)
 	{
 		List<PropertySuffix> exportFilterMappingProperties = JRPropertiesUtil.getProperties(properties, MATCHER_EXPORT_FILTER_MAPPING_PROPERTY_PREFIX);
-		List<MatcherExportFilterMapping> exportFilterMappings = new ArrayList<MatcherExportFilterMapping>();
+		List<MatcherExportFilterMapping> exportFilterMappings = new ArrayList<>();
 		for (Iterator<PropertySuffix> it = exportFilterMappingProperties.iterator(); it.hasNext();)
 		{
 			PropertySuffix exportFilterMappingProp = it.next();

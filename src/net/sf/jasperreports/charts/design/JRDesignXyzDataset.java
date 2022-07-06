@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRDesignXyzDataset.java 7199 2014-08-27 13:58:10Z teodord $ 
  */
 public class JRDesignXyzDataset extends JRDesignChartDataset implements JRXyzDataset {
 	
@@ -45,7 +44,7 @@ public class JRDesignXyzDataset extends JRDesignChartDataset implements JRXyzDat
 	
 	public static final String PROPERTY_XYZ_SERIES = "xyzSeries";
 	
-	private List<JRXyzSeries> xyzSeriesList = new ArrayList<JRXyzSeries>();
+	private List<JRXyzSeries> xyzSeriesList = new ArrayList<>();
 
 
 	/**
@@ -57,9 +56,7 @@ public class JRDesignXyzDataset extends JRDesignChartDataset implements JRXyzDat
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRXyzSeries[] getSeries()
 	{
 		JRXyzSeries[] xyzSeriesArray = new JRXyzSeries[ xyzSeriesList.size() ];
@@ -112,31 +109,26 @@ public class JRDesignXyzDataset extends JRDesignChartDataset implements JRXyzDat
 		return xyzSeries;
 	}
 	
-	/** 
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.XYZ_DATASET;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignXyzDataset clone = (JRDesignXyzDataset)super.clone();

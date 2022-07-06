@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,20 +27,19 @@ package net.sf.jasperreports.engine.design;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.util.JRClassLoader;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.JRClassLoader;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRJdk13Compiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRJdk13Compiler extends JRAbstractMultiClassCompiler
 {
@@ -65,17 +64,7 @@ public class JRJdk13Compiler extends JRAbstractMultiClassCompiler
 		super(jasperReportsContext);
 	}
 	
-	/**
-	 * @deprecated Replaced by {@link #JRJdk13Compiler(JasperReportsContext)}.
-	 */
-	public JRJdk13Compiler()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-	
-	/**
-	 *
-	 */
+	@Override
 	public String compileClasses(File[] sourceFiles, String classpath) throws JRException
 	{
 		String[] source = new String[sourceFiles.length + 2];
@@ -93,13 +82,13 @@ public class JRJdk13Compiler extends JRAbstractMultiClassCompiler
 		try 
 		{
 			Class<?> clazz = JRClassLoader.loadClassForRealName("com.sun.tools.javac.Main");
-			Object compiler = clazz.newInstance();
+			Object compiler = clazz.getDeclaredConstructor().newInstance();
 			
 			try 
 			{
 				Method compileMethod = clazz.getMethod("compile", new Class[] {String[].class, PrintWriter.class});
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				int result = ((Integer)compileMethod.invoke(compiler, new Object[] {source, new PrintWriter(baos)})).intValue();
+				int result = (Integer)compileMethod.invoke(compiler, new Object[] {source, new PrintWriter(baos)});
 				
 				if (result != MODERN_COMPILER_SUCCESS)
 				{
@@ -117,22 +106,27 @@ public class JRJdk13Compiler extends JRAbstractMultiClassCompiler
 			{
 				Method compileMethod = clazz.getMethod("compile", new Class[] {String[].class});
 
-				int result = ((Integer)compileMethod.invoke(compiler, new Object[] {source})).intValue();
+				int result = (Integer)compileMethod.invoke(compiler, new Object[] {source});
 				if (result != MODERN_COMPILER_SUCCESS)
 				{
 					errors = "See error messages above.";
 				}
 			}
 		}
-		catch (Exception e)
+		catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException 
+			| IllegalAccessException | InstantiationException e)
 		{
-			StringBuffer files = new StringBuffer();
+			StringBuilder files = new StringBuilder();
 			for (int i = 0; i < sourceFiles.length; ++i)
 			{
 				files.append(sourceFiles[i].getPath());
 				files.append(' ');
 			}
-			throw new JRException("Error compiling report java source files : " + files, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_JAVA_SOURCE_COMPILE_ERROR,
+					new Object[]{files}, 
+					e);
 		}
 		
 		return errors;

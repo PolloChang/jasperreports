@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Common usages are to show "critical", "warning" and "good" ranges.
  *
  * @author Barry Klawans (barry@users.sourceforge.net)
- * @version $Id: JRMeterInterval.java 7199 2014-08-27 13:58:10Z teodord $
  */
 
 
@@ -179,9 +178,7 @@ public class JRMeterInterval implements JRCloneable, Serializable
 		this.alphaDouble = alpha;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRMeterInterval clone = null;
@@ -215,7 +212,7 @@ public class JRMeterInterval implements JRCloneable, Serializable
 		
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_1_3)
 		{
-			alphaDouble = new Double(alpha);
+			alphaDouble = alpha;
 		}
 	}
 	

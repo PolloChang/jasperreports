@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import java.awt.Graphics2D;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
@@ -46,19 +45,9 @@ import net.sf.jasperreports.engine.util.JRPenUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RectangleDrawer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RectangleDrawer extends ElementDrawer<JRPrintRectangle>
 {
-	/**
-	 * @deprecated Replaced by {@link #RectangleDrawer(JasperReportsContext)}.
-	 */
-	public RectangleDrawer()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-	
-	
 	/**
 	 *
 	 */
@@ -68,9 +57,7 @@ public class RectangleDrawer extends ElementDrawer<JRPrintRectangle>
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public void draw(Graphics2D grx, JRPrintRectangle rectangle, int offsetX, int offsetY)
 	{
 		int width = rectangle.getWidth();
@@ -113,7 +100,7 @@ public class RectangleDrawer extends ElementDrawer<JRPrintRectangle>
 
 			if (rectangle.getLinePen().getLineStyleValue() == LineStyleEnum.DOUBLE)
 			{
-				float lineWidth = rectangle.getLinePen().getLineWidth().floatValue();
+				float lineWidth = rectangle.getLinePen().getLineWidth();
 				
 				if (rectangle.getRadius() > 0)
 				{

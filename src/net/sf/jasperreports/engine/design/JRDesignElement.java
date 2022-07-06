@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,6 +40,7 @@ import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.base.JRBaseElement;
 import net.sf.jasperreports.engine.type.PositionTypeEnum;
 import net.sf.jasperreports.engine.type.StretchTypeEnum;
+import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 
 /**
@@ -47,7 +48,6 @@ import net.sf.jasperreports.engine.type.StretchTypeEnum;
  * and compiled elements is that at design time they are more customizable. This class contains setters for properties
  * that can be only modified at design time.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRDesignElement extends JRBaseElement
 {
@@ -76,7 +76,7 @@ public abstract class JRDesignElement extends JRBaseElement
 	
 	public static final String PROPERTY_PROPERTY_EXPRESSIONS = "propertyExpressions";
 
-	private List<JRPropertyExpression> propertyExpressions = new ArrayList<JRPropertyExpression>();
+	private List<JRPropertyExpression> propertyExpressions = new ArrayList<>();
 
 	/**
 	 *
@@ -150,9 +150,9 @@ public abstract class JRDesignElement extends JRBaseElement
 	}
 	
 	/**
-	 * Specifies the logical group that the element belongs to. More elements can be grouped in order to get the height
-	 * of the tallest one.
-	 * @see StretchTypeEnum#RELATIVE_TO_TALLEST_OBJECT
+	 * Specifies the logical group that the element belongs to. More elements can be grouped in order to make some of them
+	 * stretch relative to the height of their parent group.
+	 * @see StretchTypeEnum 
 	 */
 	public void setElementGroup(JRElementGroup elementGroup)
 	{
@@ -192,7 +192,7 @@ public abstract class JRDesignElement extends JRBaseElement
 		
 		if (propertyExpressions == null)
 		{
-			propertyExpressions = new ArrayList<JRPropertyExpression>();
+			propertyExpressions = new ArrayList<>();
 		}
 	}
 	
@@ -264,6 +264,7 @@ public abstract class JRDesignElement extends JRBaseElement
 		return propertyExpressions;
 	}
 	
+	@Override
 	public JRPropertyExpression[] getPropertyExpressions()
 	{
 		JRPropertyExpression[] props;
@@ -284,6 +285,7 @@ public abstract class JRDesignElement extends JRBaseElement
 	{
 		JRDesignElement clone = (JRDesignElement) super.clone();
 		clone.uuid = null;
+		clone.propertyExpressions = JRCloneUtils.cloneList(propertyExpressions);
 		return clone;
 	}
 	

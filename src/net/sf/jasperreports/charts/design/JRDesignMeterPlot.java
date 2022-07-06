@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,6 @@ import net.sf.jasperreports.engine.JRFont;
  * range can be further subdivided into multiple color coded regions.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRDesignMeterPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignMeterPlot extends JRBaseMeterPlot
 {
@@ -118,20 +117,13 @@ public class JRDesignMeterPlot extends JRBaseMeterPlot
 	}
 
 	/**
-	 * Sets the shape of the meter.  Must be one of
-	 * <code>MeterShapeEnum.CHORD</code>, <code>MeterShapeEnum.CIRCLE</code>,
-	 * <code>MeterShapeEnum.PIE</code> or <code>MeterShapeEnum.DIAL</code>.
+	 * Sets the shape of the meter.
 	 *
 	 * @param shape the shape of the meter
 	 * @throws JRException invalid shape was specified
 	 */
 	public void setShape(MeterShapeEnum shape) throws JRException
 	{
-		if (shape != null && (shape.getValue() < 0 || shape.getValue() > MeterShapeEnum.DIAL.getValue()))
-		{
-			throw new JRException("Unknown shape for MeterPlot");
-		}
-
 		MeterShapeEnum old = this.shapeValue;
 		this.shapeValue = shape;
 		getEventSupport().firePropertyChange(PROPERTY_SHAPE, old, this.shapeValue);

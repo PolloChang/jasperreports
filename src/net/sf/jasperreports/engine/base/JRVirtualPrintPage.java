@@ -1,7 +1,9 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2005 - 2014 Works, Inc. All rights reserved.
+ * Copyright (C) 2005 Works, Inc. All rights reserved.
  * http://www.works.com
+ * Copyright (C) 2005 - 2022 TIBCO Software Inc. All rights reserved.
+ * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
  * the following license terms apply:
@@ -27,37 +29,32 @@
  */
 package net.sf.jasperreports.engine.base;
 
-import java.awt.Graphics2D;
-import java.awt.geom.Dimension2D;
-import java.awt.geom.Rectangle2D;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRConstants;
-import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRVirtualizer;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.fill.JRTemplateElement;
 import net.sf.jasperreports.engine.fill.JRVirtualizationContext;
 import net.sf.jasperreports.engine.fill.VirtualizationObjectInputStream;
-import net.sf.jasperreports.engine.type.ImageTypeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.renderers.Renderable;
 
 /**
  * A print page that can be virtualized to free heap memory.
  * 
  * @author John Bindel
- * @version $Id: JRVirtualPrintPage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRVirtualPrintPage implements JRPrintPage, Serializable
 {
@@ -89,10 +86,17 @@ public class JRVirtualPrintPage implements JRPrintPage, Serializable
 	 * (as an integer, using the property name as parameter name).
 	 * The default value is 2000.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = "2000",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_4_1_3,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_VIRTUAL_PAGE_ELEMENT_SIZE = 
 			JRPropertiesUtil.PROPERTY_PREFIX + "virtual.page.element.size";
 	
-	private VirtualizableElementList elements;
+	protected VirtualizableElementList elements;
 	
 	/**
 	 * Constructs a virtualizable page.
@@ -107,8 +111,21 @@ public class JRVirtualPrintPage implements JRPrintPage, Serializable
 	
 	/**
 	 * Constructs a virtualizable page.
+	 * 
+	 * @param printObject
+	 * @param virtualizationContext
+	 * @deprecated replaced by {@link #JRVirtualPrintPage(JRVirtualizationContext)}
 	 */
+	@Deprecated
 	public JRVirtualPrintPage(JasperPrint printObject, JRVirtualizationContext virtualizationContext)
+	{
+		this(virtualizationContext);
+	}
+	
+	/**
+	 * Constructs a virtualizable page.
+	 */
+	public JRVirtualPrintPage(JRVirtualizationContext virtualizationContext)
 	{
 		super();
 		
@@ -119,18 +136,24 @@ public class JRVirtualPrintPage implements JRPrintPage, Serializable
 			log.debug("created list " + this.elements + " for page " + this);
 		}
 	}
+	
+	protected JRVirtualPrintPage()
+	{
+	}
 
+	@Override
 	public List<JRPrintElement> getElements()
 	{
 		return elements;
 	}
 
+	@Override
 	public void setElements(List<JRPrintElement> elements)
 	{
 		this.elements.set(elements);
 	}
 
-	
+	@Override
 	public void addElement(JRPrintElement element)
 	{
 		elements.add(element);
@@ -156,62 +179,10 @@ public class JRVirtualPrintPage implements JRPrintPage, Serializable
 			this.id = renderer.getId();
 		}
 
+		@Override
 		public String getId()
 		{
 			return id;
-		}
-
-		@SuppressWarnings("deprecation")
-		public byte getType()
-		{
-			return RenderableTypeEnum.IMAGE.getValue();
-		}
-
-		@SuppressWarnings("deprecation")
-		public byte getImageType()
-		{
-			return ImageTypeEnum.UNKNOWN.getValue();
-		}
-
-		@SuppressWarnings("deprecation")
-		public Dimension2D getDimension() throws JRException
-		{
-			return null;
-		}
-
-		@SuppressWarnings("deprecation")
-		public byte[] getImageData() throws JRException
-		{
-			return null;
-		}
-
-		@SuppressWarnings("deprecation")
-		public void render(Graphics2D grx, Rectangle2D rectanle) throws JRException
-		{
-		}
-
-		public RenderableTypeEnum getTypeValue()
-		{
-			return RenderableTypeEnum.IMAGE;
-		}
-
-		public ImageTypeEnum getImageTypeValue()
-		{
-			return ImageTypeEnum.UNKNOWN;
-		}
-
-		public Dimension2D getDimension(JasperReportsContext jasperReportsContext) throws JRException
-		{
-			return null;
-		}
-
-		public byte[] getImageData(JasperReportsContext jasperReportsContext) throws JRException
-		{
-			return null;
-		}
-
-		public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectanle) throws JRException
-		{
 		}
 	}
 	
@@ -225,11 +196,13 @@ public class JRVirtualPrintPage implements JRPrintPage, Serializable
 			super(id);
 		}
 
+		@Override
 		public int getHashCode()
 		{
 			throw new UnsupportedOperationException();
 		}
 
+		@Override
 		public boolean isIdentical(Object object)
 		{
 			throw new UnsupportedOperationException();
@@ -259,12 +232,19 @@ public class JRVirtualPrintPage implements JRPrintPage, Serializable
 			in.readFully(buffer);
 			ByteArrayInputStream inputStream = new ByteArrayInputStream(buffer, 0, buffer.length);
 			VirtualizationObjectInputStream elementsStream = new VirtualizationObjectInputStream(inputStream, virtualizationContext);
-			@SuppressWarnings("unchecked")
-			List<JRPrintElement> elementsList = (List<JRPrintElement>) elementsStream.readObject();
-			
-			// create a new list for the elements
-			elements = new VirtualizableElementList(virtualizationContext, this);
-			elements.addAll(elementsList);
+			try
+			{
+				@SuppressWarnings("unchecked")
+				List<JRPrintElement> elementsList = (List<JRPrintElement>) elementsStream.readObject();
+				
+				// create a new list for the elements
+				elements = new VirtualizableElementList(virtualizationContext, this);
+				elements.addAll(elementsList);
+			}
+			finally
+			{
+				elementsStream.close();
+			}
 		}
 	}
 
@@ -281,4 +261,10 @@ public class JRVirtualPrintPage implements JRPrintPage, Serializable
 	{
 		elements.dispose();
 	}
+	
+	public JRVirtualizationContext getVirtualizationContext()
+	{
+		return elements.getVirtualizationContext();
+	}
+	
 }

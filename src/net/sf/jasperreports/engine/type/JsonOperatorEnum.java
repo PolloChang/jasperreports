@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,18 +23,19 @@
  */
 package net.sf.jasperreports.engine.type;
 
+
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JsonOperatorEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public enum JsonOperatorEnum {
-	
+public enum JsonOperatorEnum implements NamedValueEnum<String> 
+{
 	LT("<", "Lower than"),
 	LE("<=", "Lower or equal"),
 	GT(">", "Greater than"),
 	GE(">=", "Greater or equal"),
 	EQ("==", "Equal"),
-	NE("!=", "Not equal");
+	NE("!=", "Not equal"),
+	CONTAINS("*=", "Contains");
 
 	private final transient String value;
 	private final transient String name;
@@ -44,30 +45,18 @@ public enum JsonOperatorEnum {
 		this.name = name;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public final String getValue() {
 		return value;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getName() {
 		return name;
 	}
-	
-	/**
-	 * 
-	 */
-	public static JsonOperatorEnum getByValue(String value) {
-		for (JsonOperatorEnum joe: values()) {
-			if (value.equals(joe.getValue())) {
-				return joe;
-			}
-		}
-		return null;
+
+	@Override
+	public String toString() {
+		return value;
 	}
-	
 }

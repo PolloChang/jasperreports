@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,8 +43,7 @@ import org.jfree.data.category.DefaultCategoryDataset;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: FillSpiderDataset.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class FillSpiderDataset extends JRFillElementDataset implements SpiderDataset
 {
@@ -54,6 +53,7 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME = "components.spiderchart.category.dataset.series.null.name";
 	/**
 	 *
 	 */
@@ -88,18 +88,14 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRCategorySeries[] getSeries()
 	{
 		return categorySeries;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customInitialize()
 	{
 		dataset = null;
@@ -107,9 +103,7 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 		itemHyperlinks = null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customEvaluate(JRCalculator calculator) throws JRExpressionEvalException
 	{
 		if (categorySeries != null && categorySeries.length > 0)
@@ -121,9 +115,7 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customIncrement()
 	{
 		if (categorySeries != null && categorySeries.length > 0)
@@ -131,8 +123,8 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 			if (dataset == null)
 			{
 				dataset = new DefaultCategoryDataset();
-				labelsMap = new HashMap<Comparable<?>, Map<Comparable<?>, String>>();
-				itemHyperlinks = new HashMap<Comparable<?>,Map<Comparable<?>,JRPrintHyperlink>>();
+				labelsMap = new HashMap<>();
+				itemHyperlinks = new HashMap<>();
 			}
 			
 			for(int i = 0; i < categorySeries.length; i++)
@@ -142,7 +134,11 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 				Comparable<?> seriesName = crtCategorySeries.getSeries();
 				if (seriesName == null)
 				{
-					throw new JRRuntimeException("Category series name is null.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME,  
+							(Object[])null 
+							);
 				}
 
 				dataset.addValue(
@@ -156,7 +152,7 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 					Map<Comparable<?>, String> seriesLabels = labelsMap.get(seriesName);
 					if (seriesLabels == null)
 					{
-						seriesLabels = new HashMap<Comparable<?>, String>();
+						seriesLabels = new HashMap<>();
 						labelsMap.put(seriesName, seriesLabels);
 					}
 					
@@ -168,7 +164,7 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 					Map<Comparable<?>,JRPrintHyperlink> seriesLinks = itemHyperlinks.get(seriesName);
 					if (seriesLinks == null)
 					{
-						seriesLinks = new HashMap<Comparable<?>,JRPrintHyperlink>();
+						seriesLinks = new HashMap<>();
 						itemHyperlinks.put(seriesName, seriesLinks);
 					}
 					seriesLinks.put(crtCategorySeries.getCategory(), crtCategorySeries.getPrintItemHyperlink());
@@ -190,13 +186,12 @@ public class FillSpiderDataset extends JRFillElementDataset implements SpiderDat
 	 */
 	public StandardCategoryItemLabelGenerator getLabelGenerator()
 	{
+		//do we need to use the fill locale here?  apparently not.
 		return labelsMap != null ? new CategoryLabelGenerator(labelsMap) : new StandardCategoryItemLabelGenerator();
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		SpiderChartCompiler.collectExpressions(this, collector);

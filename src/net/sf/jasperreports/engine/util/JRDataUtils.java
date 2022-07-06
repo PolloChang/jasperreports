@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,23 +23,35 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRTextField;
+
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDataUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRDataUtils
 {
 	
 	public static final double JULIAN_0000 = 1721424.5;
 	public static final double JULIAN_1900 = 2415020.5;	
+	public static final String ISO_DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss";
 	
+	
+	public static DateFormat getIsoDateFormat()
+	{
+		return new SimpleDateFormat(ISO_DATE_PATTERN);
+	}
+	
+
 	public static String getLocaleCode(Locale locale)
 	{
 		return locale.toString();
@@ -84,6 +96,30 @@ public final class JRDataUtils
 		return TimeZone.getTimeZone(id);
 	}
 	
+	
+	public static TimeZone resolveFormatTimeZone(String timeZoneId, TimeZone reportTimeZone)
+	{
+		if (timeZoneId == null || timeZoneId.isEmpty())
+		{
+			return null;
+		}
+		
+		if (timeZoneId.equals(JRTextField.FORMAT_TIMEZONE_SYSTEM))
+		{
+			// using the default JVM timezone
+			return TimeZone.getDefault();
+		}
+		
+		if (timeZoneId.equals(JRParameter.REPORT_TIME_ZONE))
+		{
+			// using the report timezone
+			return reportTimeZone;
+		}
+		
+		// note that this returns GMT if the ID is unknown, leaving that as is
+		return getTimeZone(timeZoneId);
+	}
+	
 
 	public static double getExcelSerialDayNumber(Date date, Locale locale, TimeZone timeZone)
 	{
@@ -96,9 +132,10 @@ public final class JRDataUtils
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
 		int min = calendar.get(Calendar.MINUTE);
 		int sec = calendar.get(Calendar.SECOND);
+		int millis = calendar.get(Calendar.MILLISECOND);
 		
 		double result = getGregorianToJulianDay(year, month + 1, day) +
-				(Math.floor(sec + 60 * (min + 60 * hour) + 0.5) / 86400.0);	
+				(Math.floor(millis + 1000 * (sec + 60 * (min + 60 * hour)) + 0.5) / 86400000.0);	
 		return (result - JULIAN_1900) + 1 + ((result > 2415078.5) ? 1 : 0);
 	}
 	

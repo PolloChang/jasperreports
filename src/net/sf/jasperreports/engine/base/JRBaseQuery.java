@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.util.JRQueryParser;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseQuery.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseQuery implements JRQuery, Serializable
 {
@@ -85,33 +84,28 @@ public class JRBaseQuery implements JRQuery, Serializable
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public JRQueryChunk[] getChunks()
 	{
 		return this.chunks;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public String getText()
 	{
 		return JRQueryParser.instance().asText(getChunks());
 	}
 
 
+	@Override
 	public String getLanguage()
 	{
 		return language;
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseQuery clone = null;

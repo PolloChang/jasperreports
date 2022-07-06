@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,15 +33,12 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBandFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBandFactory extends JRBaseFactory
 {
 	private static final Log log = LogFactory.getLog(JRBandFactory.class);
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JRDesignBand band = new JRDesignBand();
@@ -60,7 +57,7 @@ public class JRBandFactory extends JRBaseFactory
 				log.warn("The 'isSplitAllowed' attribute is deprecated. Use the 'splitType' attribute instead.");
 			}
 				
-			if (Boolean.valueOf(isSplitAllowed).booleanValue())
+			if (Boolean.valueOf(isSplitAllowed))
 			{
 				band.setSplitType(SplitTypeEnum.STRETCH);
 			}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,6 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * that is included in compiled reports.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseGenericElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseGenericElement extends JRBaseElement implements
 		JRGenericElement
@@ -70,7 +69,7 @@ public class JRBaseGenericElement extends JRBaseElement implements
 		this.evaluationGroupName = element.getEvaluationGroupName();
 		
 		JRGenericElementParameter[] elementParameters = element.getParameters();
-		this.parameters = new ArrayList<JRGenericElementParameter>(elementParameters.length);
+		this.parameters = new ArrayList<>(elementParameters.length);
 		for (int i = 0; i < elementParameters.length; i++)
 		{
 			JRGenericElementParameter elementParameter = elementParameters[i];
@@ -80,31 +79,37 @@ public class JRBaseGenericElement extends JRBaseElement implements
 		}
 	}
 
+	@Override
 	public JRGenericElementType getGenericType()
 	{
 		return genericType;
 	}
 
+	@Override
 	public JRGenericElementParameter[] getParameters()
 	{
 		return parameters.toArray(new JRGenericElementParameter[parameters.size()]);
 	}
 
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitGenericElement(this);
 	}
 
+	@Override
 	public String getEvaluationGroupName()
 	{
 		return evaluationGroupName;
 	}
 
+	@Override
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
 		return evaluationTimeValue;
@@ -120,6 +125,7 @@ public class JRBaseGenericElement extends JRBaseElement implements
 	 */
 	private byte evaluationTime;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,10 +26,15 @@ package net.sf.jasperreports.engine.xml;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sf.jasperreports.engine.JRPropertiesUtil;
-
+import org.apache.commons.collections4.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * The default XML export SAX parser factory.
@@ -48,7 +53,6 @@ import org.apache.commons.logging.LogFactory;
  * SAX parser.  See {@link #PROPERTY_CACHE_SCHEMAS}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: PrintSaxParserFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PrintSaxParserFactory extends BaseSaxParserFactory
 {
@@ -60,19 +64,32 @@ public class PrintSaxParserFactory extends BaseSaxParserFactory
 	 * <p>
 	 * Defaults to <code>true</code>.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_1_0_0,
+			valueType = Boolean.class
+			)
 	public static final String EXPORT_XML_VALIDATION = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.validation";
+	
+	private final static ThreadLocal<ReferenceMap<Object, Object>> GRAMMAR_POOL_CACHE = new ThreadLocal<>();
+	
+	public PrintSaxParserFactory(JasperReportsContext jasperReportsContext) 
+	{
+		super(jasperReportsContext);
+	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	protected boolean isValidating()
 	{
-		return net.sf.jasperreports.engine.util.JRProperties.getBooleanProperty(EXPORT_XML_VALIDATION);
+		return JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(EXPORT_XML_VALIDATION);
 	}
 
 	@Override
 	protected List<String> getSchemaLocations()
 	{
-		List<String> schemas = new ArrayList<String>();
+		List<String> schemas = new ArrayList<>();
 		schemas.add(getResourceURI(JRXmlConstants.JASPERPRINT_XSD_RESOURCE));
 		schemas.add(getResourceURI(JRXmlConstants.JASPERPRINT_XSD_DTD_COMPAT_RESOURCE));
 		
@@ -103,6 +120,12 @@ public class PrintSaxParserFactory extends BaseSaxParserFactory
 		}
 		
 		return schemas;
+	}
+
+	@Override
+	protected ThreadLocal<ReferenceMap<Object, Object>> getGrammarPoolCache()
+	{
+		return GRAMMAR_POOL_CACHE;
 	}
 
 }

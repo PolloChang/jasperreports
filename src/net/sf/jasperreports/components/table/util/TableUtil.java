@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.components.table.BaseColumn;
 import net.sf.jasperreports.components.table.Cell;
 import net.sf.jasperreports.components.table.Column;
 import net.sf.jasperreports.components.table.ColumnGroup;
-import net.sf.jasperreports.components.table.StandardColumn;
 import net.sf.jasperreports.components.table.TableComponent;
 import net.sf.jasperreports.engine.JRChild;
 import net.sf.jasperreports.engine.JRDataset;
@@ -47,12 +46,10 @@ import net.sf.jasperreports.engine.JRExpressionChunk;
 import net.sf.jasperreports.engine.JRGroup;
 import net.sf.jasperreports.engine.JRReport;
 import net.sf.jasperreports.engine.JRTextField;
-import net.sf.jasperreports.engine.design.JRDesignTextElement;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 
 /**
  * @author Veaceslav Chicu (schicu@users.sourceforge.net)
- * @version $Id: TableUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableUtil 
 {
@@ -65,7 +62,7 @@ public class TableUtil
 	public static final int COLUMN_GROUP_FOOTER = 6;
 	
 	private TableComponent table;
-	private Map<Cell, Rectangle> boundsMap = new HashMap<Cell, Rectangle>();
+	private Map<Cell, Rectangle> boundsMap = new HashMap<>();
 	private JRReport report;
 
 	public TableUtil(TableComponent table, JRReport report) {
@@ -166,7 +163,7 @@ public class TableUtil
 	}
 
 	public static List<BaseColumn> getAllColumns(List<BaseColumn> cols) {
-		List<BaseColumn> lst = new ArrayList<BaseColumn>();
+		List<BaseColumn> lst = new ArrayList<>();
 		for (BaseColumn bc : cols) {
 			if (bc instanceof ColumnGroup)
 				lst.addAll(getAllColumns(((ColumnGroup) bc).getColumns()));
@@ -231,8 +228,9 @@ public class TableUtil
 		}
 		if (c != null) {
 			y = p.y + h;
-			h = c.getHeight();
-			boundsMap.put(c, new Rectangle(p.x, y, w, h));
+			int cellHeight = c.getHeight();
+			boundsMap.put(c, new Rectangle(p.x, y, w, cellHeight));
+			h += cellHeight;
 		}
 		return new Rectangle(p.x + w, y, w, h);
 	}
@@ -299,6 +297,7 @@ public class TableUtil
 		case COLUMN_GROUP_FOOTER:
 			cell = bc.getGroupFooter(grName);
 			break;
+		default:
 		}
 		return cell;
 	}
@@ -315,36 +314,6 @@ public class TableUtil
 			}
 		}
 		return null;
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #getCellElement(Class, Cell, boolean)}.
-	 */
-	public static JRDesignTextElement getColumnHeaderTextElement(StandardColumn column) 
-	{
-		return getCellElement(JRDesignTextElement.class, column.getColumnHeader(), true);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #getCellElement(Class, Cell, boolean)}.
-	 */
-	public static JRDesignTextElement getCellTextElement(Cell cell, boolean oneElementPerCell) 
-	{
-		return getCellElement(JRDesignTextElement.class, cell, oneElementPerCell);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #getCellElement(Class, Cell, boolean)}.
-	 */
-	public static JRTextField getColumnDetailTextElement(Column column) {
-		return getCellElement(JRTextField.class, column.getDetailCell(), true);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #getCellElement(Class, Cell, boolean)}.
-	 */
-	public static JRTextField getCellDetailTextElement(Cell cell, boolean oneElementPerCell) {
-		return getCellElement(JRTextField.class, cell, oneElementPerCell);
 	}
 
 	/**
@@ -407,7 +376,7 @@ public class TableUtil
 	}
 
 	public static List<ColumnGroup> getHierarchicalColumnGroupsForColumn(BaseColumn column, List<BaseColumn> columns, TableComponent table) {
-		List<ColumnGroup> result = new ArrayList<ColumnGroup>();
+		List<ColumnGroup> result = new ArrayList<>();
 		List<BaseColumn> cols = columns != null ? columns : table.getColumns();
 		for (BaseColumn bc : cols) {
 			if (bc instanceof ColumnGroup){

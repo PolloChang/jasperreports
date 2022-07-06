@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRShortIncrementerFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRShortIncrementerFactory extends JRAbstractExtendedIncrementerFactory
 {
@@ -37,7 +36,7 @@ public final class JRShortIncrementerFactory extends JRAbstractExtendedIncrement
 	/**
 	 *
 	 */
-	protected static final Short ZERO = new Short((short)0);
+	protected static final Short ZERO = 0;
 
 
 	/**
@@ -63,9 +62,7 @@ public final class JRShortIncrementerFactory extends JRAbstractExtendedIncrement
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExtendedIncrementer getExtendedIncrementer(CalculationEnum calculation)
 	{
 		JRExtendedIncrementer incrementer = null;
@@ -150,9 +147,7 @@ final class JRShortCountIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -171,10 +166,11 @@ final class JRShortCountIncrementer extends JRAbstractExtendedIncrementer
 			return value;
 		}
 
-		return new Short((short)(value.shortValue() + 1));
+		return (short)(value.shortValue() + 1);
 	}
 
 	
+	@Override
 	public Object combine(JRCalculable calculable, JRCalculable calculableValue, AbstractValueProvider valueProvider)
 	{
 		Number value = (Number)calculable.getIncrementedValue();
@@ -190,10 +186,11 @@ final class JRShortCountIncrementer extends JRAbstractExtendedIncrementer
 			return value;
 		}
 
-		return new Short((short) (value.shortValue() + combineValue.shortValue()));
+		return (short) (value.shortValue() + combineValue.shortValue());
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRShortIncrementerFactory.ZERO;
@@ -226,9 +223,7 @@ final class JRShortDistinctCountIncrementer extends JRAbstractExtendedIncremente
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -243,17 +238,19 @@ final class JRShortDistinctCountIncrementer extends JRAbstractExtendedIncremente
 			holder.init();
 		}
 
-		return new Short((short)holder.getCount());
+		return (short)holder.getCount();
 	}
 
+	@Override
 	public Object combine(JRCalculable calculable, JRCalculable calculableValue, AbstractValueProvider valueProvider)
 	{
 		DistinctCountHolder holder = 
 			(DistinctCountHolder)valueProvider.getValue(calculable.getHelperVariable(JRCalculable.HELPER_COUNT));
 		
-		return new Short((short)holder.getCount());
+		return (short)holder.getCount();
 	}
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRShortIncrementerFactory.ZERO;
@@ -286,9 +283,7 @@ final class JRShortSumIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -313,10 +308,11 @@ final class JRShortSumIncrementer extends JRAbstractExtendedIncrementer
 			value = JRShortIncrementerFactory.ZERO;
 		}
 
-		return new Short((short)(value.shortValue() + newValue.shortValue()));
+		return (short)(value.shortValue() + newValue.shortValue());
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRShortIncrementerFactory.ZERO;
@@ -349,9 +345,7 @@ final class JRShortAverageIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -368,10 +362,11 @@ final class JRShortAverageIncrementer extends JRAbstractExtendedIncrementer
 		}
 		Number countValue = (Number)valueProvider.getValue(variable.getHelperVariable(JRCalculable.HELPER_COUNT));
 		Number sumValue = (Number)valueProvider.getValue(variable.getHelperVariable(JRCalculable.HELPER_SUM));
-		return new Short((short)(sumValue.shortValue() / countValue.shortValue()));
+		return (short)(sumValue.shortValue() / countValue.shortValue());
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRShortIncrementerFactory.ZERO;
@@ -404,9 +399,7 @@ final class JRShortStandardDeviationIncrementer extends JRAbstractExtendedIncrem
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -422,10 +415,11 @@ final class JRShortStandardDeviationIncrementer extends JRAbstractExtendedIncrem
 			return variable.getValue(); 
 		}
 		Number varianceValue = (Number)valueProvider.getValue(variable.getHelperVariable(JRCalculable.HELPER_VARIANCE));
-		return new Short( (short)Math.sqrt(varianceValue.doubleValue()) );
+		return (short)Math.sqrt(varianceValue.doubleValue());
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRShortIncrementerFactory.ZERO;
@@ -458,9 +452,7 @@ final class JRShortVarianceIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -487,15 +479,16 @@ final class JRShortVarianceIncrementer extends JRAbstractExtendedIncrementer
 			Number countValue = (Number)valueProvider.getValue(variable.getHelperVariable(JRCalculable.HELPER_COUNT));
 			Number sumValue = (Number)valueProvider.getValue(variable.getHelperVariable(JRCalculable.HELPER_SUM));
 			return
-				new Short((short)(
+				(short)(
 					(countValue.shortValue() - 1) * value.shortValue() / countValue.shortValue() +
 					( sumValue.shortValue() / countValue.shortValue() - newValue.shortValue() ) *
 					( sumValue.shortValue() / countValue.shortValue() - newValue.shortValue() ) /
 					(countValue.shortValue() - 1)
-					));
+					);
 		}
 	}
 
+	@Override
 	public Object combine(JRCalculable calculable, JRCalculable calculableValue, AbstractValueProvider valueProvider)
 	{
 		Number value = (Number)calculable.getIncrementedValue();
@@ -511,7 +504,7 @@ final class JRShortVarianceIncrementer extends JRAbstractExtendedIncrementer
 		}
 		else if (value == null || calculable.isInitialized())
 		{
-			return new Short(((Number) calculableValue.getIncrementedValue()).shortValue());
+			return ((Number) calculableValue.getIncrementedValue()).shortValue();
 		}
 
 		float v1 = value.floatValue();
@@ -527,17 +520,18 @@ final class JRShortVarianceIncrementer extends JRAbstractExtendedIncrementer
 		
 		float c = c1 + c2;
 
-		return new Short(
-				(short) (
+		return
+			(short) (
 				c1 / c * v1 +
 				c2 / c * v2 +
 				c2 / c1 * s1 / c * s1 / c +
 				c1 / c2 * s2 / c * s2 / c -
 				2 * s1 / c * s2 /c
-				));
+				);
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRShortIncrementerFactory.ZERO;

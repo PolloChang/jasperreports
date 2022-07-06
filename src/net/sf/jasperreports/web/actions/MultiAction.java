@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.web.actions;
 
 import java.util.List;
 
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.web.commands.CommandException;
 import net.sf.jasperreports.web.commands.MultiActionCommand;
 
@@ -32,9 +33,10 @@ import net.sf.jasperreports.web.commands.MultiActionCommand;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: MultiAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MultiAction extends AbstractAction {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	private List<AbstractAction> actions;
 	
@@ -47,7 +49,7 @@ public class MultiAction extends AbstractAction {
 		try{
 			getCommandStack().execute(new MultiActionCommand(actions, getJasperReportsContext(), getReportContext()));
 		} catch (CommandException e) {
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 	}
 

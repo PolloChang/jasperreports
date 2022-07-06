@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,13 @@
  */
 package net.sf.jasperreports.export.parameters;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
@@ -39,7 +39,6 @@ import net.sf.jasperreports.export.OutputStreamExporterOutput;
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParametersOutputStreamExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParametersOutputStreamExporterOutput extends AbstractParametersExporterOutput implements OutputStreamExporterOutput
 {
@@ -54,7 +53,7 @@ public class ParametersOutputStreamExporterOutput extends AbstractParametersExpo
 	 */
 	public ParametersOutputStreamExporterOutput(
 		JasperReportsContext jasperReportsContext,
-		Map<JRExporterParameter, Object> parameters,
+		Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters,
 		JasperPrint jasperPrint
 		)
 	{
@@ -65,26 +64,29 @@ public class ParametersOutputStreamExporterOutput extends AbstractParametersExpo
 			);
 		
 		toClose = false;
-		outputStream = (OutputStream)parameters.get(JRExporterParameter.OUTPUT_STREAM);
+		outputStream = (OutputStream)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_STREAM);
 		if (outputStream == null)
 		{
-			File destFile = (File)parameters.get(JRExporterParameter.OUTPUT_FILE);
+			File destFile = (File)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_FILE);
 			if (destFile == null)
 			{
-				String fileName = (String)parameters.get(JRExporterParameter.OUTPUT_FILE_NAME);
+				String fileName = (String)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_FILE_NAME);
 				if (fileName != null)
 				{
 					destFile = new File(fileName);
 				}
 				else
 				{
-					throw new JRRuntimeException("No output specified for the exporter.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_NO_OUTPUT_SPECIFIED,
+							(Object[])null);
 				}
 			}
 
 			try
 			{
-				outputStream = new FileOutputStream(destFile);
+				outputStream = new BufferedOutputStream(new FileOutputStream(destFile));
 				toClose = true;
 			}
 			catch (IOException e)
@@ -94,17 +96,13 @@ public class ParametersOutputStreamExporterOutput extends AbstractParametersExpo
 		}
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public OutputStream getOutputStream()
 	{
 		return outputStream;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void close()
 	{
 		if (toClose)

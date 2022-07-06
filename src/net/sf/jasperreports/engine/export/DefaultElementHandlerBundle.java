@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,12 +37,12 @@ import org.apache.commons.logging.LogFactory;
  * This implementation uses a {@link Map map} to keep element handlers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultElementHandlerBundle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultElementHandlerBundle implements GenericElementHandlerBundle
 {
 
 	private static final Log log = LogFactory.getLog(DefaultElementHandlerBundle.class);
+	public static final String EXCEPTION_MESSAGE_KEY_HANDLERS_NOT_FOUND_FOR_TYPE = "export.common.handlers.not.found.for.type";
 	
 	private String namespace;
 	private Map<String, Map<String,GenericElementHandler>> elementHandlers;
@@ -53,14 +53,17 @@ public class DefaultElementHandlerBundle implements GenericElementHandlerBundle
 	 * 
 	 * @throws JRRuntimeException if no handler is found
 	 */
+	@Override
 	public GenericElementHandler getHandler(String elementName,
 			String exporterKey)
 	{
 		Map<String,GenericElementHandler> handlers = elementHandlers.get(elementName);
 		if (handlers == null)
 		{
-			throw new JRRuntimeException("No handlers for generic elements of type "
-					+ namespace + "#" + elementName);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_HANDLERS_NOT_FOUND_FOR_TYPE,
+					new Object[]{namespace, elementName});
 		}
 		
 		GenericElementHandler handler = handlers.get(exporterKey);
@@ -75,6 +78,7 @@ public class DefaultElementHandlerBundle implements GenericElementHandlerBundle
 		return handler;
 	}
 
+	@Override
 	public String getNamespace()
 	{
 		return namespace;

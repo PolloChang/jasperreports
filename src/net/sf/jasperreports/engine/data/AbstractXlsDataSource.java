@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,11 +27,19 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRField;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRewindableDataSource;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.query.AbstractXlsQueryExecuterFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -41,18 +49,50 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * in each row (these indices start with 0). To avoid this situation, users can either specify a collection of column 
  * names or set a flag to read the column names from the first row of the XLSX or XLS file.
  *
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: AbstractXlsDataSource.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public abstract class AbstractXlsDataSource extends JRAbstractTextDataSource implements JRRewindableDataSource
 {
+	public static final String EXCEPTION_MESSAGE_KEY_XLS_COLUMN_NAMES_MISMATCH_COLUMN_INDEXES = "data.xls.column.names.mismatch.column.indexes";
+	public static final String EXCEPTION_MESSAGE_KEY_XLS_FIELD_VALUE_NOT_RETRIEVED = "data.xls.field.value.not.retrieved";
+	public static final String EXCEPTION_MESSAGE_KEY_XLS_SHEET_INDEX_OUT_OF_RANGE = "data.xls.sheet.index.out.of.range";
+	public static final String EXCEPTION_MESSAGE_KEY_XLS_SHEET_NOT_FOUND = "data.xls.sheet.not.found";
+	
+	/**
+	 * Property specifying the XLS column name for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {AbstractXlsQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+	)
+	public static final String PROPERTY_FIELD_COLUMN_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "xls.field.column.name";
+	
+	/**
+	 * Property specifying the XLS column index for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {AbstractXlsQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1,
+			valueType = Integer.class
+	)
+	public static final String PROPERTY_FIELD_COLUMN_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "xls.field.column.index";
+	
+	public static final String INDEXED_COLUMN_PREFIX = "COLUMN_";
+	private static final int INDEXED_COLUMN_PREFIX_LENGTH = INDEXED_COLUMN_PREFIX.length();
+
 	protected String sheetSelection;
 	
 	protected DateFormat dateFormat = new SimpleDateFormat();
-	protected NumberFormat numberFormat = new DecimalFormat();
-	protected Map<String, Integer> columnNames = new LinkedHashMap<String, Integer>();
+	protected NumberFormat numberFormat = new DecimalFormat();//these two here prevent commons beanutils conversion from superclass unless explicitly set to null; but it was like this since day one 
+	protected Map<String, Integer> columnNames = new LinkedHashMap<>();
 	protected boolean useFirstRowAsHeader;
 
+	protected Map<String,Integer> columnIndexMap = new HashMap<>();
+	
 
 	/**
 	 * Gets the date format that will be used to parse date fields.
@@ -119,7 +159,10 @@ public abstract class AbstractXlsDataSource extends JRAbstractTextDataSource imp
 		
 		if (columnNames.length != columnIndexes.length)
 		{
-			throw new JRRuntimeException("The number of column names must be equal to the number of column indexes.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_XLS_COLUMN_NAMES_MISMATCH_COLUMN_INDEXES,
+					(Object[])null);
 		}
 		
 		for (int i = 0; i < columnNames.length; i++)
@@ -182,6 +225,64 @@ public abstract class AbstractXlsDataSource extends JRAbstractTextDataSource imp
 		this.sheetSelection = sheetSelection;
 	}
 	
+
+	protected Integer getColumnIndex(JRField field) throws JRException
+	{
+		String fieldName = field.getName();
+		Integer columnIndex = columnIndexMap.get(fieldName);
+		if (columnIndex == null)
+		{
+			if (field.hasProperties())
+			{
+				String columnName = field.getPropertiesMap().getProperty(PROPERTY_FIELD_COLUMN_NAME);
+				if (columnName != null)
+				{
+					columnIndex = columnNames.get(columnName);
+					if (columnIndex == null)
+					{
+						throw 
+							new JRException(
+								EXCEPTION_MESSAGE_KEY_UNKNOWN_COLUMN_NAME,
+								new Object[]{columnName});
+					}
+				}
+			}
+
+			if (columnIndex == null)
+			{
+				if (field.hasProperties())
+				{
+					String index = field.getPropertiesMap().getProperty(PROPERTY_FIELD_COLUMN_INDEX);
+					if (index != null)
+					{
+						columnIndex = Integer.valueOf(index);
+					}
+				}
+			}
+			
+			if (columnIndex == null)
+			{
+				columnIndex = columnNames.get(fieldName);
+			}
+			
+			if (columnIndex == null && fieldName.startsWith(INDEXED_COLUMN_PREFIX))
+			{
+				columnIndex = Integer.valueOf(fieldName.substring(INDEXED_COLUMN_PREFIX_LENGTH));
+			}
+			
+			if (columnIndex == null)
+			{
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_COLUMN_NAME,
+						new Object[]{fieldName});
+			}
+
+			columnIndexMap.put(fieldName, columnIndex);
+		}
+		
+		return columnIndex;
+	}
 }
 
 

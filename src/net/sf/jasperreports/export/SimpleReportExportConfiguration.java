@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import net.sf.jasperreports.engine.export.JRHyperlinkProducerFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleReportExportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleReportExportConfiguration extends SimpleCommonExportConfiguration implements ReportExportConfiguration
 {
@@ -52,9 +51,7 @@ public class SimpleReportExportConfiguration extends SimpleCommonExportConfigura
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getStartPageIndex()
 	{
 		return startPageIndex;
@@ -70,9 +67,7 @@ public class SimpleReportExportConfiguration extends SimpleCommonExportConfigura
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getEndPageIndex()
 	{
 		return endPageIndex;
@@ -88,9 +83,7 @@ public class SimpleReportExportConfiguration extends SimpleCommonExportConfigura
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getPageIndex()
 	{
 		return pageIndex;
@@ -106,9 +99,7 @@ public class SimpleReportExportConfiguration extends SimpleCommonExportConfigura
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRExportProgressMonitor getProgressMonitor()
 	{
 		return progressMonitor;
@@ -124,9 +115,7 @@ public class SimpleReportExportConfiguration extends SimpleCommonExportConfigura
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public ExporterFilter getExporterFilter()
 	{
 		return filter;
@@ -142,9 +131,7 @@ public class SimpleReportExportConfiguration extends SimpleCommonExportConfigura
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getOffsetX()
 	{
 		return offsetX;
@@ -160,9 +147,7 @@ public class SimpleReportExportConfiguration extends SimpleCommonExportConfigura
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getOffsetY()
 	{
 		return offsetY;
@@ -178,9 +163,7 @@ public class SimpleReportExportConfiguration extends SimpleCommonExportConfigura
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRHyperlinkProducerFactory getHyperlinkProducerFactory()
 	{
 		return hyperlinkProducerFactory;

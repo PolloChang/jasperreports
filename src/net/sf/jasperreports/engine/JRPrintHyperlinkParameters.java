@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.virtualization.VirtualizationSerializable;
  * A set of parameters associated with a print element.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPrintHyperlinkParameters.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrintHyperlinkParameters implements Serializable, VirtualizationSerializable
 {
@@ -51,7 +50,7 @@ public class JRPrintHyperlinkParameters implements Serializable, VirtualizationS
 	 */
 	public JRPrintHyperlinkParameters()
 	{
-		parameters = new ArrayList<JRPrintHyperlinkParameter>();
+		parameters = new ArrayList<>();
 	}
 
 
@@ -91,7 +90,7 @@ public class JRPrintHyperlinkParameters implements Serializable, VirtualizationS
 	public void readVirtualized(VirtualizationInput in) throws IOException
 	{
 		int size = in.readIntCompressed();
-		parameters = new ArrayList<JRPrintHyperlinkParameter>(size);
+		parameters = new ArrayList<>(size);
 		for (int i = 0; i < size; i++)
 		{
 			JRPrintHyperlinkParameter param = (JRPrintHyperlinkParameter) in.readJRObject();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.components;
 
+import org.apache.commons.digester.Digester;
+
 import net.sf.jasperreports.components.barbecue.StandardBarbecueComponent;
 import net.sf.jasperreports.components.barcode4j.CodabarComponent;
 import net.sf.jasperreports.components.barcode4j.Code128Component;
@@ -31,38 +33,47 @@ import net.sf.jasperreports.components.barcode4j.DataMatrixComponent;
 import net.sf.jasperreports.components.barcode4j.EAN128Component;
 import net.sf.jasperreports.components.barcode4j.EAN13Component;
 import net.sf.jasperreports.components.barcode4j.EAN8Component;
+import net.sf.jasperreports.components.barcode4j.ErrorCorrectionLevelEnum;
 import net.sf.jasperreports.components.barcode4j.Interleaved2Of5Component;
+import net.sf.jasperreports.components.barcode4j.OrientationRule;
 import net.sf.jasperreports.components.barcode4j.PDF417Component;
 import net.sf.jasperreports.components.barcode4j.POSTNETComponent;
+import net.sf.jasperreports.components.barcode4j.QRCodeComponent;
 import net.sf.jasperreports.components.barcode4j.RoyalMailCustomerComponent;
+import net.sf.jasperreports.components.barcode4j.TextPositionEnum;
 import net.sf.jasperreports.components.barcode4j.UPCAComponent;
 import net.sf.jasperreports.components.barcode4j.UPCEComponent;
 import net.sf.jasperreports.components.barcode4j.USPSIntelligentMailComponent;
 import net.sf.jasperreports.components.iconlabel.IconLabelComponentDigester;
+import net.sf.jasperreports.components.items.Item;
+import net.sf.jasperreports.components.items.ItemData;
+import net.sf.jasperreports.components.items.ItemDataXmlFactory;
+import net.sf.jasperreports.components.items.ItemDatasetFactory;
+import net.sf.jasperreports.components.items.ItemProperty;
+import net.sf.jasperreports.components.items.ItemPropertyXmlFactory;
+import net.sf.jasperreports.components.items.ItemXmlFactory;
 import net.sf.jasperreports.components.list.DesignListContents;
+import net.sf.jasperreports.components.list.ListComponent;
 import net.sf.jasperreports.components.list.StandardListComponent;
-import net.sf.jasperreports.components.map.Item;
-import net.sf.jasperreports.components.map.ItemData;
-import net.sf.jasperreports.components.map.ItemDataXmlFactory;
-import net.sf.jasperreports.components.map.ItemDatasetFactory;
-import net.sf.jasperreports.components.map.ItemProperty;
-import net.sf.jasperreports.components.map.ItemPropertyXmlFactory;
-import net.sf.jasperreports.components.map.ItemXmlFactory;
 import net.sf.jasperreports.components.map.MapXmlFactory;
 import net.sf.jasperreports.components.sort.SortComponentDigester;
 import net.sf.jasperreports.components.spiderchart.SpiderChartDigester;
+import net.sf.jasperreports.components.table.DesignBaseCell;
 import net.sf.jasperreports.components.table.DesignCell;
 import net.sf.jasperreports.components.table.StandardColumn;
 import net.sf.jasperreports.components.table.StandardColumnGroup;
 import net.sf.jasperreports.components.table.StandardGroupCell;
+import net.sf.jasperreports.components.table.StandardGroupRow;
+import net.sf.jasperreports.components.table.StandardRow;
 import net.sf.jasperreports.components.table.StandardTableFactory;
-import net.sf.jasperreports.components.table.TableReportContextXmlRule;
+import net.sf.jasperreports.components.table.TableComponent;
 import net.sf.jasperreports.engine.JRElementDataset;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.component.XmlDigesterConfigurer;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
+import net.sf.jasperreports.engine.xml.DatasetRunReportContextRule;
 import net.sf.jasperreports.engine.xml.JRExpressionFactory;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
@@ -70,17 +81,25 @@ import net.sf.jasperreports.engine.xml.StyleContainerRule;
 import net.sf.jasperreports.engine.xml.UuidPropertyRule;
 import net.sf.jasperreports.engine.xml.XmlConstantPropertyRule;
 
-import org.apache.commons.digester.Digester;
-
 /**
  * XML digester for built-in component implementations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentsXmlDigesterConfigurer.java 7199 2014-08-27 13:58:10Z teodord $
  * @see ComponentsExtensionsRegistryFactory
  */
 public class ComponentsXmlDigesterConfigurer implements XmlDigesterConfigurer
 {
+	
+	private static final String[] BARCODE4J_IGNORED_PROPERTIES = {
+			JRXmlConstants.ATTRIBUTE_evaluationTime,
+			"orientation",
+			"textPosition"};
+
+	private static final String[] QRCODE_IGNORED_PROPERTIES = {
+			JRXmlConstants.ATTRIBUTE_evaluationTime,
+			"errorCorrectionLevel"};
+	
+	@Override
 	public void configureDigester(Digester digester)
 	{
 		addListRules(digester);
@@ -108,6 +127,8 @@ public class ComponentsXmlDigesterConfigurer implements XmlDigesterConfigurer
 		digester.addObjectCreate(listContentsPattern, DesignListContents.class);
 		digester.addSetProperties(listContentsPattern);
 		digester.addSetNext(listContentsPattern, "setContents");
+		// rule to set the context dataset name
+		digester.addRule(listContentsPattern, new DatasetRunReportContextRule<>(ListComponent.class));
 	}
 
 	@SuppressWarnings("deprecation")
@@ -183,16 +204,44 @@ public class ComponentsXmlDigesterConfigurer implements XmlDigesterConfigurer
 				"*/componentElement/POSTNET", POSTNETComponent.class);
 		addBaseBarcode4jRules(digester, 
 				"*/componentElement/PDF417", PDF417Component.class);
+		addQRCodeRules(digester, 
+				"*/componentElement/QRCode", QRCodeComponent.class);
+	}
+	
+	protected <T> void addBaseBarcode4jRules(Digester digester, 
+			String barcodePattern, Class<T> barcodeComponentClass)
+	{
+		addBarcodeRules(digester, barcodePattern, barcodeComponentClass, BARCODE4J_IGNORED_PROPERTIES);
+		addPatternExpressionRules(digester, barcodePattern);
+		
+		digester.addRule(barcodePattern, 
+				new OrientationRule("orientation", "orientation"));
+		digester.addRule(barcodePattern, 
+				new XmlConstantPropertyRule(
+						"textPosition", "textPosition",
+						TextPositionEnum.values()));
 	}
 	
 	@SuppressWarnings("deprecation")
-	protected <T> void addBaseBarcode4jRules(Digester digester, 
-			String barcodePattern, Class<T> barcodeComponentClass)
+	protected <T> void addPatternExpressionRules(Digester digester, String barcodePattern)
+	{
+		String patternExpressionPattern = barcodePattern + "/patternExpression";
+		digester.addFactoryCreate(patternExpressionPattern, 
+				JRExpressionFactory.StringExpressionFactory.class.getName());
+		digester.addCallMethod(patternExpressionPattern, "setText", 0);
+		digester.addSetNext(patternExpressionPattern, "setPatternExpression", 
+				JRExpression.class.getName());
+	}
+	
+	@SuppressWarnings("deprecation")
+	protected <T> void addBarcodeRules(Digester digester, 
+			String barcodePattern, Class<T> barcodeComponentClass,
+			String[] ignoredProperties)
 	{
 		digester.addObjectCreate(barcodePattern, barcodeComponentClass);
 		digester.addSetProperties(barcodePattern,
 				//properties to be ignored by this rule
-				new String[]{JRXmlConstants.ATTRIBUTE_evaluationTime}, 
+				ignoredProperties, 
 				new String[0]);
 		//rule to set evaluation time
 		digester.addRule(barcodePattern, 
@@ -206,13 +255,17 @@ public class ComponentsXmlDigesterConfigurer implements XmlDigesterConfigurer
 		digester.addCallMethod(codeExpressionPattern, "setText", 0);
 		digester.addSetNext(codeExpressionPattern, "setCodeExpression", 
 				JRExpression.class.getName());
-		
-		String patternExpressionPattern = barcodePattern + "/patternExpression";
-		digester.addFactoryCreate(patternExpressionPattern, 
-				JRExpressionFactory.StringExpressionFactory.class.getName());
-		digester.addCallMethod(patternExpressionPattern, "setText", 0);
-		digester.addSetNext(patternExpressionPattern, "setPatternExpression", 
-				JRExpression.class.getName());
+	}
+
+	protected <T> void addQRCodeRules(Digester digester, 
+			String barcodePattern, Class<T> barcodeComponentClass)
+	{
+		addBarcodeRules(digester, barcodePattern, barcodeComponentClass, QRCODE_IGNORED_PROPERTIES);
+
+		digester.addRule(barcodePattern, 
+				new XmlConstantPropertyRule(
+						"errorCorrectionLevel", "errorCorrectionLevel",
+						ErrorCorrectionLevelEnum.values()));
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -229,7 +282,6 @@ public class ComponentsXmlDigesterConfigurer implements XmlDigesterConfigurer
 	@SuppressWarnings("deprecation")
 	protected void addMapRules(Digester digester)
 	{
-		int one = digester.getRules().rules().size();
 		String mapPattern = "*/componentElement/map";
 		digester.addFactoryCreate(mapPattern, MapXmlFactory.class);
 
@@ -391,6 +443,30 @@ public class ComponentsXmlDigesterConfigurer implements XmlDigesterConfigurer
 		addTableGroupCellRules(digester, columnGroupPattern + "/groupFooter", "addGroupFooter");
 		addTableCellRules(digester, columnGroupPattern + "/columnHeader", "setColumnHeader");
 		addTableCellRules(digester, columnGroupPattern + "/columnFooter", "setColumnFooter");
+
+		addTableRowRules(digester, tablePattern + "/tableHeader", "setTableHeader");
+		addTableRowRules(digester, tablePattern + "/tableFooter", "setTableFooter");
+		addTableGroupRowRules(digester, tablePattern + "/groupHeader", "addGroupHeader");
+		addTableGroupRowRules(digester, tablePattern + "/groupFooter", "addGroupFooter");
+		addTableRowRules(digester, tablePattern + "/columnHeader", "setColumnHeader");
+		addTableRowRules(digester, tablePattern + "/columnFooter", "setColumnFooter");
+		addTableRowRules(digester, tablePattern + "/detail", "setDetail");
+		
+		addTableBaseCellRules(digester, tablePattern + "/noData", "setNoData");
+	}
+	
+	protected void addTableBaseCellRules(Digester digester, String pattern, 
+			String setNextMethod)
+	{
+		digester.addObjectCreate(pattern, DesignBaseCell.class);
+		digester.addSetNext(pattern, setNextMethod);
+		// rule to set the context dataset name
+		digester.addRule(pattern, new DatasetRunReportContextRule<>(TableComponent.class));
+		
+		digester.addSetProperties(pattern,
+				new String[]{JRXmlConstants.ATTRIBUTE_style}, 
+				new String[0]);
+		digester.addRule(pattern, new StyleContainerRule());
 	}
 	
 	protected void addTableCellRules(Digester digester, String pattern, 
@@ -399,7 +475,7 @@ public class ComponentsXmlDigesterConfigurer implements XmlDigesterConfigurer
 		digester.addObjectCreate(pattern, DesignCell.class);
 		digester.addSetNext(pattern, setNextMethod);
 		// rule to set the context dataset name
-		digester.addRule(pattern, new TableReportContextXmlRule());
+		digester.addRule(pattern, new DatasetRunReportContextRule<>(TableComponent.class));
 		
 		digester.addSetProperties(pattern,
 				new String[]{JRXmlConstants.ATTRIBUTE_style}, 
@@ -413,6 +489,27 @@ public class ComponentsXmlDigesterConfigurer implements XmlDigesterConfigurer
 		digester.addObjectCreate(pattern, StandardGroupCell.class);
 		digester.addSetProperties(pattern);
 		addTableCellRules(digester, pattern + "/cell", "setCell");
+		digester.addSetNext(pattern, setNextMethod);
+	}
+
+	@SuppressWarnings("deprecation")
+	protected void addTableRowRules(Digester digester, String pattern, 
+			String setNextMethod)
+	{
+		digester.addObjectCreate(pattern, StandardRow.class);
+		digester.addSetProperties(pattern);
+		digester.addSetNext(pattern, setNextMethod);
+		addExpressionRules(digester, pattern + "/printWhenExpression", 
+				JRExpressionFactory.BooleanExpressionFactory.class, "setPrintWhenExpression",
+				true);
+	}
+	
+	protected void addTableGroupRowRules(Digester digester, String pattern, 
+			String setNextMethod)
+	{
+		digester.addObjectCreate(pattern, StandardGroupRow.class);
+		digester.addSetProperties(pattern);
+		addTableRowRules(digester, pattern + "/row", "setRow");
 		digester.addSetNext(pattern, setNextMethod);
 	}
 

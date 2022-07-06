@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import java.util.List;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TupleMember.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TupleMember
 {
@@ -38,14 +37,14 @@ public class TupleMember
 	
 	public TupleMember ()
 	{
-		this.names = new ArrayList<String>();
+		this.names = new ArrayList<>();
 	}
 	
 	public void addName (String name)
 	{
 		names.add(name);
 		
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		if (uniqueName != null)
 		{
 			sb.append(uniqueName);

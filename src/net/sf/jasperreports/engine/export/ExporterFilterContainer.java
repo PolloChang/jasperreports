@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,11 +34,11 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * elements through each of them.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ExporterFilterContainer.java 7199 2014-08-27 13:58:10Z teodord $
  * @see #isToExport(JRPrintElement)
  */
 public class ExporterFilterContainer implements ResetableExporterFilter
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NULL_FILTERS_LIST = "export.filter.null.filters.list";
 
 	private final List<ExporterFilter> filters;
 	
@@ -51,7 +51,10 @@ public class ExporterFilterContainer implements ResetableExporterFilter
 	{
 		if (filters == null)
 		{
-			throw new JRRuntimeException("Null filters list");
+			throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_NULL_FILTERS_LIST,
+				(Object[])null);
 		}
 		
 		this.filters = filters;
@@ -61,6 +64,7 @@ public class ExporterFilterContainer implements ResetableExporterFilter
 	 * Returns <code>true</code> if the element is not filtered by any of
 	 * the contained filters.
 	 */
+	@Override
 	public boolean isToExport(JRPrintElement element)
 	{
 		boolean export = true;

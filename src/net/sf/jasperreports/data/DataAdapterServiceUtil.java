@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,45 +26,36 @@ package net.sf.jasperreports.data;
 import java.util.Iterator;
 import java.util.List;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DataAdapterServiceUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class DataAdapterServiceUtil
 {
-
-	private JasperReportsContext jasperReportsContext;
+	public static final String EXCEPTION_MESSAGE_KEY_SERVICE_FACTORY_NOT_REGISTERED = "data.adapter.service.factory.not.registered";
+	
+	private ParameterContributorContext paramContribContext;
 
 
 	/**
 	 *
 	 */
-	private DataAdapterServiceUtil(JasperReportsContext jasperReportsContext)
+	private DataAdapterServiceUtil(ParameterContributorContext paramContribContext)
 	{
-		this.jasperReportsContext = jasperReportsContext;
+		this.paramContribContext = paramContribContext;
 	}
 	
 	
 	/**
 	 *
 	 */
-	private static DataAdapterServiceUtil getDefaultInstance()
+	public static DataAdapterServiceUtil getInstance(ParameterContributorContext paramContribContext)
 	{
-		return new DataAdapterServiceUtil(DefaultJasperReportsContext.getInstance());
-	}
-	
-	
-	/**
-	 *
-	 */
-	public static DataAdapterServiceUtil getInstance(JasperReportsContext jasperReportsContext)
-	{
-		return new DataAdapterServiceUtil(jasperReportsContext);
+		return new DataAdapterServiceUtil(paramContribContext);
 	}
 	
 	
@@ -73,26 +64,23 @@ public final class DataAdapterServiceUtil
 	 */
 	public DataAdapterService getService(DataAdapter dataAdapter)
 	{
-		List<DataAdapterServiceFactory> bundles = jasperReportsContext.getExtensions(
-				DataAdapterServiceFactory.class);
-		for (Iterator<DataAdapterServiceFactory> it = bundles.iterator(); it.hasNext();)
+		JasperReportsContext jasperReportsContext = paramContribContext.getJasperReportsContext();
+		
+		List<DataAdapterContributorFactory> bundles = jasperReportsContext.getExtensions(
+				DataAdapterContributorFactory.class);
+		for (Iterator<DataAdapterContributorFactory> it = bundles.iterator(); it.hasNext();)
 		{
-			DataAdapterServiceFactory factory = it.next();
-			DataAdapterService service = factory.getDataAdapterService(jasperReportsContext, dataAdapter);
+			DataAdapterContributorFactory factory = it.next();
+			DataAdapterService service = factory.getDataAdapterService(paramContribContext, dataAdapter);
 			if (service != null)
 			{
 				return service;
 			}
 		}
-		throw new JRRuntimeException("No data adapter service factory registered for the '" + dataAdapter.getName() + "' data adapter.");
+
+		throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_SERVICE_FACTORY_NOT_REGISTERED,
+				new Object[]{dataAdapter.getName()});
 	}
-  
-	/**
-	 * @deprecated Replaced by {@link #getService(DataAdapter)}.
-	 */
-	public static DataAdapterService getDataAdapterService(DataAdapter dataAdapter)
-	{
-		return getDefaultInstance().getService(dataAdapter);
-	}
- 
 }

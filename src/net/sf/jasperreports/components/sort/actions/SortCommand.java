@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,10 @@ package net.sf.jasperreports.components.sort.actions;
 
 import java.util.List;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElementUtils;
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionChunk;
 import net.sf.jasperreports.engine.JRGroup;
@@ -36,16 +39,31 @@ import net.sf.jasperreports.engine.design.JRDesignDataset;
 import net.sf.jasperreports.engine.design.JRDesignSortField;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 import net.sf.jasperreports.engine.type.SortOrderEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 import net.sf.jasperreports.web.commands.Command;
 import net.sf.jasperreports.web.commands.CommandException;
 import net.sf.jasperreports.web.commands.CommandStack;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortCommand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortCommand implements Command 
 {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	/**
+	 * Property that specifies whether additional sort fields should be created automatically to preserve the integrity of dataset groups,
+	 * when interactive sorting is performed. The groups need to have simple expressions using single field or single variable reference, for
+	 * this feature to work properly.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_TABLE,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			sinceVersion = PropertyConstants.VERSION_4_6_0,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_CREATE_SORT_FIELDS_FOR_GROUPS = JRPropertiesUtil.PROPERTY_PREFIX + "create.sort.fields.for.groups";
 	
 //	private ReportContext reportContext;
@@ -66,6 +84,7 @@ public class SortCommand implements Command
 		this.individualCommandStack = new CommandStack();
 	}
 
+	@Override
 	public void execute() throws CommandException 
 	{
 		SortOrderEnum sortOrder = HeaderToolbarElementUtils.getSortOrder(sortData.getSortOrder());//FIXMEJIVE use labels in JR enum, even if they are longer
@@ -137,11 +156,13 @@ public class SortCommand implements Command
 		}
 	}
 	
+	@Override
 	public void undo() 
 	{
 		individualCommandStack.undoAll();
 	}
 
+	@Override
 	public void redo() 
 	{
 		individualCommandStack.redoAll();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabGroupFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRCrosstabGroupFactory extends JRBaseFactory
 {
@@ -41,6 +40,7 @@ public abstract class JRCrosstabGroupFactory extends JRBaseFactory
 
 	public static final String ATTRIBUTE_name = "name";
 	public static final String ATTRIBUTE_totalPosition = "totalPosition";
+	public static final String ATTRIBUTE_mergeHeaderCells = "mergeHeaderCells";
 	
 	protected final void setGroupAtts(Attributes atts, JRDesignCrosstabGroup group)
 	{
@@ -50,6 +50,12 @@ public abstract class JRCrosstabGroupFactory extends JRBaseFactory
 		if (totalPosition != null)
 		{
 			group.setTotalPosition(totalPosition);
+		}
+		
+		String mergeAttr = atts.getValue(ATTRIBUTE_mergeHeaderCells);
+		if (mergeAttr != null)
+		{
+			group.setMergeHeaderCells(Boolean.valueOf(mergeAttr));//FIXME handle 1 as per the xsd boolean type
 		}
 	}
 }

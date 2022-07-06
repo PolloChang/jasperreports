@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDistinctCountExtendedIncrementerFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDistinctCountExtendedIncrementerFactory extends JRAbstractExtendedIncrementerFactory
 {
@@ -60,9 +59,7 @@ public class JRDistinctCountExtendedIncrementerFactory extends JRAbstractExtende
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExtendedIncrementer getExtendedIncrementer(CalculationEnum calculation)
 	{
 		return new JRDistinctCountExtendedIncrementer();
@@ -93,9 +90,7 @@ class JRDistinctCountExtendedIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -119,12 +114,10 @@ class JRDistinctCountExtendedIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object combine(JRCalculable calculable1, JRCalculable calculable2, AbstractValueProvider valueProvider)
 	{
-		Set<Object> distinctValues = new HashSet<Object>();
+		Set<Object> distinctValues = new HashSet<>();
 		
 		DistinctCountHolder holder1  = (DistinctCountHolder)calculable1.getValue();
 		if (holder1 != null)
@@ -150,9 +143,7 @@ class JRDistinctCountExtendedIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object initialValue()
 	{
 		return null;

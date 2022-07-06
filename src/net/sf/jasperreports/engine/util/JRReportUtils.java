@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,10 +32,10 @@ import net.sf.jasperreports.engine.JasperReport;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRReportUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRReportUtils
 {
+	public static final String EXCEPTION_MESSAGE_KEY_REPORT_SUBDATASET_NOT_FOUND = "util.report.subdataset.not.found";
 	
 	public static JRDataset findSubdataset(JRDatasetRun datasetRun, 
 			JasperReport report)
@@ -57,9 +57,10 @@ public final class JRReportUtils
 		
 		if (reportDataset == null)
 		{
-			throw new JRRuntimeException("Could not find subdataset named \"" 
-					+ datasetRun.getDatasetName() + "\" in report \"" 
-					+ report.getName() + "\"");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_REPORT_SUBDATASET_NOT_FOUND,
+					new Object[]{datasetRun.getDatasetName(), report.getName()});
 		}
 		return reportDataset;
 	}

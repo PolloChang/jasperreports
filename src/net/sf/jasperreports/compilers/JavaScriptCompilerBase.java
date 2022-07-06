@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,10 @@ package net.sf.jasperreports.compilers;
 
 import java.io.Serializable;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.mozilla.javascript.EvaluatorException;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpressionChunk;
 import net.sf.jasperreports.engine.JasperReportsContext;
@@ -36,20 +39,16 @@ import net.sf.jasperreports.engine.fill.JREvaluator;
 import net.sf.jasperreports.engine.util.ExpressionChunkVisitor;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.mozilla.javascript.EvaluatorException;
-
 /**
  * Base compiler class for reports that use JavaScript as expression language.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptCompilerBase.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JavaScriptCompilerBase extends JRAbstractCompiler
 {
 
 	private static final Log log = LogFactory.getLog(JavaScriptCompilerBase.class);
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_COMPILE_DATA_TYPE = "compilers.invalid.data.type";
 	
 	/**
 	 * Creates a JavaScript compiler.
@@ -59,19 +58,13 @@ public abstract class JavaScriptCompilerBase extends JRAbstractCompiler
 		super(jasperReportsContext, false);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JavaScriptCompilerBase(JasperReportsContext)}.
-	 */
-	protected JavaScriptCompilerBase()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
+	@Override
 	protected void checkLanguage(String language) throws JRException
 	{
 		//NOOP
 	}
 
+	@Override
 	protected JRCompilationSourceCode generateSourceCode(
 			JRSourceCompileTask sourceTask) throws JRException
 	{
@@ -79,11 +72,13 @@ public abstract class JavaScriptCompilerBase extends JRAbstractCompiler
 		return null;
 	}
 
+	@Override
 	protected String getSourceFileName(String unitName)
 	{
 		return unitName + ".js";
 	}
 
+	@Override
 	protected JREvaluator loadEvaluator(Serializable compileData,
 			String unitName) throws JRException
 	{
@@ -104,7 +99,10 @@ public abstract class JavaScriptCompilerBase extends JRAbstractCompiler
 			return new JavaScriptCompiledEvaluator(jasperReportsContext, unitName, jsCompiledData);
 		}
 		
-		throw new JRException("Invalid compile data type " + compileData.getClass().getName());
+		throw 
+			new JRException(
+				EXCEPTION_MESSAGE_KEY_INVALID_COMPILE_DATA_TYPE,
+				new Object[]{compileData.getClass().getName()});
 	}
 
 	protected ScriptExpressionVisitor defaultExpressionCreator()

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -54,7 +54,6 @@ import net.sf.jasperreports.engine.base.JRBoxPen;
  * 
  * @see net.sf.jasperreports.engine.JRPen
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRLineBox.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRLineBox extends JRPenContainer
 {
@@ -134,11 +133,6 @@ public interface JRLineBox extends JRPenContainer
 	/**
 	 * Sets the default padding in pixels (can be overwritten by individual settings).
 	 */
-	public void setPadding(int padding);
-
-	/**
-	 *
-	 */
 	public void setPadding(Integer padding);
 
 	/**
@@ -150,11 +144,6 @@ public interface JRLineBox extends JRPenContainer
 	 *
 	 */
 	public Integer getOwnTopPadding();
-
-	/**
-	 *
-	 */
-	public void setTopPadding(int padding);
 
 	/**
 	 *
@@ -174,11 +163,6 @@ public interface JRLineBox extends JRPenContainer
 	/**
 	 *
 	 */
-	public void setLeftPadding(int padding);
-
-	/**
-	 *
-	 */
 	public void setLeftPadding(Integer padding);
 
 	/**
@@ -194,11 +178,6 @@ public interface JRLineBox extends JRPenContainer
 	/**
 	 *
 	 */
-	public void setBottomPadding(int padding);
-
-	/**
-	 *
-	 */
 	public void setBottomPadding(Integer padding);
 
 	/**
@@ -210,11 +189,6 @@ public interface JRLineBox extends JRPenContainer
 	 *
 	 */
 	public Integer getOwnRightPadding();
-
-	/**
-	 *
-	 */
-	public void setRightPadding(int padding);
 
 	/**
 	 *

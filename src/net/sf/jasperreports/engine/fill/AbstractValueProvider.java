@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.engine.fill;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractValueProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractValueProvider
 {
@@ -38,6 +37,7 @@ public abstract class AbstractValueProvider
 	private static AbstractValueProvider currentValueProvider = 
 		new AbstractValueProvider()
 		{
+			@Override
 			public Object getValue(JRCalculable calculable)
 			{
 				return calculable.getValue();
@@ -50,6 +50,7 @@ public abstract class AbstractValueProvider
 	private static AbstractValueProvider estimatedValueProvider = 
 		new AbstractValueProvider()
 		{
+			@Override
 			public Object getValue(JRCalculable calculable)
 			{
 				return ((JRFillVariable) calculable).getEstimatedValue();

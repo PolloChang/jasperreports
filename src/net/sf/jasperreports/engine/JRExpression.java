@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,7 @@
  */
 package net.sf.jasperreports.engine;
 
-
+import net.sf.jasperreports.engine.type.ExpressionTypeEnum;
 
 /**
  * Provides the JasperReports expressions functionality.
@@ -36,7 +36,7 @@ package net.sf.jasperreports.engine;
  * languages can be used if a corresponding report compiler able to produce the information
  * needed for expression evaluation at runtime is available. Currently, JasperReports ships
  * with report compilers that can compile report templates using the Groovy scripting
- * language, JavaScript or BeanShell script, inside report expressions.
+ * language or JavaScript, inside report expressions.
  * </p><p>
  * For simplicity's sake, in the next paragraphs we'll assume that expressions
  * have been written using the Java language.
@@ -144,7 +144,6 @@ package net.sf.jasperreports.engine;
  * 
  * @see net.sf.jasperreports.engine.fill.JRCalculator
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRExpression.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRExpression extends JRCloneable
 {
@@ -160,7 +159,7 @@ public interface JRExpression extends JRCloneable
 	/**
 	 * Dummy ID that is assigned to expression that are not used (and not collected).
 	 */
-	public static final Integer NOT_USED_ID = Integer.valueOf(-1);
+	public static final Integer NOT_USED_ID = -1;
 
 	/**
 	 * Returns the expression return value class.
@@ -188,6 +187,11 @@ public interface JRExpression extends JRCloneable
 	 *
 	 */
 	public String getText();
+
+	/**
+	 *
+	 */
+	public ExpressionTypeEnum getType();
 
 
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.util.FileBufferedOutputStream;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FileBufferedZipEntry.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FileBufferedZipEntry implements ExportZipEntry 
 {
@@ -89,17 +88,13 @@ public class FileBufferedZipEntry implements ExportZipEntry
 		}
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Writer getWriter()
 	{
 		if (writer == null)
@@ -117,25 +112,19 @@ public class FileBufferedZipEntry implements ExportZipEntry
 		return writer;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public OutputStream getOutputStream()
 	{
 		return fbos;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void writeData(OutputStream os) throws IOException
 	{
 		fbos.writeData(os);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void dispose()
 	{
 		fbos.dispose();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,35 +25,34 @@ package net.sf.jasperreports.engine.xml;
 
 import java.awt.Color;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.xml.sax.Attributes;
+
 import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.design.JRDesignStyle;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.LineSpacingEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.PenEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.engine.util.JRPenUtil;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.xml.sax.Attributes;
-
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRAbstractStyleFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractStyleFactory extends JRBaseFactory
 {
 	private static final Log log = LogFactory.getLog(JRAbstractStyleFactory.class);
 
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JRDesignStyle style = new JRDesignStyle();
@@ -64,7 +63,7 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 		String isDefault = atts.getValue(JRXmlConstants.ATTRIBUTE_isDefault);
 		if (isDefault != null && isDefault.length() > 0)
 		{
-			style.setDefault(Boolean.valueOf(isDefault).booleanValue());
+			style.setDefault(Boolean.valueOf(isDefault));
 		}
 
 		// get parent style
@@ -121,7 +120,7 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 		String radius = atts.getValue(JRXmlConstants.ATTRIBUTE_radius);
 		if (radius != null && radius.length() > 0)
 		{
-			style.setRadius(Integer.parseInt(radius));
+			style.setRadius(Integer.valueOf(radius));
 		}
 
 		// get image attributes
@@ -131,18 +130,49 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 			style.setScaleImage(scaleImage);
 		}
 
-		HorizontalAlignEnum horizontalAlignment = HorizontalAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_hAlign));
-		if (horizontalAlignment != null)
+		HorizontalTextAlignEnum horizontalTextAlign = HorizontalTextAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_hAlign));
+		if (horizontalTextAlign != null)
 		{
-			style.setHorizontalAlignment(horizontalAlignment);
+			style.setHorizontalTextAlign(horizontalTextAlign);
+		}
+		horizontalTextAlign = HorizontalTextAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_hTextAlign));
+		if (horizontalTextAlign != null)
+		{
+			style.setHorizontalTextAlign(horizontalTextAlign);
 		}
 
-		VerticalAlignEnum verticalAlignment = VerticalAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_vAlign));
-		if (verticalAlignment != null)
+		VerticalTextAlignEnum verticalTextAlign = VerticalTextAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_vAlign));
+		if (verticalTextAlign != null)
 		{
-			style.setVerticalAlignment(verticalAlignment);
+			style.setVerticalTextAlign(verticalTextAlign);
+		}
+		verticalTextAlign = VerticalTextAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_vTextAlign));
+		if (verticalTextAlign != null)
+		{
+			style.setVerticalTextAlign(verticalTextAlign);
 		}
 
+		HorizontalImageAlignEnum horizontalImageAlign = HorizontalImageAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_hAlign));
+		if (horizontalImageAlign != null)
+		{
+			style.setHorizontalImageAlign(horizontalImageAlign);
+		}
+		horizontalImageAlign = HorizontalImageAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_hImageAlign));
+		if (horizontalImageAlign != null)
+		{
+			style.setHorizontalImageAlign(horizontalImageAlign);
+		}
+
+		VerticalImageAlignEnum verticalImageAlign = VerticalImageAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_vAlign));
+		if (verticalImageAlign != null)
+		{
+			style.setVerticalImageAlign(verticalImageAlign);
+		}
+		verticalImageAlign = VerticalImageAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_vImageAlign));
+		if (verticalImageAlign != null)
+		{
+			style.setVerticalImageAlign(verticalImageAlign);
+		}
 
 		// get box attributes
 		PenEnum border = PenEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_border));
@@ -172,7 +202,7 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 			{
 				log.warn("The 'padding' attribute is deprecated. Use the <box> tag instead.");
 			}
-			style.getLineBox().setPadding(Integer.parseInt(padding));
+			style.getLineBox().setPadding(Integer.valueOf(padding));
 		}
 
 		border = PenEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_topBorder));
@@ -202,7 +232,7 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 			{
 				log.warn("The 'topPadding' attribute is deprecated. Use the <box> tag instead.");
 			}	
-			style.getLineBox().setTopPadding(Integer.parseInt(padding));
+			style.getLineBox().setTopPadding(Integer.valueOf(padding));
 		}
 
 		border = PenEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_leftBorder));
@@ -232,7 +262,7 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 			{
 				log.warn("The 'leftPadding' attribute is deprecated. Use the <box> tag instead.");
 			}
-			style.getLineBox().setLeftPadding(Integer.parseInt(padding));
+			style.getLineBox().setLeftPadding(Integer.valueOf(padding));
 		}
 
 		border = PenEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_bottomBorder));
@@ -262,7 +292,7 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 			{
 				log.warn("The 'bottomPadding' attribute is deprecated. Use the <box> tag instead.");
 			}	
-			style.getLineBox().setBottomPadding(Integer.parseInt(padding));
+			style.getLineBox().setBottomPadding(Integer.valueOf(padding));
 		}
 
 		border = PenEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_rightBorder));
@@ -292,7 +322,7 @@ public abstract class JRAbstractStyleFactory extends JRBaseFactory
 			{
 				log.warn("The 'rightPadding' attribute is deprecated. Use the <box> tag instead.");
 			}
-			style.getLineBox().setRightPadding(Integer.parseInt(padding));
+			style.getLineBox().setRightPadding(Integer.valueOf(padding));
 		}
 
 

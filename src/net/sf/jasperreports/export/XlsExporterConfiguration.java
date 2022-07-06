@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.export.JRXlsAbstractExporter;
 import net.sf.jasperreports.engine.export.JRXlsExporter;
@@ -31,6 +33,7 @@ import net.sf.jasperreports.engine.export.oasis.JROdsExporter;
 import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 import net.sf.jasperreports.export.annotations.ExporterParameter;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -42,7 +45,6 @@ import net.sf.jasperreports.export.annotations.ExporterProperty;
  * @see JRXlsMetadataExporter
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsExporterConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface XlsExporterConfiguration extends ExporterConfiguration
 {
@@ -53,6 +55,13 @@ public interface XlsExporterConfiguration extends ExporterConfiguration
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_2_0_0,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_CREATE_CUSTOM_PALETTE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.create.custom.palette";
 
 	/**
@@ -61,6 +70,11 @@ public interface XlsExporterConfiguration extends ExporterConfiguration
 	 * @see JRPropertiesUtil
 	 * @since 4.5.1
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_4_5_1
+			)
 	public static final String PROPERTY_WORKBOOK_TEMPLATE = JRXlsAbstractExporter.XLS_EXPORTER_PROPERTIES_PREFIX + "workbook.template";
 
 	/**
@@ -73,8 +87,65 @@ public interface XlsExporterConfiguration extends ExporterConfiguration
 	 * @see JRPropertiesUtil
 	 * @since 4.5.1
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_4_5_1,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_WORKBOOK_TEMPLATE_KEEP_SHEETS = JRXlsAbstractExporter.XLS_EXPORTER_PROPERTIES_PREFIX + "workbook.template.keep.sheets";
 
+	/**
+	 * Property whose value is used as default for the {@link #getMetadataTitle()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+			)
+	public static final String PROPERTY_METADATA_TITLE = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.metadata.title";
+
+	/**
+	 * Property whose value is used as default for the {@link #getMetadataAuthor()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+			)
+	public static final String PROPERTY_METADATA_AUTHOR = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.metadata.author";
+
+	/**
+	 * Property whose value is used as default for the {@link #getMetadataSubject()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+			)
+	public static final String PROPERTY_METADATA_SUBJECT = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.metadata.subject";
+
+	/**
+	 * Property whose value is used as default for the {@link #getMetadataKeywords()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+			)
+	public static final String PROPERTY_METADATA_KEYWORDS = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.metadata.keywords";
+
+	/**
+	 * Property whose value is used as default for the {@link #getMetadataApplication()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+			)
+	public static final String PROPERTY_METADATA_APPLICATION = JRPropertiesUtil.PROPERTY_PREFIX + "export.xls.metadata.application";
+	
 	/**
 	 * Returns a boolean value specifying whether the standard color palette should be customized
 	 * so that the XLS result uses the original report colors.
@@ -116,8 +187,7 @@ public interface XlsExporterConfiguration extends ExporterConfiguration
 	 * other settings in the existing template will be also preserved in the generated document. Templates can be loaded from 
 	 * Excel template files (*.xlt) as well as from valid Excel documents (*.xls).
 	 * <p>
-	 * This setting is used in Excel exporters based either on Apache POI APIs ({@link JRXlsExporter}) or on JExcelApi library 
-	 * ({@link net.sf.jasperreports.engine.export.JExcelApiExporter JExcelApiExporter}). There's no similar property for the {@link JRXlsxExporter}.
+	 * This setting is used in the Excel exporter based on Apache POI APIs ({@link JRXlsExporter}). There's no similar property for the {@link JRXlsxExporter}.
 	 * @see #PROPERTY_WORKBOOK_TEMPLATE
 	 */
 	@ExporterProperty(PROPERTY_WORKBOOK_TEMPLATE)
@@ -138,4 +208,34 @@ public interface XlsExporterConfiguration extends ExporterConfiguration
 		booleanDefault=false
 		)
 	public Boolean isKeepWorkbookTemplateSheets();
+
+	/**
+	 * The Title of the XLS document.
+	 */
+	@ExporterProperty(PROPERTY_METADATA_TITLE)
+	public String getMetadataTitle();
+
+	/**
+	 * The Author of the XLS document.
+	 */
+	@ExporterProperty(PROPERTY_METADATA_AUTHOR)
+	public String getMetadataAuthor();
+
+	/**
+	 * The Subject of the XLS document.
+	 */
+	@ExporterProperty(PROPERTY_METADATA_SUBJECT)
+	public String getMetadataSubject();
+
+	/**
+	 * The Keywords of the XLS document.
+	 */
+	@ExporterProperty(PROPERTY_METADATA_KEYWORDS)
+	public String getMetadataKeywords();
+
+	/**
+	 * The Application for the XLS document. Defaults to "JasperReports Library version x.x.x".
+	 */
+	@ExporterProperty(PROPERTY_METADATA_APPLICATION)
+	public String getMetadataApplication();
 }

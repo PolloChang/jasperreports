@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
@@ -45,19 +44,9 @@ import net.sf.jasperreports.engine.util.JRPenUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: LineDrawer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class LineDrawer extends ElementDrawer<JRPrintLine>
 {
-	/**
-	 * @deprecated Replaced by {@link #LineDrawer(JasperReportsContext)}.
-	 */
-	public LineDrawer()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-	
-	
 	/**
 	 *
 	 */
@@ -67,9 +56,7 @@ public class LineDrawer extends ElementDrawer<JRPrintLine>
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public void draw(Graphics2D grx, JRPrintLine line, int offsetX, int offsetY)
 	{
 		grx.setColor(line.getLinePen().getLineColor());
@@ -80,7 +67,7 @@ public class LineDrawer extends ElementDrawer<JRPrintLine>
 		{
 			grx.setStroke(stroke);
 			
-			float lineWidth = line.getLinePen().getLineWidth().floatValue();
+			float lineWidth = line.getLinePen().getLineWidth();
 			
 			if (line.getWidth() == 1)
 			{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.JRConstants;
  * The layout options of a thermometer chart.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRDesignThermometerPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignThermometerPlot extends JRBaseThermometerPlot
 {
@@ -58,11 +57,6 @@ public class JRDesignThermometerPlot extends JRBaseThermometerPlot
 	public static final String PROPERTY_MEDIUM_RANGE = "mediumRange";
 	
 	public static final String PROPERTY_MERCURY_COLOR = "mercuryColor";
-	
-	/**
-	 * @deprecated No longer used.
-	 */
-	public static final String PROPERTY_SHOW_VALUE_LINES = "showValueLines";
 	
 	public static final String PROPERTY_VALUE_DISPLAY = "valueDisplay";
 	
@@ -105,16 +99,6 @@ public class JRDesignThermometerPlot extends JRBaseThermometerPlot
 		getEventSupport().firePropertyChange(PROPERTY_VALUE_DISPLAY, old, this.valueDisplay);
 	}
 
-
-	/**
-	 * @deprecated No longer used.
-	 */
-	public void setShowValueLines(boolean showValueLines)
-	{
-		boolean old = this.showValueLines;
-		this.showValueLines = showValueLines;
-		getEventSupport().firePropertyChange(PROPERTY_SHOW_VALUE_LINES, old, this.showValueLines);
-	}
 
 	/**
 	 * Sets where to show the textual display of the value.

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,15 +29,13 @@
 
 package net.sf.jasperreports.engine.export.ooxml;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.AbstractExporterNature;
 import net.sf.jasperreports.engine.export.ExporterFilter;
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JROfficeOpenXmlExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public abstract class JROfficeOpenXmlExporterNature extends AbstractExporterNature
 {
@@ -49,38 +47,25 @@ public abstract class JROfficeOpenXmlExporterNature extends AbstractExporterNatu
 		super(jasperReportsContext, filter);
 	}
 	
-	/**
-	 * @deprecated Replaced by {@link #JROfficeOpenXmlExporterNature(JasperReportsContext, ExporterFilter)}. 
-	 */
-	public JROfficeOpenXmlExporterNature(ExporterFilter filter)
-	{
-		this(DefaultJasperReportsContext.getInstance(), filter);
-	}
-	
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isToExport(JRPrintElement element)
 	{
 		return (filter == null || filter.isToExport(element));
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isSpanCells()
 	{
 		return true;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isIgnoreLastRow()
 	{
 		return true;
 	}
 
+	@Override
 	public boolean isHorizontallyMergeEmptyCells()
 	{
 		return false;
@@ -89,22 +74,19 @@ public abstract class JROfficeOpenXmlExporterNature extends AbstractExporterNatu
 	/**
 	 * Specifies whether empty page margins should be ignored
 	 */
+	@Override
 	public boolean isIgnorePageMargins()
 	{
 		return false;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public boolean isBreakBeforeRow(JRPrintElement element)
 	{
 		return false;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public boolean isBreakAfterRow(JRPrintElement element)
 	{
 		return false;

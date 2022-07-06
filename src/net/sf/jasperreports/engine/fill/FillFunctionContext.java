@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,10 +32,11 @@ import net.sf.jasperreports.functions.FunctionContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FillFunctionContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillFunctionContext implements FunctionContext
 {
+	public static final String EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND = "fill.function.context.parameter.not.found";
+	
 	private final Map<String, JRFillParameter> parametersMap; 
 	
 	public FillFunctionContext(
@@ -51,6 +52,7 @@ public class FillFunctionContext implements FunctionContext
 	 * @param parameterName the parameter name
 	 * @return the parameter value
 	 */
+	@Override
 	public Object getParameterValue(String parameterName)
 	{
 		return getParameterValue(parameterName, false);
@@ -63,6 +65,7 @@ public class FillFunctionContext implements FunctionContext
 	 * @param ignoreMissing if set, <code>null</code> will be returned for inexisting parameters
 	 * @return the parameter value
 	 */
+	@Override
 	public Object getParameterValue(String parameterName, boolean ignoreMissing)
 	{
 		JRFillParameter param = parametersMap.get(parameterName);
@@ -71,7 +74,10 @@ public class FillFunctionContext implements FunctionContext
 		{
 			if (!ignoreMissing)
 			{
-				throw new JRRuntimeException("No such parameter " + parameterName);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND,
+						new Object[]{parameterName});
 			}
 			
 			// look into REPORT_PARAMETERS_MAP

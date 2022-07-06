@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,9 @@ package net.sf.jasperreports.engine.export.draw;
 
 import java.awt.Graphics2D;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintEllipse;
@@ -34,8 +36,6 @@ import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintRectangle;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRReport;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.PrintElementVisitor;
@@ -43,18 +43,14 @@ import net.sf.jasperreports.engine.export.AwtTextRenderer;
 import net.sf.jasperreports.engine.export.GenericElementGraphics2DHandler;
 import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
-import net.sf.jasperreports.engine.util.JRStyledText;
-import net.sf.jasperreports.export.Graphics2DReportConfiguration;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.engine.export.JRGraphics2DExporterContext;
+import net.sf.jasperreports.renderers.RenderersCache;
 
 
 /**
  * Print element draw visitor.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: PrintDrawVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 {
@@ -69,44 +65,105 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 	private TextDrawer textDrawer;
 	private FrameDrawer frameDrawer;
 
-	public PrintDrawVisitor(JasperReportsContext jasperReportsContext)
+	/**
+	 * @deprecated Replaced by {@link #PrintDrawVisitor(JasperReportsContext, RenderersCache, boolean, boolean, boolean, boolean)}.
+	 */
+	public PrintDrawVisitor(
+		JasperReportsContext jasperReportsContext,
+		RenderersCache renderersCache,
+		boolean minimizePrinterJobSize,
+		boolean ignoreMissingFont
+		)
+	{
+		this(
+			jasperReportsContext,
+			renderersCache,
+			minimizePrinterJobSize,
+			ignoreMissingFont,
+			true,
+			false
+			);
+	}
+	
+	public PrintDrawVisitor(
+		JasperReportsContext jasperReportsContext,
+		RenderersCache renderersCache,
+		boolean minimizePrinterJobSize,
+		boolean ignoreMissingFont,
+		boolean defaultIndentFirstLine,
+		boolean defaultJustifyLastLine
+		)
 	{
 		this.jasperReportsContext = jasperReportsContext;
 		this.lineDrawer = new LineDrawer(jasperReportsContext);
 		this.rectangleDrawer = new RectangleDrawer(jasperReportsContext);
 		this.ellipseDrawer = new EllipseDrawer(jasperReportsContext);
-		this.imageDrawer = new ImageDrawer(jasperReportsContext);
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #PrintDrawVisitor(JasperReportsContext)}.
-	 */
-	public PrintDrawVisitor()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-	
-	public void setTextRenderer(JRReport report)
-	{
+		this.imageDrawer = new ImageDrawer(jasperReportsContext, renderersCache);
+
 		AwtTextRenderer textRenderer = 
 			new AwtTextRenderer(
 				jasperReportsContext,
-				JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(report, Graphics2DReportConfiguration.MINIMIZE_PRINTER_JOB_SIZE, true),
-				JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(report, JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT, false)
+				minimizePrinterJobSize,
+				ignoreMissingFont,
+				defaultIndentFirstLine,
+				defaultJustifyLastLine
 				);
 		
 		textDrawer = new TextDrawer(jasperReportsContext, textRenderer);
-		frameDrawer = new FrameDrawer(jasperReportsContext, null, textRenderer);
+		frameDrawer = new FrameDrawer(jasperReportsContext, null, this);
 	}
+	
+	/**
+	 * @deprecated Replaced by {@link #PrintDrawVisitor(JRGraphics2DExporterContext, RenderersCache, boolean, boolean, boolean, boolean)}.
+	 */
+	public PrintDrawVisitor(
+		JRGraphics2DExporterContext exporterContext, 
+		RenderersCache renderersCache,
+		boolean minimizePrinterJobSize,
+		boolean ignoreMissingFont
+		)
+	{
+		this(
+			exporterContext, 
+			renderersCache,
+			minimizePrinterJobSize,
+			ignoreMissingFont,
+			true,
+			false
+			);
+	}
+	
+	public PrintDrawVisitor(
+		JRGraphics2DExporterContext exporterContext, 
+		RenderersCache renderersCache,
+		boolean minimizePrinterJobSize,
+		boolean ignoreMissingFont,
+		boolean defaultIndentFirstLine,
+		boolean defaultJustifyLastLine
+		)
+	{
+		this.jasperReportsContext = exporterContext.getJasperReportsContext();
+		this.lineDrawer = new LineDrawer(jasperReportsContext);
+		this.rectangleDrawer = new RectangleDrawer(jasperReportsContext);
+		this.ellipseDrawer = new EllipseDrawer(jasperReportsContext);
+		this.imageDrawer = new ImageDrawer(jasperReportsContext, renderersCache);
 
+		AwtTextRenderer textRenderer = 
+			new AwtTextRenderer(
+				jasperReportsContext,
+				minimizePrinterJobSize,
+				ignoreMissingFont,
+				defaultIndentFirstLine,
+				defaultJustifyLastLine
+				);
+		
+		textDrawer = new TextDrawer(jasperReportsContext, textRenderer);
+		frameDrawer = new FrameDrawer(exporterContext, null, this);
+	}
+		
 	public void setTextDrawer(TextDrawer textDrawer)
 	{
 		this.textDrawer = textDrawer;
-	}
-
-	public void setFrameDrawer(FrameDrawer frameDrawer)
-	{
-		this.frameDrawer = frameDrawer;
 	}
 
 	public void setClip(boolean isClip)
@@ -119,6 +176,7 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 		this.grx = grx;
 	}
 
+	@Override
 	public void visit(JRPrintText textElement, Offset offset)
 	{
 		textDrawer.draw(
@@ -129,6 +187,7 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 				);
 	}
 
+	@Override
 	public void visit(JRPrintImage image, Offset offset)
 	{
 		try
@@ -146,6 +205,7 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 		}
 	}
 
+	@Override
 	public void visit(JRPrintRectangle rectangle, Offset offset)
 	{
 		rectangleDrawer.draw(
@@ -156,6 +216,7 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 				);
 	}
 
+	@Override
 	public void visit(JRPrintLine line, Offset offset)
 	{
 		lineDrawer.draw(
@@ -166,6 +227,7 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 				);
 	}
 
+	@Override
 	public void visit(JRPrintEllipse ellipse, Offset offset)
 	{
 		ellipseDrawer.draw(
@@ -176,6 +238,7 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 				);
 	}
 
+	@Override
 	public void visit(JRPrintFrame frame, Offset offset)
 	{
 		try
@@ -193,6 +256,7 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 		}
 	}
 
+	@Override
 	public void visit(JRGenericPrintElement printElement, Offset offset)
 	{
 		GenericElementGraphics2DHandler handler = 
@@ -231,4 +295,11 @@ public class PrintDrawVisitor implements PrintElementVisitor<Offset>
 		return this.imageDrawer;
 	}
 
+	/**
+	 * @return the frameDrawer
+	 */
+	public FrameDrawer getFrameDrawer()
+	{
+		return frameDrawer;
+	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,29 +28,26 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
+import org.jfree.chart.JFreeChart;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintImageAreaHyperlink;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.util.JRImageLoader;
-import net.sf.jasperreports.renderers.JRSimpleImageMapRenderer;
-
-import org.jfree.chart.JFreeChart;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.SimpleDataRenderer;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageChartRendererFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ImageChartRendererFactory extends AbstractChartRenderableFactory
 {
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Renderable getRenderable(
 		JasperReportsContext jasperReportsContext,
 		JFreeChart chart, 
@@ -68,23 +65,30 @@ public class ImageChartRendererFactory extends AbstractChartRenderableFactory
 				BufferedImage.TYPE_INT_ARGB
 				);
 
-		Graphics2D grx = bi.createGraphics();
-		grx.scale(scale, scale);
-
 		List<JRPrintImageAreaHyperlink> areaHyperlinks = null;
 
-		if (chartHyperlinkProvider != null && chartHyperlinkProvider.hasHyperlinks())
+		Graphics2D grx = bi.createGraphics();
+		try
 		{
-			areaHyperlinks = ChartUtil.getImageAreaHyperlinks(chart, chartHyperlinkProvider, (Graphics2D)bi.getGraphics(), rectangle);
+			grx.scale(scale, scale);
+
+			if (chartHyperlinkProvider != null && chartHyperlinkProvider.hasHyperlinks())
+			{
+				areaHyperlinks = ChartUtil.getImageAreaHyperlinks(chart, chartHyperlinkProvider, grx, rectangle);
+			}
+			else
+			{
+				chart.draw(grx, rectangle);
+			}
 		}
-		else
+		finally
 		{
-			chart.draw(grx, rectangle);
+			grx.dispose();
 		}
 
 		try
 		{
-			return new JRSimpleImageMapRenderer(JRImageLoader.getInstance(jasperReportsContext).loadBytesFromAwtImage(bi, ImageTypeEnum.PNG), areaHyperlinks);
+			return new SimpleDataRenderer(JRImageLoader.getInstance(jasperReportsContext).loadBytesFromAwtImage(bi, ImageTypeEnum.PNG), areaHyperlinks);
 		}
 		catch (JRException e)
 		{

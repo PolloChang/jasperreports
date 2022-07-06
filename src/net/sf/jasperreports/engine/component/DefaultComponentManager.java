@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * A default {@link ComponentManager component manager} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultComponentManager.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultComponentManager implements ComponentManager
 {
@@ -39,6 +38,7 @@ public class DefaultComponentManager implements ComponentManager
 	private ComponentFillFactory componentFillFactory;
 	private ComponentDesignConverter componentDesignConverter;
 
+	@Override
 	public ComponentFillFactory getComponentFillFactory(JasperReportsContext jasperReportsContext)
 	{
 		return componentFillFactory;
@@ -56,6 +56,7 @@ public class DefaultComponentManager implements ComponentManager
 	}
 
 	
+	@Override
 	public ComponentCompiler getComponentCompiler(JasperReportsContext jasperReportsContext)
 	{
 		return componentCompiler;
@@ -72,6 +73,7 @@ public class DefaultComponentManager implements ComponentManager
 		this.componentCompiler = componentCompiler;
 	}
 	
+	@Override
 	public ComponentXmlWriter getComponentXmlWriter(JasperReportsContext jasperReportsContext)
 	{
 		return componentXmlWriter;
@@ -88,6 +90,7 @@ public class DefaultComponentManager implements ComponentManager
 		this.componentXmlWriter = componentXmlWriter;
 	}
 
+	@Override
 	public ComponentDesignConverter getDesignConverter(JasperReportsContext jasperReportsContext)
 	{
 		return componentDesignConverter;

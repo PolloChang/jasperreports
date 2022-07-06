@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DateStore.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DateStore implements BufferColumnStore
 {
@@ -57,6 +56,7 @@ public class DateStore implements BufferColumnStore
 		return valueTransformer.getResultType();
 	}
 	
+	@Override
 	public void addValue(Object object)
 	{
 		if (!(object instanceof Date))
@@ -69,22 +69,26 @@ public class DateStore implements BufferColumnStore
 		timeStore.add(time);
 	}
 
+	@Override
 	public boolean full()
 	{
 		return timeStore.full();
 	}
 
+	@Override
 	public void resetValues()
 	{
 		timeStore.resetValues();
 	}
 
+	@Override
 	public ColumnValues createValues()
 	{
 		ColumnValues timeValues = timeStore.createValues();
 		return new TransformedColumnValues(timeValues, valueTransformer);
 	}
 
+	@Override
 	public String toString()
 	{
 		return "DateStore@" + hashCode();

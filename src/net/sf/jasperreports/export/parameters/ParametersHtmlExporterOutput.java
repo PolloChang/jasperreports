@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,13 +28,11 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.FileHtmlResourceHandler;
 import net.sf.jasperreports.engine.export.HtmlResourceHandler;
-import net.sf.jasperreports.engine.export.JRHtmlExporterParameter;
 import net.sf.jasperreports.engine.export.MapHtmlResourceHandler;
 import net.sf.jasperreports.export.HtmlExporterOutput;
 import net.sf.jasperreports.web.util.WebHtmlResourceHandler;
@@ -43,7 +41,6 @@ import net.sf.jasperreports.web.util.WebHtmlResourceHandler;
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParametersHtmlExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParametersHtmlExporterOutput extends ParametersWriterExporterOutput implements HtmlExporterOutput
 {
@@ -59,7 +56,7 @@ public class ParametersHtmlExporterOutput extends ParametersWriterExporterOutput
 	 */
 	public ParametersHtmlExporterOutput(
 		JasperReportsContext jasperReportsContext,
-		Map<JRExporterParameter, Object> parameters,
+		Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters,
 		JasperPrint jasperPrint
 		)
 	{
@@ -69,17 +66,17 @@ public class ParametersHtmlExporterOutput extends ParametersWriterExporterOutput
 			jasperPrint
 			);
 		
-		Boolean isOutputImagesToDirParameter = (Boolean)parameters.get(JRHtmlExporterParameter.IS_OUTPUT_IMAGES_TO_DIR);
-		String imagesUri = (String)parameters.get(JRHtmlExporterParameter.IMAGES_URI);
+		Boolean isOutputImagesToDirParameter = (Boolean)parameters.get(net.sf.jasperreports.engine.export.JRHtmlExporterParameter.IS_OUTPUT_IMAGES_TO_DIR);
+		String imagesUri = (String)parameters.get(net.sf.jasperreports.engine.export.JRHtmlExporterParameter.IMAGES_URI);
 
 		if (imageHandler == null)
 		{
-			if (isOutputImagesToDirParameter == null || isOutputImagesToDirParameter.booleanValue())
+			if (isOutputImagesToDirParameter == null || isOutputImagesToDirParameter)
 			{
-				File imagesDir = (File)parameters.get(JRHtmlExporterParameter.IMAGES_DIR);
+				File imagesDir = (File)parameters.get(net.sf.jasperreports.engine.export.JRHtmlExporterParameter.IMAGES_DIR);
 				if (imagesDir == null)
 				{
-					String imagesDirName = (String)parameters.get(JRHtmlExporterParameter.IMAGES_DIR_NAME);
+					String imagesDirName = (String)parameters.get(net.sf.jasperreports.engine.export.JRHtmlExporterParameter.IMAGES_DIR_NAME);
 					if (imagesDirName != null)
 					{
 						imagesDir = new File(imagesDirName);
@@ -98,32 +95,37 @@ public class ParametersHtmlExporterOutput extends ParametersWriterExporterOutput
 			}
 		}
 
-		StringBuffer sb = (StringBuffer)parameters.get(JRExporterParameter.OUTPUT_STRING_BUFFER);
+		resourceHandler = (HtmlResourceHandler)parameters.get(net.sf.jasperreports.engine.export.JRHtmlExporterParameter.RESOURCE_HANDLER);
+
+		StringBuffer sb = (StringBuffer)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_STRING_BUFFER);
 		if (sb == null)
 		{
-			Writer writer = (Writer)parameters.get(JRExporterParameter.OUTPUT_WRITER);
+			Writer writer = (Writer)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_WRITER);
 			if (writer == null)
 			{
-				OutputStream os = (OutputStream)parameters.get(JRExporterParameter.OUTPUT_STREAM);
+				OutputStream os = (OutputStream)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_STREAM);
 				if (os == null)
 				{
-					File destFile = (File)parameters.get(JRExporterParameter.OUTPUT_FILE);
+					File destFile = (File)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_FILE);
 					if (destFile == null)
 					{
-						String fileName = (String)parameters.get(JRExporterParameter.OUTPUT_FILE_NAME);
+						String fileName = (String)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.OUTPUT_FILE_NAME);
 						if (fileName != null)
 						{
 							destFile = new File(fileName);
 						}
 						else
 						{
-							throw new JRRuntimeException("No output specified for the exporter.");
+							throw 
+								new JRRuntimeException(
+									EXCEPTION_MESSAGE_KEY_NO_OUTPUT_SPECIFIED,
+									(Object[])null);
 						}
 					}
 
 					if (
 						imageHandler == null
-						&& (isOutputImagesToDirParameter == null || isOutputImagesToDirParameter.booleanValue())
+						&& (isOutputImagesToDirParameter == null || isOutputImagesToDirParameter)
 						)
 					{
 						File imagesDir = new File(destFile.getParent(), destFile.getName() + "_files");
@@ -135,42 +137,38 @@ public class ParametersHtmlExporterOutput extends ParametersWriterExporterOutput
 						File resourcesDir = new File(destFile.getParent(), destFile.getName() + "_files");
 						fontHandler = new FileHtmlResourceHandler(resourcesDir, resourcesDir.getName() + "/{0}");
 					}
-					
+
 					if (resourceHandler == null)
 					{
-						resourceHandler = new FileHtmlResourceHandler(new File(destFile.getParent(), destFile.getName() + "_files"));
+						File resourcesDir = new File(destFile.getParent(), destFile.getName() + "_files");
+						resourceHandler = new FileHtmlResourceHandler(resourcesDir, resourcesDir.getName() + "/{0}");
 					}
 				}
 			}
 		}
 		
 		@SuppressWarnings("unchecked")
-		Map<String,byte[]> imageNameToImageDataMap = (Map<String,byte[]>) parameters.get(JRHtmlExporterParameter.IMAGES_MAP);
+		Map<String,byte[]> imageNameToImageDataMap = 
+			(Map<String,byte[]>) parameters.get(net.sf.jasperreports.engine.export.JRHtmlExporterParameter.IMAGES_MAP);
 		if (imageNameToImageDataMap != null)
 		{
 			imageHandler = new MapHtmlResourceHandler(imageHandler, imageNameToImageDataMap);
 		}
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public HtmlResourceHandler getImageHandler() 
 	{
 		return imageHandler;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public HtmlResourceHandler getFontHandler() 
 	{
 		return fontHandler;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public HtmlResourceHandler getResourceHandler() 
 	{
 		return resourceHandler;

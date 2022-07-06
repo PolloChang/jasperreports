@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,13 +32,14 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: AbstractThreadSubreportRunner.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable implements JRSubreportRunner
 {
 	
 	private static final Log log = LogFactory.getLog(AbstractThreadSubreportRunner.class);
-	
+	public static final String EXCEPTION_MESSAGE_KEY_THREAD_REPORT_RUNNER_WAIT_ERROR = "fill.thread.report.runner.wait.error";
+	public static final String EXCEPTION_MESSAGE_KEY_THREAD_SUBREPORT_RUNNER_WAIT_ERROR = "fill.thread.subreport.runner.wait.error";
+
 	protected final JRBaseFiller subreportFiller;
 	
 	public AbstractThreadSubreportRunner(JRFillSubreport fillSubreport, JRBaseFiller subreportFiller)
@@ -47,6 +48,7 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 		this.subreportFiller = subreportFiller;
 	}
 
+	@Override
 	public JRSubreportRunResult start()
 	{
 		doStart();
@@ -55,6 +57,7 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 
 	protected abstract void doStart();
 
+	@Override
 	public JRSubreportRunResult resume()
 	{
 		if (log.isDebugEnabled())
@@ -100,7 +103,11 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 				}
 			}
 			
-			throw new JRRuntimeException("Error encountered while waiting on the report filling thread.", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_THREAD_REPORT_RUNNER_WAIT_ERROR,
+					(Object[])null,
+					e);
 		}
 		
 		if (log.isDebugEnabled())
@@ -111,6 +118,7 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 		return runResult();
 	}
 	
+	@Override
 	public void cancel() throws JRException
 	{
 		if (log.isDebugEnabled())
@@ -141,7 +149,11 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 					log.error("Fill " + subreportFiller.fillerId + ": exception", e);
 				}
 				
-				throw new JRException("Error encountered while waiting on the subreport filling thread.", e);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_THREAD_SUBREPORT_RUNNER_WAIT_ERROR,
+						null,
+						e);
 			}
 			
 			if (log.isDebugEnabled())
@@ -151,6 +163,7 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 		}
 	}
 
+	@Override
 	public void suspend() throws JRException
 	{
 		if (log.isDebugEnabled())
@@ -173,7 +186,7 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 		}
 		catch(InterruptedException e)
 		{
-			if (subreportFiller.fillContext.isCanceled())
+			if (subreportFiller.fillContext.isCanceled() || subreportFiller.isDeliberatelyInterrupted())
 			{
 				// only log a debug message if cancel was requested
 				if (log.isDebugEnabled())
@@ -189,7 +202,11 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 				}
 			}
 			
-			throw new JRException("Error encountered while waiting on the subreport filling thread.", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_THREAD_SUBREPORT_RUNNER_WAIT_ERROR,
+					null,
+					e);
 		}
 		
 		if (log.isDebugEnabled())
@@ -198,6 +215,7 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 		}
 	}
 
+	@Override
 	public void run()
 	{
 		super.run();
@@ -223,5 +241,19 @@ public abstract class AbstractThreadSubreportRunner extends JRSubreportRunnable 
 			}
 		}
 		*/
+	}
+
+	@Override
+	public void abort()
+	{
+		if (subreportFiller.fillingThread != null)
+		{
+			if (log.isDebugEnabled())
+			{
+				log.debug("Interrupting subfiller thread " + subreportFiller.fillingThread);
+			}
+
+			subreportFiller.fillingThread.interrupt();
+		}
 	}
 }

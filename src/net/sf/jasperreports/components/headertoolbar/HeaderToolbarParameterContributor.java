@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,16 +32,16 @@ import net.sf.jasperreports.engine.CompositeDatasetFilter;
 import net.sf.jasperreports.engine.DatasetFilter;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.ParameterContributor;
 import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.ReportContext;
-import net.sf.jasperreports.web.util.JacksonUtil;
+import net.sf.jasperreports.util.JacksonUtil;
 
 /**
  * 
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: HeaderToolbarParameterContributor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HeaderToolbarParameterContributor implements ParameterContributor
 {
@@ -52,12 +52,13 @@ public class HeaderToolbarParameterContributor implements ParameterContributor
 		this.context = context;
 	}
 	
+	@Override
 	public void contributeParameters(Map<String, Object> parameterValues) throws JRException
 	{
 		ReportContext reportContext = (ReportContext) parameterValues.get(JRParameter.REPORT_CONTEXT);
 		if (reportContext != null)
 		{
-			String serializedFilters = context.getDataset().getPropertiesMap().getProperty(FilterCommand.DATASET_FILTER_PROPERTY);
+			String serializedFilters = JRPropertiesUtil.getOwnProperty(context.getDataset(), FilterCommand.DATASET_FILTER_PROPERTY);
 			
 			if (serializedFilters != null) 
 			{
@@ -76,6 +77,7 @@ public class HeaderToolbarParameterContributor implements ParameterContributor
 		return null;
 	}
 	
+	@Override
 	public void dispose() {
 	}
 

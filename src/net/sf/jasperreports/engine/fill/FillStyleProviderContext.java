@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.style.StyleProviderContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FillStyleProviderContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillStyleProviderContext implements StyleProviderContext
 {
@@ -52,27 +51,21 @@ public class FillStyleProviderContext implements StyleProviderContext
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public JasperReportsContext getJasperReportsContext()
 	{
 		return element.filler.getJasperReportsContext();
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRElement getElement()
 	{
 		return element;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object evaluateExpression(JRExpression expression, byte evaluation)
 	{
 		try
@@ -86,38 +79,30 @@ public class FillStyleProviderContext implements StyleProviderContext
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(String fieldName, byte evaluation)
 	{
 		return element.getField(fieldName).getValue(evaluation);
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getVariableValue(String variableName, byte evaluation)
 	{
 		return element.getVariable(variableName).getValue(evaluation);
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Locale getLocale()
 	{
 		return element.filler.getLocale();
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public TimeZone getTimeZone()
 	{
-		return element.filler.getTimeZone();
+		return element.getTimeZone();
 	}
 }

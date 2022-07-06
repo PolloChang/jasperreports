@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.crosstabs.fill.calculation.BucketDefinition.Bucket;
 import net.sf.jasperreports.crosstabs.fill.calculation.MeasureDefinition.MeasureValue;
 import net.sf.jasperreports.engine.JRException;
@@ -39,16 +41,26 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.fill.JRCalculable;
 import net.sf.jasperreports.engine.type.CalculationEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Bidimensional bucketing engine.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BucketingService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BucketingService
 {
 	
+	public static final String EXCEPTION_MESSAGE_KEY_BUCKET_MEASURE_LIMIT = "crosstabs.bucket.measure.limit";
+	public static final String EXCEPTION_MESSAGE_KEY_BUCKET_DATA_PROCESSED = "crosstabs.bucket.data.processed";
+	
+	@Property(
+			category = PropertyConstants.CATEGORY_CROSSTAB,
+			valueType = Integer.class,
+			defaultValue = "0",
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_1_3_4
+			)
 	public static final String PROPERTY_BUCKET_MEASURE_LIMIT = JRPropertiesUtil.PROPERTY_PREFIX + "crosstab.bucket.measure.limit";
 	
 	protected static final byte DIMENSION_ROW = 0;
@@ -85,7 +97,7 @@ public abstract class BucketingService
 	protected final MeasureValue[] zeroMeasureValues;
 	protected final MeasureValue[] zeroUserMeasureValues;
 
-	private final int bucketMeasureLimit;
+	protected final int bucketMeasureLimit;
 	private int runningBucketMeasureCount;
 	
 	/**
@@ -126,8 +138,8 @@ public abstract class BucketingService
 		System.arraycopy(buckets[DIMENSION_COLUMN], 0, allBuckets, rowBucketCount, colBucketCount);
 
 		origMeasureCount = measures.size();
-		List<MeasureDefinition> measuresList = new ArrayList<MeasureDefinition>(measures.size() * 2);
-		List<Integer> measureIndexList = new ArrayList<Integer>(measures.size() * 2);
+		List<MeasureDefinition> measuresList = new ArrayList<>(measures.size() * 2);
+		List<Integer> measureIndexList = new ArrayList<>(measures.size() * 2);
 		for (int i = 0; i < measures.size(); ++i)
 		{
 			MeasureDefinition measure =  measures.get(i);
@@ -138,7 +150,7 @@ public abstract class BucketingService
 		this.measureIndexes = new int[measureIndexList.size()];
 		for (int i = 0; i < measureIndexes.length; ++i)
 		{
-			measureIndexes[i] = measureIndexList.get(i).intValue();
+			measureIndexes[i] = measureIndexList.get(i);
 		}
 
 		this.retrieveTotal = retrieveTotal;
@@ -295,10 +307,11 @@ public abstract class BucketingService
 				addMeasure(countMeasure, index, measuresList, measureIndexList);
 				break;
 			}
+			default:
 		}
 
 		measuresList.add(measure);
-		measureIndexList.add(Integer.valueOf(index));
+		measureIndexList.add(index);
 	}
 
 	
@@ -313,7 +326,11 @@ public abstract class BucketingService
 	{
 		if (processed)
 		{
-			throw new JRException("Crosstab data has already been processed.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_BUCKET_DATA_PROCESSED,  
+					(Object[])null 
+					);
 		}
 		
 		++dataCount;
@@ -374,11 +391,14 @@ public abstract class BucketingService
 				case STANDARD_DEVIATION:
 				{
 					values[i].setHelper(values[i - 1], JRCalculable.HELPER_VARIANCE);
+					break;
 				}
 				case DISTINCT_COUNT:
 				{
 					values[i].setHelper(values[i - 1], JRCalculable.HELPER_COUNT);
+					break;
 				}
+				default:
 			}
 		}
 		return values;
@@ -601,26 +621,31 @@ public abstract class BucketingService
 			this.value = value;
 		}
 
+		@Override
 		public Bucket getKey()
 		{
 			return key;
 		}
 
+		@Override
 		public Object getValue()
 		{
 			return value;
 		}
 
+		@Override
 		public Object setValue(Object value)
 		{
 			throw new UnsupportedOperationException();
 		}
 
+		@Override
 		public int compareTo(MapEntry o)
 		{
 			return key.compareTo(o.key);
 		}
 		
+		@Override
 		public String toString()
 		{
 			return key + "=" + value;
@@ -674,24 +699,28 @@ public abstract class BucketingService
 		{
 			super(level);
 			
-			this.map = sortedMap ? new TreeMap<Bucket, Object>() : new LinkedHashMap<Bucket, Object>();
+			this.map = sortedMap ? new TreeMap<>() : new LinkedHashMap<>();
 		}
 		
+		@Override
 		void clear()
 		{
 			map.clear();
 		}
 
+		@Override
 		public Iterator<Map.Entry<Bucket, Object>> entryIterator()
 		{
 			return map.entrySet().iterator();
 		}
 
+		@Override
 		public Object get(Bucket key)
 		{
 			return map.get(key);
 		}
 
+		@Override
 		MeasureValue[] insertMeasureValues(Bucket[] bucketValues, boolean createValues, int offset)
 		{
 			BucketMapMap levelMap = this;
@@ -726,21 +755,25 @@ public abstract class BucketingService
 			return values;
 		}
 
+		@Override
 		public int size()
 		{
 			return map.size();
 		}
 
+		@Override
 		void addTotalEntry(Object value)
 		{
 			map.put(totalKey, value);
 		}
 		
+		@Override
 		public Object getTotal()
 		{
 			return get(totalKey);
 		}
 		
+		@Override
 		public MapEntry getTotalEntry()
 		{
 			Object value = get(totalKey);
@@ -794,6 +827,7 @@ public abstract class BucketingService
 			}
 		}
 		
+		@Override
 		public String toString()
 		{
 			return map.toString();
@@ -811,16 +845,18 @@ public abstract class BucketingService
 		{
 			super(level);
 
-			entries = new ArrayList<Map.Entry<Bucket, Object>>();
-			entryMap = new HashMap<Bucket, Object>();
+			entries = new ArrayList<>();
+			entryMap = new HashMap<>();
 		}
 
+		@Override
 		void clear()
 		{
 			entries.clear();
 			entryMap.clear();
 		}
 		
+		@Override
 		public Iterator<Map.Entry<Bucket, Object>> entryIterator()
 		{
 			return entries.iterator();
@@ -832,11 +868,13 @@ public abstract class BucketingService
 			entryMap.put(key, value);
 		}
 
+		@Override
 		public Object get(Bucket key)
 		{
 			return entryMap.get(key);
 		}
 
+		@Override
 		MeasureValue[] insertMeasureValues(Bucket[] bucketValues, boolean createValues, int offset)
 		{
 			int i = offset;
@@ -889,11 +927,13 @@ public abstract class BucketingService
 			return values;
 		}
 
+		@Override
 		public int size()
 		{
 			return entries.size();
 		}
 
+		@Override
 		void addTotalEntry(Object value)
 		{
 			add(totalKey, value);
@@ -906,6 +946,7 @@ public abstract class BucketingService
 			return totalEntry == null ? null : totalEntry.getValue();
 		}
 		
+		@Override
 		public MapEntry getTotalEntry()
 		{
 			MapEntry lastEntry = (MapEntry)entries.get(entries.size() - 1);
@@ -917,9 +958,10 @@ public abstract class BucketingService
 			return null;
 		}
 		
+		@Override
 		public String toString()
 		{
-			StringBuffer sb = new StringBuffer();
+			StringBuilder sb = new StringBuilder();
 			sb.append('{');
 			for (Iterator<Map.Entry<Bucket, Object>> it = entries.iterator(); it.hasNext();)
 			{
@@ -940,7 +982,11 @@ public abstract class BucketingService
 	{
 		if (bucketMeasureLimit > 0 && bucketMeasureCount > bucketMeasureLimit)
 		{
-			throw new JRRuntimeException("Crosstab bucket/measure limit (" + bucketMeasureLimit + ") exceeded.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_BUCKET_MEASURE_LIMIT,  
+					new Object[]{bucketMeasureLimit} 
+					);
 		}
 	}
 	

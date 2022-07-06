@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,15 @@
  */
 package net.sf.jasperreports.engine.design;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.fill.JREvaluator;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -75,14 +78,12 @@ import net.sf.jasperreports.engine.fill.JREvaluator;
  * compiler implementation that can evaluate them at runtime is available.
  * <p>
  * JasperReports currently ships report compiler implementations for the Groovy scripting
- * language (<a href="http://groovy.codehaus.org">http://groovy.codehaus.org</a>), 
- * JavaScript (<a href="http://www.mozilla.org/rhino">http://www.mozilla.org/rhino</a>), and
- * the BeanShell scripting library (<a href="http://www.beanshell.org">http://www.beanshell.org</a>). </p>
+ * language (<a href="http://groovy.codehaus.org">http://groovy.codehaus.org</a>) and 
+ * JavaScript (<a href="http://www.mozilla.org/rhino">http://www.mozilla.org/rhino</a>). </p>
  * The related compiler implementation classes are:
  * <ul>
  * <li>{@link net.sf.jasperreports.compilers.JRGroovyCompiler}</li>
  * <li>{@link net.sf.jasperreports.compilers.JavaScriptCompiler}</li>
- * <li>{@link net.sf.jasperreports.compilers.JRBshCompiler}</li>
  * </ul>
  * <p>
  * Since the most common scenario is to use the Java language for writing report
@@ -102,7 +103,6 @@ import net.sf.jasperreports.engine.fill.JREvaluator;
  * @see net.sf.jasperreports.engine.design.JasperDesign
  * @see net.sf.jasperreports.engine.xml.JRXmlLoader
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRCompiler
 {
@@ -122,6 +122,12 @@ public interface JRCompiler
 	 * Properties having this prefix are used to indicate the JRCompiler implementation to be used when compiling
 	 * report designs that rely on the expression language specified as property suffix.
 	 */
+	@Property(
+			name = "net.sf.jasperreports.compiler.{language}",
+			category = PropertyConstants.CATEGORY_COMPILE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_2_0_1
+			)
 	public static final String COMPILER_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "compiler.";
 	
 	/**
@@ -129,6 +135,13 @@ public interface JRCompiler
 	 * <p>
 	 * Defaults to <code>false</code>.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_1_0_0,
+			valueType = Boolean.class
+			)
 	public static final String COMPILER_KEEP_JAVA_FILE = JRPropertiesUtil.PROPERTY_PREFIX + "compiler.keep.java.file";
 	
 	/**
@@ -136,6 +149,12 @@ public interface JRCompiler
 	 * <p>
 	 * Defaults to <code>System.getProperty("user.dir")</code>.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			defaultValue = "System.getProperty(\"user.dir\")",
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_1_0_0
+			)
 	public static final String COMPILER_TEMP_DIR = JRPropertiesUtil.PROPERTY_PREFIX + "compiler.temp.dir";
 	
 	/**
@@ -143,6 +162,12 @@ public interface JRCompiler
 	 * <p>
 	 * Defaults to <code>System.getProperty("java.class.path")</code>.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			scopes = {PropertyScope.CONTEXT},
+			defaultValue = "System.getProperty(\"java.class.path\")",
+			sinceVersion = PropertyConstants.VERSION_1_0_0
+			)
 	public static final String COMPILER_CLASSPATH = JRPropertiesUtil.PROPERTY_PREFIX + "compiler.classpath";
 
 	

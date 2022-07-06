@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,6 +36,7 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.export.CsvExporterConfiguration;
 import net.sf.jasperreports.export.CsvReportConfiguration;
@@ -70,7 +71,6 @@ import org.apache.commons.logging.LogFactory;
  * 
  * @see net.sf.jasperreports.export.CsvExporterConfiguration
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCsvExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCsvExporter extends JRAbstractCsvExporter<CsvReportConfiguration, CsvExporterConfiguration, JRCsvExporterContext>
 {
@@ -100,27 +100,21 @@ public class JRCsvExporter extends JRAbstractCsvExporter<CsvReportConfiguration,
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<CsvExporterConfiguration> getConfigurationInterface()
 	{
 		return CsvExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<CsvReportConfiguration> getItemConfigurationInterface()
 	{
 		return CsvReportConfiguration.class;
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	protected void ensureOutput()
 	{
@@ -136,24 +130,19 @@ public class JRCsvExporter extends JRAbstractCsvExporter<CsvReportConfiguration,
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	protected void exportPage(JRPrintPage page) throws IOException
 	{
-		CsvExporterConfiguration configuration = getCurrentConfiguration();
-		
-		String fieldDelimiter = configuration.getFieldDelimiter();
-		String recordDelimiter = configuration.getRecordDelimiter();
-		
 		CsvReportConfiguration lcItemConfiguration = getCurrentItemConfiguration();
+		
+		PrintPageFormat pageFormat = jasperPrint.getPageFormat(pageIndex); 
 		
 		JRGridLayout layout = 
 			new JRGridLayout(
 				nature,
 				page.getElements(), 
-				jasperPrint.getPageWidth(), 
-				jasperPrint.getPageHeight(), 
+				pageFormat.getPageWidth(), 
+				pageFormat.getPageHeight(), 
 				lcItemConfiguration.getOffsetX() == null ? 0 : lcItemConfiguration.getOffsetX(), 
 				lcItemConfiguration.getOffsetY() == null ? 0 : lcItemConfiguration.getOffsetY(),
 				null //address
@@ -164,15 +153,17 @@ public class JRCsvExporter extends JRAbstractCsvExporter<CsvReportConfiguration,
 		CutsInfo xCuts = layout.getXCuts();
 		CutsInfo yCuts = layout.getYCuts();
 
-		StringBuffer rowbuffer = null;
+		StringBuilder rowBuilder = null;
 		
 		boolean isFirstColumn = true;
 		int rowCount = grid.getRowCount();
 		for(int y = 0; y < rowCount; y++)
 		{
-			rowbuffer = new StringBuffer();
+			Cut yCut = yCuts.getCut(y);
 
-			if (yCuts.isCutNotEmpty(y))
+			rowBuilder = new StringBuilder();
+
+			if (yCut.isCutNotEmpty())
 			{
 				isFirstColumn = true;
 				GridRow row = grid.getRow(y);
@@ -223,9 +214,9 @@ public class JRCsvExporter extends JRAbstractCsvExporter<CsvReportConfiguration,
 						{
 							if (!isFirstColumn)
 							{
-								rowbuffer.append(fieldDelimiter);
+								rowBuilder.append(fieldDelimiter);
 							}
-							rowbuffer.append(
+							rowBuilder.append(
 								prepareText(text)
 								);
 							isFirstColumn = false;
@@ -233,20 +224,20 @@ public class JRCsvExporter extends JRAbstractCsvExporter<CsvReportConfiguration,
 					}
 					else
 					{
-						if (xCuts.isCutNotEmpty(x))
+						if (xCuts.getCut(x).isCutNotEmpty())
 						{
 							if (!isFirstColumn)
 							{
-								rowbuffer.append(fieldDelimiter);
+								rowBuilder.append(fieldDelimiter);
 							}
 							isFirstColumn = false;
 						}
 					}
 				}
 				
-				if (rowbuffer.length() > 0)
+				if (rowBuilder.length() > 0)
 				{
-					writer.write(rowbuffer.toString());
+					writer.write(rowBuilder.toString());
 					writer.write(recordDelimiter);
 				}
 			}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,10 +31,12 @@ import net.sf.jasperreports.engine.query.JRSqlAbstractEqualClause;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DateRangeBaseSQLEqualityClause.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class DateRangeBaseSQLEqualityClause implements JRClauseFunction
 {
+	public static final String EXCEPTION_MESSAGE_KEY_EQUAL_CLAUSE_DB_COLUMN_TOKEN_MISSING = "date.range.equal.clause.db.column.token.missing";
+	public static final String EXCEPTION_MESSAGE_KEY_EQUAL_CLAUSE_PARAMETER_TOKEN_MISSING = "date.range.equal.clause.parameter.token.missing";
+	public static final String EXCEPTION_MESSAGE_KEY_UNEXPECTED_PARAMETER_TYPE = "date.range.unexpected.parameter.type";
 	
 	protected DateRangeBaseSQLEqualityClause()
 	{
@@ -49,19 +51,27 @@ public abstract class DateRangeBaseSQLEqualityClause implements JRClauseFunction
 		
 		if (col == null)
 		{
-			throw new JRRuntimeException("SQL EQUAL clause missing DB column token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_EQUAL_CLAUSE_DB_COLUMN_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		if (param == null)
 		{
-			throw new JRRuntimeException("SQL EQUAL clause missing parameter token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_EQUAL_CLAUSE_PARAMETER_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		Object paramValue = queryContext.getValueParameter(param).getValue();
 		if (paramValue != null && !(paramValue instanceof DateRange))
 		{
-			throw new JRRuntimeException("Parameter " + param + " in clause " + clauseId
-					+ " is not a date range");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNEXPECTED_PARAMETER_TYPE,
+					new Object[]{param, clauseId});
 		}
 		
 		DateRange dateRange = (DateRange) paramValue;

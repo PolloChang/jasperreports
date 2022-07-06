@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,13 +32,15 @@ import java.util.Map;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
+import net.sf.jasperreports.engine.export.JRXlsAbstractExporter;
+import net.sf.jasperreports.engine.type.LineDirectionEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.util.FileBufferedWriter;
 import net.sf.jasperreports.export.XlsReportConfiguration;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxStyleHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxStyleHelper extends BaseHelper
 {
@@ -51,13 +53,11 @@ public class XlsxStyleHelper extends BaseHelper
 	private FileBufferedWriter bordersWriter = new FileBufferedWriter();
 	private FileBufferedWriter cellXfsWriter = new FileBufferedWriter();
 	
-	private Map<String,Integer> styleCache = new HashMap<String,Integer>();//FIXMEXLSX use soft cache? check other exporter caches as well
+	private Map<String,Integer> styleCache = new HashMap<>();//FIXMEXLSX use soft cache? check other exporter caches as well
 	
 	private XlsxFormatHelper formatHelper;
 	private XlsxFontHelper fontHelper;
 	private XlsxBorderHelper borderHelper;
-	
-	private XlsReportConfiguration configuration;
 	
 	/**
 	 * 
@@ -81,9 +81,7 @@ public class XlsxStyleHelper extends BaseHelper
 	 */
 	public void setConfiguration(XlsReportConfiguration configuration)
 	{
-		this.configuration = configuration;
 		fontHelper.setConfiguration(configuration);
-		borderHelper.setConfiguration(configuration);
 	}
 	
 
@@ -96,39 +94,53 @@ public class XlsxStyleHelper extends BaseHelper
 		Locale locale,
 		boolean isWrapText, 
 		boolean isHidden, 
-		boolean isLocked 
+		boolean isLocked,
+		boolean  isShrinkToFit,
+		boolean isIgnoreTextFormatting,
+		RotationEnum rotation,
+		JRXlsAbstractExporter.SheetInfo sheetInfo,
+		LineDirectionEnum direction
 		)
 	{
 		XlsxStyleInfo styleInfo = 
 			new XlsxStyleInfo(
 				formatHelper.getFormat(pattern) + 1,
 				fontHelper.getFont(gridCell, locale) + 1,
-				borderHelper.getBorder(gridCell) + 1,
+				borderHelper.getBorder(gridCell, sheetInfo, direction) + 1,
 				gridCell,
 				isWrapText,
 				isHidden,
-				isLocked
+				isLocked,
+				isShrinkToFit,
+				isIgnoreTextFormatting, 
+				getRotation(rotation),
+				sheetInfo,
+				direction
 				);
 		Integer styleIndex = styleCache.get(styleInfo.getId());
 		if (styleIndex == null)
 		{
-			styleIndex = Integer.valueOf(styleCache.size() + 1);
-			exportCellStyle(gridCell, styleInfo, styleIndex);
+			styleIndex = styleCache.size() + 1;
+			exportCellStyle(gridCell, styleInfo, styleIndex, sheetInfo);
 			styleCache.put(styleInfo.getId(), styleIndex);
 		}
-		return styleIndex.intValue();
+		return styleIndex;
 	}
 
 	/**
 	 * 
 	 */
-	private void exportCellStyle(JRExporterGridCell gridCell, XlsxStyleInfo styleInfo, Integer styleIndex)
+	private void exportCellStyle(
+			JRExporterGridCell gridCell, 
+			XlsxStyleInfo styleInfo, 
+			Integer styleIndex, 
+			JRXlsAbstractExporter.SheetInfo sheetInfo)
 	{
 		try
 		{
-			if (configuration.isIgnoreCellBackground() || styleInfo.backcolor == null)
+			if (Boolean.TRUE.equals(sheetInfo.ignoreCellBackground) || styleInfo.backcolor == null)
 			{
-				if (configuration.isWhitePageBackground())
+				if (Boolean.TRUE.equals(sheetInfo.whitePageBackground))
 				{
 					fillsWriter.write("<fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFFF\"/></patternFill></fill>\n");
 				}
@@ -145,14 +157,15 @@ public class XlsxStyleHelper extends BaseHelper
 			cellXfsWriter.write(
 				"<xf numFmtId=\"" + styleInfo.formatIndex
 				+ "\" fontId=\"" + styleInfo.fontIndex
-				+ "\" fillId=\"" + (styleIndex.intValue() + 1)
+				+ "\" fillId=\"" + (styleIndex + 1)
 				+ "\" borderId=\"" + styleInfo.borderIndex
-				+ "\" xfId=\"" + styleIndex + "\""
+				+ "\" xfId=\"0\""
 				+ " applyAlignment=\"1\" applyProtection=\"1\" applyNumberFormat=\"1\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\">"
-				+ "<alignment wrapText=\"" + styleInfo.isWrapText + "\""
+				+ "<alignment wrapText=\"" + (styleInfo.isWrapText && !styleInfo.isShrinkToFit) + "\""
 				+ (styleInfo.horizontalAlign == null ? "" : " horizontal=\"" + styleInfo.horizontalAlign + "\"")
 				+ (styleInfo.verticalAlign == null ? "" : " vertical=\"" + styleInfo.verticalAlign + "\"")
-//				+ (" shrinkToFit=\"" + styleInfo.isFontSizeFixEnabled + "\"")
+				+ (styleInfo.isShrinkToFit ? " shrinkToFit=\"" + styleInfo.isShrinkToFit + "\"" : "")
+				+ (styleInfo.rotation != 0 ? " textRotation=\"" + styleInfo.rotation + "\"" : "")
 				+ "/>"
 				);
 			cellXfsWriter.write("<protection hidden=\"" + styleInfo.isHidden + "\" locked=\"" + styleInfo.isLocked + "\"/>");
@@ -191,7 +204,8 @@ public class XlsxStyleHelper extends BaseHelper
 		write("<border><left/><right/><top/><bottom/><diagonal/></border>\n");
 		bordersWriter.writeData(writer);
 		write("</borders>\n");
-		//write("<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" applyAlignment=\"1\" applyProtection=\"1\" applyNumberFormat=\"1\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\"/></cellStyleXfs>\n");
+		
+		write("<cellStyleXfs count=\"1\"><xf/></cellStyleXfs>\n");
 
 		write("<cellXfs>\n");// count=\"1\">\n");
 		write("<xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyAlignment=\"1\" applyProtection=\"1\" applyNumberFormat=\"1\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\"/>\n");
@@ -202,6 +216,38 @@ public class XlsxStyleHelper extends BaseHelper
 		write("<dxfs count=\"0\"/><tableStyles count=\"0\" defaultTableStyle=\"TableStyleMedium9\" defaultPivotStyle=\"PivotStyleLight16\"/>\n");
 
 		write("</styleSheet>\n");
+	}
+	
+	/**
+	 *
+	 */
+	protected int getRotation(RotationEnum rotation)
+	{
+		int result = 0;
+		
+		if (rotation != null)
+		{
+			switch(rotation)
+			{
+				case LEFT:
+				{
+					result = 90;
+					break;
+				}
+				case RIGHT:
+				{
+					result = 180;
+					break;
+				}
+				case UPSIDE_DOWN:
+				case NONE:
+				default:
+				{
+				}
+			}
+		}
+
+		return result;
 	}
 	
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,13 +23,20 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.components.barbecue.BarbecueComponent;
+import net.sf.jasperreports.components.barcode4j.Barcode4jComponent;
+import net.sf.jasperreports.components.barcode4j.QRCodeComponent;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRTextElement;
 import net.sf.jasperreports.engine.export.HtmlExporter;
 import net.sf.jasperreports.export.annotations.ExporterParameter;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
+import net.sf.jasperreports.export.type.HtmlBorderCollapseEnum;
 import net.sf.jasperreports.export.type.HtmlSizeUnitEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -38,7 +45,6 @@ import net.sf.jasperreports.export.type.HtmlSizeUnitEnum;
  * @see HtmlExporter
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: HtmlReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface HtmlReportConfiguration extends ReportExportConfiguration
 {
@@ -49,6 +55,13 @@ public interface HtmlReportConfiguration extends ReportExportConfiguration
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_2_0_1,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_WHITE_PAGE_BACKGROUND = JRPropertiesUtil.PROPERTY_PREFIX + "export.html.white.page.background";
 
 
@@ -59,6 +72,13 @@ public interface HtmlReportConfiguration extends ReportExportConfiguration
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_2_0_1,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_ROWS = JRPropertiesUtil.PROPERTY_PREFIX + "export.html.remove.emtpy.space.between.rows";
 
 
@@ -69,6 +89,13 @@ public interface HtmlReportConfiguration extends ReportExportConfiguration
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_2_0_1,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_WRAP_BREAK_WORD = JRPropertiesUtil.PROPERTY_PREFIX + "export.html.wrap.break.word";
 
 
@@ -77,6 +104,12 @@ public interface HtmlReportConfiguration extends ReportExportConfiguration
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.PIXEL_UNIT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_2_0_1
+			)
 	public static final String PROPERTY_SIZE_UNIT = JRPropertiesUtil.PROPERTY_PREFIX + "export.html.size.unit";
 
 	
@@ -86,21 +119,95 @@ public interface HtmlReportConfiguration extends ReportExportConfiguration
 	 * The property can be set globally and at report level.  It defaults to <code>collapse</code>.
 	 * </p>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.COLLAPSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_5_0_4
+			)
 	public static final String PROPERTY_BORDER_COLLAPSE = JRPropertiesUtil.PROPERTY_PREFIX + "export.html.border.collapse";
 
 
 	/**
 	 * Property that provides a default value for the {@link #isAccessibleHtml()} exporter configuration setting.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_7_5,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_ACCESSIBLE = JRPropertiesUtil.PROPERTY_PREFIX + "export.html.accessible";
 
 	
 	/**
 	 * Property that provides a default for the {@link #isIgnoreHyperlink()} export configuration flag.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.HYPERLINK},
+			sinceVersion = PropertyConstants.VERSION_5_1_2,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_IGNORE_HYPERLINK = HtmlExporter.HTML_EXPORTER_PROPERTIES_PREFIX + JRPrintHyperlink.PROPERTY_IGNORE_HYPERLINK_SUFFIX;
 
 	
+	/**
+	 * Property that provides a default for the {@link #isEmbedImage()} export configuration flag.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.IMAGE_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_2_1,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_EMBED_IMAGE = HtmlExporter.HTML_EXPORTER_PROPERTIES_PREFIX + "embed.image";
+
+	
+	/**
+	 * Property that provides a default for the {@link #isEmbeddedSvgUseFonts()} export configuration flag.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.IMAGE_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_2_2,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_EMBEDDED_SVG_USE_FONTS = HtmlExporter.HTML_EXPORTER_PROPERTIES_PREFIX + "embedded.svg.use.fonts";
+
+	
+	/**
+	 * Property that provides a default for the {@link #isConvertSvgToImage()} export configuration flag.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, 
+					PropertyScope.IMAGE_ELEMENT, PropertyScope.CHART_ELEMENT, PropertyScope.COMPONENT},
+			scopeQualifications = {Barcode4jComponent.COMPONENT_DESIGNATION, QRCodeComponent.COMPONENT_DESIGNATION,
+					BarbecueComponent.METADATA_KEY_QUALIFICATION},
+			sinceVersion = PropertyConstants.VERSION_6_3_0,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_CONVERT_SVG_TO_IMAGE = HtmlExporter.HTML_EXPORTER_PROPERTIES_PREFIX + "convert.svg.to.image";
+
+	
+	/**
+	 * Property that provides a default for the {@link #isUseBackgroundImageToAlign()} export configuration flag.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.IMAGE_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_8_0,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_USE_BACKGROUND_IMAGE_TO_ALIGN = HtmlExporter.HTML_EXPORTER_PROPERTIES_PREFIX + "use.background.image.to.align";
+
+
 	/**
 	 * Returns a boolean value specifying whether the blank lines, that sometimes appear between rows, should be deleted. Sometimes page
 	 * break occurs before the entire page is filled with data (i.e. having a group with the <i>isStartNewPage</i> attribute set to true).
@@ -174,12 +281,18 @@ public interface HtmlReportConfiguration extends ReportExportConfiguration
 	
 	
 	/**
+	 * @deprecated Replaced by {@link #getBorderCollapseValue()}.
+	 */
+	public String getBorderCollapse();
+	
+	
+	/**
 	 * Provides the value for the <code>border-collapse</code> CSS property to be applied
 	 * to the table generated for the report.
 	 * @see #PROPERTY_BORDER_COLLAPSE
 	 */
 	@ExporterProperty(PROPERTY_BORDER_COLLAPSE)
-	public String getBorderCollapse();
+	public HtmlBorderCollapseEnum getBorderCollapseValue();
 	
 	
 	/**
@@ -231,4 +344,44 @@ public interface HtmlReportConfiguration extends ReportExportConfiguration
 		booleanDefault=false
 		)
 	public Boolean isIgnoreHyperlink();
+	
+	
+	/**
+	 * @see #PROPERTY_EMBED_IMAGE
+	 */
+	@ExporterProperty(
+		value=PROPERTY_EMBED_IMAGE, 
+		booleanDefault=false
+		)
+	public Boolean isEmbedImage();
+	
+	
+	/**
+	 * @see #PROPERTY_EMBEDDED_SVG_USE_FONTS
+	 */
+	@ExporterProperty(
+		value=PROPERTY_EMBEDDED_SVG_USE_FONTS, 
+		booleanDefault=false
+		)
+	public Boolean isEmbeddedSvgUseFonts();
+	
+	
+	/**
+	 * @see #PROPERTY_CONVERT_SVG_TO_IMAGE
+	 */
+	@ExporterProperty(
+		value=PROPERTY_CONVERT_SVG_TO_IMAGE, 
+		booleanDefault=false
+		)
+	public Boolean isConvertSvgToImage();
+	
+	
+	/**
+	 * @see #PROPERTY_USE_BACKGROUND_IMAGE_TO_ALIGN
+	 */
+	@ExporterProperty(
+		value=PROPERTY_USE_BACKGROUND_IMAGE_TO_ALIGN, 
+		booleanDefault=true
+		)
+	public Boolean isUseBackgroundImageToAlign();
 }

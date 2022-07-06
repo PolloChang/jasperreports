@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.type.FooterPositionEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillGroup implements JRGroup
 {
@@ -63,6 +62,9 @@ public class JRFillGroup implements JRGroup
 	private boolean isTopLevelChange;
 	private boolean isHeaderPrinted;
 	private boolean isFooterPrinted = true;
+	private int detailsCount;
+	
+	private ElementRange keepTogetherElementRange;
 
 	/**
 	 *
@@ -76,30 +78,34 @@ public class JRFillGroup implements JRGroup
 
 		parent = group;
 
-		String reportName = factory.getFiller().isSubreport() ? factory.getFiller().getJasperReport().getName() : null;
-		
-		groupHeaderSection = factory.getSection(group.getGroupHeaderSection());
-		if (groupHeaderSection != factory.getFiller().missingFillSection)
+		JRBaseFiller filler = factory.getFiller();
+		if (filler != null)
 		{
-			groupHeaderSection.setOrigin(
-				new JROrigin(
-					reportName,
-					group.getName(),
-					BandTypeEnum.GROUP_HEADER
-					)
-				);
-		}
+			String reportName = filler.getBandReportParent() == null ? null : filler.getBandReportParent().getReportName();
+			
+			groupHeaderSection = factory.getSection(group.getGroupHeaderSection());
+			if (groupHeaderSection != factory.getFiller().missingFillSection)
+			{
+				groupHeaderSection.setOrigin(
+					new JROrigin(
+						reportName,
+						group.getName(),
+						BandTypeEnum.GROUP_HEADER
+						)
+					);
+			}
 
-		groupFooterSection = factory.getSection(group.getGroupFooterSection());
-		if (groupFooterSection != factory.getFiller().missingFillSection)
-		{
-			groupFooterSection.setOrigin(
-				new JROrigin(
-					reportName,
-					group.getName(),
-					BandTypeEnum.GROUP_FOOTER
-					)
-				);
+			groupFooterSection = factory.getSection(group.getGroupFooterSection());
+			if (groupFooterSection != factory.getFiller().missingFillSection)
+			{
+				groupFooterSection.setOrigin(
+					new JROrigin(
+						reportName,
+						group.getName(),
+						BandTypeEnum.GROUP_FOOTER
+						)
+					);
+			}
 		}
 
 		countVariable = factory.getVariable(group.getCountVariable());
@@ -110,150 +116,145 @@ public class JRFillGroup implements JRGroup
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return parent.getName();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getExpression()
 	{
 		return parent.getExpression();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isStartNewColumn()
 	{
 		return startNewColumn;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setStartNewColumn(boolean isStart)
 	{
 		this.startNewColumn = isStart;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isStartNewPage()
 	{
 		return startNewPage;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setStartNewPage(boolean isStart)
 	{
 		this.startNewPage = isStart;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isResetPageNumber()
 	{
 		return resetPageNumber;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setResetPageNumber(boolean isReset)
 	{
 		this.resetPageNumber = isReset;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isReprintHeaderOnEachPage()
 	{
 		return parent.isReprintHeaderOnEachPage();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setReprintHeaderOnEachPage(boolean isReprint)
 	{
 	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public boolean isReprintHeaderOnEachColumn()
+	{
+		return parent.isReprintHeaderOnEachColumn();
+	}
+		
+	@Override
+	public void setReprintHeaderOnEachColumn(boolean isReprint)
+	{
+	}
+		
+	@Override
 	public int getMinHeightToStartNewPage()
 	{
 		return parent.getMinHeightToStartNewPage();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setMinHeightToStartNewPage(int minHeight)
 	{
 	}
+	
+	@Override
+	public int getMinDetailsToStartFromTop()
+	{
+		return parent.getMinDetailsToStartFromTop();
+	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public void setMinDetailsToStartFromTop(int minDetails)
+	{
+	}
+	
+	@Override
 	public FooterPositionEnum getFooterPositionValue()
 	{
 		return parent.getFooterPositionValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setFooterPosition(FooterPositionEnum footerPosition)
 	{
 		throw new UnsupportedOperationException();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isKeepTogether()
 	{
 		return parent.isKeepTogether();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setKeepTogether(boolean keepTogether)
 	{
 	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public boolean isPreventOrphanFooter()
+	{
+		return parent.isPreventOrphanFooter();
+	}
+		
+	@Override
+	public void setPreventOrphanFooter(boolean preventOrphanFooter)
+	{
+	}
+		
+	@Override
 	public JRSection getGroupHeaderSection()
 	{
 		return groupHeaderSection;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRSection getGroupFooterSection()
 	{
 		return groupFooterSection;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRVariable getCountVariable()
 	{
 		return countVariable;
@@ -276,7 +277,7 @@ public class JRFillGroup implements JRGroup
 	}
 
 	/**
-	 *
+	 * @deprecated To be removed.
 	 */
 	public boolean isTopLevelChange()
 	{
@@ -326,6 +327,60 @@ public class JRFillGroup implements JRGroup
 	/**
 	 *
 	 */
+	public ElementRange getKeepTogetherElementRange()
+	{
+		return keepTogetherElementRange;
+	}
+
+	/**
+	 *
+	 */
+	public void setKeepTogetherElementRange(ElementRange keepTogetherElementRange)
+	{
+		this.keepTogetherElementRange = keepTogetherElementRange;
+	}
+	
+	/**
+	 *
+	 */
+	protected void incrementDetailsCount()
+	{
+		detailsCount++;
+	}
+	
+	/**
+	 *
+	 */
+	protected void resetDetailsCount()
+	{
+		detailsCount = 0;
+	}
+
+	/**
+	 *
+	 */
+	protected boolean hasMinDetails()
+	{
+		return hasMinDetails(0);
+	}
+
+	/**
+	 *
+	 */
+	protected boolean hasMinDetails(int detailsToMove)
+	{
+		return getMinDetailsToStartFromTop() == 0 || getMinDetailsToStartFromTop() <= detailsCount - detailsToMove;
+	}
+
+	/**
+	 *
+	 */
+	protected int getDetailsCount()
+	{
+		return detailsCount;
+	}
+		
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

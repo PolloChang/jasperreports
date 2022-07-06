@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import net.sf.jasperreports.engine.JRConstants;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPropertyChangeSupport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPropertyChangeSupport extends PropertyChangeSupport
 {
@@ -65,7 +64,7 @@ public class JRPropertyChangeSupport extends PropertyChangeSupport
 			return;
 		}
 		
-		firePropertyChange(propertyName, new Float(oldValue), new Float(newValue));
+		firePropertyChange(propertyName, (Float)oldValue, (Float)newValue);
 	}
 	
 	public void firePropertyChange(String propertyName, double oldValue, double newValue)
@@ -75,7 +74,12 @@ public class JRPropertyChangeSupport extends PropertyChangeSupport
 			return;
 		}
 		
-		firePropertyChange(propertyName, new Double(oldValue), new Double(newValue));
+		firePropertyChange(propertyName, (Double)oldValue, (Double)newValue);
+	}
+	
+	public void firePropertyRemove(String propertyName, String oldValue)
+	{
+		firePropertyChange(new PropertyRemoveEvent(sourceBean, propertyName, oldValue));
 	}
 	
 }

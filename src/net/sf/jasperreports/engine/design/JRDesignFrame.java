@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,8 +24,6 @@
 package net.sf.jasperreports.engine.design;
 
 import java.awt.Color;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,16 +38,14 @@ import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.base.JRBaseElementGroup;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
+import net.sf.jasperreports.engine.type.BorderSplitType;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * Implementation of {@link net.sf.jasperreports.engine.JRFrame JRFrame} to be used at design time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignFrame.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignFrame extends JRDesignElement implements JRFrame
 {
@@ -61,11 +57,14 @@ public class JRDesignFrame extends JRDesignElement implements JRFrame
 	
 	public static final String PROPERTY_CHILDREN = "children";
 	
+	public static final String PROPERTY_BORDER_SPLIT_TYPE = "borderSplitType";
+	
 	private List<JRChild> children;
 
 	private JRLineBox lineBox;
 
-
+	private BorderSplitType borderSplitType;
+	
 	/**
 	 * Creates a new frame object.
 	 * 
@@ -75,7 +74,7 @@ public class JRDesignFrame extends JRDesignElement implements JRFrame
 	{
 		super(defaultStyleProvider);
 		
-		children = new ArrayList<JRChild>();
+		children = new ArrayList<>();
 		
 		lineBox = new JRBaseLineBox(this);
 	}
@@ -90,14 +89,13 @@ public class JRDesignFrame extends JRDesignElement implements JRFrame
 	}
 
 	
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitFrame(this);
@@ -108,6 +106,7 @@ public class JRDesignFrame extends JRDesignElement implements JRFrame
 		}
 	}
 
+	@Override
 	public JRElement[] getElements()
 	{
 		return JRBaseElementGroup.getElements(children);
@@ -220,25 +219,26 @@ public class JRDesignFrame extends JRDesignElement implements JRFrame
 	}
 
 	
+	@Override
 	public List<JRChild> getChildren()
 	{
 		return children;
 	}
 
+	@Override
 	public JRElement getElementByKey(String elementKey)
 	{
 		return JRBaseElementGroup.getElementByKey(getElements(), elementKey);
 	}
 	
 	
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
@@ -252,24 +252,39 @@ public class JRDesignFrame extends JRDesignElement implements JRFrame
 		this.lineBox = lineBox.clone(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return getForecolor();
 	}
-	
+
+	@Override
+	public BorderSplitType getBorderSplitType()
+	{
+		return borderSplitType;
+	}
+
 	/**
+	 * Sets the border split type for the frame.
 	 * 
+	 * @param borderSplitType the border split type
+	 * @see JRFrame#getBorderSplitType()
 	 */
+	public void setBorderSplitType(BorderSplitType borderSplitType)
+	{
+		Object old = this.borderSplitType;
+		this.borderSplitType = borderSplitType;
+		getEventSupport().firePropertyChange(PROPERTY_BORDER_SPLIT_TYPE, old, this.borderSplitType);
+	}
+	
+	@Override
 	public Object clone() 
 	{
 		JRDesignFrame clone = (JRDesignFrame)super.clone();
 		
 		if (children != null)
 		{
-			clone.children = new ArrayList<JRChild>(children.size());
+			clone.children = new ArrayList<>(children.size());
 			for(int i = 0; i < children.size(); i++)
 			{
 				clone.children.add((JRChild)(children.get(i).clone(clone)));
@@ -279,113 +294,5 @@ public class JRDesignFrame extends JRDesignElement implements JRFrame
 		clone.lineBox = lineBox.clone(clone);
 
 		return clone;
-	}
-
-
-	/*
-	 * These fields are only for serialization backward compatibility.
-	 */
-	/**
-	 * @deprecated
-	 */
-	private Byte border;
-	/**
-	 * @deprecated
-	 */
-	private Byte topBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte leftBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte bottomBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte rightBorder;
-	/**
-	 * @deprecated
-	 */
-	private Color borderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color topBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color leftBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color bottomBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color rightBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Integer padding;
-	/**
-	 * @deprecated
-	 */
-	private Integer topPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer leftPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer bottomPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer rightPadding;
-	
-	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
-	{
-		in.defaultReadObject();
-
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setToBox(
-				border,
-				topBorder,
-				leftBorder,
-				bottomBorder,
-				rightBorder,
-				borderColor,
-				topBorderColor,
-				leftBorderColor,
-				bottomBorderColor,
-				rightBorderColor,
-				padding,
-				topPadding,
-				leftPadding,
-				bottomPadding,
-				rightPadding,
-				lineBox
-				);
-			border = null;
-			topBorder = null;
-			leftBorder = null;
-			bottomBorder = null;
-			rightBorder = null;
-			borderColor = null;
-			topBorderColor = null;
-			leftBorderColor = null;
-			bottomBorderColor = null;
-			rightBorderColor = null;
-			padding = null;
-			topPadding = null;
-			leftPadding = null;
-			bottomPadding = null;
-			rightPadding = null;
-		}
 	}
 }

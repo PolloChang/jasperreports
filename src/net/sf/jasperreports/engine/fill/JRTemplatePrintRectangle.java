@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintRectangle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintRectangle extends JRTemplatePrintGraphicElement implements JRPrintRectangle
 {
@@ -52,29 +51,6 @@ public class JRTemplatePrintRectangle extends JRTemplatePrintGraphicElement impl
 	 * Creates a print rectangle element.
 	 * 
 	 * @param rectangle the template rectangle that the element will use
-	 * @deprecated provide a source Id via {@link #JRTemplatePrintRectangle(JRTemplateRectangle, int)}
-	 */
-	public JRTemplatePrintRectangle(JRTemplateRectangle rectangle)
-	{
-		super(rectangle);
-	}
-
-	/**
-	 * Creates a print rectangle element.
-	 * 
-	 * @param rectangle the template rectangle that the element will use
-	 * @param sourceElementId the Id of the source element
-	 * @deprecated replaced by {@link #JRTemplatePrintRectangle(JRTemplateRectangle, PrintElementOriginator)}
-	 */
-	public JRTemplatePrintRectangle(JRTemplateRectangle rectangle, int sourceElementId)
-	{
-		super(rectangle, sourceElementId);
-	}
-
-	/**
-	 * Creates a print rectangle element.
-	 * 
-	 * @param rectangle the template rectangle that the element will use
 	 * @param originator
 	 */
 	public JRTemplatePrintRectangle(JRTemplateRectangle rectangle, PrintElementOriginator originator)
@@ -83,36 +59,24 @@ public class JRTemplatePrintRectangle extends JRTemplatePrintGraphicElement impl
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public int getRadius()
 	{
 		return ((JRTemplateRectangle)this.template).getRadius();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getOwnRadius()
 	{
 		return ((JRTemplateRectangle)this.template).getOwnRadius();
 	}
 
-	/**
-	 *
-	 */
-	public void setRadius(int radius)
-	{
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setRadius(Integer radius)
 	{
 	}
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);

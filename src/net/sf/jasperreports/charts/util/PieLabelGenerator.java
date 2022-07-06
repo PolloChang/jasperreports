@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import org.jfree.data.general.PieDataset;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PieLabelGenerator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PieLabelGenerator implements PieSectionLabelGenerator, Serializable
 {
@@ -48,11 +47,13 @@ public class PieLabelGenerator implements PieSectionLabelGenerator, Serializable
 		this.labels = labels;
 	}
 	
+	@Override
 	public String generateSectionLabel(PieDataset arg0, @SuppressWarnings("rawtypes") Comparable arg1)
 	{
 		return labels.get( arg1 );
 	}
 
+	@Override
 	public AttributedString generateAttributedSectionLabel(PieDataset arg0, @SuppressWarnings("rawtypes") Comparable arg1)
 	{
 		return new AttributedString(generateSectionLabel(arg0, arg1));//FIXMECHART check this

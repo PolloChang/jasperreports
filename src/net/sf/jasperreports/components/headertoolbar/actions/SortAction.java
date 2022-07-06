@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.components.headertoolbar.actions;
 
 import net.sf.jasperreports.components.sort.actions.SortCommand;
 import net.sf.jasperreports.components.sort.actions.SortData;
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.design.JRDesignDataset;
 import net.sf.jasperreports.engine.design.JRDesignDatasetRun;
 import net.sf.jasperreports.engine.design.JasperDesign;
@@ -35,9 +36,10 @@ import net.sf.jasperreports.web.commands.ResetInCacheCommand;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortAction extends AbstractVerifiableTableAction {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	public SortAction() {
 	}
@@ -50,6 +52,7 @@ public class SortAction extends AbstractVerifiableTableAction {
 		columnData = sortData;
 	}
 
+	@Override
 	public void performAction() throws ActionException {
 		JRDesignDatasetRun datasetRun = (JRDesignDatasetRun)table.getDatasetRun();
 		
@@ -71,7 +74,7 @@ public class SortAction extends AbstractVerifiableTableAction {
 					)
 				);
 		} catch (CommandException e) {
-			throw new ActionException(e.getMessage());
+			throw new ActionException(e);
 		}
 	}
 

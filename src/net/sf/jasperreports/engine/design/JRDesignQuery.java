@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.util.JRQueryParser;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignQuery.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 {
@@ -61,14 +60,12 @@ public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 	/**
 	 *
 	 */
-	protected List<JRQueryChunk> chunks = new ArrayList<JRQueryChunk>();
+	protected List<JRQueryChunk> chunks = new ArrayList<>();
 
 	
 	private transient JRQueryChunkHandler chunkAdder;
 
-	/**
-	 *
-	 */
+	@Override
 	public JRQueryChunk[] getChunks()
 	{
 		JRQueryChunk[] chunkArray = null;
@@ -175,21 +172,25 @@ public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 		{
 			chunkAdder = new JRQueryChunkHandler()
 			{
+				@Override
 				public void handleParameterChunk(String text)
 				{
 					addParameterChunk(text);
 				}
 
+				@Override
 				public void handleParameterClauseChunk(String text)
 				{
 					addParameterClauseChunk(text);
 				}
 
+				@Override
 				public void handleTextChunk(String text)
 				{
 					addTextChunk(text);
 				}
 
+				@Override
 				public void handleClauseChunk(String[] tokens, char tokenSeparator)
 				{
 					addClauseChunk(tokens, tokenSeparator);
@@ -206,7 +207,7 @@ public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 	public void setText(String text)
 	{
 		Object old = getText();
-		chunks = new ArrayList<JRQueryChunk>();
+		chunks = new ArrayList<>();
 		JRQueryParser.instance().parse(text, chunkAdder());
 		getEventSupport().firePropertyChange(PROPERTY_TEXT, old, getText());
 	}
@@ -225,6 +226,7 @@ public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 		getPropertyChangeSupport().firePropertyChange(PROPERTY_LANGUAGE, oldValue, this.language);
 	}
 
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -297,9 +299,7 @@ public class JRDesignQuery extends JRBaseQuery implements JRChangeEventsSupport
 		getPropertyChangeSupport().removePropertyChangeListener(propName, l);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignQuery clone = (JRDesignQuery)super.clone();

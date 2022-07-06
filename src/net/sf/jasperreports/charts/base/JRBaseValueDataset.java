@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * a potential range, such as meter chart or a thermometer chart.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRBaseValueDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseValueDataset extends JRBaseChartDataset implements JRValueDataset
 {
@@ -84,18 +83,14 @@ public class JRBaseValueDataset extends JRBaseChartDataset implements JRValueDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getValueExpression()
 	{
 		return valueExpression;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.VALUE_DATASET;
 	}
@@ -107,19 +102,19 @@ public class JRBaseValueDataset extends JRBaseChartDataset implements JRValueDat
 	 *
 	 * @param collector the expression collector to use
 	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseValueDataset clone = (JRBaseValueDataset)super.clone();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.JRFont;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignBarPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPlot
 {
@@ -83,13 +82,11 @@ public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPl
 	 */
 	public JRDesignBarPlot(JRChartPlot plot, JRChart chart)
 	{
-		super(plot, chart);
+		super(plot, chart, ChartCopyDesignObjectFactory.instance());
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void setCategoryAxisLabelExpression(JRExpression categoryAxisLabelExpression)
 	{
 		Object old = this.categoryAxisLabelExpression;
@@ -167,9 +164,7 @@ public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPl
 		getEventSupport().firePropertyChange(PROPERTY_CATEGORY_AXIS_LINE_COLOR, old, this.categoryAxisLineColor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setValueAxisLabelExpression(JRExpression valueAxisLabelExpression)
 	{
 		Object old = this.valueAxisLabelExpression;
@@ -177,9 +172,7 @@ public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPl
 		getEventSupport().firePropertyChange(PROPERTY_VALUE_AXIS_LABEL_EXPRESSION, old, this.valueAxisLabelExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setDomainAxisMinValueExpression(JRExpression domainAxisMinValueExpression)
 	{
 		Object old = this.domainAxisMinValueExpression;
@@ -187,9 +180,7 @@ public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPl
 		getEventSupport().firePropertyChange(PROPERTY_DOMAIN_AXIS_MINVALUE_EXPRESSION, old, this.domainAxisMinValueExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setDomainAxisMaxValueExpression(JRExpression domainAxisMaxValueExpression)
 	{
 		Object old = this.domainAxisMaxValueExpression;
@@ -197,9 +188,7 @@ public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPl
 		getEventSupport().firePropertyChange(PROPERTY_DOMAIN_AXIS_MAXVALUE_EXPRESSION, old, this.domainAxisMaxValueExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRangeAxisMinValueExpression(JRExpression rangeAxisMinValueExpression)
 	{
 		Object old = this.rangeAxisMinValueExpression;
@@ -207,9 +196,7 @@ public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPl
 		getEventSupport().firePropertyChange(PROPERTY_RANGE_AXIS_MINVALUE_EXPRESSION, old, this.rangeAxisMinValueExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRangeAxisMaxValueExpression(JRExpression rangeAxisMaxValueExpression)
 	{
 		Object old = this.rangeAxisMaxValueExpression;
@@ -297,9 +284,7 @@ public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPl
 		getEventSupport().firePropertyChange(PROPERTY_ITEM_LABEL, old, this.itemLabel);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public void setCategoryAxisFormat(JRAxisFormat axisFormat)
 	{
 		setCategoryAxisLabelFont(axisFormat.getLabelFont());
@@ -311,9 +296,7 @@ public class JRDesignBarPlot extends JRBaseBarPlot implements JRDesignCategoryPl
 		setCategoryAxisLineColor(axisFormat.getLineColor());
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void setValueAxisFormat(JRAxisFormat axisFormat)
 	{
 		setValueAxisLabelFont(axisFormat.getLabelFont());

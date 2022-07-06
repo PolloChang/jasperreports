@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.component.ComponentDesignConverter;
 import net.sf.jasperreports.engine.component.ComponentKey;
 import net.sf.jasperreports.engine.component.ComponentManager;
-import net.sf.jasperreports.engine.component.ComponentsEnvironment;
 import net.sf.jasperreports.engine.util.JRImageLoader;
 
 
@@ -45,7 +44,6 @@ import net.sf.jasperreports.engine.util.JRImageLoader;
  * Converter of {@link JRComponentElement} into print elements.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentElementConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class ComponentElementConverter extends ElementConverter
 {
@@ -69,6 +67,7 @@ public final class ComponentElementConverter extends ElementConverter
 	{
 	}
 
+	@Override
 	public JRPrintElement convert(ReportConverter reportConverter,
 			JRElement element)
 	{
@@ -77,8 +76,7 @@ public final class ComponentElementConverter extends ElementConverter
 		ComponentKey componentKey = componentElement.getComponentKey();
 		if (componentKey != null)
 		{
-			ComponentManager manager = ComponentsEnvironment.getInstance(reportConverter.getJasperReportsContext()).getManager(
-					componentKey);
+			ComponentManager manager = reportConverter.getComponentsEnvironment().getManager(componentKey);
 			if (manager != null)
 			{
 				ComponentDesignConverter converter = manager.getDesignConverter(reportConverter.getJasperReportsContext());

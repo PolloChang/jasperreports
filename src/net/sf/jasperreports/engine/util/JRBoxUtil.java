@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,8 +23,6 @@
  */
 package net.sf.jasperreports.engine.util;
 
-import java.awt.Color;
-
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.base.JRBoxPen;
 import net.sf.jasperreports.engine.type.RotationEnum;
@@ -32,7 +30,6 @@ import net.sf.jasperreports.engine.type.RotationEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBoxUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRBoxUtil
 {
@@ -44,65 +41,69 @@ public final class JRBoxUtil
 	{
 		JRLineBox clone = box.clone(box.getBoxContainer());
 		
-		clone.setTopPadding(0);
-		clone.setLeftPadding(0);
-		clone.setBottomPadding(0);
-		clone.setRightPadding(0);
+		clone.setTopPadding((Integer)0);
+		clone.setLeftPadding((Integer)0);
+		clone.setBottomPadding((Integer)0);
+		clone.setRightPadding((Integer)0);
 		
 		//FIXMEBORDER does not copy padding correctly, if we only test line width
-		if (!keepLeft || box.getLeftPen().getLineWidth().floatValue() <= 0f)
+		if (!keepLeft || box.getLeftPen().getLineWidth() <= 0f)
 		{
 			if (complementaryBox != null)
 			{
 				clone.getLeftPen().setLineWidth(complementaryBox.getLeftPen().getLineWidth());
 				clone.getLeftPen().setLineColor(complementaryBox.getLeftPen().getLineColor());
+				clone.getLeftPen().setLineStyle(complementaryBox.getLeftPen().getLineStyleValue());
 				//clone.setLeftPadding(complementaryBox.getLeftPadding());
 			}
 			else
 			{
-				clone.getLeftPen().setLineWidth(0);
+				clone.getLeftPen().setLineWidth((Float)0f);
 			}
 		}
 		
-		if (!keepRight || box.getRightPen().getLineWidth().floatValue() <= 0f)
+		if (!keepRight || box.getRightPen().getLineWidth() <= 0f)
 		{
 			if (complementaryBox != null)
 			{
 				clone.getRightPen().setLineWidth(complementaryBox.getRightPen().getLineWidth());
 				clone.getRightPen().setLineColor(complementaryBox.getRightPen().getLineColor());
+				clone.getRightPen().setLineStyle(complementaryBox.getRightPen().getLineStyleValue());
 				//clone.setRightPadding(complementaryBox.getRightPadding());
 			}
 			else
 			{
-				clone.getRightPen().setLineWidth(0);
+				clone.getRightPen().setLineWidth((Float)0f);
 			}
 		}
 		
-		if (!keepTop || box.getTopPen().getLineWidth().floatValue() <= 0f)
+		if (!keepTop || box.getTopPen().getLineWidth() <= 0f)
 		{
 			if (complementaryBox != null)
 			{
 				clone.getTopPen().setLineWidth(complementaryBox.getTopPen().getLineWidth());
 				clone.getTopPen().setLineColor(complementaryBox.getTopPen().getLineColor());
+				clone.getTopPen().setLineStyle(complementaryBox.getTopPen().getLineStyleValue());
 				//clone.setTopPadding(complementaryBox.getTopPadding());
 			}
 			else
 			{
-				clone.getTopPen().setLineWidth(0);
+				clone.getTopPen().setLineWidth((Float)0f);
 			}
 		}
 		
-		if (!keepBottom || box.getBottomPen().getLineWidth().floatValue() <= 0f)
+		if (!keepBottom || box.getBottomPen().getLineWidth() <= 0f)
 		{
 			if (complementaryBox != null)
 			{
 				clone.getBottomPen().setLineWidth(complementaryBox.getBottomPen().getLineWidth());
 				clone.getBottomPen().setLineColor(complementaryBox.getBottomPen().getLineColor());
+				clone.getBottomPen().setLineStyle(complementaryBox.getBottomPen().getLineStyleValue());
 				//clone.setBottomPadding(complementaryBox.getBottomPadding());
 			}
 			else
 			{
-				clone.getBottomPen().setLineWidth(0);
+				clone.getBottomPen().setLineWidth((Float)0f);
 			}
 		}
 		
@@ -117,65 +118,23 @@ public final class JRBoxUtil
 	{
 		if (resetLeft)
 		{
-			box.getLeftPen().setLineWidth(0f);
+			box.getLeftPen().setLineWidth((Float)0f);
 		}
 		
 		if (resetRight)
 		{
-			box.getRightPen().setLineWidth(0f);
+			box.getRightPen().setLineWidth((Float)0f);
 		}
 
 		if (resetTop)
 		{
-			box.getTopPen().setLineWidth(0f);
+			box.getTopPen().setLineWidth((Float)0f);
 		}
 		
 		if (resetBottom)
 		{
-			box.getBottomPen().setLineWidth(0f);
+			box.getBottomPen().setLineWidth((Float)0f);
 		}
-	}
-	
-
-	/**
-	 * 
-	 */
-	public static void setToBox(
-		Byte border,
-		Byte topBorder,
-		Byte leftBorder,
-		Byte bottomBorder,
-		Byte rightBorder,
-		Color borderColor,
-		Color topBorderColor,
-		Color leftBorderColor,
-		Color bottomBorderColor,
-		Color rightBorderColor,
-		Integer padding,
-		Integer topPadding,
-		Integer leftPadding,
-		Integer bottomPadding,
-		Integer rightPadding,
-		JRLineBox box
-		)
-	{
-		JRPenUtil.setLinePenFromPen(border, box.getPen());
-		JRPenUtil.setLinePenFromPen(topBorder, box.getTopPen());
-		JRPenUtil.setLinePenFromPen(leftBorder, box.getLeftPen());
-		JRPenUtil.setLinePenFromPen(bottomBorder, box.getBottomPen());
-		JRPenUtil.setLinePenFromPen(rightBorder, box.getRightPen());
-		
-		box.getPen().setLineColor(borderColor);
-		box.getTopPen().setLineColor(topBorderColor);
-		box.getLeftPen().setLineColor(leftBorderColor);
-		box.getBottomPen().setLineColor(bottomBorderColor);
-		box.getRightPen().setLineColor(rightBorderColor);
-		
-		box.setPadding(padding);
-		box.setTopPadding(topPadding);
-		box.setLeftPadding(leftPadding);
-		box.setBottomPadding(bottomPadding);
-		box.setRightPadding(rightPadding);
 	}
 	
 
@@ -272,45 +231,16 @@ public final class JRBoxUtil
 	}
 	
 
-	/**
-	 * 
-	 */
-	@SuppressWarnings("deprecation")
-	public static void setBoxToLineBox(
-		net.sf.jasperreports.engine.JRBox box,
-		JRLineBox lineBox
-		)
-	{
-		setToBox(
-			box.getOwnBorder(),
-			box.getOwnTopBorder(),
-			box.getOwnLeftBorder(),
-			box.getOwnBottomBorder(),
-			box.getOwnRightBorder(),
-			box.getOwnBorderColor(),
-			box.getOwnTopBorderColor(),
-			box.getOwnLeftBorderColor(),
-			box.getOwnBottomBorderColor(),
-			box.getOwnRightBorderColor(),
-			box.getOwnPadding(),
-			box.getOwnTopPadding(),
-			box.getOwnLeftPadding(),
-			box.getOwnBottomPadding(),
-			box.getOwnRightPadding(),
-			lineBox
-			);
-	}
-	
 	public static void eraseBox(JRLineBox box)
 	{
-		box.setBottomPadding(0);
-		box.setTopPadding(0);
-		box.setLeftPadding(0);
-		box.setRightPadding(0);
-		box.getBottomPen().setLineWidth(0);
-		box.getTopPen().setLineWidth(0);
-		box.getLeftPen().setLineWidth(0);
-		box.getRightPen().setLineWidth(0);
+		box.setBottomPadding((Integer)0);
+		box.setTopPadding((Integer)0);
+		box.setLeftPadding((Integer)0);
+		box.setRightPadding((Integer)0);
+		box.getBottomPen().setLineWidth((Float)0f);
+		box.getTopPen().setLineWidth((Float)0f);
+		box.getLeftPen().setLineWidth((Float)0f);
+		box.getRightPen().setLineWidth((Float)0f);
 	}
 
 	private JRBoxUtil()

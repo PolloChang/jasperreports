@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,13 +28,13 @@ import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.renderers.AbstractRenderer;
 
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractRenderer.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link AbstractRenderer}.
  */
 public abstract class JRAbstractRenderer implements Renderable
 {
@@ -59,59 +59,42 @@ public abstract class JRAbstractRenderer implements Renderable
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public String getId()
 	{
 		return id;
 	}
 
 	
-	/**
-	 *
-	 */
-	@SuppressWarnings("deprecation")
-	public RenderableTypeEnum getTypeValue()
+	@Override
+	public net.sf.jasperreports.engine.type.RenderableTypeEnum getTypeValue()
 	{
-		return RenderableTypeEnum.getByValue(getType());
+		return net.sf.jasperreports.engine.type.RenderableTypeEnum.getByValue(getType());
 	}
 
 
-	/**
-	 *
-	 */
-	@SuppressWarnings("deprecation")
+	@Override
 	public ImageTypeEnum getImageTypeValue()
 	{
 		return ImageTypeEnum.getByValue(getImageType());
 	}
 
 
-	/**
-	 *
-	 */
-	@SuppressWarnings("deprecation")
+	@Override
 	public Dimension2D getDimension(JasperReportsContext jasperReportsContext) throws JRException
 	{
 		return getDimension();
 	}
 
 
-	/**
-	 *
-	 */
-	@SuppressWarnings("deprecation")
+	@Override
 	public byte[] getImageData(JasperReportsContext jasperReportsContext) throws JRException
 	{
 		return getImageData();
 	}
 
 
-	/**
-	 *
-	 */
-	@SuppressWarnings("deprecation")
+	@Override
 	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) throws JRException
 	{
 		render(grx, rectangle);

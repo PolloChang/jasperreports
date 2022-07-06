@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * An immutable representation of the layout of a thermometer plot.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRBaseThermometerPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseThermometerPlot extends JRBaseChartPlot implements JRThermometerPlot
 {
@@ -63,12 +62,6 @@ public class JRBaseThermometerPlot extends JRBaseChartPlot implements JRThermome
 	 * font, color and a mask.
 	 */
 	protected JRValueDisplay valueDisplay;
-
-	/**
-	 * Indicates if the boundaries of each range should be shown.
-	 * @deprecated No longer used.
-	 */
-	protected boolean showValueLines;
 
 	/**
 	 * Specifies where the textual display of the value should be shown.
@@ -149,65 +142,43 @@ public class JRBaseThermometerPlot extends JRBaseChartPlot implements JRThermome
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getDataRange()
 	{
 		return dataRange;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRValueDisplay getValueDisplay()
 	{
 		return valueDisplay;
 	}
 
-	/**
-	 * @deprecated No longer used.
-	 */
-	public boolean isShowValueLines()
-	{
-		return showValueLines;
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public ValueLocationEnum getValueLocationValue()
 	{
 		return valueLocationObject;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getMercuryColor()
 	{
 		return mercuryColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getLowRange()
 	{
 		return lowRange;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getMediumRange()
 	{
 		return mediumRange;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getHighRange()
 	{
 		return highRange;
@@ -220,14 +191,13 @@ public class JRBaseThermometerPlot extends JRBaseChartPlot implements JRThermome
 	 *
 	 * @param collector the expression collector to use
 	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone(JRChart parentChart) 
 	{
 		JRBaseThermometerPlot clone = (JRBaseThermometerPlot)super.clone(parentChart);
@@ -253,6 +223,7 @@ public class JRBaseThermometerPlot extends JRBaseChartPlot implements JRThermome
 	private Byte valueLocationByte;
 
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

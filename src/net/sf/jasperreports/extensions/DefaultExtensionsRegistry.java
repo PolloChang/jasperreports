@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,21 +25,29 @@ package net.sf.jasperreports.extensions;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import org.apache.commons.collections4.map.ReferenceMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.util.ClassLoaderResource;
 import net.sf.jasperreports.engine.util.ClassUtils;
 import net.sf.jasperreports.engine.util.JRLoader;
-
-import org.apache.commons.collections.map.ReferenceMap;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.engine.util.ObjectUtils;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * The default {@link ExtensionsRegistry extension registry} implementation.
@@ -50,7 +58,7 @@ import org.apache.commons.logging.LogFactory;
  * 
  * <p>
  * Each such resource is loaded as a properties file, and properties that start
- * with <code>net.sf.jasperreports.extension.registry.factory.</code> are identified.
+ * with {@link #PROPERTY_REGISTRY_FACTORY_PREFIX net.sf.jasperreports.extension.registry.factory.} are identified.
  * 
  * <p>
  * Each such property should have as value the name of a 
@@ -60,14 +68,13 @@ import org.apache.commons.logging.LogFactory;
  * is called on it, using the propery suffix as registry ID and passing the
  * properties map.  The registry factory can collect properties that apply to the
  * specific registry by using a property prefix obtain by appending the registry ID
- * to "<code>net.sf.jasperreports.extension.</code>".
+ * to "{@link #PROPERTY_REGISTRY_PREFIX net.sf.jasperreports.extension.}".
  * 
  * <p>
  * If instantiating an extension registry results in an exception, the registry
  * is skipped and an error message is logged.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultExtensionsRegistry.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultExtensionsRegistry implements ExtensionsRegistry
 {
@@ -84,6 +91,12 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 	/**
 	 * The property prefix of extension registry factories.
 	 */
+	@Property(
+			name = "net.sf.jasperreports.extension.registry.factory.{arbitrary_name}",
+			category = PropertyConstants.CATEGORY_EXTENSIONS,
+			scopes = {PropertyScope.EXTENSION},
+			sinceVersion = PropertyConstants.VERSION_3_1_0
+			)
 	public final static String PROPERTY_REGISTRY_FACTORY_PREFIX = 
 			JRPropertiesUtil.PROPERTY_PREFIX + "extension.registry.factory.";
 	
@@ -91,19 +104,30 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 	 * A prefix that can be used to provide registry-specific properties,
 	 * by appending the registry ID and a fixed property suffix to it. 
 	 */
+	@Property(
+			name = "net.sf.jasperreports.extension.{registry_id}.{property_suffix}",
+			category = PropertyConstants.CATEGORY_EXTENSIONS,
+			scopes = {PropertyScope.EXTENSION},
+			sinceVersion = PropertyConstants.VERSION_3_1_0
+			)
 	public static final String PROPERTY_REGISTRY_PREFIX = 
 			JRPropertiesUtil.PROPERTY_PREFIX + "extension.";
 
-	private final ReferenceMap registrySetCache = new ReferenceMap(
-			ReferenceMap.WEAK, ReferenceMap.HARD);
+	private final ReferenceMap<Object, List<ExtensionsRegistry>> registrySetCache = 
+		new ReferenceMap<>(
+			ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.HARD
+			);
 	
-	private final ReferenceMap registryCache = 
-		new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.HARD);
+	private final ReferenceMap<ClassLoader, Map<URL, URLRegistries>> registryCache = 
+		new ReferenceMap<>(
+			ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.HARD
+			);
 
+	@Override
 	public <T> List<T> getExtensions(Class<T> extensionType)
 	{
 		List<ExtensionsRegistry> registries = getRegistries();
-		List<T> extensions = new ArrayList<T>(registries.size());
+		List<T> extensions = new ArrayList<>(registries.size());
 		for (Iterator<ExtensionsRegistry> it = registries.iterator(); it.hasNext();)
 		{
 			ExtensionsRegistry registry = it.next();
@@ -122,7 +146,7 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 		Object cacheKey = ExtensionsEnvironment.getExtensionsCacheKey();
 		synchronized (registrySetCache)
 		{
-			registries = (List<ExtensionsRegistry>) registrySetCache.get(cacheKey);
+			registries = registrySetCache.get(cacheKey);
 			if (registries == null)
 			{
 				if (log.isDebugEnabled())
@@ -139,19 +163,23 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 	
 	protected List<ExtensionsRegistry> loadRegistries()
 	{
-		List<ExtensionsRegistry> allRegistries = new ArrayList<ExtensionsRegistry>();
+		//there is no identity linked hash map/set, using separate map and list
+		IdentityHashMap<ExtensionsRegistry, Object> registrySet = new IdentityHashMap<>();
+		List<ExtensionsRegistry> allRegistries = new ArrayList<>();
+		
 		List<ClassLoaderResource> extensionResources = loadExtensionPropertyResources();
 		for (ClassLoaderResource extensionResource : extensionResources)
 		{
 			ClassLoader classLoader = extensionResource.getClassLoader();
-			Map<URL, List<ExtensionsRegistry>> classLoaderRegistries = getClassLoaderRegistries(classLoader);
+			Map<URL, URLRegistries> classLoaderRegistries = getClassLoaderRegistries(classLoader);
 			
 			URL url = extensionResource.getUrl();
 			List<ExtensionsRegistry> registries;
+			Map<String, Exception> registryExceptions = new LinkedHashMap<>();
 			synchronized (classLoaderRegistries)
 			{
-				registries = classLoaderRegistries.get(url);
-				if (registries == null)
+				URLRegistries urlRegistries = classLoaderRegistries.get(url);
+				if (urlRegistries == null)
 				{
 					if (log.isDebugEnabled())
 					{
@@ -159,13 +187,46 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 								+ url);
 					}
 					
-					registries = loadRegistries(url);
+					JRPropertiesMap properties = JRPropertiesMap.loadProperties(url);
+					URL duplicateURL = detectDuplicate(properties, classLoaderRegistries);//search across classloaders?
+					if (duplicateURL == null)
+					{
+						registries = loadRegistries(properties, registryExceptions);
+					}
+					else
+					{
+						log.warn("Extension resource " + url + " was found to be a duplicate of "
+								+ duplicateURL + " in classloader " + classLoader);
+						registries = Collections.emptyList();
+					}
 					
-					classLoaderRegistries.put(url, registries);
+					classLoaderRegistries.put(url, new URLRegistries(properties, registries));
+				}
+				else
+				{
+					registries = urlRegistries.registries;
 				}
 			}
 			
-			allRegistries.addAll(registries);
+			for (Map.Entry<String, Exception> entry : registryExceptions.entrySet())
+			{
+				log.error("Error instantiating extensions registry for " 
+						+ entry.getKey() + " from " + url, entry.getValue());
+			}
+			
+			for (ExtensionsRegistry extensionsRegistry : registries)
+			{
+				//detecting identity duplicates
+				boolean added = registrySet.put(extensionsRegistry, Boolean.FALSE) == null;
+				if (added)
+				{
+					allRegistries.add(extensionsRegistry);
+				}
+				else if (log.isDebugEnabled())
+				{
+					log.debug("Found duplicate extension registry " + extensionsRegistry);
+				}
+			}
 		}
 		return allRegistries;
 	}
@@ -176,25 +237,24 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 				EXTENSION_RESOURCE_NAME);
 	}
 
-	protected Map<URL, List<ExtensionsRegistry>> getClassLoaderRegistries(ClassLoader classLoader)
+	protected Map<URL, URLRegistries> getClassLoaderRegistries(ClassLoader classLoader)
 	{
 		synchronized (registryCache)
 		{
-			Map<URL, List<ExtensionsRegistry>> registries = (Map<URL, List<ExtensionsRegistry>>) registryCache.get(classLoader);
+			Map<URL, URLRegistries> registries = registryCache.get(classLoader);
 			if (registries == null)
 			{
-				registries = new HashMap<URL, List<ExtensionsRegistry>>();
+				registries = new HashMap<>();
 				registryCache.put(classLoader, registries);
 			}
 			return registries;
 		}
 	}
 	
-	protected List<ExtensionsRegistry> loadRegistries(URL url)
+	protected List<ExtensionsRegistry> loadRegistries(JRPropertiesMap properties, 
+			Map<String, Exception> registryExceptions)
 	{
-		JRPropertiesMap properties = JRPropertiesMap.loadProperties(url);
-		
-		List<ExtensionsRegistry> registries = new ArrayList<ExtensionsRegistry>();
+		List<ExtensionsRegistry> registries = new ArrayList<>();
 		List<PropertySuffix> factoryProps = JRPropertiesUtil.getProperties(properties, 
 				PROPERTY_REGISTRY_FACTORY_PREFIX);
 		for (Iterator<PropertySuffix> it = factoryProps.iterator(); it.hasNext();)
@@ -218,8 +278,8 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 			catch (Exception e)
 			{
 				//skip this registry
-				log.error("Error instantiating extensions registry for " 
-						+ registryId + " from " + url, e);
+				//error logging is deferred after the registries are cached to avoid a loop from JRRuntimeException.resolveMessage
+				registryExceptions.put(registryId, e);
 			}
 		}
 		return registries;
@@ -237,6 +297,33 @@ public class DefaultExtensionsRegistry implements ExtensionsRegistry
 		ExtensionsRegistryFactory factory = (ExtensionsRegistryFactory) 
 				ClassUtils.instantiateClass(factoryClass, ExtensionsRegistryFactory.class);
 		return factory.createRegistry(registryId, props);
+	}
+	
+	protected URL detectDuplicate(JRPropertiesMap properties, Map<URL, URLRegistries> registries)
+	{
+		URL duplicateURL = null;
+		for (Entry<URL, URLRegistries> registryEntry : registries.entrySet())
+		{
+			JRPropertiesMap entryProperties = registryEntry.getValue().properties;
+			if (ObjectUtils.equals(properties, entryProperties))
+			{
+				duplicateURL = registryEntry.getKey();
+				break;
+			}
+		}
+		return duplicateURL;
+	}
+	
+	protected static class URLRegistries
+	{
+		JRPropertiesMap properties;
+		List<ExtensionsRegistry> registries;
+		
+		public URLRegistries(JRPropertiesMap properties, List<ExtensionsRegistry> registries)
+		{
+			this.properties = properties;
+			this.registries = registries;
+		}
 	}
 
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.JasperReport;
  * Compile data for reports that use JavaScript as expression language.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptCompileData.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JasperReport#getCompileData()
  * @see JavaScriptCompiler
  */
@@ -43,45 +42,21 @@ public class JavaScriptCompileData implements Serializable
 {
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	public static final String EXCEPTION_MESSAGE_KEY_EXPRESSION_NOT_FOUND = "compilers.javascript.expression.not.found";
 	
 	protected static class Expression implements Serializable
 	{
 		private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
-		/**
-		 * @deprecated To be removed.
-		 */
-		private final String type;
 		private final String defaultExpression;
 		private final String oldExpression;
 		private final String estimatedExpression;
 		
-		/**
-		 * @deprecated To be removed.
-		 */
-		public Expression(String type, String defaultExpression,
-				String estimatedExpression, String oldExpression)
-		{
-			this.type = type;
-			this.defaultExpression = defaultExpression;
-			this.estimatedExpression = estimatedExpression;
-			this.oldExpression = oldExpression;
-		}
-
 		public Expression(String defaultExpression, String estimatedExpression, String oldExpression)
 		{
-			this.type = null;
 			this.defaultExpression = defaultExpression;
 			this.estimatedExpression = estimatedExpression;
 			this.oldExpression = oldExpression;
-		}
-
-		/**
-		 * @deprecated To be removed.
-		 */
-		public String getJavaType()
-		{
-			return type;
 		}
 
 		public String getDefaultExpression()
@@ -100,7 +75,7 @@ public class JavaScriptCompileData implements Serializable
 		}
 	}
 	
-	private final List<Expression> expressions = new ArrayList<Expression>();
+	private final List<Expression> expressions = new ArrayList<>();
 	
 	public void addExpression(int expressionId, Expression expression)
 	{
@@ -122,12 +97,18 @@ public class JavaScriptCompileData implements Serializable
 	{
 		if (id >= expressions.size())
 		{
-			throw new JRRuntimeException("No expression for id " + id);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_EXPRESSION_NOT_FOUND,
+					new Object[]{id});
 		}
 		Expression expr = expressions.get(id);
 		if (expr == null)
 		{
-			throw new JRRuntimeException("No expression for id " + id);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_EXPRESSION_NOT_FOUND,
+					new Object[]{id});
 		}
 		return expr;
 	}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillElementGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 {
@@ -45,7 +44,7 @@ public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 	/**
 	 *
 	 */
-	protected List<JRChild> children = new ArrayList<JRChild>();
+	protected List<JRChild> children = new ArrayList<>();
 	protected JRElementGroup elementGroup;
 
 	/**
@@ -56,9 +55,9 @@ public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 	/**
 	 *
 	 */
-	private JRElement topElementInGroup;
-	private JRElement bottomElementInGroup;
-	private int stretchHeightDiff;
+	protected JRElement topElementInGroup;
+	protected JRElement bottomElementInGroup;
+	private Integer stretchHeightDiff;
 
 
 	/**
@@ -114,34 +113,28 @@ public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public List<JRChild> getChildren()
 	{
 		return this.children;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRElementGroup getElementGroup()
 	{
 		return this.elementGroup;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRElement[] getElements()
 	{
 		if (this.elements == null)
 		{
 			if (this.children != null)
 			{
-				List<JRElement> allElements = new ArrayList<JRElement>();
+				List<JRElement> allElements = new ArrayList<>();
 				Object child = null;
 				JRElement[] childElementArray = null;
 				for(int i = 0; i < this.children.size(); i++)
@@ -170,9 +163,7 @@ public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRElement getElementByKey(String key)
 	{
 		return null;
@@ -184,7 +175,7 @@ public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 	 */
 	protected void reset()
 	{
-		topElementInGroup = null;
+		stretchHeightDiff = null;
 	}
 
 
@@ -193,7 +184,7 @@ public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 	 */
 	protected int getStretchHeightDiff()
 	{
-		if (topElementInGroup == null)
+		if (stretchHeightDiff == null)
 		{
 			stretchHeightDiff = 0;
 			
@@ -257,39 +248,40 @@ public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 	 */
 	private void setTopBottomElements()
 	{
-		JRElement[] allElements = getElements();
-	
-		if (allElements != null && allElements.length > 0)
+		if (topElementInGroup == null) // some element groups such as JRFillElementContainer already set this during their initElements
 		{
-			for(int i = 0; i < allElements.length; i++)
+			JRElement[] allElements = getElements();
+			
+			if (allElements != null && allElements.length > 0)
 			{
-				if (
-					topElementInGroup == null ||
-					(
-					allElements[i].getY() + allElements[i].getHeight() <
-					topElementInGroup.getY() + topElementInGroup.getHeight())
-					)
+				for (JRElement element : allElements)
 				{
-					topElementInGroup = allElements[i];
-				}
+					if (
+						topElementInGroup == null ||
+						(
+						element.getY() + element.getHeight() <
+						topElementInGroup.getY() + topElementInGroup.getHeight())
+						)
+					{
+						topElementInGroup = element;
+					}
 
-				if (
-					bottomElementInGroup == null ||
-					(
-					allElements[i].getY() + allElements[i].getHeight() >
-					bottomElementInGroup.getY() + bottomElementInGroup.getHeight())
-					)
-				{
-					bottomElementInGroup = allElements[i];
+					if (
+						bottomElementInGroup == null ||
+						(
+						element.getY() + element.getHeight() >
+						bottomElementInGroup.getY() + bottomElementInGroup.getHeight())
+						)
+					{
+						bottomElementInGroup = element;
+					}
 				}
 			}
 		}
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitElementGroup(this);
@@ -301,22 +293,19 @@ public class JRFillElementGroup implements JRElementGroup, JRFillCloneable
 	}
 
 	
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillElementGroup(this, factory);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone(JRElementGroup parentGroup) 
 	{
 		throw new UnsupportedOperationException();

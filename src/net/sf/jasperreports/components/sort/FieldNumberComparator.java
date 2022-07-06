@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,7 +24,6 @@
 package net.sf.jasperreports.components.sort;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
@@ -34,24 +33,12 @@ import net.sf.jasperreports.engine.util.FormatUtils;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: FieldNumberComparator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FieldNumberComparator extends AbstractFieldComparator<Number> {
 
 
 	public FieldNumberComparator(String filterPattern, Locale locale) {
-		if (locale == null) {
-			formatter = NumberFormat.getNumberInstance();
-		} else {
-			formatter = NumberFormat.getNumberInstance(locale);
-		}
-		
-		if (filterPattern != null && filterPattern.trim().length() > 0) {
-			
-			if (formatter instanceof DecimalFormat) {
-				((DecimalFormat) formatter).applyPattern(filterPattern);
-			}
-		}
+		formatter = getFormatFactory().createNumberFormat(filterPattern, locale);
 	}
 	
 	@Override
@@ -122,6 +109,12 @@ public class FieldNumberComparator extends AbstractFieldComparator<Number> {
 				break;
 			case LESS_THAN_EQUAL_TO:
 				result = validComparison ? dbA.compareTo(dbStart) <= 0 : false;
+				break;
+			case IS_NULL:
+				result = compareTo == null;
+				break;
+			case IS_NOT_NULL:
+				result = compareTo != null;
 				break;
 		}
 		

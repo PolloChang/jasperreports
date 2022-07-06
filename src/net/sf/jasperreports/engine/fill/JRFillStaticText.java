@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,11 +32,11 @@ import net.sf.jasperreports.engine.JRVisitor;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillStaticText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 {
 
+	private final String text;
 
 	/**
 	 *
@@ -54,7 +54,7 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 			{
 				text = "";
 			}
-			setRawText(text);
+			this.text = text;
 		}
 
 
@@ -62,18 +62,11 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 	{
 		super(staticText, factory);
 
-		String text = processMarkupText(staticText.getText());
-		if (text == null)
-		{
-			text = "";
-		}
-		setRawText(text);
+		this.text = staticText.text;
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public void setText(String text)
 	{
 	}
@@ -88,6 +81,7 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 	}
 
 
+	@Override
 	protected JRTemplateElement createElementTemplate()
 	{
 		JRTemplateText template = new JRTemplateText(
@@ -101,9 +95,7 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void evaluate(
 		byte evaluation
 		) throws JRException
@@ -114,15 +106,15 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 		evaluateProperties(evaluation);
 		evaluateStyle(evaluation);
 
+		//setting the text each time so that super.rewind() works fine
+		setRawText(this.text);
 		resetTextChunk();
 		
 		setValueRepeating(true);
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected boolean prepare(
 		int availableHeight,
 		boolean isOverflow
@@ -194,9 +186,7 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected JRPrintElement fill()
 	{
 		JRTemplatePrintText text = new JRTemplatePrintText(getJRTemplateText(), printElementOriginator);
@@ -206,7 +196,8 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 		text.setWidth(getWidth());
 //		if (getRotation() == ROTATION_NONE)
 //		{
-			text.setHeight(getPrintElementHeight());
+			//text.setHeight(getPrintElementHeight());
+			text.setHeight(getStretchHeight());
 //		}
 //		else
 //		{
@@ -225,38 +216,51 @@ public class JRFillStaticText extends JRFillTextElement implements JRStaticText
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitStaticText(this);
 	}
 
 	
+	@Override
 	protected void resolveElement (JRPrintElement element, byte evaluation)
 	{
 		// nothing
 	}
 
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillStaticText(this, factory);
 	}
 
 
+	@Override
 	protected boolean canOverflow()
 	{
 		return false;
+	}
+
+
+	@Override
+	protected boolean scaleFontToFit()
+	{
+		return false;
+	}
+
+
+	@Override
+	public String getText()
+	{
+		return ((JRStaticText) parent).getText();
 	}
 
 }

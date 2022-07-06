@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,37 +29,52 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionCollector;
 import net.sf.jasperreports.engine.JRGroup;
 import net.sf.jasperreports.engine.JRHyperlinkParameter;
 import net.sf.jasperreports.engine.JRImage;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRVisitor;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.engine.util.ExifOrientationEnum;
+import net.sf.jasperreports.engine.util.ImageUtil;
+import net.sf.jasperreports.engine.util.Pair;
+import net.sf.jasperreports.engine.util.StyleUtil;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.renderers.ResourceRenderer;
+import net.sf.jasperreports.renderers.util.RendererUtil;
+import net.sf.jasperreports.repo.RepositoryContext;
+import net.sf.jasperreports.repo.RepositoryUtil;
+import net.sf.jasperreports.repo.ResourceInfo;
+import net.sf.jasperreports.repo.ResourcePathKey;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillImage extends JRFillGraphicElement implements JRImage
 {
+	private static final Log log = LogFactory.getLog(JRFillImage.class);
 
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_SOURCE_CLASS = "fill.image.unknown.source.class";
 
 	/**
 	 *
@@ -70,10 +85,15 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	 *
 	 */
 	private Renderable renderer;
+	private Renderable oldRenderer;
+	private Object prevSource;
+	private Renderable prevRenderer;
+	private boolean usedCache;
 	private boolean hasOverflowed;
 	private Integer imageHeight;
 	private Integer imageWidth;
 	private Integer imageX;
+	private Integer bookmarkLevel;
 	private String anchorName;
 	private String hyperlinkReference;
 	private Boolean hyperlinkWhen;
@@ -113,9 +133,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void evaluateStyle(
 		byte evaluation
 		) throws JRException
@@ -127,250 +145,196 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		if (providerStyle != null)
 		{
 			lineBox = initLineBox.clone(this);
-			JRStyleResolver.appendBox(lineBox, providerStyle.getLineBox());
+			StyleUtil.appendBox(lineBox, providerStyle.getLineBox());
 		}
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public ScaleImageEnum getScaleImageValue()
 	{
-		return JRStyleResolver.getScaleImageValue(this);
+		return getStyleResolver().getScaleImageValue(this);
 	}
 		
+	@Override
 	public ScaleImageEnum getOwnScaleImageValue()
 	{
 		return providerStyle == null || providerStyle.getOwnScaleImageValue() == null ? ((JRImage)this.parent).getOwnScaleImageValue() : providerStyle.getOwnScaleImageValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setScaleImage(ScaleImageEnum scaleImage)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getHorizontalAlignmentValue()
+	@Override
+	public RotationEnum getRotation()
 	{
-		return JRStyleResolver.getHorizontalAlignmentValue(this);
+		return getStyleResolver().getRotation(this);
 	}
 		
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue()
+	@Override
+	public RotationEnum getOwnRotation()
 	{
-		return providerStyle == null || providerStyle.getOwnHorizontalAlignmentValue() == null ? ((JRImage)this.parent).getOwnHorizontalAlignmentValue() : providerStyle.getOwnHorizontalAlignmentValue();
+		return providerStyle == null || providerStyle.getOwnRotationValue() == null ? ((JRImage)this.parent).getOwnRotation() : providerStyle.getOwnRotationValue();
 	}
 
-	/**
-	 *
-	 */
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlignment)
+	@Override
+	public void setRotation(RotationEnum rotation)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public HorizontalImageAlignEnum getHorizontalImageAlign()
+	{
+		return getStyleResolver().getHorizontalImageAlign(this);
+	}
+		
+	@Override
+	public HorizontalImageAlignEnum getOwnHorizontalImageAlign()
+	{
+		return providerStyle == null || providerStyle.getOwnHorizontalImageAlign() == null ? ((JRImage)this.parent).getOwnHorizontalImageAlign() : providerStyle.getOwnHorizontalImageAlign();
+	}
+
+	@Override
+	public void setHorizontalImageAlign(HorizontalImageAlignEnum horizontalAlignment)
 	{
 		throw new UnsupportedOperationException();
 	}
 		
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getVerticalAlignmentValue()
+	@Override
+	public VerticalImageAlignEnum getVerticalImageAlign()
 	{
-		return JRStyleResolver.getVerticalAlignmentValue(this);
+		return getStyleResolver().getVerticalImageAlign(this);
 	}
 		
-	public VerticalAlignEnum getOwnVerticalAlignmentValue()
+	@Override
+	public VerticalImageAlignEnum getOwnVerticalImageAlign()
 	{
-		return providerStyle == null || providerStyle.getOwnVerticalAlignmentValue() == null ? ((JRImage)this.parent).getOwnVerticalAlignmentValue() : providerStyle.getOwnVerticalAlignmentValue();
+		return providerStyle == null || providerStyle.getOwnVerticalImageAlign() == null ? ((JRImage)this.parent).getOwnVerticalImageAlign() : providerStyle.getOwnVerticalImageAlign();
 	}
 
-	/**
-	 *
-	 */
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlignment)
+	@Override
+	public void setVerticalImageAlign(VerticalImageAlignEnum verticalAlignment)
 	{
 		throw new UnsupportedOperationException();
 	}
 		
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public boolean isUsingCache()
-	{
-		return ((JRImage)this.parent).isUsingCache();
-	}
-		
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public Boolean isOwnUsingCache()
-	{
-		return ((JRImage)this.parent).isOwnUsingCache();
-	}
-		
-	/**
-	 *
-	 */
+	@Override
 	public Boolean getUsingCache()
 	{
 		return ((JRImage)this.parent).getUsingCache();
 	}
 		
-	/**
-	 *
-	 */
-	public void setUsingCache(boolean isUsingCache)
-	{
-	}
-		
-	/**
-	 *
-	 */
+	@Override
 	public void setUsingCache(Boolean isUsingCache)
 	{
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isLazy()
 	{
 		return ((JRImage)this.parent).isLazy();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setLazy(boolean isLazy)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public OnErrorTypeEnum getOnErrorTypeValue()
 	{
 		return ((JRImage)this.parent).getOnErrorTypeValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setOnErrorType(OnErrorTypeEnum onErrorType)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
 		return ((JRImage)this.parent).getEvaluationTimeValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getEvaluationGroup()
 	{
 		return this.evaluationGroup;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox == null ? initLineBox : lineBox;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #getHyperlinkTypeValue()}.
-	 */
-	public byte getHyperlinkType()
-	{
-		return getHyperlinkTypeValue().getValue();
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTypeEnum getHyperlinkTypeValue()
 	{
 		return ((JRImage)parent).getHyperlinkTypeValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public byte getHyperlinkTarget()
 	{
 		return ((JRImage)this.parent).getHyperlinkTarget();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getLinkTarget()
 	{
 		return ((JRImage)this.parent).getLinkTarget();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getExpression()
 	{
 		return ((JRImage)this.parent).getExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public JRExpression getBookmarkLevelExpression()
+	{
+		return ((JRImage)this.parent).getBookmarkLevelExpression();
+	}
+	
+	@Override
 	public JRExpression getAnchorNameExpression()
 	{
 		return ((JRImage)this.parent).getAnchorNameExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkReferenceExpression()
 	{
 		return ((JRImage)this.parent).getHyperlinkReferenceExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkWhenExpression()
 	{
 		return ((JRImage)this.parent).getHyperlinkWhenExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return ((JRImage)this.parent).getHyperlinkAnchorExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkPageExpression()
 	{
 		return ((JRImage)this.parent).getHyperlinkPageExpression();
@@ -432,6 +396,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		return (JRTemplateImage) getElementTemplate();
 	}
 
+	@Override
 	protected JRTemplateElement createElementTemplate()
 	{
 		JRTemplateImage template = 
@@ -451,9 +416,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void evaluate(
 		byte evaluation
 		) throws JRException
@@ -466,6 +429,8 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 
 		if (isPrintWhenExpressionNull() || isPrintWhenTrue())
 		{
+			bookmarkLevel = getBookmarkLevel(evaluateExpression(this.getBookmarkLevelExpression(), evaluation));
+
 			if (isEvaluateNow())
 			{
 				hasOverflowed = false;
@@ -489,18 +454,40 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 
 		Renderable newRenderer = null;
 		
-		Object source = evaluateExpression(expression, evaluation);
+		Boolean isUsingCache = getUsingCache();
+		usedCache = isUsingCache == null ? true : isUsingCache;
+		Object source = null;
+		
+		try
+		{
+			source = evaluateExpression(expression, evaluation);
+		}
+		catch (Exception e)
+		{
+			source = RendererUtil.getInstance(filler.getJasperReportsContext()).handleImageError(e, getOnErrorTypeValue());
+		}
+		
 		if (source != null)
 		{
-			Boolean isUsingCache = getUsingCache();
 			if (isUsingCache == null)
 			{
-				isUsingCache = source instanceof String;
+				usedCache = isUsingCache = source instanceof String;
+				//FIXME the flag determined based on the expression type is lost in print images
+				//hence the isUsingCache test in exporters yields false positives for images that did not come from Strings
 			}
 			
-			if (isUsingCache && filler.fillContext.hasLoadedImage(source))
+			boolean lazy = isLazy();
+			RepositoryContext repositoryContext = filler.getRepositoryContext();
+			Object srcKey = source;
+			if (source instanceof String)
 			{
-				newRenderer = filler.fillContext.getLoadedImage(source).getRenderable();
+				ResourcePathKey pathKey = ResourcePathKey.inContext(lazy ? null : repositoryContext, (String) source);				
+				srcKey = new Pair<>(lazy, pathKey);
+			}
+
+			if (isUsingCache && filler.fillContext.hasLoadedRenderer(srcKey))
+			{
+				newRenderer = filler.fillContext.getLoadedRenderer(srcKey);
 			}
 			else
 			{
@@ -510,38 +497,78 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 					? (net.sf.jasperreports.engine.JRRenderable)source 
 					: null;
 
-				if (source instanceof Image)
+				if (source instanceof String)
+				{
+					String strSource = (String) source;
+					if (lazy)//TODO lucianc resolve within repository context?
+					{
+						newRenderer = ResourceRenderer.getInstance(strSource, true);
+					}
+					else
+					{
+						ResourceInfo resourceInfo = RepositoryUtil.getInstance(repositoryContext).getResourceInfo((String) source);
+						if (resourceInfo == null)
+						{
+							newRenderer = RendererUtil.getInstance(repositoryContext).getNonLazyRenderable(strSource, getOnErrorTypeValue());
+						}
+						else
+						{
+							String absoluteLocation = resourceInfo.getRepositoryResourceLocation();
+							if (log.isDebugEnabled())
+							{
+								log.debug("image " + source + " resolved to " + absoluteLocation);
+							}
+							ResourcePathKey absolutePathKey = ResourcePathKey.absolute(absoluteLocation);
+							Object absoluteKey = new Pair<>(lazy, absolutePathKey);
+							if (isUsingCache && filler.fillContext.hasLoadedRenderer(absoluteKey))
+							{
+								newRenderer = filler.fillContext.getLoadedRenderer(absoluteKey);
+							}
+							else
+							{
+								newRenderer = RendererUtil.getInstance(repositoryContext).getNonLazyRenderable(absoluteLocation, getOnErrorTypeValue());
+								if (isUsingCache)
+								{
+									filler.fillContext.registerLoadedRenderer(absoluteKey, newRenderer);
+								}
+							}
+						}						
+					}
+				}
+				else if (source instanceof Image)
 				{
 					Image img = (Image) source;
-					newRenderer = RenderableUtil.getInstance(filler.getJasperReportsContext()).getRenderable(img, getOnErrorTypeValue());
+					newRenderer = RendererUtil.getInstance(filler.getJasperReportsContext()).getRenderable(img, getOnErrorTypeValue());
+				}
+				else if (source instanceof byte[])
+				{
+					byte[] data = (byte[]) source;
+					newRenderer = RendererUtil.getInstance(filler.getJasperReportsContext()).getRenderable(data);
 				}
 				else if (source instanceof InputStream)
 				{
-					InputStream is = (InputStream) source;
-					newRenderer = RenderableUtil.getInstance(filler.getJasperReportsContext()).getRenderable(is, getOnErrorTypeValue());
+					if (this.prevSource != null && source == this.prevSource)//testing for object identity
+					{
+						//the image can be evaluated twice when the band is prevented to split
+						//if the image source is a stream, we can't read it again
+						//TODO do the same thing for other source types (file, url, string) too?
+						newRenderer = this.prevRenderer;
+					}
+					else
+					{
+						InputStream is = (InputStream) source;
+						newRenderer = RendererUtil.getInstance(filler.getJasperReportsContext()).getRenderable(is, getOnErrorTypeValue());
+					}
 				}
 				else if (source instanceof URL)
 				{
 					URL url = (URL) source;
-					newRenderer = RenderableUtil.getInstance(filler.getJasperReportsContext()).getRenderable(url, getOnErrorTypeValue());
+					newRenderer = RendererUtil.getInstance(filler.getJasperReportsContext()).getRenderable(url, getOnErrorTypeValue());
 				}
 				else if (source instanceof File)
 				{
 					File file = (File) source;
-					newRenderer = RenderableUtil.getInstance(filler.getJasperReportsContext()).getRenderable(file, getOnErrorTypeValue());
-				}
-				else if (source instanceof String)
-				{
-					String location = (String) source;
-					newRenderer = 
-						RenderableUtil.getInstance(filler.getJasperReportsContext()).getRenderable(
-							location, 
-							getOnErrorTypeValue(), 
-							isLazy()//, 
-//							filler.reportClassLoader,
-//							filler.urlHandlerFactory,
-//							filler.fileResolver
-							);
+					newRenderer = RendererUtil.getInstance(filler.getJasperReportsContext()).getRenderable(file, getOnErrorTypeValue());
 				}
 				else if (source instanceof Renderable)
 				{
@@ -551,31 +578,37 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 				{
 					@SuppressWarnings("deprecation")
 					Renderable wrappingRenderable = 
-						RenderableUtil.getWrappingRenderable(deprecatedRenderable);
+						net.sf.jasperreports.engine.RenderableUtil.getWrappingRenderable(deprecatedRenderable);
 					newRenderer = wrappingRenderable;
 				}
 				else
 				{
 					newRenderer = 
-						JRImageRenderer.getOnErrorRenderer(
+						RendererUtil.getInstance(filler.getJasperReportsContext()).getOnErrorRenderer(
 							getOnErrorTypeValue(), 
-							new JRException("Unknown image source class " + source.getClass().getName())
+							new JRException(
+									EXCEPTION_MESSAGE_KEY_UNKNOWN_SOURCE_CLASS,  
+									new Object[]{source.getClass().getName()} 
+									)
 							);
 				}
 
 				if (isUsingCache)
 				{
-					JRPrintImage img = new JRTemplatePrintImage(getJRTemplateImage(), 
-							printElementOriginator);//doesn't actually need a printElementId
-					img.setRenderable(newRenderer);
-					filler.fillContext.registerLoadedImage(source, img);
+					filler.fillContext.registerLoadedRenderer(srcKey, newRenderer);
 				}
 			}
 		}
 
-		setValueRepeating(this.renderer == newRenderer);
-	
+		Renderable crtRenderer = getRenderable();
+
+		this.oldRenderer = renderer;
 		this.renderer = newRenderer;
+		
+		this.prevSource = source;
+		this.prevRenderer = renderer;
+
+		setValueRepeating(crtRenderer == newRenderer);
 		
 		this.anchorName = (String) evaluateExpression(this.getAnchorNameExpression(), evaluation);
 		this.hyperlinkReference = (String) evaluateExpression(this.getHyperlinkReferenceExpression(), evaluation);
@@ -587,6 +620,21 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	}
 	
 
+	@Override
+	public void rewind()
+	{
+		super.rewind();
+		
+		@SuppressWarnings("deprecation")
+		boolean isLegacyBandEvaluationEnabled = filler.getFillContext().isLegacyBandEvaluationEnabled(); 
+		if (!isLegacyBandEvaluationEnabled)
+		{
+			this.renderer = this.oldRenderer;
+		}
+	}
+
+	
+	@Override
 	protected boolean prepare(
 		int availableHeight,
 		boolean isOverflow
@@ -655,32 +703,98 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 					isToPrint = false;
 					willOverflow = true;
 				}
-				else if (!isLazy() && (getScaleImageValue() == ScaleImageEnum.REAL_HEIGHT
-						|| getScaleImageValue() == ScaleImageEnum.REAL_SIZE))
+				else if (
+					!isLazy() 
+					&& (getScaleImageValue() == ScaleImageEnum.REAL_HEIGHT || getScaleImageValue() == ScaleImageEnum.REAL_SIZE)
+					)
 				{
-					int padding = getLineBox().getBottomPadding().intValue() 
-							+ getLineBox().getTopPadding().intValue();
+					int padding = getLineBox().getBottomPadding() 
+							+ getLineBox().getTopPadding();
 					boolean reprinted = isOverflow 
 						&& (this.isPrintWhenDetailOverflows() 
 								&& (this.isAlreadyPrinted() 
 										|| (!this.isAlreadyPrinted() && !this.isPrintRepeatedValues())));
 					boolean imageOverflowAllowed = 
 							filler.isBandOverFlowAllowed() && !reprinted && !hasOverflowed;
-					boolean fits = fitImage(availableHeight - getRelativeY() - padding, imageOverflowAllowed, 
-							getHorizontalAlignmentValue());
-					if (fits)
+
+					if (renderer == null)
 					{
-						if (imageHeight != null)
-						{
-							setStretchHeight(imageHeight.intValue() + padding);
-						}
+						// if renderer is null, it means the isRemoveLineWhenBlank was false further up; 
+						// no need to do anything here 
 					}
 					else
 					{
-						hasOverflowed = true;
-						isToPrint = false;
-						willOverflow = true;
-						setStretchHeight(availableHeight - getRelativeY() - padding);
+						// image fill does not normally produce non-lazy ResourceRenderer instances, 
+						// so we do not need to attempt load resource renderers from cache here, as we do in the catch below
+						
+						RenderersCache renderersCache = usedCache ?  filler.fillContext.getRenderersCache() 
+								: new RenderersCache(filler.getJasperReportsContext());
+						DimensionRenderable dimensionRenderer = renderersCache.getDimensionRenderable(renderer);
+						
+						if (dimensionRenderer != null)
+						{
+							try
+							{
+								dimensionRenderer.getDimension(filler.getJasperReportsContext());
+							}
+							catch (Exception e)
+							{
+								renderer = RendererUtil.getInstance(filler.getJasperReportsContext()).handleImageError(e, getOnErrorTypeValue());
+
+								if (renderer instanceof ResourceRenderer)
+								{
+									renderer = renderersCache.getLoadedRenderer((ResourceRenderer)renderer);
+								}
+
+								dimensionRenderer = renderersCache.getDimensionRenderable(renderer);
+							}
+							
+							if (dimensionRenderer == null) // OnErrorTypeEnum.BLANK can return null above
+							{
+								isToPrint = !isRemoveLineWhenBlank();
+							}
+							else
+							{
+								boolean fits = true; 
+
+								Dimension2D imageSize = dimensionRenderer.getDimension(filler.getJasperReportsContext()); 
+								if (imageSize != null)
+								{
+									ExifOrientationEnum exifOrientation = ExifOrientationEnum.NORMAL;
+									
+									DataRenderable dataRenderable = dimensionRenderer instanceof DataRenderable ? (DataRenderable)dimensionRenderer : null;
+									if (dataRenderable != null)
+									{
+										exifOrientation = ImageUtil.getExifOrientation(dataRenderable.getData(filler.getJasperReportsContext()));
+									}
+									
+									fits = 
+										fitImage(
+											imageSize,
+											exifOrientation,
+											availableHeight - getRelativeY() - padding, 
+											imageOverflowAllowed, 
+											getHorizontalImageAlign(),
+											getVerticalImageAlign()
+											);
+								}
+
+								if (fits)
+								{
+									if (imageHeight != null)
+									{
+										setPrepareHeight(imageHeight + padding);
+									}
+								}
+								else
+								{
+									hasOverflowed = true;
+									isToPrint = false;
+									willOverflow = true;
+									setPrepareHeight(availableHeight - getRelativeY() - padding);
+								}
+							}
+						}
 					}
 				}
 			}
@@ -728,6 +842,7 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		return willOverflow;
 	}
 
+	@Override
 	protected void reset()
 	{
 		imageHeight = null;
@@ -737,22 +852,34 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		super.reset();
 	}
 
-	protected boolean fitImage(int availableHeight, boolean overflowAllowed,
-			HorizontalAlignEnum hAlign) throws JRException
+	protected boolean fitImage(
+		Dimension2D imageSize, 
+		ExifOrientationEnum exifOrientation,
+		int availableHeight, 
+		boolean overflowAllowed,
+		HorizontalImageAlignEnum hAlign,
+		VerticalImageAlignEnum vAlign
+		) throws JRException
 	{
 		imageHeight = null;
 		imageWidth = null;
 		imageX = null;
 		
-		Dimension2D imageSize = renderer == null ? null : renderer.getDimension(filler.getJasperReportsContext());
-		if (imageSize == null)
-		{
-			return true;
-		}
-		
 		int realHeight = (int) imageSize.getHeight();
 		int realWidth = (int) imageSize.getWidth();
 		boolean fitted;
+		
+		RotationEnum exifRotation = ImageUtil.getRotation(getRotation(), exifOrientation);
+		
+		if (
+			exifRotation == RotationEnum.LEFT
+			|| exifRotation == RotationEnum.RIGHT
+			)
+		{
+			int t = realWidth;
+			realWidth = realHeight;
+			realHeight = t;
+		}
 		
 		int reducedHeight = realHeight;
 		int reducedWidth = realWidth;
@@ -765,10 +892,10 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		
 		if (reducedHeight <= availableHeight)
 		{
-			imageHeight = Integer.valueOf(reducedHeight);
+			imageHeight = reducedHeight;
 			if (getScaleImageValue() == ScaleImageEnum.REAL_SIZE)
 			{
-				imageWidth = Integer.valueOf(reducedWidth);
+				imageWidth = reducedWidth;
 			}
 			fitted = true;
 		}
@@ -778,36 +905,81 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 		}
 		else
 		{
-			imageHeight = Integer.valueOf(availableHeight);
+			imageHeight = availableHeight;
 			if (getScaleImageValue() == ScaleImageEnum.REAL_SIZE)
 			{
 				double hRatio = ((double) availableHeight) / realHeight;
-				imageWidth = Integer.valueOf((int) (hRatio * realWidth));
+				imageWidth = (int) (hRatio * realWidth);
 			}
 			fitted = true;
 		}
 
-		if (imageWidth != null && imageWidth.intValue() != getWidth())
+		if (imageWidth != null && imageWidth != getWidth())
 		{
-			switch (hAlign)
+			switch (getRotation())
 			{
+			case LEFT:
+				switch (vAlign)
+				{
+				case BOTTOM:
+				case MIDDLE:
+					imageX = getX() + (int)(ImageUtil.getYAlignFactor(this) * (getWidth() - imageWidth));
+					break;
+				case TOP:
+				default:
+					break;
+				}
+				break;
 			case RIGHT:
-				imageX = Integer.valueOf(getX() + getWidth() - imageWidth.intValue());
+				switch (vAlign)
+				{
+				case TOP:
+				case MIDDLE:
+					imageX = getX() + (int)((1f - ImageUtil.getYAlignFactor(this)) * (getWidth() - imageWidth));
+					break;
+				case BOTTOM:
+				default:
+					break;
+				}
 				break;
-			case CENTER:
-				imageX = Integer.valueOf(getX() + (getWidth() - imageWidth.intValue()) / 2);
+			case UPSIDE_DOWN:
+				switch (hAlign)
+				{
+				case LEFT:
+				case CENTER:
+					imageX = getX() + getWidth() - imageWidth - (int)(ImageUtil.getXAlignFactor(this) * (getWidth() - imageWidth));
+					break;
+				case RIGHT:
+				default:
+					break;
+				}
 				break;
+			case NONE:
 			default:
+				switch (hAlign)
+				{
+				case RIGHT:
+				case CENTER:
+					imageX = getX() + (int)(ImageUtil.getXAlignFactor(this) * (getWidth() - imageWidth));
+					break;
+				case LEFT:
+				default:
+					break;
+				}
 				break;
 			}
+		}
+		
+		if (log.isDebugEnabled())
+		{
+			log.debug("Fitted image of dimension " + imageSize + " on " + availableHeight
+					+ ", overflow allowed " + overflowAllowed + ": " + fitted);
 		}
 		
 		return fitted;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected JRPrintElement fill() throws JRException
 	{
 		EvaluationTimeEnum evaluationTime = this.getEvaluationTimeValue();
@@ -856,48 +1028,50 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 
 		if (imageX != null)
 		{
-			printImage.setX(imageX.intValue());
+			printImage.setX(imageX);
 		}
 		if (imageWidth != null)
 		{
-			printImage.setWidth(imageWidth.intValue());
+			printImage.setWidth(imageWidth);
 		}
 		
-		printImage.setRenderable(getRenderable());
+		printImage.setRenderer(getRenderable());
 		printImage.setAnchorName(getAnchorName());
-		if (getHyperlinkWhenExpression() == null || hyperlinkWhen == Boolean.TRUE)
+		if (getHyperlinkWhenExpression() == null || Boolean.TRUE.equals(hyperlinkWhen))
 		{
 			printImage.setHyperlinkReference(getHyperlinkReference());
+			printImage.setHyperlinkAnchor(getHyperlinkAnchor());
+			printImage.setHyperlinkPage(getHyperlinkPage());
+			printImage.setHyperlinkTooltip(getHyperlinkTooltip());
+			printImage.setHyperlinkParameters(hyperlinkParameters);
 		}
 		else
 		{
+			if (printImage instanceof JRTemplatePrintImage)//this is normally the case
+			{
+				((JRTemplatePrintImage) printImage).setHyperlinkOmitted(true);
+			}
+			
 			printImage.setHyperlinkReference(null);
 		}
-		printImage.setHyperlinkAnchor(getHyperlinkAnchor());
-		printImage.setHyperlinkPage(getHyperlinkPage());
-		printImage.setHyperlinkTooltip(getHyperlinkTooltip());
-		printImage.setHyperlinkParameters(hyperlinkParameters);
 		transferProperties(printImage);
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitImage(this);
 	}
 
 	
+	@Override
 	protected void resolveElement(JRPrintElement element, byte evaluation) throws JRException
 	{
 		evaluateImage(evaluation);
@@ -906,28 +1080,82 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 
 		if (getScaleImageValue() == ScaleImageEnum.REAL_SIZE)//to avoid get dimension and thus unnecessarily load the image
 		{
-			int padding = printImage.getLineBox().getBottomPadding().intValue() 
-			+ printImage.getLineBox().getTopPadding().intValue();
-			fitImage(getHeight() - padding, false, 
-					printImage.getHorizontalAlignmentValue());
+			// image fill does not normally produce non-lazy ResourceRenderer instances, 
+			// so we do not need to attempt load resource renderers from cache here, as we do in the catch below
+
+			RenderersCache renderersCache = usedCache ?  filler.fillContext.getRenderersCache() 
+					: new RenderersCache(filler.getJasperReportsContext());
+			DimensionRenderable dimensionRenderer = renderersCache.getDimensionRenderable(renderer);
+			
+			if (dimensionRenderer != null)
+			{
+				try
+				{
+					dimensionRenderer.getDimension(filler.getJasperReportsContext());
+				}
+				catch (Exception e)
+				{
+					renderer = RendererUtil.getInstance(filler.getJasperReportsContext()).handleImageError(e, getOnErrorTypeValue());
+
+					if (renderer instanceof ResourceRenderer)
+					{
+						renderer = renderersCache.getLoadedRenderer((ResourceRenderer)renderer);
+					}
+					
+					dimensionRenderer = renderersCache.getDimensionRenderable(renderer);
+				}
+				
+				if (dimensionRenderer != null) // OnErrorTypeEnum.BLANK can return null above
+				{
+					
+					Dimension2D imageSize = dimensionRenderer.getDimension(filler.getJasperReportsContext());
+					if (imageSize != null)
+					{
+						int padding = 
+							printImage.getLineBox().getBottomPadding() 
+							+ printImage.getLineBox().getTopPadding();
+							
+						ExifOrientationEnum exifOrientation = ExifOrientationEnum.NORMAL;
+						
+						DataRenderable dataRenderable = dimensionRenderer instanceof DataRenderable ? (DataRenderable)dimensionRenderer : null;
+						if (dataRenderable != null)
+						{
+							exifOrientation = ImageUtil.getExifOrientation(dataRenderable.getData(filler.getJasperReportsContext()));
+						}
+						
+						fitImage(
+							imageSize,
+							exifOrientation,
+							getHeight() - padding, 
+							false, 
+							printImage.getHorizontalImageAlign(),
+							printImage.getVerticalImageAlign()
+							);
+					}
+				}
+			}
 		}
 		
 		copy(printImage);
-		filler.getFillContext().updateBookmark(element);
+		filler.updateBookmark(element);
 	}
 
 
+	@Override
 	public int getBookmarkLevel()
 	{
-		return ((JRImage)this.parent).getBookmarkLevel();
+		return this.bookmarkLevel == null ? ((JRImage)this.parent).getBookmarkLevel() : this.bookmarkLevel;
 	}
 
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillImage(this, factory);
 	}
-	
+
+
+	@Override
 	protected void collectDelayedEvaluations()
 	{
 		super.collectDelayedEvaluations();
@@ -941,18 +1169,21 @@ public class JRFillImage extends JRFillGraphicElement implements JRImage
 	}
 
 
+	@Override
 	public JRHyperlinkParameter[] getHyperlinkParameters()
 	{
 		return ((JRImage) parent).getHyperlinkParameters();
 	}
 
 
+	@Override
 	public String getLinkType()
 	{
 		return ((JRImage) parent).getLinkType();
 	}
 
 
+	@Override
 	public JRExpression getHyperlinkTooltipExpression()
 	{
 		return ((JRImage) parent).getHyperlinkTooltipExpression();

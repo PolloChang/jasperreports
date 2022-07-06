@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,11 +34,12 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DimensionEntries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DimensionEntries<T extends DimensionEntry>
 {
 	private static final Log log = LogFactory.getLog(DimensionEntries.class);
+	public static final String EXCEPTION_MESSAGE_KEY_END_OUT_OF_RANGE = "export.tabulator.dimension.end.out.of.range";
+	public static final String EXCEPTION_MESSAGE_KEY_START_OUT_OF_RANGE = "export.tabulator.dimension.start.out.of.range";
 	
 	private DimensionControl<T> control;
 	private TreeSet<T> entries;
@@ -46,7 +47,7 @@ public class DimensionEntries<T extends DimensionEntry>
 	public DimensionEntries(DimensionControl<T> control)
 	{
 		this.control = control;
-		this.entries = new TreeSet<T>();
+		this.entries = new TreeSet<>();
 		
 		// TODO lucianc no index for column
 		T univEntry = control.createEntry(DimensionEntry.MINUS_INF, DimensionEntry.PLUS_INF);
@@ -72,11 +73,17 @@ public class DimensionEntries<T extends DimensionEntry>
 		}
 		if (start <= DimensionEntry.MINUS_INF)
 		{
-			throw new JRRuntimeException("Out of range start value " + start);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_START_OUT_OF_RANGE,
+					new Object[]{start});
 		}
 		if (end >= DimensionEntry.PLUS_INF)
 		{
-			throw new JRRuntimeException("Out of range start value " + end);
+			throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_END_OUT_OF_RANGE,
+				new Object[]{end});
 		}
 
 		T startKey = control.entryKey(start);
@@ -98,7 +105,7 @@ public class DimensionEntries<T extends DimensionEntry>
 			rangeSet = tailSet.headSet(ceiling, false);
 		}
 		
-		return new DimensionRange<T>(start, end, floor, ceiling, rangeSet);
+		return new DimensionRange<>(start, end, floor, ceiling, rangeSet);
 	}
 	
 	public DimensionRange<T> addEntries(DimensionRange<T> range)
@@ -118,7 +125,7 @@ public class DimensionEntries<T extends DimensionEntry>
 		
 		// not the same, create a new range 
 		NavigableSet<T> resultRange = range.rangeSet.subSet(resultStart, true, resultEnd, false);
-		return new DimensionRange<T>(range.start, range.end, resultStart, resultEnd, resultRange);
+		return new DimensionRange<>(range.start, range.end, resultStart, resultEnd, resultRange);
 	}
 
 	protected T addStartEntry(DimensionRange<T> range)

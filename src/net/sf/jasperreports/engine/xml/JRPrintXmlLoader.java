@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,6 +32,14 @@ import java.util.List;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 
+import org.apache.commons.digester.SetNestedPropertiesRule;
+import org.apache.commons.digester.SetPropertiesRule;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRFont;
@@ -40,22 +48,12 @@ import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameter;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.PrintBookmark;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.util.CompositeClassloader;
-import net.sf.jasperreports.engine.util.JRSingletonCache;
-
-import org.apache.commons.digester.SetNestedPropertiesRule;
-import org.apache.commons.digester.SetPropertiesRule;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
 
 
 /**
@@ -68,32 +66,19 @@ import org.xml.sax.SAXParseException;
  * by using this class.
  * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintXmlLoader.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrintXmlLoader implements ErrorHandler
 {
 	
 	private static final Log log = LogFactory.getLog(JRPrintXmlLoader.class);
 	
-	protected static final JRSingletonCache<JRSaxParserFactory> printParserFactories = 
-		new JRSingletonCache<JRSaxParserFactory>(JRSaxParserFactory.class);
-
 	/**
 	 *
 	 */
 	private final JasperReportsContext jasperReportsContext;
 	private JasperPrint jasperPrint;
-	private List<Exception> errors = new ArrayList<Exception>();
+	private List<Exception> errors = new ArrayList<>();
 
-
-	/**
-	 * @deprecated Replaced by {@link #JRPrintXmlLoader(JasperReportsContext)}.
-	 */
-	protected JRPrintXmlLoader()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-	
 
 	/**
 	 *
@@ -129,30 +114,14 @@ public class JRPrintXmlLoader implements ErrorHandler
 	{
 		JasperPrint jasperPrint = null;
 
-		FileInputStream fis = null;
-
-		try
+		try (FileInputStream fis = new FileInputStream(sourceFileName))
 		{
-			fis = new FileInputStream(sourceFileName);
 			JRPrintXmlLoader printXmlLoader = new JRPrintXmlLoader(jasperReportsContext);
 			jasperPrint = printXmlLoader.loadXML(fis);
 		}
 		catch(IOException e)
 		{
 			throw new JRException(e);
-		}
-		finally
-		{
-			if (fis != null)
-			{
-				try
-				{
-					fis.close();
-				}
-				catch(IOException e)
-				{
-				}
-			}
 		}
 
 		return jasperPrint;
@@ -212,15 +181,7 @@ public class JRPrintXmlLoader implements ErrorHandler
 			/*   */
 			digester.parse(is);
 		}
-		catch(ParserConfigurationException e)
-		{
-			throw new JRException(e);
-		}
-		catch(SAXException e)
-		{
-			throw new JRException(e);
-		}
-		catch(IOException e)
+		catch (ParserConfigurationException | SAXException | IOException e)
 		{
 			throw new JRException(e);
 		}
@@ -248,7 +209,7 @@ public class JRPrintXmlLoader implements ErrorHandler
 		
 		// use a classloader that resolves both JR classes and classes from the context classloader
 		CompositeClassloader digesterClassLoader = new CompositeClassloader(
-				JRXmlDigesterFactory.class.getClassLoader(), 
+				JRPrintXmlLoader.class.getClassLoader(), 
 				Thread.currentThread().getContextClassLoader());
 		digester.setClassLoader(digesterClassLoader);
 		digester.setNamespaceAware(true);
@@ -265,7 +226,8 @@ public class JRPrintXmlLoader implements ErrorHandler
 		digester.addSetNext("jasperPrint", "setJasperPrint", JasperPrint.class.getName());
 
 		/*   */
-		digester.addRule("*/property", new JRPropertyDigesterRule());
+		digester.addFactoryCreate("*/property", JRPropertyFactory.class.getName());
+		digester.addCallMethod("*/property", "setValue", 0);
 
 		/*   */
 		digester.addFactoryCreate("jasperPrint/origin", JROriginFactory.class.getName());
@@ -285,6 +247,9 @@ public class JRPrintXmlLoader implements ErrorHandler
 		/*   */
 		digester.addFactoryCreate("*/bookmark", PrintBookmarkFactory.class.getName());
 		digester.addSetNext("*/bookmark", "addBookmark", PrintBookmark.class.getName());
+
+		/*   */
+		digester.addFactoryCreate("jasperPrint/part", PrintPartFactory.class.getName());
 
 		/*   */
 		digester.addFactoryCreate("jasperPrint/page", JRPrintPageFactory.class.getName());
@@ -367,23 +332,16 @@ public class JRPrintXmlLoader implements ErrorHandler
 
 	protected SAXParser createParser()
 	{
-		try
+		String parserFactoryClass = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(
+				JRSaxParserFactory.PROPERTY_PRINT_PARSER_FACTORY);
+		
+		if (log.isDebugEnabled())
 		{
-			String parserFactoryClass = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(
-					JRSaxParserFactory.PROPERTY_PRINT_PARSER_FACTORY);
-			
-			if (log.isDebugEnabled())
-			{
-				log.debug("Using SAX parser factory class " + parserFactoryClass);
-			}
-			
-			JRSaxParserFactory factory = printParserFactories.getCachedInstance(parserFactoryClass);
-			return factory.createParser();
+			log.debug("Using SAX parser factory class " + parserFactoryClass);
 		}
-		catch (JRException e)
-		{
-			throw new JRRuntimeException(e);
-		}
+		
+		JRSaxParserFactory factory = BaseSaxParserFactory.getFactory(jasperReportsContext, parserFactoryClass);
+		return factory.createParser();
 	}
 
 
@@ -456,11 +414,8 @@ public class JRPrintXmlLoader implements ErrorHandler
 				handler.configureDigester(digester);
 				
 				String schemaResource = namespace.getInternalSchemaResource();
-				if (schemaResource != null)
-				{
-					digester.addInternalEntityResource(namespace.getPublicSchemaLocation(), 
-							schemaResource);
-				}
+				digester.addInternalEntityResource(namespace.getPublicSchemaLocation(), 
+						schemaResource);
 			}
 		}
 		
@@ -476,25 +431,19 @@ public class JRPrintXmlLoader implements ErrorHandler
 		this.errors.add(e);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void error(SAXParseException e)
 	{
 		this.errors.add(e);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void fatalError(SAXParseException e)
 	{
 		this.errors.add(e);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void warning(SAXParseException e)
 	{
 		this.errors.add(e);

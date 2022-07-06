@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,12 +29,11 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGraphicElement;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.StyleUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillGraphicElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRFillGraphicElement extends JRFillElement implements JRGraphicElement
 {
@@ -68,9 +67,7 @@ public abstract class JRFillGraphicElement extends JRFillElement implements JRGr
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	protected void evaluateStyle(
 		byte evaluation
 		) throws JRException
@@ -82,72 +79,56 @@ public abstract class JRFillGraphicElement extends JRFillElement implements JRGr
 		if (providerStyle != null)
 		{
 			pen = initPen.clone(this);
-			JRStyleResolver.appendPen(pen, providerStyle.getLinePen());
+			StyleUtil.appendPen(pen, providerStyle.getLinePen());
 		}
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPen getLinePen()
 	{
 		return pen == null ? initPen : pen;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public FillEnum getFillValue()
 	{
-		return JRStyleResolver.getFillValue(this);
+		return getStyleResolver().getFillValue(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public FillEnum getOwnFillValue()
 	{
 		return providerStyle == null || providerStyle.getOwnFillValue() == null ? ((JRGraphicElement)this.parent).getOwnFillValue() : providerStyle.getOwnFillValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setFill(FillEnum fill)
 	{
 		throw new UnsupportedOperationException();
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Float getDefaultLineWidth() 
 	{
 		return ((JRGraphicElement)this.parent).getDefaultLineWidth();
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return getForecolor();
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public void rewind()
 	{
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected boolean prepare(
 		int availableHeight,
 		boolean isOverflow

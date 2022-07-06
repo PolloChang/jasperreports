@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ package net.sf.jasperreports.engine.export.oasis;
 
 import java.util.Map;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JasperReportsContext;
@@ -41,18 +40,9 @@ import net.sf.jasperreports.engine.export.ExporterFilter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JROpenDocumentExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JROpenDocumentExporterNature extends AbstractExporterNature
 {
-	
-	/**
-	 * @deprecated Replaced by {@link #JROpenDocumentExporterNature(JasperReportsContext, ExporterFilter)}. 
-	 */
-	public JROpenDocumentExporterNature(ExporterFilter filter)
-	{
-		this(DefaultJasperReportsContext.getInstance(), filter);
-	}
 	
 	/**
 	 * 
@@ -62,38 +52,31 @@ public abstract class JROpenDocumentExporterNature extends AbstractExporterNatur
 		super(jasperReportsContext, filter);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isToExport(JRPrintElement element)
 	{
 		return (filter == null || filter.isToExport(element));
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isDeep(JRPrintFrame frame)
 	{
 		return false;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isSpanCells()
 	{
 		return true;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isIgnoreLastRow()
 	{
 		return true;
 	}
 
+	@Override
 	public boolean isHorizontallyMergeEmptyCells()
 	{
 		return false;
@@ -102,42 +85,43 @@ public abstract class JROpenDocumentExporterNature extends AbstractExporterNatur
 	/**
 	 * Specifies whether empty page margins should be ignored
 	 */
+	@Override
 	public boolean isIgnorePageMargins()
 	{
 		return false;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public boolean isBreakBeforeRow(JRPrintElement element)
 	{
 		return false;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public boolean isBreakAfterRow(JRPrintElement element)
 	{
 		return false;
 	}
 	
+	@Override
 	public void setXProperties(CutsInfo xCuts, JRPrintElement element, int row1, int col1, int row2, int col2)
 	{
 		// nothing to do here
 	}
 	
+	@Override
 	public void setXProperties(Map<String,Object> xCutsProperties, JRPrintElement element)
 	{
 		// nothing to do here
 	}
 	
+	@Override
 	public void setYProperties(CutsInfo yCuts, JRPrintElement element, int row1, int col1, int row2, int col2)
 	{
 		// nothing to do here
 	}
 	
+	@Override
 	public void setYProperties(Map<String,Object> yCutsProperties, JRPrintElement element)
 	{
 		// nothing to do here

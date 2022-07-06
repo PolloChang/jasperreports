@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,11 +27,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Default exporter filter factory.
@@ -40,7 +42,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * filters produced by these factories for a specific exporter context.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultExporterFilterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  * @see #getFilter(JRExporterContext)
  */
 public class DefaultExporterFilterFactory implements ExporterFilterFactory
@@ -49,12 +50,18 @@ public class DefaultExporterFilterFactory implements ExporterFilterFactory
 	/**
 	 * The prefix of properties that are used to register filter factories.
 	 */
+	@Property(
+			name = "net.sf.jasperreports.export.filter.factory.{filter_element}",
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_0_1
+			)
 	public static final String PROPERTY_EXPORTER_FILTER_FACTORY_PREFIX = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "export.filter.factory.";
 	
 	/**
 	 * The method searches for all filter factories registered via
-	 * <code>net.sf.jasperreports.export.filter.factory.*</code> properties,
+	 * {@link #PROPERTY_EXPORTER_FILTER_FACTORY_PREFIX net.sf.jasperreports.export.filter.factory.*} properties,
 	 * calls each factory and collects the returned filters.
 	 * 
 	 * The method returns:
@@ -66,10 +73,11 @@ public class DefaultExporterFilterFactory implements ExporterFilterFactory
 	 * 
 	 * @see #PROPERTY_EXPORTER_FILTER_FACTORY_PREFIX
 	 */
+	@Override
 	public ExporterFilter getFilter(JRExporterContext exporterContext) throws JRException
 	{
 		List<ExporterFilterFactory> factories = getAllFilterFactories(exporterContext.getJasperReportsContext(), exporterContext.getExportedReport());
-		List<ExporterFilter> filters = new ArrayList<ExporterFilter>(factories.size());
+		List<ExporterFilter> filters = new ArrayList<>(factories.size());
 		for (Iterator<ExporterFilterFactory> it = factories.iterator(); it.hasNext();)
 		{
 			ExporterFilterFactory factory = it.next();
@@ -100,7 +108,7 @@ public class DefaultExporterFilterFactory implements ExporterFilterFactory
 	{
 		List<JRPropertiesUtil.PropertySuffix> factoryProps = JRPropertiesUtil.getInstance(jasperReportsContext).getAllProperties(report, 
 				PROPERTY_EXPORTER_FILTER_FACTORY_PREFIX);
-		List<ExporterFilterFactory> factories = new ArrayList<ExporterFilterFactory>(factoryProps.size());
+		List<ExporterFilterFactory> factories = new ArrayList<>(factoryProps.size());
 		for (Iterator<JRPropertiesUtil.PropertySuffix> it = factoryProps.iterator(); it.hasNext();)
 		{
 			JRPropertiesUtil.PropertySuffix prop = it.next();
@@ -108,14 +116,6 @@ public class DefaultExporterFilterFactory implements ExporterFilterFactory
 			factories.add(factory);
 		}
 		return factories;
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #getAllFilterFactories(JasperReportsContext, JasperPrint)}.
-	 */
-	protected List<ExporterFilterFactory> getAllFilterFactories(JasperPrint report) throws JRException
-	{
-		return getAllFilterFactories(DefaultJasperReportsContext.getInstance(), report);
 	}
 	
 	protected ExporterFilterFactory getFilterFactory(String factoryClassName) throws JRException

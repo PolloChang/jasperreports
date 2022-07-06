@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,74 +23,77 @@
  */
 package net.sf.jasperreports.engine.type;
 
-import net.sf.jasperreports.engine.JRConstants;
-
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageTypeEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public enum ImageTypeEnum implements JREnum
 {
 	/**
 	 * Specifies that the image is of unknown type.
 	 */ 
-	UNKNOWN((byte)0, "Unknown", null),
+	UNKNOWN((byte)0, "Unknown", null, null),
 	
 	/**
 	 * Specifies that the image is of GIF type.
 	 */ 
-	GIF((byte)1, "GIF", "image/gif"),
+	GIF((byte)1, "GIF", "image/gif", "gif"),
 	
 	/**
 	 * Specifies that the image is of JPEG type.
 	 */ 
-	JPEG((byte)2, "JPEG", "image/jpeg"),
+	JPEG((byte)2, "JPEG", "image/jpeg", "jpg"),
 	
 	/**
 	 * Specifies that the image is of PNG type.
 	 */ 
-	PNG((byte)3, "PNG", "image/png"),
+	PNG((byte)3, "PNG", "image/png", "png"),
 	
 	/**
 	 * Specifies that the image is of TIFF type.
 	 */ 
-	TIFF((byte)3, "TIFF", "image/tiff");
+	TIFF((byte)3, "TIFF", "image/tiff", "tiff");
 
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient byte value;
 	private final transient String name;
 	private final transient String mimeType;
+	private final transient String fileExtension;
 
-	private ImageTypeEnum(byte value, String name, String mimeType)
+	private ImageTypeEnum(
+		byte value, 
+		String name, 
+		String mimeType,
+		String fileExtension
+		)
 	{
 		this.value = value;
 		this.name = name;
 		this.mimeType = mimeType;
+		this.fileExtension = fileExtension;
 	}
 
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
 	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
 	{
 		return value;
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
+	public final byte getValue()
+	{
+		return value;
+	}
+	
+	@Override
 	public String getName()
 	{
 		return name;
@@ -107,13 +110,21 @@ public enum ImageTypeEnum implements JREnum
 	/**
 	 *
 	 */
-	public static ImageTypeEnum getByName(String name)
+	public String getFileExtension()
 	{
-		return (ImageTypeEnum)EnumUtil.getByName(values(), name);
+		return fileExtension;
 	}
 	
 	/**
 	 *
+	 */
+	public static ImageTypeEnum getByName(String name)
+	{
+		return EnumUtil.getEnumByName(values(), name);
+	}
+	
+	/**
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static ImageTypeEnum getByValue(Byte value)
 	{
@@ -121,11 +132,10 @@ public enum ImageTypeEnum implements JREnum
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static ImageTypeEnum getByValue(byte value)
 	{
-		return getByValue(new Byte(value));
+		return getByValue((Byte)value);
 	}
-	
 }

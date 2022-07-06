@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseSortField.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseSortField implements JRSortField, Serializable, JRChangeEventsSupport
 {
@@ -80,17 +79,13 @@ public class JRBaseSortField implements JRSortField, Serializable, JRChangeEvent
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public SortOrderEnum getOrderValue()
 	{
 		return orderValue;
@@ -106,17 +101,13 @@ public class JRBaseSortField implements JRSortField, Serializable, JRChangeEvent
 		getEventSupport().firePropertyChange(PROPERTY_ORDER, old, this.orderValue);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public SortFieldTypeEnum getType()
 	{
 		return type;
 	}
 		
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		try
@@ -133,6 +124,7 @@ public class JRBaseSortField implements JRSortField, Serializable, JRChangeEvent
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -156,6 +148,7 @@ public class JRBaseSortField implements JRSortField, Serializable, JRChangeEvent
 	 */
 	private byte order;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

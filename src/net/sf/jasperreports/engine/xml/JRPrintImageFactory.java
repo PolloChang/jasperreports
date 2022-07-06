@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,26 +23,25 @@
  */
 package net.sf.jasperreports.engine.xml;
 
+import org.xml.sax.Attributes;
+
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.base.JRBasePrintImage;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-
-import org.xml.sax.Attributes;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintImageFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrintImageFactory extends JRBaseFactory
 {
 
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JasperPrint jasperPrint = (JasperPrint)digester.peek(digester.getCount() - 2);
@@ -56,22 +55,22 @@ public class JRPrintImageFactory extends JRBaseFactory
 			image.setScaleImage(scaleImage);
 		}
 
-		HorizontalAlignEnum horizontalAlignment = HorizontalAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_hAlign));
-		if (horizontalAlignment != null)
+		RotationEnum rotation = RotationEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_rotation));
+		if (rotation != null)
 		{
-			image.setHorizontalAlignment(horizontalAlignment);
+			image.setRotation(rotation);
 		}
 
-		VerticalAlignEnum verticalAlignment = VerticalAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_vAlign));
-		if (verticalAlignment != null)
+		HorizontalImageAlignEnum horizontalImageAlign = HorizontalImageAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_hAlign));
+		if (horizontalImageAlign != null)
 		{
-			image.setVerticalAlignment(verticalAlignment);
+			image.setHorizontalImageAlign(horizontalImageAlign);
 		}
 
-		String isLazy = atts.getValue(JRXmlConstants.ATTRIBUTE_isLazy);
-		if (isLazy != null && isLazy.length() > 0)
+		VerticalImageAlignEnum verticalImageAlign = VerticalImageAlignEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_vAlign));
+		if (verticalImageAlign != null)
 		{
-			image.setLazy(Boolean.valueOf(isLazy).booleanValue());
+			image.setVerticalImageAlign(verticalImageAlign);
 		}
 
 		OnErrorTypeEnum onErrorType = OnErrorTypeEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_onErrorType));
@@ -98,6 +97,13 @@ public class JRPrintImageFactory extends JRBaseFactory
 		if (bookmarkLevelAttr != null)
 		{
 			image.setBookmarkLevel(Integer.parseInt(bookmarkLevelAttr));
+		}
+		
+		String isLazy = atts.getValue(JRXmlConstants.ATTRIBUTE_isLazy);
+		if (isLazy != null && isLazy.length() > 0)
+		{
+			//we use a resource renderer just to pass the value of isLazy flag to image source factory
+			image.setRenderer(ResourceRenderer.getInstance("", Boolean.valueOf(isLazy)));
 		}
 
 		return image;

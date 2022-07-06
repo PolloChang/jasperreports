@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ColumnFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ColumnFactory implements ColumnVisitor<BaseColumn>
 {
@@ -46,7 +45,7 @@ public class ColumnFactory implements ColumnVisitor<BaseColumn>
 
 	public List<BaseColumn> createColumns(List<BaseColumn> columns)
 	{
-		List<BaseColumn> createdCols = new ArrayList<BaseColumn>(columns.size());
+		List<BaseColumn> createdCols = new ArrayList<>(columns.size());
 		for (BaseColumn tableColumn : columns)
 		{
 			BaseColumn column = tableColumn.visitColumn(this);
@@ -78,7 +77,7 @@ public class ColumnFactory implements ColumnVisitor<BaseColumn>
 		}
 		else
 		{
-			newCells = new ArrayList<GroupCell>(cells.size());
+			newCells = new ArrayList<>(cells.size());
 			for (GroupCell groupCell : cells)
 			{
 				GroupCell newCell = new StandardGroupCell(groupCell, this);
@@ -88,11 +87,13 @@ public class ColumnFactory implements ColumnVisitor<BaseColumn>
 		return newCells;
 	}
 	
+	@Override
 	public BaseColumn visitColumn(Column column)
 	{
 		return new StandardColumn(column, this);
 	}
 
+	@Override
 	public BaseColumn visitColumnGroup(ColumnGroup columnGroup)
 	{
 		return new StandardColumnGroup(columnGroup, this);

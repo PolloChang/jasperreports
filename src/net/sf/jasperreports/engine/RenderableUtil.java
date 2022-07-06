@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,17 +38,26 @@ import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
 import net.sf.jasperreports.engine.util.JRImageLoader;
 import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Graphics2DRenderable;
+import net.sf.jasperreports.renderers.RenderersCache;
+import net.sf.jasperreports.renderers.ResourceRenderer;
+import net.sf.jasperreports.renderers.WrappingRenderToImageDataRenderer;
+import net.sf.jasperreports.renderers.util.RendererUtil;
 import net.sf.jasperreports.repo.RepositoryUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RenderableUtil.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link RendererUtil}.
  */
 public class RenderableUtil
 {
 	
 	private static final Log log = LogFactory.getLog(RenderableUtil.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_IMAGE_ERROR = "engine.renderable.util.image.error";
 	
 	/**
 	 *
@@ -83,7 +92,7 @@ public class RenderableUtil
 
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link ResourceRenderer#getInstance(String, boolean)}.
 	 */
 	public Renderable getRenderable(String imageLocation) throws JRException
 	{
@@ -92,7 +101,7 @@ public class RenderableUtil
 
 
 	/**
-	 * 
+	 * @deprecated Replaced by {@link ResourceRenderer#getInstance(String, boolean)}.
 	 */
 	public Renderable getRenderable(String imageLocation, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -101,7 +110,7 @@ public class RenderableUtil
 
 
 	/**
-	 * 
+	 * @deprecated Replaced by {@link ResourceRenderer#getInstance(String, boolean)} and {@link RendererUtil#getNonLazyRenderable(String, OnErrorTypeEnum)}.
 	 */
 	public Renderable getRenderable(String imageLocation, OnErrorTypeEnum onErrorType, boolean isLazy) throws JRException
 	{
@@ -254,7 +263,7 @@ public class RenderableUtil
 
 
 	/**
-	 *
+	 * @deprecated To be removed.
 	 */
 	public Renderable getOnErrorRendererForDimension(Renderable renderer, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -277,7 +286,40 @@ public class RenderableUtil
 	}
 
 	/**
-	 *
+	 * @deprecated To be removed.
+	 */
+	public net.sf.jasperreports.renderers.Renderable getOnErrorRendererForDimension(
+		RenderersCache renderersCache,
+		net.sf.jasperreports.renderers.Renderable renderer, 
+		OnErrorTypeEnum onErrorType
+		) throws JRException
+	{
+		net.sf.jasperreports.renderers.Renderable result = null;
+		
+		DimensionRenderable dimensionRenderer = renderersCache.getDimensionRenderable(renderer);
+		
+		if (dimensionRenderer != null)
+		{
+			try
+			{
+				dimensionRenderer.getDimension(jasperReportsContext);
+				result = (net.sf.jasperreports.renderers.Renderable)dimensionRenderer;
+			}
+			catch (Exception e)
+			{
+				result = handleImageError(e, onErrorType);
+				
+				if (log.isDebugEnabled())
+				{
+					log.debug("handled image error with type " + onErrorType, e);
+				}
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * @deprecated To be removed.
 	 */
 	public Renderable getOnErrorRendererForImageData(Renderable renderer, OnErrorTypeEnum onErrorType) throws JRException
 	{
@@ -301,23 +343,9 @@ public class RenderableUtil
 
 
 	/**
-	 *
-	 *
-	public Renderable getOnErrorRendererForImage(Renderable renderer, OnErrorTypeEnum onErrorType) throws JRException
-	{
-		try
-		{
-			renderer.getImage();
-			return renderer;
-		}
-		catch (JRException e)
-		{
-			return getOnErrorRenderer(onErrorType, e); 
-		}
-	}
-	*/
-
-	protected Renderable handleImageError(Exception error, OnErrorTypeEnum onErrorType) throws JRException
+	 * 
+	 */
+	public Renderable handleImageError(Exception error, OnErrorTypeEnum onErrorType) throws JRException
 	{
 		Renderable errorRenderable;
 		if (error instanceof JRException)
@@ -340,7 +368,11 @@ public class RenderableUtil
 				log.debug("got unexpected image exception of type " + error.getClass().getName(), error);
 			}
 			
-			throw new JRRuntimeException("Image error", error);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_IMAGE_ERROR,
+					(Object[])null,
+					error);
 		}
 		return errorRenderable;
 	}
@@ -431,5 +463,84 @@ public class RenderableUtil
 			}
 		}
 		return renderable;
+	}
+
+
+	/**
+	 * @deprecated To be removed.
+	 */
+	public static Renderable getWrappingRenderable(net.sf.jasperreports.renderers.Renderable renderable)
+	{
+		Renderable deprecatedRenderable = null;
+		if (renderable != null)
+		{
+			deprecatedRenderable = renderable instanceof Renderable ? (Renderable)renderable : null;
+			if (deprecatedRenderable == null)
+			{
+				Graphics2DRenderable grxRenderable = null;
+				DataRenderable dataRenderable = null;
+
+				DimensionRenderable dimensionRenderable = 
+					renderable instanceof DimensionRenderable 
+					? (DimensionRenderable)renderable
+					: null;
+					
+				if (renderable instanceof Graphics2DRenderable)
+				{
+					if (renderable instanceof DataRenderable)
+					{
+						grxRenderable = (Graphics2DRenderable)renderable;
+						dataRenderable = (DataRenderable)renderable;
+					}
+					else
+					{
+						grxRenderable = (Graphics2DRenderable)renderable;
+						dataRenderable = 
+							new WrappingRenderToImageDataRenderer(
+								grxRenderable,
+								dimensionRenderable, 
+								null
+								);
+					}
+				}
+				else
+				{
+					if (renderable instanceof DataRenderable)
+					{
+						dataRenderable = (DataRenderable)renderable;
+						grxRenderable = new net.sf.jasperreports.renderers.WrappingDataToGraphics2DRenderer((DataRenderable)renderable);
+					}
+					else
+					{
+						throw 
+							new JRRuntimeException(
+								RendererUtil.EXCEPTION_MESSAGE_KEY_RENDERABLE_MUST_IMPLEMENT_INTERFACE,
+								new Object[]{
+									renderable.getClass().getName(),
+									DataRenderable.class.getName() 
+										+ " or " + Graphics2DRenderable.class.getName() 
+									}
+								);
+					}
+				}
+				
+				if (dimensionRenderable == null)
+				{
+					dimensionRenderable = 
+						renderable instanceof DimensionRenderable 
+						? (DimensionRenderable)grxRenderable
+						: null;
+				}
+				
+				deprecatedRenderable = 
+					new net.sf.jasperreports.renderers.WrappingDeprecatedRenderable(
+						renderable.getId(),
+						grxRenderable, 
+						dataRenderable, 
+						dimensionRenderable
+						);
+			}
+		}
+		return deprecatedRenderable;
 	}
 }

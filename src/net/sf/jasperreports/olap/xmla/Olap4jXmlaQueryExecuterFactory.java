@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.query.JRQueryExecuter;
 
 /**
  * @author swood
- * @version $Id: Olap4jXmlaQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Olap4jXmlaQueryExecuterFactory extends JRXmlaQueryExecuterFactory
 {
@@ -47,11 +46,13 @@ public class Olap4jXmlaQueryExecuterFactory extends JRXmlaQueryExecuterFactory
 		PARAMETER_XMLA_PASSWORD, "java.lang.String",
 	};
 
+	@Override
 	public Object[] getBuiltinParameters()
 	{
 		return XMLA_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 

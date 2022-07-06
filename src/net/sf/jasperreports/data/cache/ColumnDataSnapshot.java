@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,12 +37,13 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ColumnDataSnapshot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ColumnDataSnapshot implements DataSnapshot, Serializable
 {
 	
 	private static final Log log = LogFactory.getLog(ColumnDataSnapshot.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_SNAPSHOT_CANNOT_BE_PERSISTED = "data.cache.snapshot.cannot.be.persisted";
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
@@ -51,7 +52,7 @@ public class ColumnDataSnapshot implements DataSnapshot, Serializable
 
 	public ColumnDataSnapshot()
 	{
-		cachedData = new LinkedHashMap<Object, ColumnCacheData>();
+		cachedData = new LinkedHashMap<>();
 		persistable = true;
 	}
 	
@@ -59,7 +60,10 @@ public class ColumnDataSnapshot implements DataSnapshot, Serializable
 	{
 		if (!persistable)
 		{
-			throw new JRRuntimeException("The data snapshot is not persistable");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_SNAPSHOT_CANNOT_BE_PERSISTED,
+					(Object[])null);
 		}
 		
 		out.defaultWriteObject();
@@ -72,11 +76,13 @@ public class ColumnDataSnapshot implements DataSnapshot, Serializable
 		in.defaultReadObject();
 	}
 
+	@Override
 	public boolean hasCachedData(Object key)
 	{
 		return cachedData.containsKey(key);
 	}
 
+	@Override
 	public CachedDataset getCachedData(Object key) throws DataSnapshotException
 	{
 		ColumnCacheData cacheData = cachedData.get(key);
@@ -107,6 +113,7 @@ public class ColumnDataSnapshot implements DataSnapshot, Serializable
 		cachedData.put(key, data);
 	}
 
+	@Override
 	public boolean isPersistable()
 	{
 		return persistable;

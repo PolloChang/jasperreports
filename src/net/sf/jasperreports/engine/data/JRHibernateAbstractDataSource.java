@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,24 +26,29 @@ package net.sf.jasperreports.engine.data;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.beanutils.PropertyUtils;
+import org.hibernate.type.Type;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.query.JRHibernateQueryExecuter;
 
-import org.apache.commons.beanutils.PropertyUtils;
-import org.hibernate.type.Type;
-
 /**
  * Base abstract Hibernate data source.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRHibernateAbstractDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRHibernateAbstractDataSource implements JRDataSource
 {
-	private final boolean useFieldDescription;
+	public static final String EXCEPTION_MESSAGE_KEY_FIELD_ALIAS_TYPE_MISMATCH = "data.hibernate.field.alias.type.mismatch";
+	public static final String EXCEPTION_MESSAGE_KEY_MANY_FIELDS_DETECTED = "data.hibernate.many.fields.detected";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_FIELD_ALIAS = "data.hibernate.no.field.alias";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_FIELD_READER = "data.hibernate.no.field.reader";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_RETURN_ALIAS = "data.hibernate.unknown.return.alias";
+	
+	private final JRAbstractBeanDataSource.PropertyNameProvider propertyNameProvider;
 	private final Map<String, FieldReader> fieldReaders;
 	protected final JRHibernateQueryExecuter queryExecuter;
 	private Object currentReturnValue;
@@ -58,7 +63,7 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 	 */
 	protected JRHibernateAbstractDataSource(JRHibernateQueryExecuter queryExecuter, boolean useFieldDescription, boolean useIndexOnSingleReturn)
 	{
-		this.useFieldDescription = useFieldDescription;
+		this.propertyNameProvider = new JRAbstractBeanDataSource.DefaultPropertyNameProvider(useFieldDescription);
 		
 		this.queryExecuter = queryExecuter;
 
@@ -74,18 +79,18 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 	 */
 	protected Map<String, FieldReader> assignReaders(boolean useIndexOnSingleReturn)
 	{
-		Map<String, FieldReader> readers = new HashMap<String, FieldReader>();
+		Map<String, FieldReader> readers = new HashMap<>();
 		
 		JRField[] fields = queryExecuter.getDataset().getFields();
 		Type[] returnTypes = queryExecuter.getReturnTypes();
 		String[] aliases = queryExecuter.getReturnAliases();
 		
-		Map<String, Integer> aliasesMap = new HashMap<String, Integer>();
+		Map<String, Integer> aliasesMap = new HashMap<>();
 		if (aliases != null)
 		{
 			for (int i = 0; i < aliases.length; i++)
 			{
-				aliasesMap.put(aliases[i], Integer.valueOf(i));
+				aliasesMap.put(aliases[i], i);
 			}
 		}
 		
@@ -103,7 +108,10 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 			{
 				if (fields.length > 1)
 				{
-					throw new JRRuntimeException("The HQL query returns only one non-entity and non-component result but there are more than one fields.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_MANY_FIELDS_DETECTED,
+							(Object[])null);
 				}
 				
 				if (fields.length == 1)
@@ -184,7 +192,10 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 			
 			if (firstNestedIdx < 0)
 			{
-				throw new JRRuntimeException("Unknown HQL return alias \"" + fieldMapping + "\".");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_RETURN_ALIAS,
+						new Object[]{fieldMapping});
 			}
 			
 			String fieldAlias = fieldMapping.substring(0, firstNestedIdx);
@@ -193,20 +204,26 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 			fieldIdx = aliasesMap.get(fieldAlias);
 			if (fieldIdx == null)
 			{
-				throw new JRRuntimeException("The HQL query does not have a \"" + fieldAlias + "\" alias.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_NO_FIELD_ALIAS,
+						new Object[]{fieldAlias});
 			}
 			
-			Type type = returnTypes[fieldIdx.intValue()];
+			Type type = returnTypes[fieldIdx];
 			if (!type.isEntityType() && !type.isComponentType())
 			{
-				throw new JRRuntimeException("The HQL query does not have a \"" + fieldAlias + "\" alias.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_FIELD_ALIAS_TYPE_MISMATCH,
+						new Object[]{fieldAlias});
 			}
 			
-			reader = new IndexPropertyFieldReader(fieldIdx.intValue(), fieldProperty);
+			reader = new IndexPropertyFieldReader(fieldIdx, fieldProperty);
 		}
 		else
 		{
-			reader = new IndexFieldReader(fieldIdx.intValue());
+			reader = new IndexFieldReader(fieldIdx);
 		}
 		
 		return reader;
@@ -224,12 +241,16 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 	}
 	
 	
+	@Override
 	public Object getFieldValue(JRField jrField) throws JRException
 	{
 		FieldReader reader = fieldReaders.get(jrField.getName());
 		if (reader == null)
 		{
-			throw new JRRuntimeException("No filed reader for " + jrField.getName());
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NO_FIELD_READER,
+					new Object[]{jrField.getName()});
 		}
 		return reader.getFieldValue(currentReturnValue);
 	}
@@ -237,10 +258,7 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 	
 	protected String getFieldMapping(JRField field)
 	{
-		return (useFieldDescription ? 
-					JRAbstractBeanDataSource.FIELD_DESCRIPTION_PROPERTY_NAME_PROVIDER : 
-					JRAbstractBeanDataSource.FIELD_NAME_PROPERTY_NAME_PROVIDER)
-				.getPropertyName(field);
+		return propertyNameProvider.getPropertyName(field);
 	}
 	
 	
@@ -254,6 +272,7 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 	
 	protected static class IdentityFieldReader implements FieldReader
 	{
+		@Override
 		public Object getFieldValue(Object resultValue)
 		{
 			return resultValue;
@@ -269,6 +288,7 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 			this.idx = idx;
 		}
 		
+		@Override
 		public Object getFieldValue(Object resultValue)
 		{
 			return ((Object[]) resultValue)[idx];
@@ -284,6 +304,7 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 			this.property = property;
 		}
 		
+		@Override
 		public Object getFieldValue(Object resultValue) throws JRException
 		{
 			return JRAbstractBeanDataSource.getBeanProperty(resultValue, property);
@@ -301,6 +322,7 @@ public abstract class JRHibernateAbstractDataSource implements JRDataSource
 			this.property = property;
 		}
 		
+		@Override
 		public Object getFieldValue(Object resultValue) throws JRException
 		{
 			return JRAbstractBeanDataSource.getBeanProperty(((Object[]) resultValue)[idx], property);

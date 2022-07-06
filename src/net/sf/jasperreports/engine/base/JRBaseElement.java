@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -46,7 +46,7 @@ import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.PositionTypeEnum;
 import net.sf.jasperreports.engine.type.StretchTypeEnum;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 
 /**
@@ -54,7 +54,6 @@ import net.sf.jasperreports.engine.util.JRStyleResolver;
  * the most common element properties, and their getter/setter methods. It also has a constructor for initializing
  * these properties.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRBaseElement implements JRElement, Serializable, JRChangeEventsSupport
 {
@@ -107,7 +106,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 	protected JRGroup printWhenGroupChanges;
 	protected JRElementGroup elementGroup;
 
-	protected JRDefaultStyleProvider defaultStyleProvider;
+	protected final JRDefaultStyleProvider defaultStyleProvider;
 	protected JRStyle parentStyle;
 	protected String parentStyleNameReference;
 
@@ -161,33 +160,28 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		elementGroup = (JRElementGroup)factory.getVisitResult(element.getElementGroup());
 		
 		propertiesMap = JRPropertiesMap.getPropertiesClone(element);
-		copyPropertyExpressions(element, factory);
+		propertyExpressions = factory.getPropertyExpressions(element.getPropertyExpressions());
 	}
 
 
-	private void copyPropertyExpressions(JRElement element,
-			JRBaseObjectFactory factory)
-	{
-		JRPropertyExpression[] props = element.getPropertyExpressions();
-		if (props != null && props.length > 0)
-		{
-			propertyExpressions = new JRPropertyExpression[props.length];
-			for (int i = 0; i < props.length; i++)
-			{
-				propertyExpressions[i] = factory.getPropertyExpression(props[i]);
-			}
-		}
-	}
-
-
-	/**
-	 *
-	 */
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return defaultStyleProvider;
 	}
 
+	/**
+	 *
+	 */
+	protected StyleResolver getStyleResolver()
+	{
+		if (getDefaultStyleProvider() != null)
+		{
+			return getDefaultStyleProvider().getStyleResolver();
+		}
+		return StyleResolver.getInstance();
+	}
+	
 	/**
 	 *
 	 */
@@ -204,9 +198,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		return null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public UUID getUUID()
 	{
 		if (uuid == null)
@@ -216,25 +208,19 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		return uuid;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getKey()
 	{
 		return key;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public PositionTypeEnum getPositionTypeValue()
 	{
 		return positionTypeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPositionType(PositionTypeEnum positionTypeValue)
 	{
 		PositionTypeEnum old = this.positionTypeValue;
@@ -242,17 +228,13 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(PROPERTY_POSITION_TYPE, old, this.positionTypeValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public StretchTypeEnum getStretchTypeValue()
 	{
 		return stretchTypeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setStretchType(StretchTypeEnum stretchTypeValue)
 	{
 		StretchTypeEnum old = this.stretchTypeValue;
@@ -260,17 +242,13 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(PROPERTY_STRETCH_TYPE, old, this.stretchTypeValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isPrintRepeatedValues()
 	{
 		return this.isPrintRepeatedValues;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPrintRepeatedValues(boolean isPrintRepeatedValues)
 	{
 		boolean old = this.isPrintRepeatedValues;
@@ -278,25 +256,19 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(PROPERTY_PRINT_REPEATED_VALUES, old, this.isPrintRepeatedValues);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.OPAQUE);
+		return getStyleResolver().getMode(this, ModeEnum.OPAQUE);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getOwnModeValue()
 	{
 		return modeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMode(ModeEnum modeValue)
 	{
 		Object old = this.modeValue;
@@ -304,17 +276,13 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_MODE, old, this.modeValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getX()
 	{
 		return this.x;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setX(int x)
 	{
 		int old = this.x;
@@ -322,25 +290,19 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(PROPERTY_X, old, this.x);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getY()
 	{
 		return this.y;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getWidth()
 	{
 		return this.width;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setWidth(int width)
 	{
 		int old = this.width;
@@ -348,25 +310,19 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(PROPERTY_WIDTH, old, this.width);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getHeight()
 	{
 		return this.height;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isRemoveLineWhenBlank()
 	{
 		return this.isRemoveLineWhenBlank;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRemoveLineWhenBlank(boolean isRemoveLine)
 	{
 		boolean old = this.isRemoveLineWhenBlank;
@@ -374,17 +330,13 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(PROPERTY_REMOVE_LINE_WHEN_BLANK, old, this.isRemoveLineWhenBlank);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isPrintInFirstWholeBand()
 	{
 		return this.isPrintInFirstWholeBand;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPrintInFirstWholeBand(boolean isPrint)
 	{
 		boolean old = this.isPrintInFirstWholeBand;
@@ -392,17 +344,13 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(PROPERTY_PRINT_IN_FIRST_WHOLE_BAND, old, this.isPrintInFirstWholeBand);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isPrintWhenDetailOverflows()
 	{
 		return this.isPrintWhenDetailOverflows;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPrintWhenDetailOverflows(boolean isPrint)
 	{
 		boolean old = this.isPrintWhenDetailOverflows;
@@ -410,25 +358,19 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(PROPERTY_PRINT_WHEN_DETAIL_OVERFLOWS, old, this.isPrintWhenDetailOverflows);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getForecolor()
 	{
-		return JRStyleResolver.getForecolor(this);
+		return getStyleResolver().getForecolor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnForecolor()
 	{
 		return forecolor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setForecolor(Color forecolor)
 	{
 		Object old = this.forecolor;
@@ -436,25 +378,19 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_FORECOLOR, old, this.forecolor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getBackcolor()
 	{
-		return JRStyleResolver.getBackcolor(this);
+		return getStyleResolver().getBackcolor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnBackcolor()
 	{
 		return backcolor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setBackcolor(Color backcolor)
 	{
 		Object old = this.backcolor;
@@ -462,35 +398,31 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_BACKCOLOR, old, this.backcolor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getPrintWhenExpression()
 	{
 		return this.printWhenExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getPrintWhenGroupChanges()
 	{
 		return this.printWhenGroupChanges;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRElementGroup getElementGroup()
 	{
 		return this.elementGroup;
 	}
 
+	@Override
 	public JRStyle getStyle()
 	{
 		return parentStyle;
 	}
 
+	@Override
 	public String getStyleNameReference()
 	{
 		return parentStyleNameReference;
@@ -498,6 +430,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -511,9 +444,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		return eventSupport;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseElement clone = null;
@@ -529,14 +460,13 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 
 		clone.printWhenExpression = JRCloneUtils.nullSafeClone(printWhenExpression);
 		clone.propertiesMap = JRPropertiesMap.getPropertiesClone(this);
+		clone.propertyExpressions = JRCloneUtils.cloneArray(propertyExpressions);
 		clone.eventSupport = null;
 		
 		return clone;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone(JRElementGroup parentGroup) 
 	{
 		JRBaseElement clone = (JRBaseElement)this.clone();
@@ -554,6 +484,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		return clone;
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		// checking for empty properties here instead of hasProperties because
@@ -561,6 +492,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		return propertiesMap != null && !propertiesMap.isEmpty();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		if (propertiesMap == null)
@@ -570,11 +502,13 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
 	}
 
+	@Override
 	public JRPropertyExpression[] getPropertyExpressions()
 	{
 		return propertyExpressions;
@@ -598,6 +532,7 @@ public abstract class JRBaseElement implements JRElement, Serializable, JRChange
 	 */
 	private byte stretchType;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BuiltinExpressionEvaluatorDecorator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEvaluator
 {
@@ -53,12 +52,14 @@ public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEva
 		this.builtinEvaluators = builtinEvaluators;
 	}
 
+	@Override
 	public void init(Map<String, JRFillParameter> parametersMap, 
 			Map<String, JRFillField> fieldsMap, 
 			Map<String, JRFillVariable> variablesMap, 
-			WhenResourceMissingTypeEnum resourceMissingType) throws JRException
+			WhenResourceMissingTypeEnum resourceMissingType,
+			boolean ignoreNPE) throws JRException
 	{
-		decorated.init(parametersMap, fieldsMap, variablesMap, resourceMissingType);
+		decorated.init(parametersMap, fieldsMap, variablesMap, resourceMissingType, ignoreNPE);
 		
 		for (BuiltinExpressionEvaluator builtinEvaluator : builtinEvaluators.values())
 		{
@@ -67,6 +68,7 @@ public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEva
 		}
 	}
 	
+	@Override
 	public Object evaluate(JRExpression expression)
 			throws JRExpressionEvalException
 	{
@@ -79,6 +81,7 @@ public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEva
 		return decorated.evaluate(expression);
 	}
 
+	@Override
 	public Object evaluateEstimated(JRExpression expression)
 			throws JRExpressionEvalException
 	{
@@ -91,6 +94,7 @@ public class BuiltinExpressionEvaluatorDecorator implements DatasetExpressionEva
 		return decorated.evaluateEstimated(expression);
 	}
 
+	@Override
 	public Object evaluateOld(JRExpression expression)
 			throws JRExpressionEvalException
 	{

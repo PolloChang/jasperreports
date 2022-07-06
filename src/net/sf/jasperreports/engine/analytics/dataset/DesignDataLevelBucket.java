@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,11 +27,9 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
-import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DesignDataLevelBucket.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DesignDataLevelBucket extends BaseDataLevelBucket implements JRChangeEventsSupport
 {
@@ -40,6 +38,8 @@ public class DesignDataLevelBucket extends BaseDataLevelBucket implements JRChan
 	public static final String PROPERTY_COMPARATOR_EXPRESSION = "comparatorExpression";
 
 	public static final String PROPERTY_EXPRESSION = "expression";
+
+	public static final String PROPERTY_LABEL_EXPRESSION = "labelExpression";
 
 	public static final String PROPERTY_ORDER = "order";
 
@@ -88,23 +88,18 @@ public class DesignDataLevelBucket extends BaseDataLevelBucket implements JRChan
 
 	
 	/**
-	 * Sets the sorting type.
+	 * Sets the label expression.
 	 * 
-	 * @param orderValue one of
-	 * <ul>
-	 * 	<li>{@link SortOrderEnum#ASCENDING SortOrderEnum.ASCENDING}</li>
-	 * 	<li>{@link SortOrderEnum#DESCENDING SortOrderEnum.DESCENDING}</li>
-	 * </ul>
-	 * @see DataLevelBucket#getOrderValue()
-	 * 
-	 * @deprecated replaced by {@link #setOrder(BucketOrder)}
+	 * @param expression the label expression
+	 * @see DataLevelBucket#getLabelExpression()
 	 */
-	@Deprecated
-	public void setOrder(SortOrderEnum orderValue)
+	public void setLabelExpression(JRExpression expression)
 	{
-		BucketOrder order = BucketOrder.fromSortOrderEnum(orderValue);
-		setOrder(order);
+		Object old = this.labelExpression;
+		this.labelExpression = expression;
+		getEventSupport().firePropertyChange(PROPERTY_LABEL_EXPRESSION, old, this.labelExpression);
 	}
+
 	
 	/**
 	 * Sets the sorting type.
@@ -159,6 +154,7 @@ public class DesignDataLevelBucket extends BaseDataLevelBucket implements JRChan
 		}
 	}
 	
+	@Override
 	public Object clone()
 	{
 		DesignDataLevelBucket clone = (DesignDataLevelBucket) super.clone();
@@ -168,6 +164,7 @@ public class DesignDataLevelBucket extends BaseDataLevelBucket implements JRChan
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

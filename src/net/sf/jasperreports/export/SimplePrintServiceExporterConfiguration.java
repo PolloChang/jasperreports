@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import javax.print.attribute.PrintServiceAttributeSet;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimplePrintServiceExporterConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimplePrintServiceExporterConfiguration extends SimpleGraphics2DExporterConfiguration implements PrintServiceExporterConfiguration
 {
@@ -49,9 +48,7 @@ public class SimplePrintServiceExporterConfiguration extends SimpleGraphics2DExp
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public PrintRequestAttributeSet getPrintRequestAttributeSet()
 	{
 		return printRequestAttributeSet;
@@ -65,9 +62,7 @@ public class SimplePrintServiceExporterConfiguration extends SimpleGraphics2DExp
 		this.printRequestAttributeSet = printRequestAttributeSet;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public PrintServiceAttributeSet getPrintServiceAttributeSet()
 	{
 		return printServiceAttributeSet;
@@ -81,9 +76,7 @@ public class SimplePrintServiceExporterConfiguration extends SimpleGraphics2DExp
 		this.printServiceAttributeSet = printServiceAttributeSet;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isDisplayPageDialog()
 	{
 		return isDisplayPageDialog;
@@ -97,9 +90,7 @@ public class SimplePrintServiceExporterConfiguration extends SimpleGraphics2DExp
 		this.isDisplayPageDialog = isDisplayPageDialog;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isDisplayPageDialogOnlyOnce()
 	{
 		return isDisplayPageDialogOnlyOnce;
@@ -113,9 +104,7 @@ public class SimplePrintServiceExporterConfiguration extends SimpleGraphics2DExp
 		this.isDisplayPageDialogOnlyOnce = isDisplayPageDialogOnlyOnce;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isDisplayPrintDialog()
 	{
 		return isDisplayPrintDialog;
@@ -129,9 +118,7 @@ public class SimplePrintServiceExporterConfiguration extends SimpleGraphics2DExp
 		this.isDisplayPrintDialog = isDisplayPrintDialog;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isDisplayPrintDialogOnlyOnce()
 	{
 		return isDisplayPrintDialogOnlyOnce;
@@ -145,9 +132,7 @@ public class SimplePrintServiceExporterConfiguration extends SimpleGraphics2DExp
 		this.isDisplayPrintDialogOnlyOnce = isDisplayPrintDialogOnlyOnce;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public PrintService getPrintService()
 	{
 		return printService;

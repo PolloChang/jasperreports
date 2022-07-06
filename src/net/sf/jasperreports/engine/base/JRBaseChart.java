@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -69,23 +69,20 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseChart.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseChart extends JRBaseElement implements JRChart
 {
-
-
 	/**
 	 *
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	public static final String EXCEPTION_MESSAGE_KEY_CHART_TYPE_NOT_SUPPORTED = "charts.chart.type.not.supported";
 	
 	/*
 	 * Chart properties
@@ -150,6 +147,7 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 	protected JRExpression titleExpression;
 	protected JRExpression subtitleExpression;
 	protected JRExpression anchorNameExpression;
+	protected JRExpression bookmarkLevelExpression;
 	protected JRExpression hyperlinkReferenceExpression;
 	protected JRExpression hyperlinkWhenExpression;
 	protected JRExpression hyperlinkAnchorExpression;
@@ -256,6 +254,7 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 					case JRChartDataset.XY_DATASET:
 						dataset = factory.getXyDataset( (JRXyDataset)chart.getDataset() );
 						break;
+					default:
 				}
 				plot = factory.getBarPlot((JRBarPlot)chart.getPlot());
 				break;
@@ -272,7 +271,11 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 				plot = factory.getBarPlot((JRBarPlot) chart.getPlot());
 				break;
 			default:
-				throw new JRRuntimeException("Chart type not supported.");
+				throw 
+					new JRRuntimeException(
+						JRBaseChart.EXCEPTION_MESSAGE_KEY_CHART_TYPE_NOT_SUPPORTED,  
+						new Object[]{chartType} 
+						);
 		}
 
 		showLegend = chart.getShowLegend();
@@ -295,6 +298,7 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		evaluationGroup = factory.getGroup(chart.getEvaluationGroup());
 		titleExpression = factory.getExpression(chart.getTitleExpression());
 		subtitleExpression = factory.getExpression(chart.getSubtitleExpression());
+		bookmarkLevelExpression = factory.getExpression(chart.getBookmarkLevelExpression());
 		anchorNameExpression = factory.getExpression(chart.getAnchorNameExpression());
 		hyperlinkReferenceExpression = factory.getExpression(chart.getHyperlinkReferenceExpression());
 		hyperlinkWhenExpression = factory.getExpression(chart.getHyperlinkWhenExpression());
@@ -310,17 +314,13 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 	}
 		
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean getShowLegend()
 	{
 		return this.showLegend;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setShowLegend(Boolean isShowLegend)
 	{
 		Boolean old = this.showLegend;
@@ -328,49 +328,37 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_SHOW_LEGEND, old, this.showLegend);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
 		return evaluationTimeValue;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getEvaluationGroup()
 	{
 		return evaluationGroup;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getTitleFont()
 	{
 		return titleFont;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public EdgeEnum getTitlePositionValue()
 	{
 		return titlePositionValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setTitlePosition(EdgeEnum titlePositionValue)
 	{
 		EdgeEnum old = this.titlePositionValue;
@@ -378,25 +366,19 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_TITLE_POSITION, old, this.titlePositionValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getTitleColor()
 	{
-		return JRStyleResolver.getTitleColor(this);
+		return getStyleResolver().getTitleColor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnTitleColor()
 	{
 		return titleColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setTitleColor(Color titleColor)
 	{
 		Object old = this.titleColor;
@@ -404,33 +386,25 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_TITLE_COLOR, old, this.titleColor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getSubtitleFont()
 	{
 		return subtitleFont;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnSubtitleColor()
 	{
 		return subtitleColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getSubtitleColor()
 	{
-		return JRStyleResolver.getSubtitleColor(this);
+		return getStyleResolver().getSubtitleColor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setSubtitleColor(Color subtitleColor)
 	{
 		Object old = this.subtitleColor;
@@ -438,28 +412,34 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_SUBTITLE_COLOR, old, this.subtitleColor);
 	}
 
+	@Override
 	public Color getLegendBackgroundColor() {
-		return JRStyleResolver.getLegendBackgroundColor(this);
+		return getStyleResolver().getLegendBackgroundColor(this);
 	}
 
+	@Override
 	public Color getOwnLegendBackgroundColor() {
 		return legendBackgroundColor;
 	}
 
 
+	@Override
 	public Color getOwnLegendColor() {
 		return legendColor;
 	}
 
+	@Override
 	public Color getLegendColor() {
-		return JRStyleResolver.getLegendColor(this);
+		return getStyleResolver().getLegendColor(this);
 	}
 
+	@Override
 	public JRFont getLegendFont() {
 		return legendFont;
 	}
 
 
+	@Override
 	public void setLegendBackgroundColor(Color legendBackgroundColor) {
 		Object old = this.legendBackgroundColor;
 		this.legendBackgroundColor = legendBackgroundColor;
@@ -467,23 +447,20 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 	}
 
 
+	@Override
 	public void setLegendColor(Color legendColor) {
 		Object old = this.legendColor;
 		this.legendColor = legendColor;
 		getEventSupport().firePropertyChange(PROPERTY_LEGEND_COLOR, old, this.legendColor);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public EdgeEnum getLegendPositionValue()
 	{
 		return legendPositionValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setLegendPosition(EdgeEnum legendPositionValue)
 	{
 		EdgeEnum old = this.legendPositionValue;
@@ -491,118 +468,91 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_LEGEND_POSITION, old, this.legendPositionValue);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #getHyperlinkTypeValue()}.
-	 */
-	public byte getHyperlinkType()
-	{
-		return getHyperlinkTypeValue().getValue();
-	}
-		
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTypeEnum getHyperlinkTypeValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTypeValue(this);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public byte getHyperlinkTarget()
 	{
 		return JRHyperlinkHelper.getHyperlinkTarget(this);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getTitleExpression()
 	{
 		return titleExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getSubtitleExpression()
 	{
 		return subtitleExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public JRExpression getBookmarkLevelExpression()
+	{
+		return bookmarkLevelExpression;
+	}
+	
+	@Override
 	public JRExpression getAnchorNameExpression()
 	{
 		return anchorNameExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkReferenceExpression()
 	{
 		return hyperlinkReferenceExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkWhenExpression()
 	{
 		return hyperlinkWhenExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return hyperlinkAnchorExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkPageExpression()
 	{
 		return hyperlinkPageExpression;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRChartDataset getDataset()
 	{
 		return dataset;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRChartPlot getPlot()
 	{
 		return plot;
 	}
 
+	@Override
 	public byte getChartType()
 	{
 		return chartType;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getRenderType()
 	{
 		return renderType;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRenderType(String renderType)
 	{
 		String old = this.renderType;
@@ -610,17 +560,13 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_RENDER_TYPE, old, this.renderType);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getTheme()
 	{
 		return theme;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setTheme(String theme)
 	{
 		String old = this.theme;
@@ -628,75 +574,74 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_THEME, old, this.theme);
 	}
 
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitChart(this);
 	}
 
 
+	@Override
 	public int getBookmarkLevel()
 	{
 		return bookmarkLevel;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public String getCustomizerClass()
 	{
 		return customizerClass;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 
 
+	@Override
 	public String getLinkType()
 	{
 		return linkType;
 	}
 	
+	@Override
 	public String getLinkTarget()
 	{
 		return linkTarget;
 	}
 
 
+	@Override
 	public JRHyperlinkParameter[] getHyperlinkParameters()
 	{
 		return hyperlinkParameters;
 	}
 	
 	
+	@Override
 	public JRExpression getHyperlinkTooltipExpression()
 	{
 		return hyperlinkTooltipExpression;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return getForecolor();
 	}
 	
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseChart clone = (JRBaseChart)super.clone();
@@ -710,6 +655,7 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 		clone.titleExpression = JRCloneUtils.nullSafeClone(titleExpression);
 		clone.subtitleExpression = JRCloneUtils.nullSafeClone(subtitleExpression);
 		clone.anchorNameExpression = JRCloneUtils.nullSafeClone(anchorNameExpression);
+		clone.bookmarkLevelExpression = JRCloneUtils.nullSafeClone(bookmarkLevelExpression);
 		clone.hyperlinkReferenceExpression = JRCloneUtils.nullSafeClone(hyperlinkReferenceExpression);
 		clone.hyperlinkWhenExpression = JRCloneUtils.nullSafeClone(hyperlinkWhenExpression);
 		clone.hyperlinkAnchorExpression = JRCloneUtils.nullSafeClone(hyperlinkAnchorExpression);
@@ -726,66 +672,6 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 	 * These fields are only for serialization backward compatibility.
 	 */
 	private int PSEUDO_SERIAL_VERSION_UID = JRConstants.PSEUDO_SERIAL_VERSION_UID; //NOPMD
-	/**
-	 * @deprecated
-	 */
-	private Byte border;
-	/**
-	 * @deprecated
-	 */
-	private Byte topBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte leftBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte bottomBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte rightBorder;
-	/**
-	 * @deprecated
-	 */
-	private Color borderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color topBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color leftBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color bottomBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color rightBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Integer padding;
-	/**
-	 * @deprecated
-	 */
-	private Integer topPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer leftPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer bottomPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer rightPadding;
 	/**
 	 * @deprecated
 	 */
@@ -819,47 +705,10 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 	 */
 	private Byte titlePositionByte;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
-
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setToBox(
-				border,
-				topBorder,
-				leftBorder,
-				bottomBorder,
-				rightBorder,
-				borderColor,
-				topBorderColor,
-				leftBorderColor,
-				bottomBorderColor,
-				rightBorderColor,
-				padding,
-				topPadding,
-				leftPadding,
-				bottomPadding,
-				rightPadding,
-				lineBox
-				);
-			border = null;
-			topBorder = null;
-			leftBorder = null;
-			bottomBorder = null;
-			rightBorder = null;
-			borderColor = null;
-			topBorderColor = null;
-			leftBorderColor = null;
-			bottomBorderColor = null;
-			rightBorderColor = null;
-			padding = null;
-			topPadding = null;
-			leftPadding = null;
-			bottomPadding = null;
-			rightPadding = null;
-		}
 
 		if (linkType == null)
 		{
@@ -879,7 +728,7 @@ public class JRBaseChart extends JRBaseElement implements JRChart
 			{
 				legendPositionValue = EdgeEnum.getByValue(legendPosition);
 				titlePositionValue = EdgeEnum.getByValue(titlePosition);
-				showLegend = Boolean.valueOf(isShowLegend);
+				showLegend = isShowLegend;
 			}
 			else
 			{

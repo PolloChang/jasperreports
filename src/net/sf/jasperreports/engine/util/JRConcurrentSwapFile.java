@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,10 +36,10 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * swap file.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRConcurrentSwapFile.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRConcurrentSwapFile extends JRSwapFile
 {
+	public static final String EXCEPTION_MESSAGE_KEY_INSUFFICIENT_DATA = "util.concurrent.swap.file.insufficient.data";
 	
 	private final FileChannel fileChannel;
 
@@ -65,11 +65,13 @@ public class JRConcurrentSwapFile extends JRSwapFile
 		return "JRConcurrentSwapFile " + swapFile.getAbsolutePath();
 	}
 
+	@Override
 	protected void write(byte[] data, int dataSize, int dataOffset, long fileOffset) throws IOException
 	{
 		fileChannel.write(ByteBuffer.wrap(data, dataOffset, dataSize), fileOffset);
 	}
 
+	@Override
 	protected void read(byte[] data, int dataOffset, int dataLength, long fileOffset) throws IOException
 	{
 		ByteBuffer buffer = ByteBuffer.wrap(data, dataOffset, dataLength);
@@ -79,7 +81,10 @@ public class JRConcurrentSwapFile extends JRSwapFile
 			read = fileChannel.read(buffer, fileOffset + totalRead);
 			if (read < 0)
 			{
-				throw new JRRuntimeException("Unable to read sufficient data from the swap file");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_INSUFFICIENT_DATA,
+						(Object[])null);
 			}
 			totalRead += read;
 		}

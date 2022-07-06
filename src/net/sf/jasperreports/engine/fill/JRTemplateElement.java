@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,8 +39,8 @@ import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.engine.util.ObjectUtils;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 
 /**
@@ -48,7 +48,6 @@ import net.sf.jasperreports.engine.util.ObjectUtils;
  * print elements.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRTemplateElement implements JRCommonElement, Serializable, JRPropertiesHolder, Deduplicable
 {
@@ -88,16 +87,6 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 		id = createId();
 	}
 
-	/**
-	 *
-	 */
-	protected JRTemplateElement(JROrigin origin, JRElement element)
-	{
-		this.origin = origin;
-		setElement(element);
-		id = createId();
-	}
-
 	protected JRTemplateElement(String id)
 	{
 		this.id = id;
@@ -134,9 +123,7 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 		return origin;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return defaultStyleProvider;
@@ -145,6 +132,16 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	/**
 	 *
 	 */
+	protected StyleResolver getStyleResolver() 
+	{
+		if (getDefaultStyleProvider() != null)
+		{
+			return getDefaultStyleProvider().getStyleResolver();
+		}
+		return StyleResolver.getInstance();
+	}
+
+	@Override
 	public JRStyle getStyle()
 	{
 		return parentStyle;
@@ -166,89 +163,67 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 		return null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getWidth()
 	{
 		throw new UnsupportedOperationException();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public int getHeight()
 	{
 		throw new UnsupportedOperationException();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.OPAQUE);
+		return getStyleResolver().getMode(this, ModeEnum.OPAQUE);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getOwnModeValue()
 	{
 		return modeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMode(ModeEnum modeValue)
 	{
 		this.modeValue = modeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getForecolor()
 	{
-		return JRStyleResolver.getForecolor(this);
+		return getStyleResolver().getForecolor(this);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnForecolor()
 	{
 		return this.forecolor;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setForecolor(Color forecolor)
 	{
 		this.forecolor = forecolor;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getBackcolor()
 	{
-		return JRStyleResolver.getBackcolor(this);
+		return getStyleResolver().getBackcolor(this);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnBackcolor()
 	{
 		return this.backcolor;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setBackcolor(Color backcolor)
 	{
 		this.backcolor = backcolor;
@@ -263,6 +238,7 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	}
 
 	
+	@Override
 	public String getKey()
 	{
 		return key;
@@ -278,18 +254,21 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	/**
 	 * Returns null as external style references are not allowed for print objects.
 	 */
+	@Override
 	public String getStyleNameReference()
 	{
 		return null;
 	}
 
 	
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
 	// we don't need any locking as properties are only set at creation time
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		if (propertiesMap == null)
@@ -299,6 +278,7 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
@@ -323,6 +303,7 @@ public abstract class JRTemplateElement implements JRCommonElement, Serializable
 	 */
 	private Byte mode;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

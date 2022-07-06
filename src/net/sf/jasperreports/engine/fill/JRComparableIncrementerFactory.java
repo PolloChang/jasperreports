@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import net.sf.jasperreports.engine.type.CalculationEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRComparableIncrementerFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRComparableIncrementerFactory extends JRAbstractExtendedIncrementerFactory
 {
@@ -57,9 +56,7 @@ public final class JRComparableIncrementerFactory extends JRAbstractExtendedIncr
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExtendedIncrementer getExtendedIncrementer(CalculationEnum calculation)
 	{
 		JRExtendedIncrementer incrementer = null;
@@ -122,9 +119,7 @@ final class JRComparableLowestIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public Object increment(
 		JRCalculable variable, 
@@ -147,6 +142,7 @@ final class JRComparableLowestIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return null;
@@ -179,9 +175,7 @@ final class JRComparableHighestIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public Object increment(
 		JRCalculable variable, 
@@ -204,6 +198,7 @@ final class JRComparableHighestIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return null;

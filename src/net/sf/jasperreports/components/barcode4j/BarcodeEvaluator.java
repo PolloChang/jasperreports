@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import org.krysalis.barcode4j.impl.code128.EAN128Bean;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeEvaluator extends AbstractBarcodeEvaluator
 {
@@ -57,11 +56,16 @@ public class BarcodeEvaluator extends AbstractBarcodeEvaluator
 	protected void evaluateBaseBarcode(BarcodeComponent barcodeComponent)
 	{
 		message = JRStringUtil.getString(evaluateExpression(barcodeComponent.getCodeExpression()));
+	}
+	
+	protected void evaluateBaseBarcode(Barcode4jComponent barcodeComponent)
+	{
+		evaluateBaseBarcode((BarcodeComponent)barcodeComponent);
 		
 		String pattern = JRStringUtil.getString(evaluateExpression(barcodeComponent.getPatternExpression()));
 		if (pattern != null) 
 		{
-			barcode.setPattern(pattern);
+			barcodeBean.setPattern(pattern);
 		}
 	}
 	
@@ -77,81 +81,101 @@ public class BarcodeEvaluator extends AbstractBarcodeEvaluator
 		}
 	}
 
+	@Override
 	protected void evaluateCodabar(CodabarComponent codabar)
 	{
 		evaluateBaseBarcode(codabar);
 	}
 
+	@Override
 	protected void evaluateCode128(Code128Component code128)
 	{
 		evaluateBaseBarcode(code128);
 	}
 
+	@Override
 	protected void evaluateDataMatrix(DataMatrixComponent dataMatrix)
 	{
 		evaluateBaseBarcode(dataMatrix);
 	}
 
+	@Override
 	protected void evaluateEANCode128(EAN128Component ean128)
 	{
 		evaluateBaseBarcode(ean128);
 		String template = JRStringUtil.getString(evaluateExpression(ean128.getTemplateExpression()));
 		if (template != null) 
 		{
-			((EAN128Bean)barcode).setTemplate(template);
+			((EAN128Bean)barcodeBean).setTemplate(template);
 		}
 	}
 
+	@Override
 	protected void evaluateCode39(Code39Component code39)
 	{
 		evaluateBaseBarcode(code39);
 	}
 
+	@Override
 	protected void evaluateUPCA(UPCAComponent upcA)
 	{
 		evaluateBaseBarcode(upcA);
 	}
 
+	@Override
 	protected void evaluateUPCE(UPCEComponent upcE)
 	{
 		evaluateBaseBarcode(upcE);
 	}
 
+	@Override
 	protected void evaluateEAN13(EAN13Component ean13)
 	{
 		evaluateBaseBarcode(ean13);
 	}
 
+	@Override
 	protected void evaluateEAN8(EAN8Component ean8)
 	{
 		evaluateBaseBarcode(ean8);
 	}
 
+	@Override
 	protected void evaluateInterleaved2Of5(Interleaved2Of5Component interleaved2Of5)
 	{
 		evaluateBaseBarcode(interleaved2Of5);
 	}
 
+	@Override
 	protected void evaluateRoyalMailCustomer(
 			RoyalMailCustomerComponent royalMailCustomer)
 	{
 		evaluateBaseBarcode(royalMailCustomer);
 	}
 
+	@Override
 	protected void evaluateUSPSIntelligentMail(
 			USPSIntelligentMailComponent intelligentMail)
 	{
 		evaluateBaseBarcode(intelligentMail);
 	}
 
+	@Override
 	protected void evaluatePOSTNET(POSTNETComponent intelligentMail)
 	{
 		evaluateBaseBarcode(intelligentMail);
 	}
 
+	@Override
 	protected void evaluatePDF417(PDF417Component pdf417)
 	{
 		evaluateBaseBarcode(pdf417);
+	}
+	
+	@Override
+	protected void evaluateQRCode(QRCodeComponent qrCode)
+	{
+		evaluateBaseBarcode(qrCode);
 	}
 
 }

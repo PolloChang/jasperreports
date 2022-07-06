@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.fill.JRFillHyperlinkHelper;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRFillTimePeriodSeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillTimePeriodSeries implements JRTimePeriodSeries {
 
@@ -61,22 +60,27 @@ public class JRFillTimePeriodSeries implements JRTimePeriodSeries {
 	}
 	
 	
+	@Override
 	public JRExpression getSeriesExpression(){
 		return parent.getSeriesExpression(); 
 	}
 	
+	@Override
 	public JRExpression getStartDateExpression(){
 		return parent.getStartDateExpression();
 	}
 	
+	@Override
 	public JRExpression getEndDateExpression(){
 		return parent.getEndDateExpression();
 	}
 	
+	@Override
 	public JRExpression getValueExpression(){
 		return parent.getValueExpression();
 	}
 	
+	@Override
 	public JRExpression getLabelExpression(){
 		return parent.getLabelExpression();
 	}
@@ -132,6 +136,7 @@ public class JRFillTimePeriodSeries implements JRTimePeriodSeries {
 	}
 
 
+	@Override
 	public JRHyperlink getItemHyperlink()
 	{
 		return parent.getItemHyperlink();
@@ -150,9 +155,7 @@ public class JRFillTimePeriodSeries implements JRTimePeriodSeries {
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

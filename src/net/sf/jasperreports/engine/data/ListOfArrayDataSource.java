@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,19 +36,18 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ListOfArrayDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ListOfArrayDataSource implements JRRewindableDataSource
 {
-
+	public static final String EXCEPTION_MESSAGE_KEY_FIELD_NOT_FOUND = "data.array.list.field.not.found";
 
 	/**
 	 *
 	 */
-	private List<Object[]> records = new ArrayList<Object[]>();
+	private List<Object[]> records = new ArrayList<>();
 	private ListIterator<Object[]> iterator;
 	protected Object[] currentRecord;
-	private Map<String, Integer> columnNamesMap = new HashMap<String, Integer>();
+	private Map<String, Integer> columnNamesMap = new HashMap<>();
 
 
 	/**
@@ -60,9 +59,9 @@ public class ListOfArrayDataSource implements JRRewindableDataSource
 		
 		if (columnNames != null)
 		{
-			for(int i = 0; i < columnNames.length; i++)
+			for (int i = 0; i < columnNames.length; i++)
 			{
-				columnNamesMap.put(columnNames[i], Integer.valueOf(i));
+				columnNamesMap.put(columnNames[i], i);
 			}
 		}
 
@@ -70,9 +69,7 @@ public class ListOfArrayDataSource implements JRRewindableDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean next()
 	{
 		boolean hasNext = false;
@@ -91,25 +88,24 @@ public class ListOfArrayDataSource implements JRRewindableDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(JRField jrField)
 	{
 		Integer fieldIndex = columnNamesMap.get(jrField.getName());
 
 		if (fieldIndex == null)
 		{
-			throw new JRRuntimeException("Field \"" + jrField.getName() + "\" not found in data source.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_FIELD_NOT_FOUND,
+					new Object[]{jrField.getName()});
 		}
 
-		return currentRecord[fieldIndex.intValue()];
+		return currentRecord[fieldIndex];
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void moveFirst()
 	{
 		iterator = records.listIterator();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,39 +23,35 @@
  */
 package net.sf.jasperreports.engine.type;
 
-import net.sf.jasperreports.engine.JRConstants;
-
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: RotationEnum.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public enum RotationEnum implements JREnum
 {
 	/**
-	 * Constant useful for displaying the text without rotating it
+	 * Constant useful for displaying the text or image without rotating it.
 	 */
 	NONE((byte)0, "None"),
 
 	/**
-	 * Constant useful for rotating the text 90 degrees counter clockwise.
+	 * Constant useful for rotating the text or image 90 degrees counter clockwise.
 	 */
 	LEFT((byte)1, "Left"),
 	
 	/**
-	 * Constant useful for rotating the text 90 degrees clockwise.
+	 * Constant useful for rotating the text or image 90 degrees clockwise.
 	 */
 	RIGHT((byte)2, "Right"),
 	
 	/**
-	 * Constant useful for rotating the text 180 degrees.
+	 * Constant useful for rotating the text or image 180 degrees.
 	 */
 	UPSIDE_DOWN((byte)3, "UpsideDown");
 	
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient byte value;
 	private final transient String name;
 
@@ -66,24 +62,24 @@ public enum RotationEnum implements JREnum
 	}
 
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
 	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
 	{
 		return value;
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
+	public final byte getValue()
+	{
+		return value;
+	}
+	
+	@Override
 	public String getName()
 	{
 		return name;
@@ -94,11 +90,11 @@ public enum RotationEnum implements JREnum
 	 */
 	public static RotationEnum getByName(String name)
 	{
-		return (RotationEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static RotationEnum getByValue(Byte value)
 	{
@@ -106,11 +102,10 @@ public enum RotationEnum implements JREnum
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static RotationEnum getByValue(byte value)
 	{
-		return getByValue(new Byte(value));
+		return getByValue((Byte)value);
 	}
-
 }

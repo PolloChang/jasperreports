@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,10 +38,11 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: MessageUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class MessageUtil
 {
+	public static final String EXCEPTION_MESSAGE_KEY_MESSAGE_PROVIDER_NOT_FOUND = "util.message.provider.not.found";
+	
 	private final JasperReportsContext jasperReportsContext;
 	
 	/**
@@ -76,7 +77,10 @@ public final class MessageUtil
 				return provider;
 			}
 		}
-		throw new JRRuntimeException("Message provider '" + name + "' not found.");
+		throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_MESSAGE_PROVIDER_NOT_FOUND,
+				new Object[]{name});
 	}
 	
 	/**

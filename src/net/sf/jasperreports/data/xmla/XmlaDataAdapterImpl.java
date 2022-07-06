@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,15 @@
  */
 package net.sf.jasperreports.data.xmla;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
+
 import net.sf.jasperreports.data.AbstractDataAdapter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XmlaDataAdapterImpl.java 7199 2014-08-27 13:58:10Z teodord $
  */
+
+@JsonRootName(value = "xmlaDataAdapter")
 public class XmlaDataAdapterImpl extends AbstractDataAdapter implements
 		XmlaDataAdapter {
 	private String xmlaUrl;
@@ -40,58 +43,72 @@ public class XmlaDataAdapterImpl extends AbstractDataAdapter implements
 	private String password = null;
 	private boolean savePassword;
 
+	@Override
 	public String getXmlaUrl() {
 		return xmlaUrl;
 	}
 
+	@Override
 	public void setXmlaUrl(String xmlaUrl) {
 		this.xmlaUrl = xmlaUrl;
 	}
 
+	@Override
 	public String getDatasource() {
 		return datasource;
 	}
 
+	@Override
 	public void setDatasource(String datasource) {
 		this.datasource = datasource;
 	}
 
+	@Override
 	public String getCatalog() {
 		return catalog;
 	}
 
+	@Override
 	public void setCatalog(String catalog) {
 		this.catalog = catalog;
 	}
 
+	@Override
 	public String getCube() {
 		return cube;
 	}
 
+	@Override
 	public void setCube(String cube) {
 		this.cube = cube;
 	}
 
+	@Override
 	public String getPassword() {
 		return password;
 	}
 
+	@Override
 	public void setPassword(String password) {
 		this.password = password;
 	}
 
+	@Override
 	public boolean isSavePassword() {
 		return savePassword;
 	}
 
+	@Override
 	public void setSavePassword(boolean savePassword) {
 		this.savePassword = savePassword;
 	}
 
+	@Override
 	public String getUsername() {
 		return username;
 	}
 
+	@Override
 	public void setUsername(String username) {
 		this.username = username;
 	}

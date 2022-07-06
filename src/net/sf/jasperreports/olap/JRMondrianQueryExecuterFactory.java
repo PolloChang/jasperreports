@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.query.JRQueryExecuter;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMondrianQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRMondrianQueryExecuterFactory extends AbstractQueryExecuterFactory
 {
@@ -48,11 +47,13 @@ public class JRMondrianQueryExecuterFactory extends AbstractQueryExecuterFactory
 		PARAMETER_MONDRIAN_CONNECTION,  "mondrian.olap.Connection",
 		};
 	
+	@Override
 	public Object[] getBuiltinParameters()
 	{
 		return MONDRIAN_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
@@ -62,6 +63,7 @@ public class JRMondrianQueryExecuterFactory extends AbstractQueryExecuterFactory
 		return new JRMondrianQueryExecuter(jasperReportsContext, dataset, parameters);
 	}
 
+	@Override
 	public boolean supportsQueryParameterType(String className)
 	{
 		return true;

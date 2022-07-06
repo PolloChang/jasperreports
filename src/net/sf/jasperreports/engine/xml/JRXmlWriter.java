@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,18 +24,23 @@
 package net.sf.jasperreports.engine.xml;
 
 import java.awt.Color;
+import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.regex.Pattern;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.charts.JRAreaPlot;
 import net.sf.jasperreports.charts.JRBar3DPlot;
 import net.sf.jasperreports.charts.JRBarPlot;
@@ -101,7 +106,9 @@ import net.sf.jasperreports.crosstabs.xml.JRCrosstabGroupFactory;
 import net.sf.jasperreports.crosstabs.xml.JRCrosstabMeasureFactory;
 import net.sf.jasperreports.crosstabs.xml.JRCrosstabParameterFactory;
 import net.sf.jasperreports.crosstabs.xml.JRCrosstabRowGroupFactory;
+import net.sf.jasperreports.engine.DatasetPropertyExpression;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.ExpressionReturnValue;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRBreak;
@@ -134,9 +141,11 @@ import net.sf.jasperreports.engine.JRHyperlinkParameter;
 import net.sf.jasperreports.engine.JRImage;
 import net.sf.jasperreports.engine.JRLine;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPart;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.JRPropertyExpression;
 import net.sf.jasperreports.engine.JRQuery;
 import net.sf.jasperreports.engine.JRRectangle;
@@ -156,6 +165,7 @@ import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.VariableReturnValue;
 import net.sf.jasperreports.engine.analytics.dataset.BucketOrder;
 import net.sf.jasperreports.engine.analytics.dataset.DataAxis;
 import net.sf.jasperreports.engine.analytics.dataset.DataAxisLevel;
@@ -166,10 +176,15 @@ import net.sf.jasperreports.engine.analytics.dataset.MultiAxisData;
 import net.sf.jasperreports.engine.component.ComponentKey;
 import net.sf.jasperreports.engine.component.ComponentXmlWriter;
 import net.sf.jasperreports.engine.component.ComponentsEnvironment;
+import net.sf.jasperreports.engine.part.PartComponentXmlWriter;
+import net.sf.jasperreports.engine.part.PartComponentsEnvironment;
+import net.sf.jasperreports.engine.part.PartEvaluationTime;
 import net.sf.jasperreports.engine.query.JRJdbcQueryExecuterFactory;
 import net.sf.jasperreports.engine.type.BreakTypeEnum;
 import net.sf.jasperreports.engine.type.CalculationEnum;
+import net.sf.jasperreports.engine.type.DatasetResetTypeEnum;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
+import net.sf.jasperreports.engine.type.ExpressionTypeEnum;
 import net.sf.jasperreports.engine.type.FooterPositionEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
@@ -181,14 +196,19 @@ import net.sf.jasperreports.engine.type.PositionTypeEnum;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.type.SectionTypeEnum;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 import net.sf.jasperreports.engine.type.SortOrderEnum;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
 import net.sf.jasperreports.engine.type.StretchTypeEnum;
-import net.sf.jasperreports.engine.type.WhenNoDataTypeEnum;
+import net.sf.jasperreports.engine.type.TextAdjustEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
+import net.sf.jasperreports.engine.util.JRExpressionUtil;
+import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
 import net.sf.jasperreports.engine.util.XmlNamespace;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -203,27 +223,47 @@ import net.sf.jasperreports.engine.util.XmlNamespace;
  * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
  * @author Minor enhancements by Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlWriter extends JRXmlBaseWriter
 {
 
 	public static final XmlNamespace JASPERREPORTS_NAMESPACE = 
 		new XmlNamespace(JRXmlConstants.JASPERREPORTS_NAMESPACE, null, JRXmlConstants.JASPERREPORT_XSD_SYSTEM_ID);
+	public static final String EXCEPTION_MESSAGE_KEY_FILE_WRITE_ERROR = "xml.writer.file.write.error";
+	public static final String EXCEPTION_MESSAGE_KEY_OUTPUT_STREAM_WRITE_ERROR = "xml.writer.output.stream.write.error";
+	public static final String EXCEPTION_MESSAGE_KEY_REPORT_DESIGN_WRITE_ERROR = "xml.writer.report.design.write.error";
+	public static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_CHART_TYPE = "xml.writer.unsupported.chart.type";
+	
+	@Property(
+			name = "net.sf.jasperreports.jrxml.writer.exclude.properties.{suffix}",
+			category = PropertyConstants.CATEGORY_OTHER,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_1_1
+			)
+	public static final String PREFIX_EXCLUDE_PROPERTIES = 
+			JRPropertiesUtil.PROPERTY_PREFIX + "jrxml.writer.exclude.properties.";
+
+	@Property(
+			name = "net.sf.jasperreports.jrxml.writer.exclude.uuids",
+			category = PropertyConstants.CATEGORY_OTHER,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_5_1
+			)
+	public static final String PROPERTY_EXCLUDE_UUIDS = 
+			JRPropertiesUtil.PROPERTY_PREFIX + "jrxml.writer.exclude.uuids";
 
 	/**
 	 *
 	 */
 	private JasperReportsContext jasperReportsContext;
+	
+	private List<Pattern> excludePropertiesPattern;
+	private boolean excludeUuids;
 
 	/**
 	 *
 	 */
 	private JRReport report;
-	/**
-	 * @deprecated To be removed.
-	 */
-	private String encoding;
 
 	private XmlWriterVisitor xmlWriterVisitor = new XmlWriterVisitor(this);
 
@@ -234,16 +274,27 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	public JRXmlWriter(JasperReportsContext jasperReportsContext)
 	{
 		this.jasperReportsContext = jasperReportsContext;
+		
+		initExcludeProperties();
 	}
 
 
-	/**
-	 * @deprecated To be removed.
-	 */
-	protected JRXmlWriter(JRReport report, String encoding)
+	private void initExcludeProperties()
 	{
-		this.report = report;
-		this.encoding = encoding;
+		JasperReportsContext context = jasperReportsContext == null 
+				? DefaultJasperReportsContext.getInstance() : jasperReportsContext;
+		List<PropertySuffix> excludeProperties = JRPropertiesUtil.getInstance(context).getProperties(
+				PREFIX_EXCLUDE_PROPERTIES);
+		
+		excludePropertiesPattern = new ArrayList<>(excludeProperties.size());
+		for (PropertySuffix propertySuffix : excludeProperties)
+		{
+			String regex = propertySuffix.getValue();
+			Pattern pattern = Pattern.compile(regex);
+			excludePropertiesPattern.add(pattern);
+		}
+
+		excludeUuids = JRPropertiesUtil.getInstance(context).getBooleanProperty(PROPERTY_EXCLUDE_UUIDS);
 	}
 
 
@@ -253,6 +304,24 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	public JRReport getReport()
 	{
 		return report;
+	}
+
+
+	/**
+	 *
+	 */
+	public boolean isExcludeUuids()
+	{
+		return excludeUuids;
+	}
+
+
+	/**
+	 *
+	 */
+	public void setExcludeUuids(boolean excludeUuids)
+	{
+		this.excludeUuids = excludeUuids;
 	}
 
 
@@ -269,7 +338,11 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		catch (IOException e)
 		{
 			// doesn't actually happen
-			throw new JRRuntimeException("Error writing report design.", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_REPORT_DESIGN_WRITE_ERROR,
+					(Object[])null,
+					e);
 		}
 		return buffer.toString();
 	}
@@ -284,30 +357,25 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		String encoding
 		) throws JRException
 	{
-		FileOutputStream fos = null;
-
-		try
+		try (
+			Writer out = 
+				new OutputStreamWriter(
+					new BufferedOutputStream(
+						new FileOutputStream(destFileName)
+						), 
+					encoding
+					)
+			)
 		{
-			fos = new FileOutputStream(destFileName);
-			Writer out = new OutputStreamWriter(fos, encoding);
 			writeReport(report, encoding, out);
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Error writing to file : " + destFileName, e);
-		}
-		finally
-		{
-			if (fos != null)
-			{
-				try
-				{
-					fos.close();
-				}
-				catch(IOException e)
-				{
-				}
-			}
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_FILE_WRITE_ERROR,
+					new Object[]{destFileName},
+					e);
 		}
 	}
 
@@ -328,7 +396,11 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		}
 		catch (Exception e)
 		{
-			throw new JRException("Error writing to OutputStream : " + report.getName(), e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_OUTPUT_STREAM_WRITE_ERROR,
+					new Object[]{report.getName()},
+					e);
 		}
 	}
 
@@ -392,7 +464,8 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_pageWidth, report.getPageWidth());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_pageHeight, report.getPageHeight());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_orientation, report.getOrientationValue(), OrientationEnum.PORTRAIT);
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_whenNoDataType, report.getWhenNoDataTypeValue(), WhenNoDataTypeEnum.NO_PAGES);
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_whenNoDataType, report.getWhenNoDataTypeValue());
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_sectionType, report.getSectionType(), SectionTypeEnum.BAND);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_columnWidth, report.getColumnWidth());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_columnSpacing, report.getColumnSpacing(), 0);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_leftMargin, report.getLeftMargin());
@@ -411,12 +484,20 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_resourceBundle, report.getResourceBundle());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_whenResourceMissingType, report.getWhenResourceMissingTypeValue(), WhenResourceMissingTypeEnum.NULL);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isIgnorePagination, report.isIgnorePagination(), false);
-		if(isNewerVersionOrEqual(JRConstants.VERSION_4_6_0))
+		if (
+			isNewerVersionOrEqual(JRConstants.VERSION_4_6_0)
+			&& !isExcludeUuids()
+			)
 		{
 			writer.addAttribute(JRXmlConstants.ATTRIBUTE_uuid, report.getUUID().toString());
 		}
 
 		writeProperties(report);
+
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_3_1))
+		{
+			writePropertyExpressions(report.getPropertyExpressions());
+		}
 
 		/*   */
 		String[] imports = report.getImports();
@@ -534,15 +615,6 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	}
 
 
-	/**
-	 * @deprecated Replaced by {@link #writeReport(JRReport, String, Writer)}.
-	 */
-	protected void writeReport(Writer out) throws IOException
-	{
-		writeReport(report, encoding, out);
-	}
-
-
 	public void writeProperties(JRPropertiesHolder propertiesHolder) throws IOException
 	{
 		if (propertiesHolder.hasProperties())
@@ -553,17 +625,49 @@ public class JRXmlWriter extends JRXmlBaseWriter
 			{
 				for(int i = 0; i < propertyNames.length; i++)
 				{
-					writer.startElement(JRXmlConstants.ELEMENT_property, getNamespace());
-					writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, propertyNames[i]);
-					String value = propertiesMap.getProperty(propertyNames[i]);
-					if (value != null)
+					String propertyName = propertyNames[i];
+					if (isPropertyToWrite(propertiesHolder, propertyName))
 					{
-						writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_value, value);
+						writer.startElement(JRXmlConstants.ELEMENT_property, getNamespace());
+						writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, propertyName);
+						String value = propertiesMap.getProperty(propertyName);
+						if (value != null)
+						{
+							String encodedValue = JRStringUtil.encodeXmlAttribute(value);
+							if (
+								isNewerVersionOrEqual(JRConstants.VERSION_6_4_0)
+								&& encodedValue.length() != value.length()
+								&& value.trim().equals(value)
+								)
+							{
+								writer.writeCDATA(value);
+							}
+							else
+							{
+								writer.addAttribute(JRXmlConstants.ATTRIBUTE_value, encodedValue);
+							}
+						}
+						writer.closeElement();
 					}
-					writer.closeElement();
 				}
 			}
 		}
+	}
+	
+	protected boolean isPropertyToWrite(JRPropertiesHolder propertiesHolder, String propertyName)
+	{
+		// currently the properties holder does not matter, we just look at the property name
+		boolean toWrite = true;
+		for (Pattern pattern : excludePropertiesPattern)
+		{
+			if (pattern.matcher(propertyName).matches())
+			{
+				// excluding
+				toWrite = false;
+				break;
+			}
+		}
+		return toWrite;
 	}
 
 
@@ -578,15 +682,6 @@ public class JRXmlWriter extends JRXmlBaseWriter
 				writeTemplate(template);
 			}
 		}
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link #writeTemplates(JRReport)}.
-	 */
-	protected void writeTemplates() throws IOException
-	{
-		writeTemplates(report);
 	}
 
 
@@ -632,12 +727,16 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_parameter);
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, parameter.getName());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_class, parameter.getValueClassName());
+		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_class, parameter.getValueClassName());
 		if(isNewerVersionOrEqual(JRConstants.VERSION_3_1_4))
 		{
 			writer.addAttribute(JRXmlConstants.ATTRIBUTE_nestedType, parameter.getNestedTypeName());
 		}
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isForPrompting, parameter.isForPrompting(), true);
+		if(isNewerVersionOrEqual(JRConstants.VERSION_6_3_1))
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_evaluationTime, parameter.getEvaluationTime());
+		}
 
 		writeProperties(parameter);
 
@@ -667,9 +766,13 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_field);
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, field.getName());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_class, field.getValueClassName());
+		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_class, field.getValueClassName());
 
 		writeProperties(field);
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_3_1))
+		{
+			writePropertyExpressions(field.getPropertyExpressions());
+		}
 
 		writer.writeCDATAElement(JRXmlConstants.ELEMENT_fieldDescription, field.getDescription());
 
@@ -700,7 +803,7 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_variable);
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, variable.getName());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_class, variable.getValueClassName());
+		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_class, variable.getValueClassName());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_resetType, variable.getResetTypeValue(), ResetTypeEnum.REPORT);
 		if (variable.getResetGroup() != null)
 		{
@@ -713,6 +816,8 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		}
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_calculation, variable.getCalculationValue(), CalculationEnum.NOTHING);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_incrementerFactoryClass, variable.getIncrementerFactoryClassName());
+
+		writer.writeCDATAElement(JRXmlConstants.ELEMENT_variableDescription, variable.getDescription());
 
 		writeExpression(JRXmlConstants.ELEMENT_variableExpression, variable.getExpression(), false);
 		writeExpression(JRXmlConstants.ELEMENT_initialValueExpression, variable.getInitialValueExpression(), false);
@@ -732,11 +837,23 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isStartNewPage, group.isStartNewPage(), false);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isResetPageNumber, group.isResetPageNumber(), false);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isReprintHeaderOnEachPage, group.isReprintHeaderOnEachPage(), false);
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_5_1))
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_isReprintHeaderOnEachColumn, group.isReprintHeaderOnEachColumn(), false);
+		}
 		writer.addAttributePositive(JRXmlConstants.ATTRIBUTE_minHeightToStartNewPage, group.getMinHeightToStartNewPage());
-		if(isNewerVersionOrEqual(JRConstants.VERSION_3_6_2))
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_4_3))
+		{
+			writer.addAttributePositive(JRXmlConstants.ATTRIBUTE_minDetailsToStartFromTop, group.getMinDetailsToStartFromTop());
+		}
+		if (isNewerVersionOrEqual(JRConstants.VERSION_3_6_2))
 		{
 			writer.addAttribute(JRXmlConstants.ATTRIBUTE_footerPosition, group.getFooterPositionValue(), FooterPositionEnum.NORMAL);
 			writer.addAttribute(JRXmlConstants.ATTRIBUTE_keepTogether, group.isKeepTogether(), false);
+		}
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_4_3))
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_preventOrphanFooter, group.isPreventOrphanFooter(), false);
 		}
 
 		writeExpression(JRXmlConstants.ELEMENT_groupExpression, group.getExpression(), false);
@@ -783,6 +900,18 @@ public class JRXmlWriter extends JRXmlBaseWriter
 					writeBand(bands[0]);
 				}
 			}
+
+			if (isNewerVersionOrEqual(JRConstants.VERSION_6_0_0))
+			{
+				JRPart[] parts = section.getParts();
+				if (parts != null && parts.length > 0)
+				{
+					for(int i = 0; i < parts.length; i++)
+					{
+						writePart(parts[i]);
+					}
+				}
+			}
 		}
 	}
 
@@ -811,7 +940,53 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		
 		writeChildElements(band);
 
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_1_1))
+		{
+			List<ExpressionReturnValue> returnValues = band.getReturnValues();
+			if (returnValues != null && !returnValues.isEmpty())
+			{
+				for (ExpressionReturnValue returnValue : returnValues)
+				{
+					writeReturnValue(returnValue);
+				}
+			}
+		}
+		
 		writer.closeElement();
+	}
+
+
+	/**
+	 *
+	 */
+	private void writePart(JRPart part) throws IOException
+	{
+		ComponentKey componentKey = part.getComponentKey();
+		PartComponentXmlWriter componentXmlWriter = 
+			PartComponentsEnvironment.getInstance(jasperReportsContext).getManager(componentKey).getComponentXmlWriter(jasperReportsContext);
+		
+		if (componentXmlWriter.isToWrite(part, this))
+		{
+			writer.startElement(JRXmlConstants.ELEMENT_part, getNamespace());
+			PartEvaluationTime evaluationTime = part.getEvaluationTime();
+			if (evaluationTime != null)
+			{
+				writer.addAttribute(JRXmlConstants.ATTRIBUTE_evaluationTime, evaluationTime.getEvaluationTimeType());
+				writer.addAttribute(JRXmlConstants.ATTRIBUTE_evaluationGroup, evaluationTime.getEvaluationGroup());
+			}
+			if (!isExcludeUuids())
+			{
+				writer.addAttribute(JRXmlConstants.ATTRIBUTE_uuid, part.getUUID().toString());
+			}
+
+			writeProperties(part);
+			writeExpression(JRXmlConstants.ELEMENT_printWhenExpression, part.getPrintWhenExpression(), false);
+			writeExpression(JRXmlConstants.ELEMENT_partNameExpression, part.getPartNameExpression(), false);
+			
+			componentXmlWriter.writeToXml(part, this);
+
+			writer.closeElement();
+		}
 	}
 
 	
@@ -884,7 +1059,7 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_key, element.getKey());
 		writeStyleReferenceAttr(element);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_positionType, element.getPositionTypeValue(), PositionTypeEnum.FIX_RELATIVE_TO_TOP);
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_stretchType, element.getStretchTypeValue(), StretchTypeEnum.NO_STRETCH);
+		writeStretchType(element.getStretchTypeValue());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isPrintRepeatedValues, element.isPrintRepeatedValues(), true);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_mode, element.getOwnModeValue());
 
@@ -904,7 +1079,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_forecolor, element.getOwnForecolor());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_backcolor, element.getOwnBackcolor());
 		
-		if(isNewerVersionOrEqual(JRConstants.VERSION_4_6_0))
+		if (
+			isNewerVersionOrEqual(JRConstants.VERSION_4_6_0)
+			&& !isExcludeUuids()
+			)
 		{
 			writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, element.getUUID().toString());
 		}
@@ -916,8 +1094,45 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	}
 
 
-	public void writePropertyExpressions(
-			JRPropertyExpression[] propertyExpressions) throws IOException
+	@SuppressWarnings("deprecation")
+	private void writeStretchType(StretchTypeEnum stretchType)
+	{
+		if (isOlderVersionThan(JRConstants.VERSION_6_2_2))
+		{
+			switch (stretchType)
+			{
+				case CONTAINER_HEIGHT :
+				case CONTAINER_BOTTOM :
+				{
+					stretchType = StretchTypeEnum.RELATIVE_TO_BAND_HEIGHT;
+					break;
+				}
+				case ELEMENT_GROUP_HEIGHT :
+				case ELEMENT_GROUP_BOTTOM :
+				{
+					stretchType = StretchTypeEnum.RELATIVE_TO_TALLEST_OBJECT;
+					break;
+				}
+				default :
+			}
+		}
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_stretchType, stretchType, StretchTypeEnum.NO_STRETCH);
+	}
+
+
+	public void writePropertyExpressions(JRPropertyExpression[] propertyExpressions) throws IOException
+	{
+		if (propertyExpressions != null)
+		{
+			for (int i = 0; i < propertyExpressions.length; i++)
+			{
+				writePropertyExpression(propertyExpressions[i]);
+			}
+		}
+	}
+
+
+	public void writePropertyExpressions(DatasetPropertyExpression[] propertyExpressions) throws IOException
 	{
 		if (propertyExpressions != null)
 		{
@@ -931,10 +1146,71 @@ public class JRXmlWriter extends JRXmlBaseWriter
 
 	protected void writePropertyExpression(JRPropertyExpression propertyExpression) throws IOException
 	{
+		String expressionText = "";
+		ExpressionTypeEnum expressionType = null;
+
 		JRExpression valueExpression = propertyExpression.getValueExpression();
-		String expressionText = valueExpression == null ? "" : valueExpression.getText();
-		writer.writeCDATAElement(JRXmlConstants.ELEMENT_propertyExpression, getNamespace(), expressionText, 
-				JRXmlConstants.ATTRIBUTE_name, propertyExpression.getName());
+		if (valueExpression != null)
+		{
+			expressionText = valueExpression.getText();
+			expressionType = valueExpression.getType();
+			if (
+				expressionType == ExpressionTypeEnum.SIMPLE_TEXT
+				&& isOlderVersionThan(JRConstants.VERSION_6_4_3)
+				)
+			{
+				expressionType = null;
+				expressionText = JRExpressionUtil.convertSimpleTextExpression(valueExpression);
+			}
+		}
+		
+		writer.writeCDATAElement(
+			JRXmlConstants.ELEMENT_propertyExpression, 
+			getNamespace(), 
+			expressionText, 
+			new String[]{
+				JRXmlConstants.ATTRIBUTE_name, 
+				JRXmlConstants.ATTRIBUTE_type}, 
+			new Object[]{
+				propertyExpression.getName(), 
+				expressionType == null ? null : expressionType.getName()}
+			);
+	}
+
+
+	protected void writePropertyExpression(DatasetPropertyExpression propertyExpression) throws IOException
+	{
+		String expressionText = "";
+		ExpressionTypeEnum expressionType = null;
+
+		JRExpression valueExpression = propertyExpression.getValueExpression();
+		if (valueExpression != null)
+		{
+			expressionText = valueExpression.getText();
+			expressionType = valueExpression.getType();
+			if (
+				expressionType == ExpressionTypeEnum.SIMPLE_TEXT
+				&& isOlderVersionThan(JRConstants.VERSION_6_4_3)
+				)
+			{
+				expressionType = null;
+				expressionText = JRExpressionUtil.convertSimpleTextExpression(valueExpression);
+			}
+		}
+		
+		writer.writeCDATAElement(
+			JRXmlConstants.ELEMENT_propertyExpression, 
+			getNamespace(), 
+			expressionText, 
+			new String[]{
+				JRXmlConstants.ATTRIBUTE_name, 
+				JRXmlConstants.ATTRIBUTE_type, 
+				JRXmlConstants.ATTRIBUTE_evaluationTime}, 
+			new Object[]{
+				propertyExpression.getName(),
+				expressionType == null ? null : expressionType.getName(),
+				propertyExpression.getEvaluationTime() == null ? null : propertyExpression.getEvaluationTime().getName()}
+			);
 	}
 
 
@@ -986,8 +1262,12 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_image, getNamespace());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_scaleImage, image.getOwnScaleImageValue());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, image.getOwnHorizontalAlignmentValue());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, image.getOwnVerticalAlignmentValue());
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_10_0))
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_rotation, image.getOwnRotation());
+		}
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_hAlign, image.getOwnHorizontalImageAlign());
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_vAlign, image.getOwnVerticalImageAlign());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isUsingCache, image.getUsingCache());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isLazy, image.isLazy(), false);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_onErrorType, image.getOnErrorTypeValue(), OnErrorTypeEnum.ERROR);
@@ -1010,6 +1290,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 
 		writeExpression(JRXmlConstants.ELEMENT_imageExpression, image.getExpression(), true);
 		writeExpression(JRXmlConstants.ELEMENT_anchorNameExpression, image.getAnchorNameExpression(), false);
+		if(isNewerVersionOrEqual(JRConstants.VERSION_6_13_0))
+		{
+			writeExpression(JRXmlConstants.ELEMENT_bookmarkLevelExpression, image.getBookmarkLevelExpression(), false);
+		}
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkReferenceExpression, image.getHyperlinkReferenceExpression(), false);
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkWhenExpression, image.getHyperlinkWhenExpression(), false);//FIXMENOW can we reuse method for writing hyperlink?
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkAnchorExpression, image.getHyperlinkAnchorExpression(), false);
@@ -1044,8 +1328,13 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	private void writeTextElement(JRTextElement textElement) throws IOException
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_textElement);
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_textAlignment, textElement.getOwnHorizontalAlignmentValue());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_verticalAlignment, textElement.getOwnVerticalAlignmentValue());
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_textAlignment, textElement.getOwnHorizontalTextAlign());
+		VerticalTextAlignEnum vTextAlign = textElement.getOwnVerticalTextAlign();
+		if (isOlderVersionThan(JRConstants.VERSION_6_2_1))
+		{
+			vTextAlign = vTextAlign == VerticalTextAlignEnum.JUSTIFIED ? VerticalTextAlignEnum.TOP : vTextAlign;
+		}
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_verticalAlignment, vTextAlign);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_rotation, textElement.getOwnRotationValue());
 		if (isOlderVersionThan(JRConstants.VERSION_4_0_2))
 		{
@@ -1089,7 +1378,14 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	public void writeTextField(JRTextField textField) throws IOException
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_textField, getNamespace());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_isStretchWithOverflow, textField.isStretchWithOverflow(), false);
+		if(isNewerVersionOrEqual(JRConstants.VERSION_6_11_0))
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_textAdjust, textField.getTextAdjust(), TextAdjustEnum.CUT_TEXT);
+		}
+		else
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_isStretchWithOverflow, textField.getTextAdjust() == TextAdjustEnum.STRETCH_HEIGHT, false);
+		}
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_evaluationTime, textField.getEvaluationTimeValue(), EvaluationTimeEnum.NOW);
 
 		if (textField.getEvaluationGroup() != null)
@@ -1115,6 +1411,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 			writer.writeExpression(JRXmlConstants.ELEMENT_patternExpression, textField.getPatternExpression());
 		}
 		writeExpression(JRXmlConstants.ELEMENT_anchorNameExpression, textField.getAnchorNameExpression(), false);
+		if(isNewerVersionOrEqual(JRConstants.VERSION_6_13_0))
+		{
+			writeExpression(JRXmlConstants.ELEMENT_bookmarkLevelExpression, textField.getBookmarkLevelExpression(), false);
+		}
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkReferenceExpression, textField.getHyperlinkReferenceExpression(), false);
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkWhenExpression, textField.getHyperlinkWhenExpression(), false);
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkAnchorExpression, textField.getHyperlinkAnchorExpression(), false);
@@ -1150,7 +1450,7 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		{
 			for(int i = 0; i < parameters.length; i++)
 			{
-				writeSubreportParameter(parameters[i]);
+				writeSubreportParameter(parameters[i], getNamespace());
 			}
 		}
 
@@ -1162,7 +1462,7 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		{
 			for(int i = 0; i < returnValues.length; i++)
 			{
-				writeSubreportReturnValue(returnValues[i]);
+				writeSubreportReturnValue(returnValues[i], getNamespace());
 			}
 		}
 
@@ -1176,9 +1476,9 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	 *
 	 */
 	
-	private void writeSubreportParameter(JRSubreportParameter subreportParameter) throws IOException
+	public void writeSubreportParameter(JRSubreportParameter subreportParameter, XmlNamespace namespace) throws IOException
 	{
-		writer.startElement(JRXmlConstants.ELEMENT_subreportParameter);
+		writer.startElement(JRXmlConstants.ELEMENT_subreportParameter, namespace);
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, subreportParameter.getName());
 
 		writeExpression(JRXmlConstants.ELEMENT_subreportParameterExpression, subreportParameter.getExpression(), false);
@@ -1263,6 +1563,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.closeElement();
 
 		writeExpression(JRXmlConstants.ELEMENT_anchorNameExpression, chart.getAnchorNameExpression(), false);
+		if(isNewerVersionOrEqual(JRConstants.VERSION_6_13_0))
+		{
+			writeExpression(JRXmlConstants.ELEMENT_bookmarkLevelExpression, chart.getBookmarkLevelExpression(), false);
+		}
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkReferenceExpression, chart.getHyperlinkReferenceExpression(), false);
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkWhenExpression, chart.getHyperlinkWhenExpression(), false);
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkAnchorExpression, chart.getHyperlinkAnchorExpression(), false);
@@ -1324,9 +1628,9 @@ public class JRXmlWriter extends JRXmlBaseWriter
 			boolean skipIfEmpty) throws IOException
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_dataset, getNamespace());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_resetType, dataset.getResetTypeValue(), defaultResetType);
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_resetType, dataset.getDatasetResetType(), defaultResetType);
 
-		if (dataset.getResetTypeValue() == ResetTypeEnum.GROUP)
+		if (dataset.getDatasetResetType() == DatasetResetTypeEnum.GROUP)
 		{
 			writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_resetGroup, dataset.getResetGroup().getName());
 		}
@@ -2717,23 +3021,26 @@ public class JRXmlWriter extends JRXmlBaseWriter
 				writeGanttChart(chart);
 				break;
 			default:
-				throw new JRRuntimeException("Chart type not supported.");
+				throw 
+				new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNSUPPORTED_CHART_TYPE,
+						(Object[])null);
 		}
 	}
 
 
-	private void writeSubreportReturnValue(JRSubreportReturnValue returnValue) throws IOException
+	public void writeSubreportReturnValue(JRSubreportReturnValue returnValue, XmlNamespace namespace) throws IOException
 	{
-		writer.startElement(JRXmlConstants.ELEMENT_returnValue);
-		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_subreportVariable, returnValue.getSubreportVariable());
+		writer.startElement(JRXmlConstants.ELEMENT_returnValue, namespace);
+		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_subreportVariable, returnValue.getFromVariable());
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_toVariable, returnValue.getToVariable());
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_calculation, returnValue.getCalculationValue(), CalculationEnum.NOTHING);
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_calculation, returnValue.getCalculation(), CalculationEnum.NOTHING);
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_incrementerFactoryClass, returnValue.getIncrementerFactoryClassName());
 		writer.closeElement();
 	}
 
 	
-	protected void writeReturnValue(ReturnValue returnValue) throws IOException
+	protected void writeReturnValue(VariableReturnValue returnValue) throws IOException
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_returnValue);
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_fromVariable, returnValue.getFromVariable());
@@ -2743,6 +3050,16 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.closeElement();
 	}
 
+
+	protected void writeReturnValue(ExpressionReturnValue returnValue) throws IOException
+	{
+		writer.startElement(JRXmlConstants.ELEMENT_returnValue);
+		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_toVariable, returnValue.getToVariable());
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_calculation, returnValue.getCalculation(), CalculationEnum.NOTHING);
+		writer.addAttribute(JRXmlConstants.ATTRIBUTE_incrementerFactoryClass, returnValue.getIncrementerFactoryClassName());
+		writeExpression(JRXmlConstants.ELEMENT_expression, returnValue.getExpression(), false);
+		writer.closeElement();
+	}
 
 	
 	public void writeCrosstab(JRCrosstab crosstab) throws IOException
@@ -2813,7 +3130,7 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		else
 		{
 			JRCrosstabCell[][] cells = crosstab.getCells();
-			Set<JRCrosstabCell> cellsSet = new HashSet<JRCrosstabCell>();
+			Set<JRCrosstabCell> cellsSet = new HashSet<>();
 			for (int i = cells.length - 1; i >= 0 ; --i)
 			{
 				for (int j = cells[i].length - 1; j >= 0 ; --j)
@@ -2890,6 +3207,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addAttribute(JRCrosstabRowGroupFactory.ATTRIBUTE_width, group.getWidth());
 		writer.addAttribute(JRCrosstabGroupFactory.ATTRIBUTE_totalPosition, group.getTotalPositionValue(), CrosstabTotalPositionEnum.NONE);
 		writer.addAttribute(JRCrosstabRowGroupFactory.ATTRIBUTE_headerPosition, group.getPositionValue(), CrosstabRowPositionEnum.TOP);
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_2_0))
+		{
+			writer.addAttribute(JRCrosstabGroupFactory.ATTRIBUTE_mergeHeaderCells, group.getMergeHeaderCells());
+		}
 
 		writeBucket(group.getBucket());
 
@@ -2914,6 +3235,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addAttribute(JRCrosstabColumnGroupFactory.ATTRIBUTE_height, group.getHeight());
 		writer.addAttribute(JRCrosstabGroupFactory.ATTRIBUTE_totalPosition, group.getTotalPositionValue(), CrosstabTotalPositionEnum.NONE);
 		writer.addAttribute(JRCrosstabColumnGroupFactory.ATTRIBUTE_headerPosition, group.getPositionValue(), CrosstabColumnPositionEnum.LEFT);
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_2_0))
+		{
+			writer.addAttribute(JRCrosstabGroupFactory.ATTRIBUTE_mergeHeaderCells, group.getMergeHeaderCells());
+		}
 
 		writeBucket(group.getBucket());
 
@@ -3031,12 +3356,20 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_scriptletClass, dataset.getScriptletClass());
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_resourceBundle, dataset.getResourceBundle());
 		writer.addAttribute(JRXmlConstants.ATTRIBUTE_whenResourceMissingType, dataset.getWhenResourceMissingTypeValue(), WhenResourceMissingTypeEnum.NULL);
-		if (isNewerVersionOrEqual(JRConstants.VERSION_4_6_0))
+		if (
+			isNewerVersionOrEqual(JRConstants.VERSION_4_6_0)
+			&& !isExcludeUuids() 
+			)
 		{
 			writer.addAttribute(JRXmlConstants.ATTRIBUTE_uuid, dataset.getUUID().toString());
 		}
 
 		writeProperties(dataset);
+
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_3_1))
+		{
+			writePropertyExpressions(dataset.getPropertyExpressions());
+		}
 
 		writeDatasetContents(dataset);
 
@@ -3135,7 +3468,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_subDataset, datasetRun.getDatasetName());
 		if (isNewerVersionOrEqual(JRConstants.VERSION_4_6_0))
 		{
-			writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, datasetRun.getUUID().toString());
+			if (!isExcludeUuids())
+			{
+				writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, datasetRun.getUUID().toString());
+			}
 			writeProperties(datasetRun);
 		}
 
@@ -3170,6 +3506,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	public void writeFrame(JRFrame frame) throws IOException
 	{
 		writer.startElement(JRXmlConstants.ELEMENT_frame, getNamespace());
+		if (isNewerVersionOrEqual(JRConstants.VERSION_6_0_0))
+		{
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_borderSplitType, frame.getBorderSplitType());
+		}
 
 		writeReportElement(frame);
 		writeBox(frame.getLineBox());
@@ -3248,6 +3588,7 @@ public class JRXmlWriter extends JRXmlBaseWriter
 	}
 
 
+	@Override
 	protected boolean toWriteConditionalStyles()
 	{
 		return true;
@@ -3382,7 +3723,7 @@ public class JRXmlWriter extends JRXmlBaseWriter
 			{
 				writer.startElement(JRXmlConstants.ELEMENT_multiAxisMeasure);
 				writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, measure.getName());
-				writer.addAttribute(JRXmlConstants.ATTRIBUTE_class, measure.getValueClassName());
+				writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_class, measure.getValueClassName());
 				writer.addAttribute(JRXmlConstants.ATTRIBUTE_calculation, measure.getCalculation());
 				writer.addAttribute(JRXmlConstants.ATTRIBUTE_incrementerFactoryClass, measure.getIncrementerFactoryClassName());
 				writer.writeExpression(JRXmlConstants.ELEMENT_labelExpression, measure.getLabelExpression());
@@ -3400,6 +3741,10 @@ public class JRXmlWriter extends JRXmlBaseWriter
 		writer.addAttribute(JRCrosstabBucketFactory.ATTRIBUTE_order, bucket.getOrder(), BucketOrder.ASCENDING);
 		writer.addAttribute(JRCrosstabMeasureFactory.ATTRIBUTE_class, bucket.getValueClassName());
 		writer.writeExpression(JRCrosstabBucketFactory.ELEMENT_bucketExpression, bucket.getExpression());
+		if(isNewerVersionOrEqual(JRConstants.VERSION_6_4_3))
+		{
+			writer.writeExpression(JRXmlConstants.ELEMENT_MULTI_AXIS_BUCKET_LABEL_EXPRESSION, bucket.getLabelExpression());
+		}
 		writer.writeExpression(JRCrosstabBucketFactory.ELEMENT_comparatorExpression, bucket.getComparatorExpression());
 		
 		List<DataLevelBucketProperty> bucketProperties = bucket.getBucketProperties();

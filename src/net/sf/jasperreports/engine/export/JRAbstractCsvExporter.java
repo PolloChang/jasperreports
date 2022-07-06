@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,11 +30,14 @@ package net.sf.jasperreports.engine.export;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.List;
 import java.util.StringTokenizer;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
+import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRPrintPage;
@@ -42,8 +45,10 @@ import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 import net.sf.jasperreports.export.CsvExporterConfiguration;
 import net.sf.jasperreports.export.CsvReportConfiguration;
+import net.sf.jasperreports.export.ExportInterruptedException;
 import net.sf.jasperreports.export.ExporterInputItem;
 import net.sf.jasperreports.export.WriterExporterOutput;
 
@@ -51,11 +56,13 @@ import net.sf.jasperreports.export.WriterExporterOutput;
 /**
  * Exports a JasperReports document to CSV format.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractCsvExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C extends CsvExporterConfiguration, E extends JRExporterContext> 
 	extends JRAbstractExporter<RC, C, WriterExporterOutput, E>
 {
+	public static final String BOM_CHARACTER = "\uFEFF";
+	public static final String DEFAULT_ENCLOSURE = "\"";
+	public static final String ESCAPE_FORMULA_CHARACTERS = "=+-@";
 	protected static final String CSV_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.csv.";
 
 	/**
@@ -64,12 +71,20 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 	 */
 	public static final String CSV_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "csv";
 
+	protected String fieldDelimiter;
+	protected String recordDelimiter;
+	protected boolean forceFieldEnclosure;
+	protected String quotes;
+	protected boolean escapeFormula;
+
 	/**
 	 *
 	 */
 	protected Writer writer;
 	
 	protected ExporterNature nature;
+
+	protected int pageIndex;
 
 	
 	/**
@@ -90,9 +105,7 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void exportReport() throws JRException
 	{
 		/*   */
@@ -111,7 +124,11 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Error writing to output writer : " + jasperPrint.getName(), e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_OUTPUT_WRITER_ERROR,
+					new Object[]{jasperPrint.getName()}, 
+					e);
 		}
 		finally
 		{
@@ -125,6 +142,18 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 	 */
 	protected void exportReportToWriter() throws JRException, IOException
 	{
+		CsvExporterConfiguration configuration = getCurrentConfiguration();
+		if (configuration.isWriteBOM())
+		{
+			WriterExporterOutput output = getExporterOutput();
+			Charset charset = Charset.forName(output.getEncoding());
+			CharsetEncoder charsetEncoder = charset.newEncoder();
+			if (charsetEncoder.canEncode(BOM_CHARACTER))
+			{
+				writer.write(BOM_CHARACTER);
+			}
+		}
+
 		List<ExporterInputItem> items = exporterInput.getItems();
 		
 		for(int reportIndex = 0; reportIndex < items.size(); reportIndex++)
@@ -140,14 +169,14 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 				int startPageIndex = (pageRange == null || pageRange.getStartPageIndex() == null) ? 0 : pageRange.getStartPageIndex();
 				int endPageIndex = (pageRange == null || pageRange.getEndPageIndex() == null) ? (pages.size() - 1) : pageRange.getEndPageIndex();
 
-				for(int i = startPageIndex; i <= endPageIndex; i++)
+				for(pageIndex = startPageIndex; pageIndex <= endPageIndex; pageIndex++)
 				{
 					if (Thread.interrupted())
 					{
-						throw new JRException("Current thread interrupted.");
+						throw new ExportInterruptedException();
 					}
 				
-					JRPrintPage page = pages.get(i);
+					JRPrintPage page = pages.get(pageIndex);
 
 					/*   */
 					exportPage(page);
@@ -165,12 +194,17 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 	protected abstract void exportPage(JRPrintPage page) throws IOException;
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRStyledText getStyledText(JRPrintText textElement)
 	{
-		return textElement.getFullStyledText(noneSelector);
+		JRStyledText styledText = textElement.getFullStyledText(noneSelector);
+		
+		if (styledText != null && !JRCommonText.MARKUP_NONE.equals(textElement.getMarkup()))
+		{
+			styledText = JRStyledTextUtil.getBulletedText(styledText);
+		}
+
+		return styledText;
 	}
 
 
@@ -183,51 +217,46 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 		
 		if (source != null)
 		{
-			boolean putQuotes = false;
+			boolean putQuotes = 
+				forceFieldEnclosure
+				|| source.indexOf(fieldDelimiter) >= 0
+				|| source.indexOf(recordDelimiter) >= 0;
 			
-			CsvExporterConfiguration configuration = getCurrentConfiguration();
-			String fieldDelimiter = configuration.getFieldDelimiter();
-			String recordDelimiter = configuration.getRecordDelimiter();
-			
-			if (
-				source.indexOf(fieldDelimiter) >= 0
-				|| source.indexOf(recordDelimiter) >= 0
-				)
-			{
-				putQuotes = true;
-			}
-			
-			StringBuffer sbuffer = new StringBuffer();
-			StringTokenizer tkzer = new StringTokenizer(source, "\"\n", true);
+			StringBuilder sb = new StringBuilder();
+			StringTokenizer tkzer = new StringTokenizer(source, quotes+"\n", true);
 			String token = null;
 			while(tkzer.hasMoreTokens())
 			{
 				token = tkzer.nextToken();
-				if ("\"".equals(token))
+				if (quotes.equals(token))
 				{
 					putQuotes = true;
-					sbuffer.append("\"\"");
+					sb.append(quotes+quotes);
 				}
 				else if ("\n".equals(token))
 				{
 					//sbuffer.append(" ");
 					putQuotes = true;
-					sbuffer.append("\n");
+					sb.append("\n");
 				}
 				else
 				{
-					sbuffer.append(token);
+					sb.append(token);
 				}
 			}
 			
-			str = sbuffer.toString();
+			str = sb.toString();
+			
+			if (escapeFormula && !str.isEmpty() && ESCAPE_FORMULA_CHARACTERS.indexOf(str.charAt(0)) >= 0)
+			{
+				str = " " + str;
+			}
 			
 			if (putQuotes)
 			{
-				str = "\"" + str + "\"";
+				str = quotes + str + quotes;
 			}
 		}
-		
 		return str;
 	}
 	
@@ -236,6 +265,18 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 	protected void initExport()
 	{
 		super.initExport();
+
+		CsvExporterConfiguration configuration = getCurrentConfiguration();
+		fieldDelimiter = configuration.getFieldDelimiter();
+		recordDelimiter = configuration.getRecordDelimiter();
+		forceFieldEnclosure = configuration.getForceFieldEnclosure();
+		
+		// single character used for field enclosure; white spaces are not considered; default value is "
+		quotes = configuration.getFieldEnclosure().trim().length() == 0 
+				? DEFAULT_ENCLOSURE 
+				: configuration.getFieldEnclosure().trim().substring(0, 1);
+
+		escapeFormula = configuration.getEscapeFormula();
 	}
 	
 	
@@ -248,12 +289,14 @@ public abstract class JRAbstractCsvExporter<RC extends CsvReportConfiguration, C
 	}
 
 
+	@Override
 	public String getExporterKey()
 	{
 		return CSV_EXPORTER_KEY;
 	}
 
 	
+	@Override
 	public String getExporterPropertiesPrefix()
 	{
 		return CSV_EXPORTER_PROPERTIES_PREFIX;

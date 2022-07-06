@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import java.util.List;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DataMapping.java 7199 2014-08-27 13:58:10Z teodord $
  */
 @SuppressWarnings("rawtypes")
 public class DataMapping implements Mapping
@@ -61,6 +60,7 @@ public class DataMapping implements Mapping
 		return positions;
 	}
 
+	@Override
 	public Iterator memberMappings()
 	{
 		return filter == null ? new EmptyIt() : filter.iterator();
@@ -68,16 +68,19 @@ public class DataMapping implements Mapping
 	
 	protected static class EmptyIt implements Iterator
 	{
+		@Override
 		public void remove()
 		{
 			throw new UnsupportedOperationException();
 		}
 
+		@Override
 		public boolean hasNext()
 		{
 			return false;
 		}
 
+		@Override
 		public Object next()
 		{
 			return null;

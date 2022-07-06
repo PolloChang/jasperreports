@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
 /**
  * The actual implementation of a graphic element representing a straight line, used at design time.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignLine.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignLine extends JRDesignGraphicElement implements JRLine
 {
@@ -72,9 +71,7 @@ public class JRDesignLine extends JRDesignGraphicElement implements JRLine
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public void setWidth(int width)
 	{
 		if (width == 0)
@@ -85,9 +82,7 @@ public class JRDesignLine extends JRDesignGraphicElement implements JRLine
 		super.setWidth(width);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setHeight(int height)
 	{
 		if (height == 0)
@@ -98,17 +93,13 @@ public class JRDesignLine extends JRDesignGraphicElement implements JRLine
 		super.setHeight(height);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public LineDirectionEnum getDirectionValue()
 	{
 		return directionValue;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void setDirection(LineDirectionEnum directionValue)
 	{
 		LineDirectionEnum old = this.directionValue;
@@ -116,17 +107,13 @@ public class JRDesignLine extends JRDesignGraphicElement implements JRLine
 		getEventSupport().firePropertyChange(JRBaseLine.PROPERTY_DIRECTION, old, this.directionValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitLine(this);
@@ -141,6 +128,7 @@ public class JRDesignLine extends JRDesignGraphicElement implements JRLine
 	 */
 	private byte direction;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

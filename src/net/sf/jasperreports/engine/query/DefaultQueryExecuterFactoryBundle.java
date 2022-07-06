@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,13 +38,12 @@ import net.sf.jasperreports.engine.util.JRSingletonCache;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultQueryExecuterFactoryBundle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class DefaultQueryExecuterFactoryBundle implements JRQueryExecuterFactoryBundle
 {
 	@SuppressWarnings("deprecation")
 	private static final JRSingletonCache<JRQueryExecuterFactory> cache = 
-			new JRSingletonCache<JRQueryExecuterFactory>(JRQueryExecuterFactory.class);
+			new JRSingletonCache<>(JRQueryExecuterFactory.class);
 	
 	private static final DefaultQueryExecuterFactoryBundle INSTANCE = new DefaultQueryExecuterFactoryBundle();
 	
@@ -78,12 +77,10 @@ public final class DefaultQueryExecuterFactoryBundle implements JRQueryExecuterF
 		return new DefaultQueryExecuterFactoryBundle(jasperReportsContext);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String[] getLanguages()
 	{
-		List<String> languages = new ArrayList<String>();
+		List<String> languages = new ArrayList<>();
 		List<PropertySuffix> properties = JRPropertiesUtil.getInstance(jasperReportsContext).getProperties(QueryExecuterFactory.QUERY_EXECUTER_FACTORY_PREFIX);
 		for (Iterator<PropertySuffix> it = properties.iterator(); it.hasNext();)
 		{
@@ -93,9 +90,7 @@ public final class DefaultQueryExecuterFactoryBundle implements JRQueryExecuterF
 		return languages.toArray(new String[languages.size()]);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	public QueryExecuterFactory getQueryExecuterFactory(String language) throws JRException
 	{

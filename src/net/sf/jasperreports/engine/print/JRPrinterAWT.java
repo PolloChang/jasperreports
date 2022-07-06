@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.print;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -34,27 +35,30 @@ import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
 import net.sf.jasperreports.engine.util.JRGraphEnvInitializer;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleGraphics2DExporterOutput;
 import net.sf.jasperreports.export.SimpleGraphics2DReportConfiguration;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrinterAWT.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRPrinterAWT implements Printable
 {
 	private static final Log log = LogFactory.getLog(JRPrinterAWT.class);
+
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_PAGE_RANGE = "print.invalid.page.range";
+	public static final String EXCEPTION_MESSAGE_KEY_ERROR_PRINTING_REPORT = "print.error.printing.report";
 
 	/**
 	 *
@@ -135,12 +139,11 @@ public class JRPrinterAWT implements Printable
 			lastPageIndex >= jasperPrint.getPages().size()
 			)
 		{
-			throw new JRException(
-				"Invalid page index range : " +
-				firstPageIndex + " - " +
-				lastPageIndex + " of " +
-				jasperPrint.getPages().size()
-				);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_INVALID_PAGE_RANGE,  
+					new Object[]{firstPageIndex, lastPageIndex, jasperPrint.getPages().size()}
+					);
 		}
 
 		pageOffset = firstPageIndex;
@@ -209,16 +212,18 @@ public class JRPrinterAWT implements Printable
 		}
 		catch (Exception ex)
 		{
-			throw new JRException("Error printing report.", ex);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_ERROR_PRINTING_REPORT,
+					null, 
+					ex);
 		}
 
 		return isOK;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException
 	{
 		if (Thread.interrupted())
@@ -264,20 +269,32 @@ public class JRPrinterAWT implements Printable
 	 */
 	public Image printPageToImage(int pageIndex, float zoom) throws JRException
 	{
+		PrintPageFormat pageFormat = jasperPrint.getPageFormat(pageIndex);
+		
+		int rasterWidth = (int) Math.ceil(pageFormat.getPageWidth() * zoom);
+		int rasterHeight = (int) Math.ceil(pageFormat.getPageHeight() * zoom);
 		Image pageImage = new BufferedImage(
-			(int)(jasperPrint.getPageWidth() * zoom) + 1,
-			(int)(jasperPrint.getPageHeight() * zoom) + 1,
+			rasterWidth,
+			rasterHeight,
 			BufferedImage.TYPE_INT_RGB
 			);
+		
+		Graphics imageGraphics = pageImage.getGraphics();
+		Graphics graphics = imageGraphics.create();
+		//filling the image background here because JRGraphics2DExporter.exportPage uses the page size
+		//which can be smaller than the image size due to Math.ceil above
+		graphics.setColor(Color.white);
+		graphics.fillRect(0, 0, rasterWidth, rasterHeight);
 
 		JRGraphics2DExporter exporter = new JRGraphics2DExporter(jasperReportsContext);
 		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
 		SimpleGraphics2DExporterOutput output = new SimpleGraphics2DExporterOutput();
-		output.setGraphics2D((Graphics2D)pageImage.getGraphics());
+		output.setGraphics2D((Graphics2D) imageGraphics);
 		exporter.setExporterOutput(output);
 		SimpleGraphics2DReportConfiguration configuration = new SimpleGraphics2DReportConfiguration();
 		configuration.setPageIndex(pageIndex);
 		configuration.setZoomRatio(zoom);
+		configuration.setWhitePageBackground(false);
 		exporter.setConfiguration(configuration);
 		exporter.exportReport();
 		
@@ -298,13 +315,5 @@ public class JRPrinterAWT implements Printable
 		catch (PrinterException e)
 		{
 		}
-	}
-	
-	
-	public static long getImageSize(JasperPrint jasperPrint, float zoom)
-	{
-		int width = (int) (jasperPrint.getPageWidth() * zoom) + 1;
-		int height = (int) (jasperPrint.getPageHeight() * zoom) + 1;
-		return width * height;
 	}
 }

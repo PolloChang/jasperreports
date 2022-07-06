@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import java.util.Map;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardSingleQueryParameterTypesClauseFunctionBundle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StandardSingleQueryParameterTypesClauseFunctionBundle implements
 		ParameterTypesClauseFunctionBundle
@@ -44,7 +43,7 @@ public class StandardSingleQueryParameterTypesClauseFunctionBundle implements
 			String queryLanguage)
 	{
 		this.queryLanguage = queryLanguage;
-		this.clauseFunctions = new HashMap<String, Collection<? extends ParameterTypesClauseFunction>>();
+		this.clauseFunctions = new HashMap<>();
 	}
 
 	public void setFunctions(String clauseId, ParameterTypesClauseFunction ...functions)

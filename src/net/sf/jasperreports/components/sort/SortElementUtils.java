@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,11 +33,10 @@ import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortElementUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortElementUtils {
 	
-	private static Map<String, SortOrderEnum> sortOrderMapping = new HashMap<String, SortOrderEnum>();
+	private static Map<String, SortOrderEnum> sortOrderMapping = new HashMap<>();
 	
 	static {
 		sortOrderMapping.put(SortElement.SORT_ORDER_ASC, SortOrderEnum.ASCENDING);
@@ -49,7 +48,7 @@ public class SortElementUtils {
 	}
 	
 	public static String packSortColumnInfo(String columnName, String columnType, String sortOrder) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		sb.append(columnName)
 			.append(SortElement.SORT_COLUMN_TOKEN_SEPARATOR)
 			.append(columnType)

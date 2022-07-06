@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import net.sf.jasperreports.engine.JRPrintHyperlink;
  * An adapter of {@link JRHtmlExporterContext} as {@link JRHyperlinkProducer}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: HtmlExporterHyperlinkProducerAdapter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HtmlExporterHyperlinkProducerAdapter implements JRHyperlinkProducer
 {
@@ -46,6 +45,7 @@ public class HtmlExporterHyperlinkProducerAdapter implements JRHyperlinkProducer
 		this.exporterContext = exporterContext;
 	}
 
+	@Override
 	public String getHyperlink(JRPrintHyperlink hyperlink)
 	{
 		return exporterContext.getHyperlinkURL(hyperlink);

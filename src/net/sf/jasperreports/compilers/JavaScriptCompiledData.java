@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,13 +34,13 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * Compiled Java code for reports that use JavaScript as expression language.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptCompiledData.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JavaScriptClassCompiler
  */
 public class JavaScriptCompiledData implements Serializable
 {
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	public static final String EXCEPTION_MESSAGE_KEY_TOO_MANY_EXPRESSIONs = "compilers.javascript.too.many.expressions";
 	
 	protected static class ExpressionIndexes implements Serializable
 	{
@@ -101,7 +101,10 @@ public class JavaScriptCompiledData implements Serializable
 	{
 		if (scriptIndex > 0x7fff || expressionId > 0x7fff)
 		{
-			throw new JRRuntimeException("Too many expressions in report");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_TOO_MANY_EXPRESSIONs,
+					(Object[])null);
 		}
 		
 		return ((scriptIndex & 0x7fff) << 16) | (expressionId & 0x7fff);
@@ -117,8 +120,8 @@ public class JavaScriptCompiledData implements Serializable
 		return expressionIndex & 0x7fff;
 	}
 	
-	private final List<ExpressionIndexes> expressionIndexes = new ArrayList<ExpressionIndexes>();
-	private final List<CompiledClass> compiledClasses = new ArrayList<CompiledClass>(1);
+	private final List<ExpressionIndexes> expressionIndexes = new ArrayList<>();
+	private final List<CompiledClass> compiledClasses = new ArrayList<>(1);
 	
 	public void addExpression(int expressionId, 
 			int defaultExpressionIdx, int oldExpressionIdx, int estimatedExpressionIdx)
@@ -136,12 +139,18 @@ public class JavaScriptCompiledData implements Serializable
 	{
 		if (id >= expressionIndexes.size())
 		{
-			throw new JRRuntimeException("No expression for id " + id);
+			throw 
+				new JRRuntimeException(
+					JavaScriptCompileData.EXCEPTION_MESSAGE_KEY_EXPRESSION_NOT_FOUND,
+					new Object[]{id});
 		}
 		ExpressionIndexes expr = expressionIndexes.get(id);
 		if (expr == null)
 		{
-			throw new JRRuntimeException("No expression for id " + id);
+			throw 
+				new JRRuntimeException(
+					JavaScriptCompileData.EXCEPTION_MESSAGE_KEY_EXPRESSION_NOT_FOUND,
+					new Object[]{id});
 		}
 		return expr;
 	}

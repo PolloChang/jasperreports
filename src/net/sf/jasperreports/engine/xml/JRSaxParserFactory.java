@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,14 +25,16 @@ package net.sf.jasperreports.engine.xml;
 
 import javax.xml.parsers.SAXParser;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * A factory of {@link SAXParser} objects used by JasperReports
  * parsers/digesters.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSaxParserFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRSaxParserFactory
 {
@@ -45,6 +47,12 @@ public interface JRSaxParserFactory
 	 * By default, this property is set to use {@link JRReportSaxParserFactory}
 	 * as report parser factory.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			defaultValue = "net.sf.jasperreports.engine.xml.JRReportSaxParserFactory",
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_3_1_0
+			)
 	String PROPERTY_REPORT_PARSER_FACTORY = JRPropertiesUtil.PROPERTY_PREFIX + "compiler.xml.parser.factory";
 
 	/**
@@ -53,9 +61,31 @@ public interface JRSaxParserFactory
 	 * 
 	 * <p>
 	 * By default, this property is set to use {@link PrintSaxParserFactory}
-	 * as report parser factory.
+	 * as XML export parser factory.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = "net.sf.jasperreports.engine.xml.PrintSaxParserFactory",
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_4_1_3
+			)
 	String PROPERTY_PRINT_PARSER_FACTORY = JRPropertiesUtil.PROPERTY_PREFIX + "export.xml.parser.factory";
+
+	/**
+	 * A property that gives a parser factory class which should be used
+	 * for parsing style templates.
+	 * 
+	 * <p>
+	 * By default, this property is set to use {@link TemplateSaxParserFactory}
+	 * as style template parser factory.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			defaultValue = "net.sf.jasperreports.engine.xml.TemplateSaxParserFactory",
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_6_3_0
+			)
+	String PROPERTY_TEMPLATE_PARSER_FACTORY = JRPropertiesUtil.PROPERTY_PREFIX + "template.xml.parser.factory";
 	
 	/**
 	 * Creates a SAX parser.

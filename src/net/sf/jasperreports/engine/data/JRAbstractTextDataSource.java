@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,38 +25,42 @@ package net.sf.jasperreports.engine.data;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.text.DateFormat;
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.apache.commons.beanutils.locale.LocaleConvertUtilsBean;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.util.FormatUtils;
-import net.sf.jasperreports.engine.util.JRDataUtils;
+import net.sf.jasperreports.engine.util.JRCloneUtils;
 import net.sf.jasperreports.engine.util.JRDateLocaleConverter;
-import net.sf.jasperreports.engine.util.JRFloatLocaleConverter;
-
-import org.apache.commons.beanutils.locale.LocaleConvertUtilsBean;
 
 /**
  * Abstract text data source, containing methods used to parse text
  * data into numerical or date values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRAbstractTextDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractTextDataSource implements JRDataSource
 {
 	
+	public static final String EXCEPTION_MESSAGE_KEY_CANNOT_CONVERT_FIELD_TYPE = "data.common.cannot.convert.field.type";
+	public static final String EXCEPTION_MESSAGE_KEY_CANNOT_MODIFY_PROPERTIES_AFTER_START = "data.common.cannot.modify.properties.after.start";
+	public static final String EXCEPTION_MESSAGE_KEY_NODE_NOT_AVAILABLE = "data.common.xml.node.not.available";
+	public static final String EXCEPTION_MESSAGE_KEY_NULL_DOCUMENT = "data.common.xml.null.document";
+	public static final String EXCEPTION_MESSAGE_KEY_NULL_SELECT_EXPRESSION = "data.common.xml.null.select.expression";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_COLUMN_NAME = "data.common.unknown.column.name";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_NUMBER_TYPE = "data.common.unknown.number.type";
+	
 	private LocaleConvertUtilsBean convertBean;
 	
-	private Locale locale;
-	private String datePattern;
-	private String numberPattern;
-	private TimeZone timeZone;
+	private TextDataSourceAttributes textAttributes;
+	
+	protected JRAbstractTextDataSource()
+	{
+		this.textAttributes = new TextDataSourceAttributes();
+	}
 
 	protected Object convertStringValue(String text, Class<?> valueClass)
 	{
@@ -67,11 +71,13 @@ public abstract class JRAbstractTextDataSource implements JRDataSource
 		}
 		else if (Number.class.isAssignableFrom(valueClass))
 		{
-			value = getConvertBean().convert(text.trim(), valueClass, locale, numberPattern);
+			value = getConvertBean().convert(text.trim(), valueClass, 
+					textAttributes.getLocale(), textAttributes.getNumberPattern());
 		}
 		else if (Date.class.isAssignableFrom(valueClass))
 		{
-			value = getConvertBean().convert(text.trim(), valueClass, locale, datePattern);
+			value = getConvertBean().convert(text.trim(), valueClass, 
+					textAttributes.getLocale(), textAttributes.getDatePattern());
 		}
 		else if (Boolean.class.equals(valueClass))
 		{
@@ -85,27 +91,27 @@ public abstract class JRAbstractTextDataSource implements JRDataSource
 		Number value = null;
 		if (valueClass.equals(Byte.class))
 		{
-			value = new Byte(number.byteValue());
+			value = number.byteValue();
 		}
 		else if (valueClass.equals(Short.class))
 		{
-			value = new Short(number.shortValue());
+			value = number.shortValue();
 		}
 		else if (valueClass.equals(Integer.class))
 		{
-			value = Integer.valueOf(number.intValue());
+			value = number.intValue();
 		}
 		else if (valueClass.equals(Long.class))
 		{
-			value = new Long(number.longValue());
+			value = number.longValue();
 		}
 		else if (valueClass.equals(Float.class))
 		{
-			value = new Float(number.floatValue());
+			value = number.floatValue();
 		}
 		else if (valueClass.equals(Double.class))
 		{
-			value = new Double(number.doubleValue());
+			value = number.doubleValue();
 		}
 		else if (valueClass.equals(BigInteger.class))
 		{
@@ -117,25 +123,12 @@ public abstract class JRAbstractTextDataSource implements JRDataSource
 		}
 		else
 		{
-			throw new JRException("Unknown number class " + valueClass.getName());
+			throw 
+			new JRException(
+				EXCEPTION_MESSAGE_KEY_UNKNOWN_NUMBER_TYPE,
+				new Object[]{valueClass.getName()});
 		}
 		return value;
-	}
-
-	/**
-	 * @deprecated Replaced by {@link FormatUtils#getFormattedNumber(NumberFormat, String, Class)}
-	 */
-	protected Number getFormattedNumber(NumberFormat numberFormat, String fieldValue, Class<?> valueClass) throws ParseException
-	{
-		return FormatUtils.getFormattedNumber(numberFormat, fieldValue, valueClass);
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link FormatUtils#getFormattedDate(DateFormat, String, Class)}
-	 */
-	protected Date getFormattedDate(DateFormat dateFormat, String fieldValue, Class<?> valueClass) throws ParseException 
-	{
-		return FormatUtils.getFormattedDate(dateFormat, fieldValue, valueClass);
 	}
 
 	protected LocaleConvertUtilsBean getConvertBean() 
@@ -143,6 +136,7 @@ public abstract class JRAbstractTextDataSource implements JRDataSource
 		if (convertBean == null)
 		{
 			convertBean = new LocaleConvertUtilsBean();
+			Locale locale = textAttributes.getLocale();
 			if (locale != null)
 			{
 				convertBean.setDefaultLocale(locale);
@@ -150,17 +144,10 @@ public abstract class JRAbstractTextDataSource implements JRDataSource
 				//convertBean.lookup();
 			}
 			convertBean.register(
-				new JRDateLocaleConverter(timeZone), 
+				new JRDateLocaleConverter(textAttributes.getTimeZone()), 
 				java.util.Date.class,
 				locale
 				);
-			
-			// fix for https://issues.apache.org/jira/browse/BEANUTILS-351
-			// remove on upgrade to BeanUtils 1.8.1
-			JRFloatLocaleConverter floatConverter = new JRFloatLocaleConverter(
-					locale == null ? Locale.getDefault() : locale);
-			convertBean.register(floatConverter, Float.class, locale);
-			convertBean.register(floatConverter, Float.TYPE, locale);
 		}
 		return convertBean;
 	}
@@ -172,54 +159,63 @@ public abstract class JRAbstractTextDataSource implements JRDataSource
 	 */
 	public void setTextAttributes(JRAbstractTextDataSource textDataSource)
 	{
-		setLocale(textDataSource.getLocale());
-		setDatePattern(textDataSource.getDatePattern());
-		setNumberPattern(textDataSource.getNumberPattern());
-		setTimeZone(textDataSource.getTimeZone());
+		setTextAttributes(textDataSource.getTextAttributes());
+	}
+	
+	public TextDataSourceAttributes getTextAttributes()
+	{
+		return textAttributes;
+	}
+	
+	public void setTextAttributes(TextDataSourceAttributes attributes)
+	{
+		this.textAttributes = JRCloneUtils.nullSafeClone(attributes);
 	}
 	
 	public Locale getLocale() {
-		return locale;
+		return textAttributes.getLocale();
 	}
 
 	public void setLocale(Locale locale) {
-		this.locale = locale;
+		textAttributes.setLocale(locale);
 		convertBean = null;
 	}
 	
 	public void setLocale(String locale) {
-		setLocale(JRDataUtils.getLocale(locale));
+		textAttributes.setLocale(locale);
+		convertBean = null;
 	}
 
 	public String getDatePattern() {
-		return datePattern;
+		return textAttributes.getDatePattern();
 	}
 
 	public void setDatePattern(String datePattern) {
-		this.datePattern = datePattern;
+		textAttributes.setDatePattern(datePattern);
 		convertBean = null;
 	}
 
 	public String getNumberPattern() {
-		return numberPattern;
+		return textAttributes.getNumberPattern();
 	}
 
 	public void setNumberPattern(String numberPattern) {
-		this.numberPattern = numberPattern;
+		textAttributes.setNumberPattern(numberPattern);
 		convertBean = null;
 	}
 
 	public TimeZone getTimeZone() {
-		return timeZone;
+		return textAttributes.getTimeZone();
 	}
 
 	public void setTimeZone(TimeZone timeZone) {
-		this.timeZone = timeZone;
+		textAttributes.setTimeZone(timeZone);
 		convertBean = null;
 	}
 	
 	public void setTimeZone(String timeZoneId){
-		setTimeZone(JRDataUtils.getTimeZone(timeZoneId));
+		textAttributes.setTimeZone(timeZoneId);
+		convertBean = null;
 	}
 	
 }

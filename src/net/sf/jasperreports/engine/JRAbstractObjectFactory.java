@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -49,7 +49,6 @@ import net.sf.jasperreports.engine.base.JRBaseFont;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractObjectFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractObjectFactory implements JRVisitor
 {
@@ -58,7 +57,7 @@ public abstract class JRAbstractObjectFactory implements JRVisitor
 	/**
 	 *
 	 */
-	private Map<Object,Object> objectsMap = new HashMap<Object,Object>();
+	private Map<Object,Object> objectsMap = new HashMap<>();
 	private Object visitResult;
 
 
@@ -100,6 +99,12 @@ public abstract class JRAbstractObjectFactory implements JRVisitor
 	{
 		this.visitResult = visitResult;
 	}
+
+
+	/**
+	 *
+	 */
+	public abstract JRDefaultStyleProvider getDefaultStyleProvider();
 
 
 	/**

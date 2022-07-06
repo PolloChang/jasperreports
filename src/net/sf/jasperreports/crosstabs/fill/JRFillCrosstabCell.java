@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import net.sf.jasperreports.engine.fill.JRFillCellContents;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillCrosstabCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillCrosstabCell implements JRCrosstabCell
 {
@@ -45,16 +44,19 @@ public class JRFillCrosstabCell implements JRCrosstabCell
 		contents = factory.getCell(cell.getContents(), JRCellContents.TYPE_DATA);
 	}
 
+	@Override
 	public String getRowTotalGroup()
 	{
 		return parentCell.getRowTotalGroup();
 	}
 
+	@Override
 	public String getColumnTotalGroup()
 	{
 		return parentCell.getColumnTotalGroup();
 	}
 
+	@Override
 	public JRCellContents getContents()
 	{
 		return contents;
@@ -65,19 +67,19 @@ public class JRFillCrosstabCell implements JRCrosstabCell
 		return contents;
 	}
 
+	@Override
 	public Integer getWidth()
 	{
 		return parentCell.getWidth();
 	}
 
+	@Override
 	public Integer getHeight()
 	{
 		return parentCell.getHeight();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

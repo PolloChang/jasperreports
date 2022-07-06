@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,52 +23,37 @@
  */
 package net.sf.jasperreports.data.xml;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.w3c.dom.Document;
+
 import net.sf.jasperreports.data.AbstractDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.data.DataFileStream;
+import net.sf.jasperreports.data.DataFileUtils;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.data.JRXmlDataSource;
 import net.sf.jasperreports.engine.query.JRXPathQueryExecuterFactory;
 import net.sf.jasperreports.engine.util.JRXmlUtils;
-import net.sf.jasperreports.repo.RepositoryUtil;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.w3c.dom.Document;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XmlDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XmlDataAdapterService extends AbstractDataAdapterService
 {
-
-	private static final Log log = LogFactory.getLog(XmlDataAdapterService.class);
 
 	/**
 	 * 
 	 */
 	public XmlDataAdapterService(
-		JasperReportsContext jasperReportsContext,
+		ParameterContributorContext paramContribContext,
 		XmlDataAdapter xmlDataAdapter
 		) 
 	{
-		super(jasperReportsContext, xmlDataAdapter);
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #XmlDataAdapterService(JasperReportsContext, XmlDataAdapter)}.
-	 */
-	public XmlDataAdapterService(XmlDataAdapter xmlDataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), xmlDataAdapter);
+		super(paramContribContext, xmlDataAdapter);
 	}
 	
 	public XmlDataAdapter getXmlDataAdapter()
@@ -82,6 +67,8 @@ public class XmlDataAdapterService extends AbstractDataAdapterService
 		XmlDataAdapter xmlDataAdapter = getXmlDataAdapter();
 		if (xmlDataAdapter != null)
 		{
+			Document dataDocument = loadDataDocument(xmlDataAdapter, parameters);
+			
 			if (xmlDataAdapter.isUseConnection()) {
 				
 				/*
@@ -94,23 +81,7 @@ public class XmlDataAdapterService extends AbstractDataAdapterService
 				else
 				{
 				*/
-					InputStream dataStream = RepositoryUtil.getInstance(getJasperReportsContext()).getInputStreamFromLocation(xmlDataAdapter.getFileName());
-					try
-					{
-						Document document = JRXmlUtils.parse(dataStream, xmlDataAdapter.isNamespaceAware());
-						parameters.put(JRXPathQueryExecuterFactory.PARAMETER_XML_DATA_DOCUMENT, document);
-					}
-					finally
-					{
-						try
-						{
-							dataStream.close();
-						}
-						catch (IOException e)
-						{
-							log.warn("Failed to close input stream for " + xmlDataAdapter.getFileName());
-						}
-					}
+				parameters.put(JRXPathQueryExecuterFactory.PARAMETER_XML_DATA_DOCUMENT, dataDocument);
 				//}
 				
 				
@@ -136,7 +107,7 @@ public class XmlDataAdapterService extends AbstractDataAdapterService
 			}
 			else
 			{
-				JRXmlDataSource ds = new JRXmlDataSource(getJasperReportsContext(), xmlDataAdapter.getFileName(), xmlDataAdapter.getSelectExpression(), xmlDataAdapter.isNamespaceAware()); 
+				JRXmlDataSource ds = new JRXmlDataSource(getJasperReportsContext(), dataDocument, xmlDataAdapter.getSelectExpression()); 
 
 				Locale locale = xmlDataAdapter.getLocale();
 				if (locale != null) {
@@ -160,6 +131,22 @@ public class XmlDataAdapterService extends AbstractDataAdapterService
 
 				parameters.put(JRParameter.REPORT_DATA_SOURCE, ds);
 			}
+		}
+	}
+
+	protected Document loadDataDocument(XmlDataAdapter xmlDataAdapter, Map<String, Object> parameters) throws JRException
+	{
+		DataFileUtils dataFileUtils = DataFileUtils.instance(getParameterContributorContext());
+		DataFileStream dataStream = dataFileUtils.getDataStream(
+				xmlDataAdapter.getDataFile(), parameters);
+		try
+		{
+			Document dataDocument = JRXmlUtils.parse(dataStream, xmlDataAdapter.isNamespaceAware());
+			return dataDocument;
+		}
+		finally
+		{
+			dataStream.dispose();
 		}
 	}
 	

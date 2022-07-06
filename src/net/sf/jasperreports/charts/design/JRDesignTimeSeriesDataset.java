@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRDesignTimeSeriesDataset.java 7199 2014-08-27 13:58:10Z teodord $  
  */
 public class JRDesignTimeSeriesDataset extends JRDesignChartDataset implements JRTimeSeriesDataset {
 	
@@ -50,7 +49,7 @@ public class JRDesignTimeSeriesDataset extends JRDesignChartDataset implements J
 	
 	public static final String PROPERTY_TIME_SERIES = "timeSeries";
 	
-	private List<JRTimeSeries> timeSeriesList = new ArrayList<JRTimeSeries>();
+	private List<JRTimeSeries> timeSeriesList = new ArrayList<>();
 	private Class<?> timePeriod;
 	
 
@@ -62,9 +61,7 @@ public class JRDesignTimeSeriesDataset extends JRDesignChartDataset implements J
 		super( dataset );
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRTimeSeries[] getSeries()
 	{
 		JRTimeSeries[] timeSeriesArray = new JRTimeSeries[ timeSeriesList.size() ];
@@ -119,17 +116,13 @@ public class JRDesignTimeSeriesDataset extends JRDesignChartDataset implements J
 		return timeSeries;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Class<?> getTimePeriod() 
 	{
 		return timePeriod;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public void setTimePeriod( Class<?> timePeriod )
 	{
 		Object old = this.timePeriod;
@@ -137,31 +130,26 @@ public class JRDesignTimeSeriesDataset extends JRDesignChartDataset implements J
 		getEventSupport().firePropertyChange(PROPERTY_TIME_PERIOD, old, this.timePeriod);
 	}
 
-	/** 
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() 
 	{
 		return JRChartDataset.TIMESERIES_DATASET;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignTimeSeriesDataset clone = (JRDesignTimeSeriesDataset)super.clone();

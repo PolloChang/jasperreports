@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,25 +43,40 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.fonts.AwtFontAttribute;
 import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRStyledText.Run;
 import net.sf.jasperreports.engine.util.Pair;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SimpleTextLineWrapper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleTextLineWrapper implements TextLineWrapper
 {
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_4_7_1
+			)
 	public static final String PROPERTY_MEASURE_EXACT = 
 			JRPropertiesUtil.PROPERTY_PREFIX + "measure.simple.text.exact";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = "2000",
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_4_7_1,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_ELEMENT_CACHE_SIZE = 
 			JRPropertiesUtil.PROPERTY_PREFIX + "measure.simple.text.element.cache.size";
 
@@ -88,7 +103,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 	static
 	{
 		// white list of Unicode blocks that have simple text layout
-		simpleLayoutBlocks = new HashSet<Character.UnicodeBlock>();
+		simpleLayoutBlocks = new HashSet<>();
 		// got these from sun.font.FontUtilities, but the list is not exhaustive
 		simpleLayoutBlocks.add(Character.UnicodeBlock.GREEK);
 		simpleLayoutBlocks.add(Character.UnicodeBlock.CYRILLIC);
@@ -166,7 +181,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 				}
 			}
 
-			fontInfos = new HashMap<FontKey, ElementFontInfo>();
+			fontInfos = new HashMap<>();
 		}
 	}
 
@@ -199,10 +214,10 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 			// not handling this case, see JRStyledText.getAwtAttributedString
 			return false;
 		}
-		
-		String family = (String) run.attributes.get(TextAttribute.FAMILY);
+
+		AwtFontAttribute fontAttribute = AwtFontAttribute.fromAttributes(run.attributes);
 		Number size = (Number) run.attributes.get(TextAttribute.SIZE);
-		if (family == null || size == null)
+		if (!fontAttribute.hasAttribute() || size == null)
 		{
 			// this should not happen, but still checking
 			return false;
@@ -237,7 +252,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 			}
 		}
 		
-		fontKey = new FontKey(family, size.intValue(), style, styledText.getLocale());
+		fontKey = new FontKey(fontAttribute, size.floatValue(), style, styledText.getLocale());
 		createFontInfo(run.attributes);
 		
 		return true;
@@ -260,7 +275,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 		{
 			JRFillElement fillElement = (JRFillElement) context.getElement();
 			JRFillContext fillContext = fillElement.getFiller().getFillContext();
-			elementFontKey = new Pair<UUID, FontKey>(fillElement.getUUID(), fontKey);
+			elementFontKey = new Pair<>(fillElement.getUUID(), fontKey);
 			
 			elementFontInfos = (Map<Pair<UUID, FontKey>, ElementFontInfo>) fillContext.getFillCache(FILL_CACHE_KEY_ELEMENT_FONT_INFOS);
 			if (elementFontInfos == null)
@@ -327,7 +342,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 			generalFontInfos = (Map<FontKey, FontInfo>) fillContext.getFillCache(FILL_CACHE_KEY_GENERAL_FONT_INFOS);
 			if (generalFontInfos == null)
 			{
-				generalFontInfos = new HashMap<FontKey, FontInfo>();
+				generalFontInfos = new HashMap<>();
 				fillContext.setFillCache(FILL_CACHE_KEY_GENERAL_FONT_INFOS, generalFontInfos);
 			}
 			
@@ -362,11 +377,11 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 	{
 		// check bundled fonts
 		FontUtil fontUtil = FontUtil.getInstance(context.getJasperReportsContext());
-		Font font = fontUtil.getAwtFontFromBundles(fontKey.family, fontKey.style, fontKey.size, fontKey.locale, false);
+		Font font = fontUtil.getAwtFontFromBundles(fontKey.fontAttribute, fontKey.style, fontKey.size, fontKey.locale, false);
 		if (font == null)
 		{
 			// checking AWT font
-			fontUtil.checkAwtFont(fontKey.family, context.isIgnoreMissingFont());
+			fontUtil.checkAwtFont(fontKey.fontAttribute.getFamily(), context.isIgnoreMissingFont());
 			// creating AWT font
 			// FIXME using the current text attributes might be slightly dangerous as we are sharing font metrics
 			font = Font.getFont(textAttributes);
@@ -467,6 +482,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 			char ch = chars[i];
 			if (ch >= COMPEX_LAYOUT_START_CHAR && ch <= COMPEX_LAYOUT_END_CHAR)
 			{
+				//FIXME use icu4j or CharPredicateCache
 				UnicodeBlock chBlock = Character.UnicodeBlock.of(ch);
 				if (chBlock == null)
 				{
@@ -549,7 +565,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 	protected int measureExactLineBreakIndex(float width, int endLimit, boolean requireWord)
 	{
 		//FIXME would it be faster to create and cache a LineBreakMeasurer for the whole paragraph?
-		Map<Attribute, Object> attributes = new HashMap<Attribute, Object>();
+		Map<Attribute, Object> attributes = new HashMap<>();
 		// we only need the font as it includes the size and style
 		attributes.put(TextAttribute.FONT, fontInfo.fontInfo.font);
 		
@@ -770,15 +786,6 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 		return fontKey.size;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #maxFontsize(int, int)}.
-	 */
-	@Override
-	public int maxFontSize(int start, int end)
-	{
-		return (int)maxFontsize(start, end);
-	}
-
 	@Override
 	public String getLineText(int start, int end)
 	{
@@ -809,23 +816,15 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 	
 	protected static class FontKey
 	{
-		String family;
+		AwtFontAttribute fontAttribute;
 		float size;
 		int style;
 		Locale locale;
 		
-		/**
-		 * @deprecated To be removed.
-		 */
-		public FontKey(String family, int size, int style, Locale locale)
-		{
-			this(family, (float)size, style, locale);
-		}
-		
-		public FontKey(String family, float size, int style, Locale locale)
+		public FontKey(AwtFontAttribute fontAttribute, float size, int style, Locale locale)
 		{
 			super();
-			this.family = family;
+			this.fontAttribute = fontAttribute;
 			this.size = size;
 			this.style = style;
 			this.locale = locale;
@@ -835,7 +834,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 		public int hashCode()
 		{
 			int hash = 43;
-			hash = hash*29 + family.hashCode();
+			hash = hash*29 + fontAttribute.hashCode();
 			hash = hash*29 + Float.floatToIntBits(size);
 			hash = hash*29 + style;
 			hash = hash*29 + (locale == null ? 0 : locale.hashCode());
@@ -846,13 +845,14 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 		public boolean equals(Object obj)
 		{
 			FontKey info = (FontKey) obj;
-			return family.equals(info.family) && size == info.size && style == info.style
+			return fontAttribute.equals(info.fontAttribute) && size == info.size && style == info.style
 					&& ((locale == null) ? (info.locale == null) : (info.locale != null && locale.equals(info.locale)));
 		}
 		
+		@Override
 		public String toString()
 		{
-			return "{family: " + family
+			return "{font: " + fontAttribute
 					+ ", size: " + size
 					+ ", style: " + style
 					+ "}";
@@ -874,6 +874,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 			this.fontStatistics = new FontStatistics();
 		}
 		
+		@Override
 		public String toString()
 		{
 			return font.toString();
@@ -934,6 +935,7 @@ public class SimpleTextLineWrapper implements TextLineWrapper
 			fontInfo.fontStatistics.recordMeasurement(avgWidth);
 		}
 		
+		@Override
 		public String toString()
 		{
 			return fontInfo.font.toString();

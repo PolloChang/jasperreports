@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,17 +27,15 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
-import net.sf.jasperreports.engine.ImageMapRenderable;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPrintImageAreaHyperlink;
 
 /**
  * @author Sanda Zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRSimpleImageMapRenderer.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link SimpleDataRenderer}.
  */
-public class JRSimpleImageMapRenderer extends JRImageRenderer implements ImageMapRenderable
+public class JRSimpleImageMapRenderer extends net.sf.jasperreports.engine.JRImageRenderer implements net.sf.jasperreports.engine.ImageMapRenderable
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
@@ -55,6 +53,7 @@ public class JRSimpleImageMapRenderer extends JRImageRenderer implements ImageMa
 	/**
 	 * @deprecated To be removed.
 	 */
+	@Override
 	public List<JRPrintImageAreaHyperlink> renderWithHyperlinks(Graphics2D grx, Rectangle2D rectangle) throws JRException
 	{
 		render(grx, rectangle);
@@ -62,14 +61,13 @@ public class JRSimpleImageMapRenderer extends JRImageRenderer implements ImageMa
 		return areaHyperlinks;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public List<JRPrintImageAreaHyperlink> getImageAreaHyperlinks(Rectangle2D renderingArea) throws JRException 
 	{
 		return areaHyperlinks;
 	}
 
+	@Override
 	public boolean hasImageAreaHyperlinks()
 	{
 		return areaHyperlinks != null && !areaHyperlinks.isEmpty();

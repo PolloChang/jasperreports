@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jfree.data.general.Dataset;
+import org.jfree.data.general.DefaultPieDataset;
+
 import net.sf.jasperreports.charts.JRPieDataset;
 import net.sf.jasperreports.charts.JRPieSeries;
 import net.sf.jasperreports.charts.util.PieLabelGenerator;
@@ -49,16 +52,17 @@ import net.sf.jasperreports.engine.fill.JRFillChartDataset;
 import net.sf.jasperreports.engine.fill.JRFillHyperlinkHelper;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
-import org.jfree.data.general.Dataset;
-import org.jfree.data.general.DefaultPieDataset;
-
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillPieDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 {
+	/**
+	 * 
+	 */
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATED_KEY = "charts.pie.dataset.duplicated.key";
+	public static final String EXCEPTION_MESSAGE_KEY_NULL_KEY = "charts.pie.dataset.null.key";
 
 	/**
 	 *
@@ -71,6 +75,7 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 	private Map<Comparable<?>, Number> values;
 	private Map<Comparable<?>, String> labels;
 	private Map<Comparable<?>, JRPrintHyperlink> sectionHyperlinks;
+	private boolean ignoreDuplicatedKey = false;
 	
 	private Comparable<?> otherKey;
 	private String otherLabel;
@@ -100,82 +105,70 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Float getMinPercentage()
 	{
 		return ((JRPieDataset)parent).getMinPercentage();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMinPercentage(Float minPercentage)
 	{	
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getMaxCount()
 	{
 		return ((JRPieDataset)parent).getMaxCount();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMaxCount(Integer maxCount)
 	{	
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPieSeries[] getSeries()
 	{
 		return pieSeries;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getOtherKeyExpression()
 	{
 		return ((JRPieDataset)parent).getOtherKeyExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getOtherLabelExpression()
 	{
 		return ((JRPieDataset)parent).getOtherLabelExpression();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRHyperlink getOtherSectionHyperlink()
 	{
 		return ((JRPieDataset) parent).getOtherSectionHyperlink();
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	protected void customInitialize()
 	{
-		values = new LinkedHashMap<Comparable<?>, Number>();
-		labels = new HashMap<Comparable<?>, String>();
-		sectionHyperlinks = new HashMap<Comparable<?>, JRPrintHyperlink>();
+		values = new LinkedHashMap<>();
+		labels = new HashMap<>();
+		sectionHyperlinks = new HashMap<>();
+		
+		// read property here because fill dataset is null on constructor
+		ignoreDuplicatedKey = 
+			getFiller().getPropertiesUtil().getBooleanProperty(
+				getFillDataset(), 
+				PROPERTY_IGNORE_DUPLICATED_KEY, 
+				false
+				);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customEvaluate(JRCalculator calculator) throws JRExpressionEvalException
 	{
 		if (pieSeries != null && pieSeries.length > 0)
@@ -212,9 +205,7 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customIncrement()
 	{
 		if (pieSeries != null && pieSeries.length > 0)
@@ -226,7 +217,23 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 				Comparable<?> key = crtPieSeries.getKey();
 				if (key == null)
 				{
-					throw new JRRuntimeException("Key is null in pie dataset.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_NULL_KEY,
+							(Object[])null 
+							);
+				}
+
+				if (
+					!ignoreDuplicatedKey
+					&& values.containsKey(key)
+					)
+				{
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_DUPLICATED_KEY,
+							new Object[]{key} 
+							);
 				}
 
 				values.put(key, crtPieSeries.getValue());
@@ -244,13 +251,11 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Dataset getCustomDataset()
 	{
 		double total = 0;
-		List<Double> sortedValues = new ArrayList<Double>();
+		List<Double> sortedValues = new ArrayList<>();
 		for(Number nv: values.values())
 		{
 			double dvalue = nv.doubleValue();
@@ -262,12 +267,12 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 		Double minValue = null;
 		if (getMinPercentage() != null && getMinPercentage().intValue() >= 0 && getMinPercentage().intValue() <= 100)//FIXMENOW why intValue?
 		{
-			minValue = new Double((getMinPercentage().doubleValue() * total) / 100);
+			minValue = (getMinPercentage() * total) / 100;
 		}
 		if (getMaxCount() != null && getMaxCount().intValue() >= 0 && getMaxCount().intValue() <= values.size())
 		{
 			Double minValue2 = sortedValues.get(sortedValues.size() - getMaxCount().intValue());
-			minValue = minValue != null && minValue.doubleValue() > minValue2.doubleValue() ? minValue : minValue2;  
+			minValue = minValue != null && minValue > minValue2 ? minValue : minValue2;  
 		}
 		
 		int otherCount = 0;
@@ -283,7 +288,7 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 			
 			if (
 				minValue == null
-				|| value.doubleValue() >= minValue.doubleValue() 
+				|| value.doubleValue() >= minValue 
 				)
 			{
 				dataset.setValue(key, value);
@@ -303,7 +308,7 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 		else if (otherCount > 1)
 		{
 			otherKey = otherKey == null ? "Other" : otherKey;
-			dataset.setValue(otherKey, new Double(otherTotal));
+			dataset.setValue(otherKey, otherTotal);
 			labels.put(otherKey, otherLabel);
 
 			if (!JRHyperlinkHelper.isEmpty(getOtherSectionHyperlink()))
@@ -319,20 +324,20 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 	/* (non-Javadoc)
 	 * @see net.sf.jasperreports.engine.JRChartDataset#getDatasetType()
 	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.PIE_DATASET;
 	}
 
 
+	@Override
 	public Object getLabelGenerator()//FIXMECHART is this OK?
 	{
 		JRExpression labelExpression = (pieSeries != null && pieSeries.length > 0 ? pieSeries[0].getLabelExpression() : null);
 		return (labelExpression == null) ? null : new PieLabelGenerator( labels );
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
@@ -345,6 +350,7 @@ public class JRFillPieDataset extends JRFillChartDataset implements JRPieDataset
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

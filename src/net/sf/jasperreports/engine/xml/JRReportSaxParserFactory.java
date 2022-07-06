@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,13 +28,20 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.collections4.map.ReferenceMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.component.ComponentsBundle;
 import net.sf.jasperreports.engine.component.ComponentsEnvironment;
 import net.sf.jasperreports.engine.component.ComponentsXmlParser;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.engine.part.PartComponentsBundle;
+import net.sf.jasperreports.engine.part.PartComponentsEnvironment;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * The default report SAX parser factory.
@@ -53,7 +60,6 @@ import org.apache.commons.logging.LogFactory;
  * SAX parser.  See {@link #PROPERTY_CACHE_SCHEMAS}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRReportSaxParserFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRReportSaxParserFactory extends BaseSaxParserFactory
 {
@@ -65,23 +71,36 @@ public class JRReportSaxParserFactory extends BaseSaxParserFactory
 	 * <p>
 	 * Defaults to <code>true</code>.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_1_0_0,
+			valueType = Boolean.class
+			)
 	public static final String COMPILER_XML_VALIDATION = JRPropertiesUtil.PROPERTY_PREFIX + "compiler.xml.validation";
+	
+	private final static ThreadLocal<ReferenceMap<Object, Object>> GRAMMAR_POOL_CACHE = new ThreadLocal<>();
 
-	@SuppressWarnings("deprecation")
+	public JRReportSaxParserFactory(JasperReportsContext jasperReportsContext)
+	{
+		super(jasperReportsContext);
+	}
+	
 	@Override
 	protected boolean isValidating()
 	{
-		return net.sf.jasperreports.engine.util.JRProperties.getBooleanProperty(COMPILER_XML_VALIDATION);
+		return JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(COMPILER_XML_VALIDATION);
 	}
 	
 	@Override
 	protected List<String> getSchemaLocations()
 	{
-		List<String> schemas = new ArrayList<String>();
+		List<String> schemas = new ArrayList<>();
 		schemas.add(getResourceURI(JRXmlConstants.JASPERREPORT_XSD_RESOURCE));
 		schemas.add(getResourceURI(JRXmlConstants.JASPERREPORT_XSD_DTD_COMPAT_RESOURCE));
 		
-		Collection<ComponentsBundle> components = ComponentsEnvironment.getComponentBundles();
+		Collection<ComponentsBundle> components = ComponentsEnvironment.getInstance(jasperReportsContext).getBundles();
 		for (Iterator<ComponentsBundle> it = components.iterator(); it.hasNext();)
 		{
 			ComponentsBundle componentManager = it.next();
@@ -105,7 +124,39 @@ public class JRReportSaxParserFactory extends BaseSaxParserFactory
 			
 			schemas.add(schemaURI);
 		}
+		
+		Collection<PartComponentsBundle> parts = PartComponentsEnvironment.getInstance(jasperReportsContext).getBundles();
+		for (Iterator<PartComponentsBundle> it = parts.iterator(); it.hasNext();)
+		{
+			PartComponentsBundle componentManager = it.next();
+			ComponentsXmlParser xmlParser = componentManager.getXmlParser();
+			
+			String schemaURI;
+			String schemaResource = xmlParser.getInternalSchemaResource();
+			if (schemaResource != null)
+			{
+				schemaURI = getResourceURI(schemaResource);
+			}
+			else
+			{
+				schemaURI = xmlParser.getPublicSchemaLocation();
+			}
+
+			if (log.isDebugEnabled())
+			{
+				log.debug("Adding components schema at " + schemaURI);
+			}
+			
+			schemas.add(schemaURI);
+		}
+
 		return schemas;
+	}
+
+	@Override
+	protected ThreadLocal<ReferenceMap<Object, Object>> getGrammarPoolCache()
+	{
+		return GRAMMAR_POOL_CACHE;
 	}
 
 

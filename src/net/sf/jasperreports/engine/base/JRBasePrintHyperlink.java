@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
  * Stand-alone implementation of {@link JRPrintHyperlink JRPrintHyperlink}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBasePrintHyperlink.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePrintHyperlink implements JRPrintHyperlink, Serializable
 {
@@ -63,81 +62,97 @@ public class JRBasePrintHyperlink implements JRPrintHyperlink, Serializable
 	{
 	}
 	
+	@Override
 	public String getHyperlinkAnchor()
 	{
 		return hyperlinkAnchor;
 	}
 
+	@Override
 	public Integer getHyperlinkPage()
 	{
 		return hyperlinkPage;
 	}
 
+	@Override
 	public JRPrintHyperlinkParameters getHyperlinkParameters()
 	{
 		return hyperlinkParameters;
 	}
 
+	@Override
 	public String getHyperlinkReference()
 	{
 		return hyperlinkReference;
 	}
 
+	@Override
 	public HyperlinkTargetEnum getHyperlinkTargetValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTargetValue(getLinkTarget());
 	}
 
+	@Override
 	public HyperlinkTypeEnum getHyperlinkTypeValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTypeValue(getLinkType());
 	}
 
+	@Override
 	public String getLinkType()
 	{
 		return linkType;
 	}
 
+	@Override
 	public String getLinkTarget()
 	{
 		return linkTarget;
 	}
 
+	@Override
 	public void setHyperlinkAnchor(String hyperlinkAnchor)
 	{
 		this.hyperlinkAnchor = hyperlinkAnchor;
 	}
 
+	@Override
 	public void setHyperlinkPage(Integer hyperlinkPage)
 	{
 		this.hyperlinkPage = hyperlinkPage;
 	}
 
+	@Override
 	public void setHyperlinkParameters(JRPrintHyperlinkParameters parameters)
 	{
 		this.hyperlinkParameters = parameters;
 	}
 
+	@Override
 	public void setHyperlinkReference(String hyperlinkReference)
 	{
 		this.hyperlinkReference = hyperlinkReference;
 	}
 
+	@Override
 	public void setHyperlinkTarget(HyperlinkTargetEnum hyperlinkTarget)
 	{
 		setLinkTarget(JRHyperlinkHelper.getLinkTarget(hyperlinkTarget));
 	}
 
+	@Override
 	public void setLinkTarget(String linkTarget)
 	{
 		this.linkTarget = linkTarget;
 	}
 
+	@Override
 	public void setHyperlinkType(HyperlinkTypeEnum hyperlinkType)
 	{
 		setLinkType(JRHyperlinkHelper.getLinkType(hyperlinkType));
 	}
 
+	@Override
 	public void setLinkType(String type)
 	{
 		this.linkType = type;
@@ -161,12 +176,14 @@ public class JRBasePrintHyperlink implements JRPrintHyperlink, Serializable
 	}
 
 	
+	@Override
 	public String getHyperlinkTooltip()
 	{
 		return hyperlinkTooltip;
 	}
 
 	
+	@Override
 	public void setHyperlinkTooltip(String hyperlinkTooltip)
 	{
 		this.hyperlinkTooltip = hyperlinkTooltip;
@@ -181,6 +198,7 @@ public class JRBasePrintHyperlink implements JRPrintHyperlink, Serializable
 	 */
 	private byte hyperlinkTarget;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

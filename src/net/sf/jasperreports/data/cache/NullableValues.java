@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import net.sf.jasperreports.engine.JRConstants;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: NullableValues.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class NullableValues implements ColumnValues, Serializable
 {
@@ -58,11 +57,13 @@ public class NullableValues implements ColumnValues, Serializable
 		this.values = values;
 	}
 
+	@Override
 	public int size()
 	{
 		return nullValues.size();
 	}
 
+	@Override
 	public ColumnValuesIterator iterator()
 	{
 		ColumnValuesIterator nullsIterator = nullValues.iterator();
@@ -86,6 +87,7 @@ class NullableIterator implements ColumnValuesIterator
 		this.values = values;
 	}
 
+	@Override
 	public void moveFirst()
 	{
 		nulls.moveFirst();
@@ -93,6 +95,7 @@ class NullableIterator implements ColumnValuesIterator
 		value = null;
 	}
 
+	@Override
 	public boolean next()
 	{
 		if (!nulls.next())
@@ -117,6 +120,7 @@ class NullableIterator implements ColumnValuesIterator
 		return true;
 	}
 
+	@Override
 	public Object get()
 	{
 		return value;

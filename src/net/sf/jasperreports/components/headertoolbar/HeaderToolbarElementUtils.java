@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -57,13 +57,12 @@ import net.sf.jasperreports.engine.util.JRDataUtils;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.MessageProvider;
 import net.sf.jasperreports.engine.util.MessageUtil;
-import net.sf.jasperreports.web.util.JacksonUtil;
+import net.sf.jasperreports.util.JacksonUtil;
 
 
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: HeaderToolbarElementUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HeaderToolbarElementUtils 
 {
@@ -83,7 +82,7 @@ public class HeaderToolbarElementUtils
 	private static final String CALENDAR_DATE_PATTERN_KEY = DEFAULT_CALENDAR_DATE_PATTERN_KEY + ".key";
 	private static final String CALENDAR_DATE_TIME_PATTERN_KEY = DEFAULT_CALENDAR_DATE_TIME_PATTERN_KEY + ".key";
 	
-	private static Map<String, SortOrderEnum> sortOrderMapping = new HashMap<String, SortOrderEnum>();
+	private static Map<String, SortOrderEnum> sortOrderMapping = new HashMap<>();
 	
 	static {
 		sortOrderMapping.put(HeaderToolbarElement.SORT_ORDER_ASC, SortOrderEnum.ASCENDING);
@@ -95,7 +94,7 @@ public class HeaderToolbarElementUtils
 	}
 	
 	public static String packSortColumnInfo(String columnName, String columnType, String sortOrder) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		sb.append(columnName)
 			.append(HeaderToolbarElement.SORT_COLUMN_TOKEN_SEPARATOR)
 			.append(columnType)
@@ -142,12 +141,13 @@ public class HeaderToolbarElementUtils
 	public static void copyOwnTextElementStyle(EditTextElementData textElementData, JRDesignTextElement textElement, Locale locale) {
 		textElementData.setFontName(textElement.getOwnFontName());
 		textElementData.setFontSize(textElement.getOwnFontsize() != null ? NumberFormat.getNumberInstance(locale).format(textElement.getOwnFontsize()) : null);
+		textElementData.setFloatFontSize(textElement.getOwnFontsize() != null ? textElement.getOwnFontsize() : null);
 		textElementData.setFontBold(textElement.isOwnBold());
 		textElementData.setFontItalic(textElement.isOwnItalic());
 		textElementData.setFontUnderline(textElement.isOwnUnderline());
 		textElementData.setFontColor(textElement.getOwnForecolor() != null ? JRColorUtil.getColorHexa(textElement.getOwnForecolor()) : null);
 		textElementData.setFontBackColor(textElement.getOwnBackcolor() != null ? JRColorUtil.getColorHexa(textElement.getOwnBackcolor()) : null);
-		textElementData.setFontHAlign(textElement.getOwnHorizontalAlignmentValue() != null ? textElement.getOwnHorizontalAlignmentValue().getName() : null);
+		textElementData.setFontHAlign(textElement.getOwnHorizontalTextAlign() != null ? textElement.getOwnHorizontalTextAlign().getName() : null);
 		textElementData.setMode(textElement.getOwnModeValue() != null ? textElement.getOwnModeValue().getName() : null);
 		
 		if (textElement instanceof JRDesignTextField && TableUtil.hasSingleChunkExpression((JRDesignTextField) textElement)) {
@@ -158,12 +158,13 @@ public class HeaderToolbarElementUtils
 	public static void copyTextElementStyle(EditTextElementData textElementData, JRDesignTextElement textElement, Locale locale) {
 		textElementData.setFontName(JRStringUtil.htmlEncode(textElement.getFontName()));
 		textElementData.setFontSize(NumberFormat.getNumberInstance(locale).format(textElement.getFontsize()));
+		textElementData.setFloatFontSize(textElement.getFontsize());
 		textElementData.setFontBold(textElement.isBold());
 		textElementData.setFontItalic(textElement.isItalic());
 		textElementData.setFontUnderline(textElement.isUnderline());
 		textElementData.setFontColor(JRColorUtil.getColorHexa(textElement.getForecolor()));
 		textElementData.setFontBackColor(JRColorUtil.getColorHexa(textElement.getBackcolor()));
-		textElementData.setFontHAlign(textElement.getHorizontalAlignmentValue().getName());
+		textElementData.setFontHAlign(textElement.getHorizontalTextAlign().getName());
 		textElementData.setMode(textElement.getModeValue().getName());
 		
 		if (textElement instanceof JRDesignTextField && TableUtil.hasSingleChunkExpression((JRDesignTextField) textElement)) {
@@ -184,12 +185,6 @@ public class HeaderToolbarElementUtils
 	{
 		switch (FilterTypesEnum.getByName(filterData.getFilterType())) 
 		{
-			case TEXT :
-			{
-				// html encode the conditions for text based columns
-				filterData.setFieldValueStart(JRStringUtil.htmlEncode(filterData.getFieldValueStart()));
-				break;
-			}
 			case DATE :
 			case TIME :
 			{
@@ -265,11 +260,12 @@ public class HeaderToolbarElementUtils
 				}
 				break;
 			}
+			default :
 		}
 		
 		filterData.setFilterPattern(filterPattern);
 		filterData.setLocaleCode(JRDataUtils.getLocaleCode(locale));
-		filterData.setTimeZoneId(JRDataUtils.getTimeZoneId(timeZone));
+		filterData.setTimeZoneId(JRDataUtils.getTimeZoneId(timeZone));//FIXME only set this for date/time?
 	}
 	
 	/**
@@ -401,6 +397,7 @@ public class HeaderToolbarElementUtils
 				}
 				break;
 			}
+			default :
 		}
 		
 		cfd.setConditionPattern(conditionPattern);

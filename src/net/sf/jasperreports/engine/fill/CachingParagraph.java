@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.type.LineSpacingEnum;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CachingParagraph.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CachingParagraph implements JRParagraph
 {
@@ -60,22 +59,37 @@ public class CachingParagraph implements JRParagraph
 		this.spacingAfter = base.getSpacingAfter();
 	}
 
+	/**
+	 * @deprecated Replaced by {@link #getParagraphContainer()}.
+	 */
 	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
-		return base.getDefaultStyleProvider();
+		return base.getParagraphContainer().getDefaultStyleProvider();
 	}
 
+	/**
+	 * @deprecated Replaced by {@link #getParagraphContainer()}.
+	 */
 	@Override
 	public JRStyle getStyle()
 	{
-		return base.getStyle();
+		return base.getParagraphContainer().getStyle();
 	}
 
+	/**
+	 * @deprecated Replaced by {@link #getParagraphContainer()}.
+	 */
 	@Override
 	public String getStyleNameReference()
 	{
-		return base.getStyleNameReference();
+		return base.getParagraphContainer().getStyleNameReference();
+	}
+
+	@Override
+	public JRParagraphContainer getParagraphContainer()
+	{
+		return base.getParagraphContainer();
 	}
 
 	@Override

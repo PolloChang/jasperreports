@@ -1,7 +1,9 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2005 - 2014 Works, Inc. All rights reserved.
+ * Copyright (C) 2006 Works, Inc. All rights reserved.
  * http://www.works.com
+ * Copyright (C) 2006 - 2022 TIBCO Software Inc. All rights reserved.
+ * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
  * the following license terms apply:
@@ -43,10 +45,11 @@ import net.sf.jasperreports.engine.JRVirtualizable;
  * GZips the pages that it doesn't need, but keeps them in memory.
  * 
  * @author John Bindel
- * @version $Id: JRGzipVirtualizer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRGzipVirtualizer extends JRAbstractLRUVirtualizer
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NO_DATA_FOUND = "fill.virtualizer.no.data.found";
+	
 	private final Map<String,byte[]> zippedData;
 
 	/**
@@ -59,10 +62,12 @@ public class JRGzipVirtualizer extends JRAbstractLRUVirtualizer
 		this.zippedData = Collections.synchronizedMap(new HashMap<String,byte[]>());
 	}
 
+	@Override
 	protected void dispose(String virtualId) {
 		zippedData.remove(virtualId);
 	}
 
+	@Override
 	protected void pageOut(JRVirtualizable o) throws IOException {
 		if (!zippedData.containsKey(o.getUID())) {
 			GZIPOutputStream gos = null;
@@ -91,12 +96,16 @@ public class JRGzipVirtualizer extends JRAbstractLRUVirtualizer
 		}
 	}
 
+	@Override
 	protected void pageIn(JRVirtualizable o) throws IOException {
 		GZIPInputStream gis = null;
 		try {
 			byte[] data = zippedData.get(o.getUID());
 			if (data == null) {
-				throw new JRRuntimeException("No data found for object with UID " + o.getUID());
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_NO_DATA_FOUND,
+						new Object[]{o.getUID()});
 			}
 			ByteArrayInputStream bais = new ByteArrayInputStream(data);
 			gis = new GZIPInputStream(bais);
@@ -114,6 +123,7 @@ public class JRGzipVirtualizer extends JRAbstractLRUVirtualizer
 		}
 	}
 
+	@Override
 	public void cleanup()
 	{
 		zippedData.clear();

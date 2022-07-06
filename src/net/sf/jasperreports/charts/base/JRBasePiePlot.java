@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.charts.base;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import net.sf.jasperreports.charts.ChartCopyObjectFactory;
 import net.sf.jasperreports.charts.JRItemLabel;
 import net.sf.jasperreports.charts.JRPiePlot;
 import net.sf.jasperreports.engine.JRChart;
@@ -38,7 +39,6 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePiePlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 {
@@ -68,17 +68,22 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 	 */
 	public JRBasePiePlot(JRChartPlot chartPlot, JRChart chart)
 	{
+		this(chartPlot, chart, ChartCopyBaseObjectFactory.instance());
+	}
+
+	protected JRBasePiePlot(JRChartPlot chartPlot, JRChart chart, ChartCopyObjectFactory copyObjectFactory)
+	{
 		super(chartPlot, chart);
 		
 		JRPiePlot piePlot = chartPlot instanceof JRPiePlot ? (JRPiePlot)chartPlot : null;
 		
 		if (piePlot == null)
 		{
-			itemLabel = new JRBaseItemLabel(null, chart);
+			itemLabel = copyObjectFactory.copyItemLabel(null, chart);
 		}
 		else
 		{
-			itemLabel = new JRBaseItemLabel(piePlot.getItemLabel(), chart);
+			itemLabel = copyObjectFactory.copyItemLabel(piePlot.getItemLabel(), chart);
 		}
 	}
 
@@ -96,9 +101,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 		showLabels = piePlot.getShowLabels();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 	}
@@ -107,6 +110,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 	/**
 	 * @return the circular
 	 */
+	@Override
 	public Boolean getCircular() {
 		return circular;
 	}
@@ -124,6 +128,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 	/**
 	 * @return the labelFormat
 	 */
+	@Override
 	public String getLabelFormat() {
 		return labelFormat;
 	}
@@ -142,13 +147,12 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 	/**
 	 * @return the legendLabelFormat
 	 */
+	@Override
 	public String getLegendLabelFormat() {
 		return legendLabelFormat;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRItemLabel getItemLabel()
 	{
 		return itemLabel;
@@ -172,9 +176,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 		getEventSupport().firePropertyChange(PROPERTY_ITEM_LABEL, old, this.itemLabel);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean getShowLabels(){
 		return showLabels;
 	}
@@ -188,9 +190,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 		getEventSupport().firePropertyChange(PROPERTY_SHOW_LABELS, old, this.showLabels);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone(JRChart parentChart) 
 	{
 		JRBasePiePlot clone = (JRBasePiePlot)super.clone(parentChart);
@@ -211,7 +211,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		// this fixes a problem with JFreeChart that changed the default value of isCircular at some point.
-		// look into SVN history for details
+		// look into Git history for details
 		ObjectInputStream.GetField fields = in.readFields();
 		//the following lines are required because above we called readFields(), not defaultReadObject()
 		labelFormat = (String) fields.get("labelFormat", null);
@@ -223,7 +223,7 @@ public class JRBasePiePlot extends JRBaseChartPlot implements JRPiePlot
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_1_3)
 		{
 			boolean circularField = fields.get("isCircular", true);
-			circular = Boolean.valueOf(circularField);
+			circular = circularField;
 		}
 		else
 		{

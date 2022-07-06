@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRFillValueDisplay.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillValueDisplay implements JRValueDisplay
 {
@@ -59,40 +58,30 @@ public class JRFillValueDisplay implements JRValueDisplay
 		chart = (JRChart)factory.getVisitResult(valueDisplay.getChart());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRChart getChart()
 	{
 		return chart;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getColor()
 	{
 		return parent.getColor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getMask(){
 		return parent.getMask();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getFont()
 	{
 		return parent.getFont();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

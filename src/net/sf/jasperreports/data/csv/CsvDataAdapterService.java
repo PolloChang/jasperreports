@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,38 +25,38 @@ package net.sf.jasperreports.data.csv;
 
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import net.sf.jasperreports.data.AbstractDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.data.DataFileStream;
+import net.sf.jasperreports.data.DataFileUtils;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.data.JRCsvDataSource;
 import net.sf.jasperreports.engine.query.JRCsvQueryExecuterFactory;
+import net.sf.jasperreports.engine.util.Designated;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CsvDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class CsvDataAdapterService extends AbstractDataAdapterService 
+public class CsvDataAdapterService extends AbstractDataAdapterService implements Designated
 {
+	
+	public static final String SERVICE_DESIGNATION = "net.sf.jasperreports.data.adapter:CSV";
+	
+	private DataFileStream dataStream;
 	
 	/**
 	 * 
 	 */
-	public CsvDataAdapterService(JasperReportsContext jasperReportsContext, CsvDataAdapter csvDataAdapter)
+	public CsvDataAdapterService(ParameterContributorContext paramContribContext, CsvDataAdapter csvDataAdapter)
 	{
-		super(jasperReportsContext, csvDataAdapter);
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #CsvDataAdapterService(JasperReportsContext, CsvDataAdapter)}.
-	 */
-	public CsvDataAdapterService(CsvDataAdapter csvDataAdapter)
-	{
-		this(DefaultJasperReportsContext.getInstance(), csvDataAdapter);
+		super(paramContribContext, csvDataAdapter);
 	}
 	
 	public CsvDataAdapter getCsvDataAdapter()
@@ -70,56 +70,148 @@ public class CsvDataAdapterService extends AbstractDataAdapterService
 		CsvDataAdapter csvDataAdapter = getCsvDataAdapter();
 		if (csvDataAdapter != null)
 		{
+			dataStream = DataFileUtils.instance(getParameterContributorContext()).getDataStream(
+					csvDataAdapter.getDataFile(), parameters);
+			
+			Locale locale = csvDataAdapter.getLocale();
+			TimeZone timeZone = csvDataAdapter.getTimeZone();
 			String datePattern = csvDataAdapter.getDatePattern();
 			String numberPattern = csvDataAdapter.getNumberPattern();
+
 			if (csvDataAdapter.isQueryExecuterMode())
 			{	
-				parameters.put(JRCsvQueryExecuterFactory.CSV_SOURCE, csvDataAdapter.getFileName());
+				parameters.put(JRCsvQueryExecuterFactory.CSV_INPUT_STREAM, dataStream);
 				if (csvDataAdapter.getEncoding() != null)
 				{
 					parameters.put(JRCsvQueryExecuterFactory.CSV_ENCODING, csvDataAdapter.getEncoding());
 				}
+
+				if (locale != null) 
+				{
+					parameters.put(JRCsvQueryExecuterFactory.CSV_LOCALE, locale);
+				}
+
+				if (timeZone != null) 
+				{
+					parameters.put(JRCsvQueryExecuterFactory.CSV_TIMEZONE, timeZone);
+				}
+
 				if (datePattern != null && datePattern.length() > 0)
 				{
-					parameters.put( JRCsvQueryExecuterFactory.CSV_DATE_FORMAT, new SimpleDateFormat(datePattern) );
+					SimpleDateFormat sdf = null;
+					
+					if (locale == null)
+					{
+						sdf = new SimpleDateFormat(datePattern);
+					}
+					else
+					{
+						sdf = new SimpleDateFormat(datePattern, locale);
+					}
+					
+					if (timeZone != null)
+					{
+						sdf.setTimeZone(timeZone);
+					}
+
+					parameters.put(JRCsvQueryExecuterFactory.CSV_DATE_FORMAT, sdf);
 				}
+
 				if (numberPattern != null && numberPattern.length() > 0)
 				{
-					parameters.put( JRCsvQueryExecuterFactory.CSV_NUMBER_FORMAT, new DecimalFormat(numberPattern) );
+					DecimalFormat df = null;
+					if (locale == null)
+					{
+						df = new DecimalFormat(numberPattern);
+					}
+					else
+					{
+						df = new DecimalFormat(numberPattern, DecimalFormatSymbols.getInstance(locale));
+					}
+					parameters.put(JRCsvQueryExecuterFactory.CSV_NUMBER_FORMAT, df);
 				}
-				parameters.put( JRCsvQueryExecuterFactory.CSV_FIELD_DELIMITER, csvDataAdapter.getFieldDelimiter());
-				parameters.put( JRCsvQueryExecuterFactory.CSV_RECORD_DELIMITER, csvDataAdapter.getRecordDelimiter());
-				parameters.put( JRCsvQueryExecuterFactory.CSV_USE_FIRST_ROW_AS_HEADER, new Boolean(csvDataAdapter.isUseFirstRowAsHeader()));
+				
+				String fieldDelimiter = csvDataAdapter.getFieldDelimiter();
+				if (fieldDelimiter != null && !fieldDelimiter.isEmpty()) {
+					parameters.put( JRCsvQueryExecuterFactory.CSV_FIELD_DELIMITER, fieldDelimiter);
+				}
+				
+				String recordDelimiter = csvDataAdapter.getRecordDelimiter();
+				if (recordDelimiter != null && !recordDelimiter.isEmpty()) {
+					parameters.put( JRCsvQueryExecuterFactory.CSV_RECORD_DELIMITER, recordDelimiter);
+				}
+				
+				parameters.put( JRCsvQueryExecuterFactory.CSV_USE_FIRST_ROW_AS_HEADER, csvDataAdapter.isUseFirstRowAsHeader());
 
 				if (!csvDataAdapter.isUseFirstRowAsHeader())
 				{ 
 					parameters.put( JRCsvQueryExecuterFactory.CSV_COLUMN_NAMES_ARRAY, getColumnNames(csvDataAdapter));
 				}
-			}else{
+			}
+			else
+			{
 				JRCsvDataSource ds = null;
 				if (csvDataAdapter.getEncoding() == null)
 				{
-					ds = new JRCsvDataSource(getJasperReportsContext(), csvDataAdapter.getFileName());
+					ds = new JRCsvDataSource(dataStream);
 				}
 				else
 				{
 					try
 					{
-						ds = new JRCsvDataSource(getJasperReportsContext(), csvDataAdapter.getFileName(), csvDataAdapter.getEncoding());
+						ds = new JRCsvDataSource(dataStream, csvDataAdapter.getEncoding());
 					}
 					catch (UnsupportedEncodingException e)
 					{
 						throw new JRException(e);
 					}
 				}
+
+				if (locale != null) 
+				{
+					ds.setLocale(locale);
+				}
+
+				if (timeZone != null) 
+				{
+					ds.setTimeZone(timeZone);
+				}
+
 				if (datePattern != null && datePattern.length() > 0)
 				{
-					ds.setDateFormat( new SimpleDateFormat(datePattern) );
+					SimpleDateFormat sdf = null;
+					
+					if (locale == null)
+					{
+						sdf = new SimpleDateFormat(datePattern);
+					}
+					else
+					{
+						sdf = new SimpleDateFormat(datePattern, locale);
+					}
+					
+					if (timeZone != null)
+					{
+						sdf.setTimeZone(timeZone);
+					}
+
+					ds.setDateFormat(sdf);
 				}
+
 				if (numberPattern != null && numberPattern.length() > 0)
 				{
-					ds.setNumberFormat( new DecimalFormat(numberPattern) );
+					DecimalFormat df = null;
+					if (locale == null)
+					{
+						df = new DecimalFormat(numberPattern);
+					}
+					else
+					{
+						df = new DecimalFormat(numberPattern, DecimalFormatSymbols.getInstance(locale));
+					}
+					ds.setNumberFormat(df);
 				}
+
 				ds.setFieldDelimiter( csvDataAdapter.getFieldDelimiter().charAt(0) );
 				ds.setRecordDelimiter( csvDataAdapter.getRecordDelimiter() );				
 				ds.setUseFirstRowAsHeader( csvDataAdapter.isUseFirstRowAsHeader() );
@@ -141,6 +233,23 @@ public class CsvDataAdapterService extends AbstractDataAdapterService
 			names[i] = "" + csvDataAdapter.getColumnNames().get(i);
 		}
 		return names;
+	}
+
+	@Override
+	public void dispose()
+	{
+		if (dataStream != null)
+		{
+			dataStream.dispose();
+		}
+		
+		super.dispose();
+	}
+
+	@Override
+	public String getDesignation()
+	{
+		return SERVICE_DESIGNATION;
 	}
 	
 }

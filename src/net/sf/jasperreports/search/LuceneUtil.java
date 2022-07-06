@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,72 +23,31 @@
  */
 package net.sf.jasperreports.search;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.JRPrintFrame;
-import net.sf.jasperreports.engine.JRPrintPage;
-import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
-import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.PrintElementId;
+import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRStyledTextUtil;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
-import org.apache.lucene.search.spans.SpanNearQuery;
-import org.apache.lucene.search.spans.SpanOrQuery;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.spans.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: LuceneUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class LuceneUtil {
 
@@ -115,7 +74,7 @@ public class LuceneUtil {
 		this.styledTextUtil = JRStyledTextUtil.getInstance(jasperReportsContext);
 		
 		fieldType = new FieldType();
-		fieldType.setIndexed(true);
+		fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 		fieldType.setTokenized(true);
 		fieldType.setStored(true);
 		fieldType.setStoreTermVectors(true);
@@ -125,7 +84,7 @@ public class LuceneUtil {
 	}
 
 
-	public SpansInfo getSpansInfo(JasperPrint jasperPrint, String queryString) throws IOException, ParseException, JRException {
+	public SpansInfo getSpansInfo(JasperPrint jasperPrint, String queryString) throws IOException, JRException {
 		Long start = System.currentTimeMillis();
 
 		Directory dir = createLuceneDirectory(jasperPrint);
@@ -137,7 +96,7 @@ public class LuceneUtil {
 		IndexReader reader = DirectoryReader.open(dir);
 		IndexSearcher searcher = new IndexSearcher(reader);
 		List<String> queryTerms = getQueryTerms(queryString);
-		SpanNearQuery query = buildQuery(queryTerms);
+		SpanQuery query = buildQuery(queryTerms);
 
 		if (log.isDebugEnabled()) {
 			log.debug("lucene query: [" + query.toString() + "]");
@@ -146,34 +105,34 @@ public class LuceneUtil {
 		TopDocs results = searcher.search(query, Integer.MAX_VALUE);
 		ScoreDoc[] hits = results.scoreDocs;
 
-		Map<Integer, List<Term>> hitTermsMap = new LinkedHashMap<Integer, List<Term>>();
+		Map<Integer, List<Term>> hitTermsMap = new LinkedHashMap<>();
 
 		for (int i = 0; i < hits.length; i++) {
 			getHitTerms(query, searcher, hits[i].doc, hitTermsMap);
 		}
 
-		Map<Term,TermContext> termContexts = new HashMap<Term,TermContext>();
+		Map<Term,TermContext> termContexts = new HashMap<>();
 
 		// get the info for each matched term from the document's termVector
-		Map<Integer, List<HitTermInfo>> hitTermsInfoMap = new HashMap<Integer, List<HitTermInfo>>();
+		Map<Integer, List<HitTermInfo>> hitTermsInfoMap = new HashMap<>();
 		for (Entry<Integer, List<Term>> entry: hitTermsMap.entrySet()) {
 			List<Term> terms = entry.getValue();
 			Terms termVector = reader.getTermVector(entry.getKey(), CONTENT_FIELD);
-			DocsAndPositionsEnum docsAndPositions;
+			PostingsEnum docsAndPositions;
 
 			for (Term term: terms) {
 				termContexts.put(term, TermContext.build(reader.getContext(), term));
-				TermsEnum iterator = termVector.iterator(TermsEnum.EMPTY);
+				TermsEnum iterator = termVector.iterator();
 
 				BytesRef termBytesRef = new BytesRef(term.text());
 
 				if (iterator.seekExact(termBytesRef)) {
-					docsAndPositions = iterator.docsAndPositions(null, null);
+					docsAndPositions = iterator.postings(null, PostingsEnum.ALL);
 					docsAndPositions.nextDoc();
 
 					for (int i = 0, freq = docsAndPositions.freq(); i < freq; ++i) {
 						if (hitTermsInfoMap.get(entry.getKey()) == null) {
-							hitTermsInfoMap.put(entry.getKey(), new ArrayList<HitTermInfo>());
+							hitTermsInfoMap.put(entry.getKey(), new ArrayList<>());
 						}
 						hitTermsInfoMap.get(entry.getKey()).add(new HitTermInfo(docsAndPositions.nextPosition(), docsAndPositions.startOffset(), docsAndPositions.endOffset(), termBytesRef.utf8ToString()));
 					}
@@ -182,25 +141,31 @@ public class LuceneUtil {
 		}
 
 		// get the spans for the matched terms
-		AtomicReaderContext context = reader.leaves().get(0);
-		Bits acceptDocs = context.reader().getLiveDocs();
 		SpanQuery rewrittenQuery = (SpanQuery)query.rewrite(reader);
-		Spans spans = rewrittenQuery.getSpans(context, acceptDocs, termContexts);
 		LuceneSpansInfo spansInfo = new LuceneSpansInfo(queryTerms.size());
+		for (LeafReaderContext context : reader.leaves())
+		{
+			SpanWeight spanWeight = rewrittenQuery.createWeight(searcher, false, 1);
+			Spans spans = spanWeight.getSpans(context, SpanWeight.Postings.POSITIONS);
 
-		while (spans.next()) {
-			Document doc = searcher.doc(spans.doc());
-			String uid = doc.get("uid");
-			List<HitTermInfo> hitTermsInfo = hitTermsInfoMap.get(spans.doc());
+			if (spans != null) {
+				int nextDoc;
+				while ((nextDoc = spans.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+					int docIndex = nextDoc + context.docBase;
+					Document doc = searcher.doc(docIndex);
+					String uid = doc.get("uid");
+					List<HitTermInfo> hitTermsInfo = hitTermsInfoMap.get(docIndex);
 
-			for (int i = spans.start(); i < spans.end(); i++) {
-				for (HitTermInfo ti: hitTermsInfo) {
-					if (ti.getPosition() == i) {
-						if (log.isDebugEnabled()) {
-							log.debug(String.format("term: %s@%d [%d, %d] - uid: %s, pageNo: %s", ti.getValue(), ti.getPosition(), ti.getStart(), ti.getEnd(), uid, doc.get("pageNo")));
+					for (int i = spans.nextStartPosition(); i < spans.endPosition(); i++) {
+						for (HitTermInfo ti : hitTermsInfo) {
+							if (ti.getPosition() == i) {
+								if (log.isDebugEnabled()) {
+									log.debug(String.format("term: %s@%d [%d, %d] - uid: %s, pageNo: %s", ti.getValue(), ti.getPosition(), ti.getStart(), ti.getEnd(), uid, doc.get("pageNo")));
+								}
+								ti.setPageNo(doc.get("pageNo"));
+								spansInfo.addTermInfo(uid, ti);
+							}
 						}
-						ti.setPageNo(doc.get("pageNo"));
-						spansInfo.addTermInfo(uid, ti);
 					}
 				}
 			}
@@ -219,7 +184,7 @@ public class LuceneUtil {
 		Long start = System.currentTimeMillis();
 		Directory dir = new RAMDirectory();
 		Analyzer analyzer = getConfiguredAnalyzer();
-		IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_45, analyzer);
+		IndexWriterConfig iwc = new IndexWriterConfig(analyzer);
 
 		iwc.setOpenMode(OpenMode.CREATE);
 		writer = new IndexWriter(dir, iwc);
@@ -280,12 +245,14 @@ public class LuceneUtil {
 		if (allText != null && allText.length() > 0) {
 			Field tf = new Field(CONTENT_FIELD, allText, fieldType);
 			Document doc = new Document();
-			doc.add(new IntField("pageNo", pageNo, Field.Store.YES));
+			doc.add(new StoredField("pageNo", pageNo));
 
 			PrintElementId peid = PrintElementId.forElement(element);
 			doc.add(new StringField("uid", peid.toString(), Field.Store.YES));
 
-			displayTokens(allText, peid.toString());
+			if (log.isDebugEnabled()) {
+				log.debug(displayTokens(allText, peid.toString()));
+			}
 
 			doc.add(tf);
 			writer.addDocument(doc);
@@ -296,7 +263,7 @@ public class LuceneUtil {
 
 	protected Analyzer getConfiguredAnalyzer() {
 		if (analyzer == null) {
-			analyzer = new LuceneSimpleAnalyzer(Version.LUCENE_45, isCaseSensitive, removeAccents);
+			analyzer = new LuceneSimpleAnalyzer(isCaseSensitive, removeAccents);
 		}
 		return analyzer;
 	}
@@ -308,9 +275,8 @@ public class LuceneUtil {
 	}
 
 
-	protected SpanNearQuery buildQuery(List<String> queryTerms) {
-		SpanNearQuery query = null;
-		List<SpanQuery> clauses = new ArrayList<SpanQuery>();
+	protected SpanQuery buildQuery(List<String> queryTerms) {
+		List<SpanQuery> clauses = new ArrayList<>();
 		for (int i = 0, ln = queryTerms.size(); i < ln; i++) {
 			String term = queryTerms.get(i);
 			if (isWholeWordsOnly) {
@@ -319,24 +285,27 @@ public class LuceneUtil {
 				if (i == 0) {
 					term = "*" + term;
 				}
-				if (i == ln-1) {
+				if (i == ln - 1) {
 					term = term + "*";
 				}
-				clauses.add(new SpanMultiTermQueryWrapper<WildcardQuery>(new WildcardQuery(new Term(CONTENT_FIELD, term))));
+				clauses.add(new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term(CONTENT_FIELD, term))));
 			}
 		}
 
-		if (clauses.size() > 0) {
+		if (clauses.size() > 1) {
 			// create a spanQuery with no distance between terms; the terms' order matters
-			query = new SpanNearQuery(clauses.toArray(new SpanQuery[]{}), 0, true);
+			// SpanNearQuery requires at least 2 clauses
+			return new SpanNearQuery(clauses.toArray(new SpanQuery[]{}), 0, true);
+		} else if (clauses.size() == 1) {
+			return clauses.get(0);
 		}
 
-		return query;
+		return null;
 	}
 
 
 	protected List<String> getQueryTerms(String queryString) throws IOException {
-		List<String> queryTerms = new ArrayList<String>();
+		List<String> queryTerms = new ArrayList<>();
 		Analyzer analyzer = getConfiguredAnalyzer();
 		TokenStream tokenStream = analyzer.tokenStream(null, queryString);
 		CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
@@ -350,26 +319,24 @@ public class LuceneUtil {
 	}
 
 
-	protected void displayTokens(String text, String elementId) throws IOException {
-		if (log.isDebugEnabled()) {
-			Analyzer analyzer = getConfiguredAnalyzer();
-			StringBuilder sb = new StringBuilder();
-			sb.append(elementId).append(": ").append(text).append(": ");
+	protected String displayTokens(String text, String elementId) throws IOException {
+		Analyzer analyzer = new LuceneSimpleAnalyzer(isCaseSensitive, removeAccents);
+		StringBuilder sb = new StringBuilder();
+		sb.append(elementId).append(": ").append(text).append(": ");
 
-			TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(text));
-			CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
-			OffsetAttribute offsetAttribute = tokenStream.addAttribute(OffsetAttribute.class);
+		TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(text));
+		CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
+		OffsetAttribute offsetAttribute = tokenStream.addAttribute(OffsetAttribute.class);
 
-			tokenStream.reset();
-			while (tokenStream.incrementToken()) {
-				int startOffset = offsetAttribute.startOffset();
-				int endOffset = offsetAttribute.endOffset();
-				String term = charTermAttribute.toString();
-				sb.append("[" + term + "](" + startOffset + "," + endOffset + ") ");
-			}
-
-			log.debug(sb);
+		tokenStream.reset();
+		while (tokenStream.incrementToken()) {
+			int startOffset = offsetAttribute.startOffset();
+			int endOffset = offsetAttribute.endOffset();
+			String term = charTermAttribute.toString();
+			sb.append("[" + term + "](" + startOffset + "," + endOffset + ") ");
 		}
+
+		return sb.toString();
 	}
 	
 
@@ -378,7 +345,7 @@ public class LuceneUtil {
 		if (query instanceof SpanTermQuery) {
 			if (searcher.explain(query, docId).isMatch() == true) {
 				if (!hitTerms.containsKey(docId)) {
-					hitTerms.put(docId, new ArrayList<Term>());
+					hitTerms.put(docId, new ArrayList<>());
 				}
 				hitTerms.get(docId).add(((SpanTermQuery) query).getTerm());
 			}
@@ -387,7 +354,7 @@ public class LuceneUtil {
 
 		if (query instanceof MultiTermQuery) {
 			if (!(query instanceof FuzzyQuery)) { // FuzzQuery doesn't support SetRewriteMethod
-				((MultiTermQuery) query).setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+				((MultiTermQuery) query).setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_REWRITE);
 			}
 			getHitTerms(query.rewrite(searcher.getIndexReader()), searcher, docId, hitTerms);
 			return;

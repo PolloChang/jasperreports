@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.fonts;
 
+import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,23 +31,17 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.lang.ref.SoftReference;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.repo.RepositoryUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -59,19 +54,29 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.JRXmlUtils;
+import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
+import net.sf.jasperreports.repo.RepositoryUtil;
+import net.sf.jasperreports.util.StringBuilderWriter;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleFontExtensionHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class SimpleFontExtensionHelper implements ErrorHandler
 {
 	private static final Log log = LogFactory.getLog(SimpleFontExtensionHelper.class);
+	public static final String EXCEPTION_MESSAGE_KEY_FILE_WRITER_ERROR = "fonts.file.writer.error";
+	public static final String EXCEPTION_MESSAGE_KEY_OUTPUT_STREAM_WRITER_ERROR = "fonts.output.stream.writer.error";
 	
 	/**
-	 * Default XML output encoding.
+	 * @deprecated Replaced by {@link StandardCharsets#UTF_8}.
 	 */
-	public static final String DEFAULT_ENCODING = "UTF-8";
+	public static final String DEFAULT_ENCODING = StandardCharsets.UTF_8.name();
 	
 
 	/**
@@ -109,33 +114,24 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	private static final String NODE_export = "export";
 	private static final String NODE_locales = "locales";
 	private static final String NODE_locale = "locale";
+	private static final String NODE_includedScript = "includedScript";
+	private static final String NODE_excludedScript = "excludedScript";
+	private static final String NODE_fontSet = "fontSet";
+	private static final String NODE_family = "family";
 	private static final String ATTRIBUTE_name = "name";
 	private static final String ATTRIBUTE_visible = "visible";
 	private static final String ATTRIBUTE_key = "key";
-
-	/**
-	 * Thread local soft cache of instances.
-	 */
-	private static final ThreadLocal<SoftReference<SimpleFontExtensionHelper>> threadInstances = new ThreadLocal<SoftReference<SimpleFontExtensionHelper>>();
+	private static final String ATTRIBUTE_familyName = "familyName";
+	private static final String ATTRIBUTE_primary = "primary";
 	
 	/**
-	 * Return a cached instance.
+	 * Return a new instance.
 	 * 
-	 * @return a cached instance
+	 * @return a new instance
 	 */
 	public static SimpleFontExtensionHelper getInstance()
 	{
-		SimpleFontExtensionHelper instance = null;
-		SoftReference<SimpleFontExtensionHelper> instanceRef = threadInstances.get();
-		if (instanceRef != null)
-		{
-			instance = instanceRef.get();
-		}
-		if (instance == null)
-		{
-			instance = new SimpleFontExtensionHelper();
-			threadInstances.set(new SoftReference<SimpleFontExtensionHelper>(instance));
-		}
+		SimpleFontExtensionHelper instance = new SimpleFontExtensionHelper();
 		return instance;
 	}
 	
@@ -153,6 +149,8 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		try
 		{
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setFeature(JRXmlUtils.FEATURE_DISALLOW_DOCTYPE, true);
+			
 			documentBuilder = factory.newDocumentBuilder();
 			documentBuilder.setErrorHandler(this);
 		}
@@ -176,12 +174,20 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	 */
 	public List<FontFamily> loadFontFamilies(JasperReportsContext jasperReportsContext, String file)
 	{
+		FontExtensionsCollector collector = new FontExtensionsCollector();
+		loadFontExtensions(jasperReportsContext, file, collector);
+		return collector.getFontFamilies();
+	}
+	
+	public void loadFontExtensions(JasperReportsContext jasperReportsContext, String file,
+			FontExtensionsReceiver receiver)
+	{
 		InputStream is = null; 
 		
 		try
 		{
 			is = RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(file);
-			return loadFontFamilies(jasperReportsContext, is);
+			loadFontExtensions(jasperReportsContext, is, receiver, true);
 		}
 		catch (JRException e)
 		{
@@ -207,62 +213,71 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	 */
 	public List<FontFamily> loadFontFamilies(JasperReportsContext jasperReportsContext, InputStream is)
 	{
-		List<FontFamily> fontFamilies = null;
+		FontExtensionsCollector collector = new FontExtensionsCollector();
+		loadFontExtensions(jasperReportsContext, is, collector);
+		return collector.getFontFamilies();
+	}
 
+	public void loadFontExtensions(JasperReportsContext jasperReportsContext, InputStream is,
+			FontExtensionsReceiver receiver)
+	{
+		loadFontExtensions(jasperReportsContext, is, receiver, true);
+	}
+
+	public void loadFontExtensions(JasperReportsContext jasperReportsContext, InputStream is,
+			FontExtensionsReceiver receiver, boolean loadFonts)
+	{
 		try
 		{
-			Document document = documentBuilder.parse(new InputSource(new InputStreamReader(is, "UTF-8")));
-			fontFamilies = parseFontFamilies(jasperReportsContext, document.getDocumentElement());
+			Document document = documentBuilder.parse(new InputSource(new InputStreamReader(is, StandardCharsets.UTF_8)));
+			parseFontExtensions(jasperReportsContext, document.getDocumentElement(), receiver, loadFonts);
 		}
-		catch (SAXException e)
+		catch (SAXException | IOException e)
 		{
 			throw new JRRuntimeException(e);
 		}
-		
-		catch (IOException e)
-		{
-			throw new JRRuntimeException(e);
-		}
-		
-		return fontFamilies;
-	}
-	
-	/**
-	 * @deprecated To be removed.
-	 */
-	public List<FontFamily> loadFontFamilies(InputStream is)
-	{
-		return loadFontFamilies(DefaultJasperReportsContext.getInstance(), is);
 	}
 
 	/**
 	 *
 	 */
-	private List<FontFamily> parseFontFamilies(JasperReportsContext jasperReportsContext, Node fontFamiliesNode) throws SAXException
+	private void parseFontExtensions(JasperReportsContext jasperReportsContext, Node fontFamiliesNode,
+			FontExtensionsReceiver receiver, boolean loadFonts) throws SAXException
 	{
-		List<FontFamily> fontFamilies = new ArrayList<FontFamily>();
-		
 		NodeList nodeList = fontFamiliesNode.getChildNodes();
 		for(int i = 0; i < nodeList.getLength(); i++)
 		{
 			Node node = nodeList.item(i);
-			if (
-				node.getNodeType() == Node.ELEMENT_NODE
-				&& NODE_fontFamily.equals(node.getNodeName())
-				)
+			if (node.getNodeType() == Node.ELEMENT_NODE)
 			{
-				fontFamilies.add(parseFontFamily(jasperReportsContext, node));
+				if (NODE_fontFamily.equals(node.getNodeName()))
+				{
+					try
+					{
+						SimpleFontFamily fontFamily = parseFontFamily(jasperReportsContext, node, loadFonts);
+						receiver.acceptFontFamily(fontFamily);
+					}
+					catch (InvalidFontException e)//only catching the specific InvalidFontException for now
+					{
+						log.error("Error loading font family", e);
+						//discarding the whole family
+					}
+				}
+				else if (NODE_fontSet.equals(node.getNodeName()))
+				{
+					SimpleFontSet fontSet = parseFontSet(node);
+					receiver.acceptFontSet(fontSet);
+				}
 			}
 		}
-		
-		return fontFamilies;
 	}
 
 	/**
 	 *
 	 */
 	@SuppressWarnings("deprecation")
-	private SimpleFontFamily parseFontFamily(JasperReportsContext jasperReportsContext, Node fontFamilyNode) throws SAXException
+	private SimpleFontFamily parseFontFamily(JasperReportsContext jasperReportsContext, Node fontFamilyNode,
+			boolean loadFonts) throws SAXException
 	{
 		SimpleFontFamily fontFamily = new SimpleFontFamily(jasperReportsContext);
 		
@@ -271,11 +286,15 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		if (nodeAttrs.getNamedItem(ATTRIBUTE_name) != null)
 		{
 			fontFamily.setName(nodeAttrs.getNamedItem(ATTRIBUTE_name).getNodeValue());
+			if (log.isDebugEnabled())
+			{
+				log.debug("Parsing font family " + fontFamily.getName());
+			}
 		}
 		if (nodeAttrs.getNamedItem(ATTRIBUTE_visible) != null)
 		{
 			fontFamily.setVisible(
-				Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_visible).getNodeValue()).booleanValue()
+				Boolean.valueOf(nodeAttrs.getNamedItem(ATTRIBUTE_visible).getNodeValue())
 				);
 		}
 
@@ -287,19 +306,19 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 			{
 				if (NODE_normal.equals(node.getNodeName()))
 				{
-					fontFamily.setNormalFace(parseFontFace(jasperReportsContext, node));
+					fontFamily.setNormalFace(parseFontFace(jasperReportsContext, node, loadFonts));
 				}
 				else if (NODE_bold.equals(node.getNodeName()))
 				{
-					fontFamily.setBoldFace(parseFontFace(jasperReportsContext, node));
+					fontFamily.setBoldFace(parseFontFace(jasperReportsContext, node, loadFonts));
 				}
 				else if (NODE_italic.equals(node.getNodeName()))
 				{
-					fontFamily.setItalicFace(parseFontFace(jasperReportsContext, node));
+					fontFamily.setItalicFace(parseFontFace(jasperReportsContext, node, loadFonts));
 				}
 				else if (NODE_boldItalic.equals(node.getNodeName()))
 				{
-					fontFamily.setBoldItalicFace(parseFontFace(jasperReportsContext, node));
+					fontFamily.setBoldItalicFace(parseFontFace(jasperReportsContext, node, loadFonts));
 				}
 				else if (NODE_normalPdfFont.equals(node.getNodeName()))
 				{
@@ -342,7 +361,8 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	/**
 	 *
 	 */
-	private SimpleFontFace parseFontFace(JasperReportsContext jasperReportsContext, Node fontFaceNode) throws SAXException
+	private SimpleFontFace parseFontFace(JasperReportsContext jasperReportsContext, Node fontFaceNode,
+			boolean loadFonts) throws SAXException
 	{
 		SimpleFontFace fontFace = new SimpleFontFace(jasperReportsContext);
 		
@@ -354,7 +374,7 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 			|| fontFaceNode.getFirstChild().getNodeType() == Node.CDATA_SECTION_NODE)
 			)
 		{
-			fontFace.setTtf(fontFaceNode.getFirstChild().getTextContent());
+			fontFace.setTtf(fontFaceNode.getFirstChild().getTextContent(), loadFonts);
 		}
 		else
 		{
@@ -365,7 +385,7 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 				{
 					if (NODE_ttf.equals(node.getNodeName()))
 					{
-						fontFace.setTtf(node.getTextContent());
+						fontFace.setTtf(node.getTextContent(), loadFonts);
 					}
 					else if (NODE_pdf.equals(node.getNodeName()))
 					{
@@ -393,9 +413,9 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	/**
 	 *
 	 */
-	private Map<String,String> parseExportFonts(Node exportFontsNode) throws SAXException
+	private Map<String,String> parseExportFonts(Node exportFontsNode)
 	{
-		Map<String,String> exportFonts = new HashMap<String,String>();
+		Map<String,String> exportFonts = new HashMap<>();
 		
 		NodeList nodeList = exportFontsNode.getChildNodes();
 		for(int i = 0; i < nodeList.getLength(); i++)
@@ -417,25 +437,92 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		
 		return exportFonts;
 	}
+	
+	private SimpleFontSet parseFontSet(Node fontSetNode)
+	{
+		SimpleFontSet fontSet = new SimpleFontSet();
+		
+		NamedNodeMap nodeAttrs = fontSetNode.getAttributes();
+		if (nodeAttrs.getNamedItem(ATTRIBUTE_name) != null)
+		{
+			fontSet.setName(nodeAttrs.getNamedItem(ATTRIBUTE_name).getNodeValue());
+		}
+
+		NodeList nodeList = fontSetNode.getChildNodes();
+		for(int i = 0; i < nodeList.getLength(); i++)
+		{
+			Node node = nodeList.item(i);
+			if (node.getNodeType() == Node.ELEMENT_NODE)
+			{
+				if (NODE_family.equals(node.getNodeName()))
+				{
+					SimpleFontSetFamily family = parsetFontSetFamily(node);
+					fontSet.addFamily(family);
+				}
+				else if (NODE_exportFonts.equals(node.getNodeName()))
+				{
+					fontSet.setExportFonts(parseExportFonts(node));
+				}
+			}
+		}
+		
+		return fontSet;
+	}
+	
+	private SimpleFontSetFamily parsetFontSetFamily(Node familyNode)
+	{
+		SimpleFontSetFamily family = new SimpleFontSetFamily();
+		
+		NamedNodeMap nodeAttrs = familyNode.getAttributes();
+		if (nodeAttrs.getNamedItem(ATTRIBUTE_familyName) != null)
+		{
+			family.setFamilyName(nodeAttrs.getNamedItem(ATTRIBUTE_familyName).getNodeValue());
+		}
+		if (nodeAttrs.getNamedItem(ATTRIBUTE_primary) != null)
+		{
+			family.setPrimary(Boolean.parseBoolean(nodeAttrs.getNamedItem(ATTRIBUTE_primary).getNodeValue()));
+		}
+
+		NodeList nodeList = familyNode.getChildNodes();
+		for(int i = 0; i < nodeList.getLength(); i++)
+		{
+			Node node = nodeList.item(i);
+			if (node.getNodeType() == Node.ELEMENT_NODE)
+			{
+				if (NODE_includedScript.equals(node.getNodeName()))
+				{
+					family.addIncludedScript(node.getTextContent());
+				}
+				else if (NODE_excludedScript.equals(node.getNodeName()))
+				{
+					family.addExcludedScript(node.getTextContent());
+				}
+			}
+		}
+		
+		return family;
+	}
 
 	/**
 	 *
 	 */
 	public static String getFontsXml(List<FontFamily> fontFamilies)
 	{
-		StringBuffer buffer = null;
-		
 		if(fontFamilies != null)
 		{
-			buffer = new StringBuffer();
-			buffer.append("<?xml version=\"1.0\" encoding=\"" + DEFAULT_ENCODING + "\"?>\n");
-			buffer.append("<fontFamilies>\n");
-			for (FontFamily fontFamily : fontFamilies)
+			FontExtensionsContainer extensions = new SimpleFontExtensionsContainer(fontFamilies, null);
+			StringBuilder sb = new StringBuilder();
+			StringBuilderWriter writer = new StringBuilderWriter(sb);
+			try
 			{
-				writeFontFamily(buffer, fontFamily);
+				writeFontExtensions(writer, extensions);
 			}
-			buffer.append("</fontFamilies>\n");
-			return buffer.toString();
+			catch (IOException e)
+			{
+				//should not happen
+				throw new JRRuntimeException(e);
+			}
+			return sb.toString();
 		}
 		else
 		{
@@ -444,94 +531,119 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		}
 	}
 
+	protected static void writeFontExtensions(Writer out, FontExtensionsContainer extensions) throws IOException
+	{
+		JRXmlWriteHelper writer = new JRXmlWriteHelper(out);
+		writer.writeProlog(StandardCharsets.UTF_8.name());
+		
+		writer.startElement("fontFamilies");
+		
+		List<? extends FontFamily> fontFamilies = extensions.getFontFamilies();
+		if(fontFamilies != null)
+		{
+			for (FontFamily fontFamily : fontFamilies)
+			{
+				writeFontFamily(writer, fontFamily);
+			}
+		}
+		
+		List<? extends FontSet> fontSets = extensions.getFontSets();
+		if (fontSets != null)
+		{
+			for (FontSet fontSet : fontSets)
+			{
+				writeFontSet(writer, fontSet);
+			}
+		}
+
+		writer.closeElement();
+	}
+
 	/**
+	 * @throws IOException 
 	 *
 	 */
-	private static void writeFontFamily(StringBuffer buffer, FontFamily fontFamily) 
+	private static void writeFontFamily(JRXmlWriteHelper writer, FontFamily fontFamily) throws IOException 
 	{
-		if(fontFamily != null)
+		if (fontFamily != null)
 		{
-			if(fontFamily.getName() == null)
+			if (fontFamily.getName() == null)
 			{
 				log.error("Font family name is required.");
 				return;
 			}
 			
-			String indent = "  ";
-			buffer.append(indent + "<fontFamily name=\"" + fontFamily.getName() + "\""); 
-			if (!fontFamily.isVisible())
-			{
-				buffer.append(" visible=\"" + fontFamily.isVisible() + "\""); 
-			}
-			buffer.append(">\n");
-			indent = "    ";
+			writer.startElement(NODE_fontFamily);
+			writer.addAttribute(ATTRIBUTE_name, fontFamily.getName());
+			writer.addAttribute(ATTRIBUTE_visible, fontFamily.isVisible(), true);
 			
-			writeFontFace(buffer, fontFamily.getNormalFace(), NODE_normal);
-			writeFontFace(buffer, fontFamily.getBoldFace(), NODE_bold);
-			writeFontFace(buffer, fontFamily.getItalicFace(), NODE_italic);
-			writeFontFace(buffer, fontFamily.getBoldItalicFace(), NODE_boldItalic);
+			writeFontFace(writer, fontFamily.getNormalFace(), NODE_normal);
+			writeFontFace(writer, fontFamily.getBoldFace(), NODE_bold);
+			writeFontFace(writer, fontFamily.getItalicFace(), NODE_italic);
+			writeFontFace(writer, fontFamily.getBoldItalicFace(), NODE_boldItalic);
 
-			if(fontFamily.getPdfEncoding() != null)
+			if (fontFamily.getPdfEncoding() != null)
 			{
-				buffer.append(indent + "<pdfEncoding>" + fontFamily.getPdfEncoding() +"</pdfEncoding>\n");
+				writer.writeCDATAElement(NODE_pdfEncoding, fontFamily.getPdfEncoding());
 				
 			}
-			if(fontFamily.isPdfEmbedded() != null)
+			if (fontFamily.isPdfEmbedded() != null)
 			{
-				buffer.append(indent + "<pdfEmbedded>" + fontFamily.isPdfEmbedded() +"</pdfEmbedded>\n");
-				
+				//TODO lucianc we can do without CDATA here
+				writer.writeCDATAElement(NODE_pdfEmbedded, Boolean.toString(fontFamily.isPdfEmbedded()));
 			}
 			
-			if(fontFamily instanceof SimpleFontFamily)
+			if (fontFamily instanceof SimpleFontFamily)
 			{
 				SimpleFontFamily simpleFontFamily = (SimpleFontFamily)fontFamily;
 				
 				Map<String, String> exportFonts = simpleFontFamily.getExportFonts();
-				
-				if(exportFonts != null)
-				{
-					buffer.append(indent + "<exportFonts>\n");
-					indent = "      ";
-					for(String key : exportFonts.keySet())
-					{
-						buffer.append(indent + "<export key=\"" + key +"\">" + exportFonts.get(key) + "</export>\n");
-					}
-					indent = "    ";
-					buffer.append(indent + "</exportFonts>\n");
-				}
+				writeExportFonts(writer, exportFonts);
 				
 				Set<String> locales = simpleFontFamily.getLocales();
 				
-				if(locales != null)
+				if (locales != null)
 				{
-					buffer.append(indent + "<locales>\n");
-					indent = "      ";
+					writer.startElement(NODE_locales);
 					for(String locale : locales)
 					{
-						buffer.append(indent + "<locale>" + locale + "</locale>\n");
+						writer.writeCDATAElement(NODE_locale, locale);
 					}
-					indent = "    ";
-					buffer.append(indent + "</locales>\n");
+					writer.closeElement();
 				}
 			}
-			indent = "  ";
-			buffer.append(indent + "</fontFamily>\n\n");
+			writer.closeElement();
 		}		
 		else
 		{
 			log.info("Null font family encountered.");
 		}
 	}
+
+
+	protected static void writeExportFonts(JRXmlWriteHelper writer, 
+			Map<String, String> exportFonts) throws IOException
+	{
+		if(exportFonts != null)
+		{
+			writer.startElement(NODE_exportFonts);
+			for (Entry<String, String> exportFont : exportFonts.entrySet())
+			{
+				writer.writeCDATAElement(NODE_export, exportFont.getValue(), ATTRIBUTE_key, exportFont.getKey());
+			}
+			writer.closeElement();
+		}
+	}
 	
 
 
 	/**
+	 * @throws IOException 
 	 *
 	 */
-	private static void writeFontFace(StringBuffer buffer, FontFace fontFace, String faceTypeName) 
+	private static void writeFontFace(JRXmlWriteHelper writer, FontFace fontFace, String faceTypeName) throws IOException 
 	{
-		String indent = "    ";
-		if(fontFace != null)
+		if (fontFace != null)
 		{
 			if (
 				fontFace.getPdf() == null
@@ -542,37 +654,111 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 			{
 				if (fontFace.getTtf() != null)
 				{
-					buffer.append(indent + "<" + faceTypeName + ">"	+ fontFace.getTtf() + "</" + faceTypeName + ">\n");
+					writer.writeCDATAElement(faceTypeName, fontFace.getTtf());
 				}
 			}
 			else
 			{
-				buffer.append(indent + "<" + faceTypeName + ">\n");
+				writer.startElement(faceTypeName);
 				if (fontFace.getTtf() != null)
 				{
-					buffer.append(indent + "  <ttf>"	+ fontFace.getTtf() + "</ttf>\n");
+					writer.writeCDATAElement("ttf", fontFace.getTtf());
 				}
 				if (fontFace.getPdf() != null)
 				{
-					buffer.append(indent + "  <pdf>"	+ fontFace.getPdf() + "</pdf>\n");
+					writer.writeCDATAElement("pdf", fontFace.getPdf());
 				}
 				if (fontFace.getEot() != null)
 				{
-					buffer.append(indent + "  <eot>"	+ fontFace.getEot() + "</eot>\n");
+					writer.writeCDATAElement("eot", fontFace.getEot());
 				}
 				if (fontFace.getSvg() != null)
 				{
-					buffer.append(indent + "  <svg>"	+ fontFace.getSvg() + "</svg>\n");
+					writer.writeCDATAElement("svg", fontFace.getSvg());
 				}
 				if (fontFace.getWoff() != null)
 				{
-					buffer.append(indent + "  <woff>"	+ fontFace.getWoff() + "</woff>\n");
+					writer.writeCDATAElement("woff", fontFace.getWoff());
 				}
-				buffer.append(indent + "</" + faceTypeName + ">\n");
+				writer.closeElement();
 			}
 		}
 	}
 	
+	private static void writeFontSet(JRXmlWriteHelper writer, FontSet fontSet) throws IOException
+	{
+		if (fontSet == null)
+		{
+			log.info("Null font set encountered.");
+			return;
+		}
+		
+		if(fontSet.getName() == null)
+		{
+			log.error("Font set name is required.");
+			return;
+		}
+			
+		writer.startElement(NODE_fontSet);
+		writer.addAttribute(ATTRIBUTE_name, fontSet.getName());
+			
+		if(fontSet instanceof SimpleFontSet)
+		{
+			Map<String, String> exportFonts = ((SimpleFontSet) fontSet).getExportFonts();
+			writeExportFonts(writer, exportFonts);
+		}
+			
+		List<FontSetFamily> families = fontSet.getFamilies();
+		if (families != null)
+		{
+			for (FontSetFamily family : families)
+			{
+				writeFontSetFamily(writer, family);
+			}
+		}
+		
+		writer.closeElement();
+	}
+
+	private static void writeFontSetFamily(JRXmlWriteHelper writer, FontSetFamily family) throws IOException
+	{
+		if (family == null)
+		{
+			log.info("Null font set family encountered.");
+			return;
+		}
+		
+		if(family.getFamilyName() == null)
+		{
+			log.error("Font set name is required.");
+			return;
+		}
+		
+		writer.startElement(NODE_family);
+		writer.addAttribute(ATTRIBUTE_familyName, family.getFamilyName());
+		writer.addAttribute(ATTRIBUTE_primary, family.isPrimary(), false);
+		
+		List<String> includedScripts = family.getIncludedScripts();
+		if (includedScripts != null)
+		{
+			for (String script : includedScripts)
+			{
+				writer.writeCDATAElement(NODE_includedScript, script);
+			}
+		}
+		
+		List<String> excludedScripts = family.getExcludedScripts();
+		if (excludedScripts != null)
+		{
+			for (String script : excludedScripts)
+			{
+				writer.writeCDATAElement(NODE_excludedScript, script);
+			}
+		}
+		
+		writer.closeElement();
+	}
+
 
 	/**
 	 *
@@ -582,29 +768,26 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		List<FontFamily> fontFamilies
 		) throws JRException
 	{
-		FileOutputStream fos = null;
+		FontExtensionsContainer extensions = new SimpleFontExtensionsContainer(fontFamilies, null);
+		writeFontExtensionsXml(destFileName, extensions);
+	}
 
-		try
+	public static void writeFontExtensionsXml(
+		String destFileName,
+		FontExtensionsContainer extensions
+		) throws JRException
+	{
+		try (OutputStream os = new BufferedOutputStream(new FileOutputStream(destFileName)))
 		{
-			fos = new FileOutputStream(destFileName);
-			writeFontsXml(fos, fontFamilies);
+			writeFontExtensionsXml(os, extensions);
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Error writing to file : " + destFileName, e);
-		}
-		finally
-		{
-			if (fos != null)
-			{
-				try
-				{
-					fos.close();
-				}
-				catch(IOException e)
-				{
-				}
-			}
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_FILE_WRITER_ERROR,
+					new Object[]{destFileName},
+					e);
 		}
 	}
 
@@ -617,16 +800,29 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 		List<FontFamily> fontFamilies
 		) throws JRException
 	{
+		FontExtensionsContainer extensions = new SimpleFontExtensionsContainer(fontFamilies, null);
+		writeFontExtensionsXml(outputStream, extensions);
+	}
+
+	public static void writeFontExtensionsXml(
+		OutputStream outputStream,
+		FontExtensionsContainer extensions
+		) throws JRException
+	{
 		Writer out = null;
 		try
 		{
-			out = new OutputStreamWriter(outputStream, DEFAULT_ENCODING);
-			out.write(getFontsXml(fontFamilies));
+			out = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8);
+			writeFontExtensions(out, extensions);
 			out.flush();
 		}
-		catch (Exception e)
+		catch (IOException e)
 		{
-			throw new JRException("Error writing to OutputStream : ", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_OUTPUT_STREAM_WRITER_ERROR, 
+					null, 
+					e);
 		}
 	}
 
@@ -636,29 +832,17 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	 */
 	public static void writeFontExtensionsProperties(String fontsXmlLocation, String destFileName) throws JRException
 	{
-		FileOutputStream fos = null;
-
-		try
+		try (OutputStream os = new BufferedOutputStream(new FileOutputStream(destFileName, false)))
 		{
-			fos = new FileOutputStream(destFileName, false);
-			writeFontExtensionsProperties(fontsXmlLocation, fos);
+			writeFontExtensionsProperties(fontsXmlLocation, os);
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Error writing to file : " + destFileName, e);
-		}
-		finally
-		{
-			if (fos != null)
-			{
-				try
-				{
-					fos.close();
-				}
-				catch(IOException e)
-				{
-				}
-			}
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_FILE_WRITER_ERROR,
+					new Object[]{destFileName},
+					e);
 		}
 	}
 
@@ -688,10 +872,8 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 			OutputStream outputStream
 			) throws JRException
 	{
-		Writer out = null;
-		try
+		try (Writer out = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8))
 		{
-			out = new OutputStreamWriter(outputStream, DEFAULT_ENCODING);
 			out.write(
 					fontRegistryFactoryPropertyName + 
 					"=" + 
@@ -704,24 +886,14 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 					fontFamiliesPropertyValue + 
 					"\n"
 					);
-			out.flush();
 		}
-		catch (Exception e)
+		catch (IOException e)
 		{
-			throw new JRException("Error writing to OutputStream : ", e);
-		}
-		finally
-		{
-			if (out != null)
-			{
-				try
-				{
-					out.close();
-				}
-				catch(IOException e)
-				{
-				}
-			}
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_OUTPUT_STREAM_WRITER_ERROR, 
+					null, 
+					e);
 		}
 	}
 
@@ -731,7 +903,7 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	 */
 	private Set<String> parseLocales(Node localesNode) throws SAXException
 	{
-		Set<String> locales = new HashSet<String>();
+		Set<String> locales = new HashSet<>();
 		
 		NodeList nodeList = localesNode.getChildNodes();
 		for(int i = 0; i < nodeList.getLength(); i++)
@@ -750,22 +922,25 @@ public final class SimpleFontExtensionHelper implements ErrorHandler
 	}
 
 
+	@Override
 	public void error(SAXParseException e) {
-		if(log.isErrorEnabled())
+		if (log.isErrorEnabled())
 		{
 			log.error("Error parsing styled text.", e);
 		}
 	}
 
+	@Override
 	public void fatalError(SAXParseException e) {
-		if(log.isFatalEnabled())
+		if (log.isFatalEnabled())
 		{
 			log.fatal("Error parsing styled text.", e);
 		}
 	}
 
+	@Override
 	public void warning(SAXParseException e) {
-		if(log.isWarnEnabled())
+		if (log.isWarnEnabled())
 		{
 			log.warn("Error parsing styled text.", e);
 		}

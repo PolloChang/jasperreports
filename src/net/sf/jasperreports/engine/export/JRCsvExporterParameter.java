@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,16 +28,14 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.export.CsvExporterConfiguration;
 
 
 /**
  * @deprecated Replaced by {@link CsvExporterConfiguration}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRCsvExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRCsvExporterParameter extends JRExporterParameter
+public class JRCsvExporterParameter extends net.sf.jasperreports.engine.JRExporterParameter
 {
 
 
@@ -57,21 +55,9 @@ public class JRCsvExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link CsvExporterConfiguration#PROPERTY_FIELD_DELIMITER}.
-	 */
-	public static final String PROPERTY_FIELD_DELIMITER = CsvExporterConfiguration.PROPERTY_FIELD_DELIMITER;
-
-
-	/**
 	 * @deprecated Replaced by {@link CsvExporterConfiguration#getRecordDelimiter()}.
 	 */
 	public static final JRCsvExporterParameter RECORD_DELIMITER = new JRCsvExporterParameter("Record Delimiter");
-	
-	
-	/**
-	 * @deprecated Replaced by {@link CsvExporterConfiguration#PROPERTY_RECORD_DELIMITER}.
-	 */
-	public static final String PROPERTY_RECORD_DELIMITER = CsvExporterConfiguration.PROPERTY_RECORD_DELIMITER;
 
 
 }

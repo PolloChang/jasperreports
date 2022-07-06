@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import javax.swing.text.StyleConstants;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JEditorPaneMarkupProcessor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JEditorPaneMarkupProcessor implements MarkupProcessor
 {
@@ -44,6 +43,7 @@ public abstract class JEditorPaneMarkupProcessor implements MarkupProcessor
 	 */
 	public static final class RtfFactory implements MarkupProcessorFactory
 	{ 
+		@Override
 		public MarkupProcessor createMarkupProcessor()
 		{
 			return JEditorPaneRtfMarkupProcessor.getInstance();
@@ -55,6 +55,7 @@ public abstract class JEditorPaneMarkupProcessor implements MarkupProcessor
 	 */
 	public static final class HtmlFactory implements MarkupProcessorFactory
 	{ 
+		@Override
 		public MarkupProcessor createMarkupProcessor()
 		{
 			return JEditorPaneHtmlMarkupProcessor.getInstance();
@@ -66,7 +67,7 @@ public abstract class JEditorPaneMarkupProcessor implements MarkupProcessor
 	 */
 	protected Map<Attribute,Object> getAttributes(AttributeSet attrSet) 
 	{
-		Map<Attribute,Object> attrMap = new HashMap<Attribute,Object>();
+		Map<Attribute,Object> attrMap = new HashMap<>();
 		if (attrSet.isDefined(StyleConstants.FontFamily))
 		{
 			attrMap.put(
@@ -111,7 +112,7 @@ public abstract class JEditorPaneMarkupProcessor implements MarkupProcessor
 		{
 			attrMap.put(
 				TextAttribute.SIZE,
-				new Float(StyleConstants.getFontSize(attrSet))
+				StyleConstants.getFontSize(attrSet)
 				);
 		}
 					
@@ -151,9 +152,7 @@ public abstract class JEditorPaneMarkupProcessor implements MarkupProcessor
 		return attrMap;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public abstract String convert(String srcText);
 	
 }

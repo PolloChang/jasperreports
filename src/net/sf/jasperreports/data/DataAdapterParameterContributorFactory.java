@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,25 +27,43 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.ParameterContributor;
 import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.ParameterContributorFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
 import net.sf.jasperreports.repo.DataAdapterResource;
+import net.sf.jasperreports.repo.RepositoryContext;
+import net.sf.jasperreports.repo.RepositoryResourceContext;
 import net.sf.jasperreports.repo.RepositoryUtil;
+import net.sf.jasperreports.repo.ResourceInfo;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
+import net.sf.jasperreports.repo.SimpleRepositoryResourceContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DataAdapterParameterContributorFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class DataAdapterParameterContributorFactory implements ParameterContributorFactory
 {
 
+	private static final Log log = LogFactory.getLog(DataAdapterParameterContributorFactory.class);
+	
 	/**
 	 * A report/dataset level property that provides the location of a data adapter resource 
 	 * to be used for the dataset.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			valueType = DataAdapter.class,//for JSS
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			sinceVersion = PropertyConstants.VERSION_4_1_1
+			)
 	public static final String PROPERTY_DATA_ADAPTER_LOCATION = JRPropertiesUtil.PROPERTY_PREFIX + "data.adapter";
 
 	private static final DataAdapterParameterContributorFactory INSTANCE = new DataAdapterParameterContributorFactory();
@@ -62,18 +80,40 @@ public final class DataAdapterParameterContributorFactory implements ParameterCo
 		return INSTANCE;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public List<ParameterContributor> getContributors(ParameterContributorContext context) throws JRException
 	{
-		List<ParameterContributor> contributors = new ArrayList<ParameterContributor>();
+		List<ParameterContributor> contributors = new ArrayList<>();
 
-		String dataAdapterUri = JRPropertiesUtil.getInstance(context.getJasperReportsContext()).getProperty(context.getDataset(), PROPERTY_DATA_ADAPTER_LOCATION); 
+		String dataAdapterUri = JRPropertiesUtil.getOwnProperty(context.getDataset(), PROPERTY_DATA_ADAPTER_LOCATION); 
 		if (dataAdapterUri != null)
 		{
-			DataAdapterResource dataAdapterResource = RepositoryUtil.getInstance(context.getJasperReportsContext()).getResourceFromLocation(dataAdapterUri, DataAdapterResource.class);
-			ParameterContributor dataAdapterService = DataAdapterServiceUtil.getInstance(context.getJasperReportsContext()).getService(dataAdapterResource.getDataAdapter());
+			RepositoryUtil repository = RepositoryUtil.getInstance(context.getRepositoryContext());
+			ResourceInfo resourceInfo = repository.getResourceInfo(dataAdapterUri);
+			
+			String resourceLocation = dataAdapterUri;
+			String contextLocation = null;
+			if (resourceInfo != null)
+			{
+				resourceLocation = resourceInfo.getRepositoryResourceLocation();
+				contextLocation = resourceInfo.getRepositoryContextLocation();
+				if (log.isDebugEnabled())
+				{
+					log.debug("data adapter " + dataAdapterUri + " resolved to " + resourceLocation
+							+ ", context " + contextLocation);
+				}
+			}
+			
+			DataAdapterResource dataAdapterResource = repository.getResourceFromLocation(resourceLocation, DataAdapterResource.class);
+			
+			RepositoryResourceContext currentContext = context.getRepositoryContext().getResourceContext();
+			RepositoryResourceContext adapterResourceContext = SimpleRepositoryResourceContext.of(contextLocation,
+					currentContext == null ? null : currentContext.getDerivedContextFallback());
+			RepositoryContext adapterRepositoryContext = SimpleRepositoryContext.of(context.getJasperReportsContext(), 
+					adapterResourceContext);
+			ParameterContributorContext adapterContext = context.withRepositoryContext(adapterRepositoryContext);
+			
+			ParameterContributor dataAdapterService = DataAdapterServiceUtil.getInstance(adapterContext).getService(dataAdapterResource.getDataAdapter());
 			
 			return Collections.singletonList(dataAdapterService);
 		}

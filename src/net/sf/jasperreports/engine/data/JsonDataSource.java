@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,52 +23,74 @@
  */
 package net.sf.jasperreports.engine.data;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRField;
-import net.sf.jasperreports.engine.JRRewindableDataSource;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.util.JsonUtil;
-import net.sf.jasperreports.repo.RepositoryUtil;
-
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRField;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.query.JsonQueryExecuterFactory;
+import net.sf.jasperreports.engine.util.JsonUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.repo.RepositoryContext;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 
 /**
  * JSON data source implementation
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JsonDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JsonDataSource extends JRAbstractTextDataSource implements JRRewindableDataSource {
+public class JsonDataSource extends JRAbstractTextDataSource implements JsonData<JsonDataSource>, RandomAccessDataSource {
+
+	public static final String EXCEPTION_MESSAGE_KEY_JSON_FIELD_VALUE_NOT_RETRIEVED = "data.json.field.value.not.retrieved";
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_ATTRIBUTE_SELECTION = "data.json.invalid.attribute.selection";
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_EXPRESSION = "data.json.invalid.expression";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_DATA = "data.json.no.data";
+
+	/**
+	 * Property specifying the JSON expression for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {JsonQueryExecuterFactory.JSON_QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+	)
+	public static final String PROPERTY_FIELD_EXPRESSION = JRPropertiesUtil.PROPERTY_PREFIX + "json.field.expression";
 
 	// the JSON select expression that gives the nodes to iterate
 	private String selectExpression;
 
+	private Map<String, String> fieldExpressions = new HashMap<>();
+
+	private JsonNode dataNode;
 	private Iterator<JsonNode> jsonNodesIterator;
+	
+	private int currentNodeIndex;
 
 	// the current node
 	private JsonNode currentJsonNode;
 
-	private final String PROPERTY_SEPARATOR = ".";
+	private final String PROPERTY_SEPARATOR = ".";//FIXME static?
 
 	private final String ARRAY_LEFT = "[";
 
@@ -83,32 +105,21 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 	
 	private ObjectMapper mapper;
 	
-	private InputStream jsonStream;
-	
-	private boolean toClose;
-	
 	public JsonDataSource(InputStream stream) throws JRException {
 		this(stream, null);
 	}
 	
 	public JsonDataSource(InputStream jsonStream, String selectExpression) throws JRException {
-		try {
-			this.jsonStream = jsonStream;
-			this.mapper = new ObjectMapper();
-			
-			mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-			mapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-			mapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-			
-			this.jsonTree = mapper.readTree(jsonStream);
-			this.selectExpression = selectExpression;
-			
-			moveFirst();
-		} catch (JsonProcessingException e) {
-			throw new JRException(e);
-		} catch (IOException e) {
-			throw new JRException(e);
-		}
+		this(JsonUtil.parseJson(jsonStream), selectExpression);
+	}
+	
+	protected JsonDataSource(JsonNode jsonTree, String selectExpression) throws JRException {
+		this.mapper = JsonUtil.createObjectMapper();
+		
+		this.jsonTree = jsonTree;
+		this.selectExpression = selectExpression;
+		
+		moveFirst();
 	}
 
 
@@ -118,9 +129,7 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 	
 
 	public JsonDataSource(File file, String selectExpression) throws FileNotFoundException, JRException {
-		this(new FileInputStream(file), selectExpression);
-		
-		toClose = true;
+		this(JsonUtil.parseJson(file), selectExpression);
 	}
 
 	/**
@@ -129,11 +138,14 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 	 * @param location a String representing JSON data source
 	 * @param selectExpression a String representing the select expression
 	 */
-	public JsonDataSource(JasperReportsContext jasperReportsContext, String location, String selectExpression) throws JRException 
+	public JsonDataSource(JasperReportsContext jasperReportsContext, String location, String selectExpression) throws JRException
 	{
-		this(RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(location), selectExpression);
-		
-		toClose = true;
+		this(SimpleRepositoryContext.of(jasperReportsContext), location, selectExpression);
+	}
+	
+	public JsonDataSource(RepositoryContext repositoryContext, String location, String selectExpression) throws JRException 
+	{
+		this(JsonUtil.parseJson(repositoryContext, location), selectExpression);
 	}
 
 	/**
@@ -149,32 +161,42 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 	 * 
 	 * @see net.sf.jasperreports.engine.JRRewindableDataSource#moveFirst()
 	 */
+	@Override
 	public void moveFirst() throws JRException {
 		if (jsonTree == null || jsonTree.isMissingNode()) {
-			throw new JRException("No JSON data to operate on!");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_NO_DATA,
+					(Object[])null);
 		}
 
+		currentNodeIndex = -1;
 		currentJsonNode = null;
 		JsonNode result = getJsonData(jsonTree, selectExpression);
 		if (result != null && result.isObject()) {
-			final List<JsonNode> list = new ArrayList<JsonNode>();
+			dataNode = result;
+			final List<JsonNode> list = new ArrayList<>();
 			list.add(result);
 			jsonNodesIterator = new Iterator<JsonNode>() {
 				private int count = -1;
+				@Override
 				public void remove() {
 					list.remove(count);
 				}
 				
+				@Override
 				public JsonNode next() {
 					count ++;
 					return list.get(count);
 				}
 				
+				@Override
 				public boolean hasNext() {
 					return count < list.size()-1;
 				}
 			};
 		} else if (result != null && result.isArray()) {
+			dataNode = result;
 			jsonNodesIterator = result.elements();
 		}
 	}
@@ -184,12 +206,60 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 	 * 
 	 * @see net.sf.jasperreports.engine.JRDataSource#next()
 	 */
+	@Override
 	public boolean next() {
 		if(jsonNodesIterator == null || !jsonNodesIterator.hasNext()) {
 			return false;
 		}
+		++currentNodeIndex;
 		currentJsonNode = jsonNodesIterator.next();
 		return true;
+	}
+
+	@Override
+	public int recordCount() {
+		int count;
+		if (dataNode != null) {
+			if (dataNode.isObject()) {
+				count = 1;
+			} else if (dataNode.isArray()) {
+				count = dataNode.size();
+			} else {
+				//shouldn't happen
+				throw new IllegalStateException();
+			}
+		} else {
+			count = 0;
+		}
+		return count;
+	}
+
+	@Override
+	public int currentIndex() {
+		return currentNodeIndex;
+	}
+
+	@Override
+	public void moveToRecord(int index) throws NoRecordAtIndexException {
+		if (dataNode != null) {
+			if (dataNode.isObject()) {
+				if (index == 0) {
+					currentNodeIndex = 0;
+					currentJsonNode = dataNode;
+				} else {
+					throw new NoRecordAtIndexException(index);
+				}
+			} else if (dataNode.isArray()) {
+				if (index >= 0 && index < dataNode.size()) {
+					currentNodeIndex = index;
+					currentJsonNode = dataNode.get(index);
+				} else {
+					throw new NoRecordAtIndexException(index);
+				}
+			}
+		} else {
+			throw new NoRecordAtIndexException(index);
+		}
 	}
 
 	/*
@@ -197,20 +267,28 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 	 * 
 	 * @see net.sf.jasperreports.engine.JRDataSource#getFieldValue(net.sf.jasperreports.engine.JRField)
 	 */
+	@Override
 	public Object getFieldValue(JRField jrField) throws JRException 
 	{
 		if(currentJsonNode == null) {
 			return null;
 		}
-		String expression = jrField.getDescription();
+		
+		String expression = null;
+		if (fieldExpressions.containsKey(jrField.getName()))
+		{
+			expression = fieldExpressions.get(jrField.getName());
+		}
+		else
+		{
+			expression = getFieldExpression(jrField);
+			fieldExpressions.put(jrField.getName(), expression);
+		}
 		if (expression == null || expression.length() == 0)
 		{
-			expression = jrField.getName();
-			if (expression == null || expression.length() == 0)
-			{
-				return null;
-			}
+			return null;
 		}
+
 		Object value = null;
 		
 		Class<?> valueClass = jrField.getValueClass();
@@ -218,27 +296,53 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 		
 		if(Object.class != valueClass) 
 		{
-			if (selectedObject != null) 
+			boolean hasValue = selectedObject != null 
+					&& !selectedObject.isMissingNode() && !selectedObject.isNull();
+			if (hasValue) 
 			{
 				try {
 					if (valueClass.equals(String.class)) {
-						value = selectedObject.asText();
-						
+                        if (selectedObject.isArray()) {
+                            value = selectedObject.toString();
+                        } else {
+                            value = selectedObject.asText();
+                        }
+
 					} else if (valueClass.equals(Boolean.class)) {
 						value = selectedObject.booleanValue();
 						
 					} else if (Number.class.isAssignableFrom(valueClass)) {
+						if (selectedObject.isNumber()) {
+							if (BigDecimal.class.equals(valueClass) && selectedObject.isBigDecimal()) {
+								value = selectedObject.decimalValue();
+							} else if (BigInteger.class.equals(valueClass) && selectedObject.isBigInteger()) {
+								value = selectedObject.bigIntegerValue();
+							} else if (Double.class.equals(valueClass) && selectedObject.isDouble()) {
+								value = selectedObject.doubleValue();
+							} else if (Integer.class.equals(valueClass) && selectedObject.isInt()) {
+								value = selectedObject.intValue();
+							} else {
+								value = convertNumber(selectedObject.numberValue(), valueClass);
+							}
+						} else {
 							value = convertStringValue(selectedObject.asText(), valueClass);
-							
+						}
 					}
 					else if (Date.class.isAssignableFrom(valueClass)) {
 							value = convertStringValue(selectedObject.asText(), valueClass);
 							
 					} else {
-						throw new JRException("Field '" + jrField.getName() + "' is of class '" + valueClass.getName() + "' and cannot be converted");
+						throw 
+							new JRException(
+								EXCEPTION_MESSAGE_KEY_CANNOT_CONVERT_FIELD_TYPE,
+								new Object[]{jrField.getName(), valueClass.getName()});
 					}
 				} catch (Exception e) {
-					throw new JRException("Unable to get value for field '" + jrField.getName() + "' of class '" + valueClass.getName() + "'", e);
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_JSON_FIELD_VALUE_NOT_RETRIEVED,
+							new Object[]{jrField.getName(), valueClass.getName()}, 
+							e);
 				}
 			}
 		}
@@ -273,7 +377,10 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 			if (indexOfLeftSquareBracket != -1) {
 				// a Right Square Bracket must be the last character in the current token
 				if(currentToken.lastIndexOf(ARRAY_RIGHT) != (currentTokenLength-1)) {
-					throw new JRException("Invalid expression: " + jsonExpression + "; current token " + currentToken + " not ended properly");
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_INVALID_EXPRESSION,
+							new Object[]{jsonExpression, currentToken});
 				}
 				
 				// LSB not first character
@@ -281,24 +388,17 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 					// extract nodes at property
 					String property = currentToken.substring(0, indexOfLeftSquareBracket);
 					tempNode = goDownPathWithAttribute(tempNode, property);
-					
-					String arrayOperators = currentToken.substring(indexOfLeftSquareBracket);
-					StringTokenizer arrayOpsTokenizer = new StringTokenizer(arrayOperators,ARRAY_RIGHT);
-					while(arrayOpsTokenizer.hasMoreTokens()) {
-						if (!tempNode.isMissingNode() && tempNode.isArray()) {
-							String currentArrayOperator = arrayOpsTokenizer.nextToken();
-							tempNode = tempNode.path(Integer.parseInt(currentArrayOperator.substring(1)));
-						}
+				}
+
+				String arrayOperators = currentToken.substring(indexOfLeftSquareBracket);
+				StringTokenizer arrayOpsTokenizer = new StringTokenizer(arrayOperators,ARRAY_RIGHT);
+				while(arrayOpsTokenizer.hasMoreTokens()) {
+					if (tempNode == null || tempNode.isMissingNode() || !tempNode.isArray()) {
+						return null;
 					}
-				} else { // LSB first character
-					String arrayOperators = currentToken.substring(indexOfLeftSquareBracket);
-					StringTokenizer arrayOpsTokenizer = new StringTokenizer(arrayOperators,ARRAY_RIGHT);
-					while(arrayOpsTokenizer.hasMoreTokens()) {
-						if (!tempNode.isMissingNode() && tempNode.isArray()) {
-							String currentArrayOperator = arrayOpsTokenizer.nextToken();
-							tempNode = tempNode.path(Integer.parseInt(currentArrayOperator.substring(1)));
-						}
-					}
+
+					String currentArrayOperator = arrayOpsTokenizer.nextToken();
+					tempNode = tempNode.path(Integer.parseInt(currentArrayOperator.substring(1)));
 				}
 			} else {
 				tempNode = goDownPathWithAttribute(tempNode, currentToken);
@@ -323,7 +423,10 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 			
 			// a Right Round Bracket must be the last character in the current pathWithAttribute
 			if(pathWithAttributeExpression.indexOf(ATTRIBUTE_RIGHT) != (pathWithAttributeExpression.length() - 1)) {
-				throw new JRException("Invalid attribute selection expression: " + pathWithAttributeExpression);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_INVALID_ATTRIBUTE_SELECTION,
+						new Object[]{pathWithAttributeExpression});
 			}
 			
 			if(rootNode != null && !rootNode.isMissingNode()) {
@@ -427,6 +530,7 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 	 * @return the JSON sub data source
 	 * @throws JRException
 	 */
+	@Override
 	public JsonDataSource subDataSource() throws JRException {
 		return subDataSource(null);
 	}
@@ -441,28 +545,38 @@ public class JsonDataSource extends JRAbstractTextDataSource implements JRRewind
 	 * @return the JSON sub data source
 	 * @throws JRException
 	 */
+	@Override
 	public JsonDataSource subDataSource(String selectExpression) throws JRException {
 		if(currentJsonNode == null)
 		{
-			throw new JRException("No node available. Iterate or rewind the data source.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_NODE_NOT_AVAILABLE,
+					(Object[])null);
 		}
 
-		try {
-			return new JsonDataSource(new ByteArrayInputStream(currentJsonNode.toString().getBytes("UTF-8")), selectExpression);
-		} catch(UnsupportedEncodingException e) {
-			throw new JRRuntimeException(e);
-		}
+		JsonDataSource subDataSource = new JsonDataSource(currentJsonNode, selectExpression);
+		subDataSource.setTextAttributes(this);
+
+		return subDataSource;
 	}
 
 
-	public void close() {
-		if (toClose) {
-			try	{
-				jsonStream.close();
-			} catch(Exception e) {
-				//nothing to do
+	protected String getFieldExpression(JRField field)
+	{
+		String fieldExpression = null;
+		if (field.hasProperties())
+		{
+			fieldExpression = field.getPropertiesMap().getProperty(PROPERTY_FIELD_EXPRESSION);
+		}
+		if (fieldExpression == null)
+		{
+			fieldExpression = field.getDescription();
+			if (fieldExpression == null || fieldExpression.length() == 0)
+			{
+				fieldExpression = field.getName();
 			}
 		}
+		return fieldExpression;
 	}
-
 }

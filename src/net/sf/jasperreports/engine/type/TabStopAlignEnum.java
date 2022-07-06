@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,62 +23,38 @@
  */
 package net.sf.jasperreports.engine.type;
 
-import net.sf.jasperreports.engine.JRConstants;
-
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: TabStopAlignEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public enum TabStopAlignEnum implements JREnum
+public enum TabStopAlignEnum implements NamedEnum
 {
 	/**
 	 *
 	 */ 
-	LEFT((byte)1, "Left"),
+	LEFT("Left"),
 	
 	/**
 	 *
 	 */ 
-	CENTER((byte)2, "Center"),
+	CENTER("Center"),
 	
 	/**
 	 *
 	 */ 
-	RIGHT((byte)3, "Right");
+	RIGHT("Right");
 	
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-	private final transient byte value;
 	private final transient String name;
 
-	private TabStopAlignEnum(byte value, String name)
+	private TabStopAlignEnum(String name)
 	{
-		this.value = value;
 		this.name = name;
 	}
-
-	/**
-	 *
-	 */
-	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
 	
-	/**
-	 *
-	 */
-	public final byte getValue()
-	{
-		return value;
-	}
-	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -89,23 +65,6 @@ public enum TabStopAlignEnum implements JREnum
 	 */
 	public static TabStopAlignEnum getByName(String name)
 	{
-		return (TabStopAlignEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
-	
-	/**
-	 *
-	 */
-	public static TabStopAlignEnum getByValue(Byte value)
-	{
-		return (TabStopAlignEnum)EnumUtil.getByValue(values(), value);
-	}
-	
-	/**
-	 *
-	 */
-	public static TabStopAlignEnum getByValue(byte value)
-	{
-		return getByValue(new Byte(value));
-	}
-
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,39 +26,65 @@ package net.sf.jasperreports.components.barcode4j;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 
+import org.krysalis.barcode4j.BarcodeGenerator;
+import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRComponentElement;
-import net.sf.jasperreports.engine.JRImageRenderer;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-
-import org.krysalis.barcode4j.BarcodeGenerator;
-import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.renderers.SimpleDataRenderer;
+import net.sf.jasperreports.renderers.Renderable;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeRasterizedImageProducer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeRasterizedImageProducer implements BarcodeImageProducer
 {
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_BARCODE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.COMPONENT},
+			scopeQualifications = {Barcode4jComponent.COMPONENT_DESIGNATION},
+			sinceVersion = PropertyConstants.VERSION_3_5_2,
+			valueType = Integer.class,
+			defaultValue = "300"
+			)
 	public static final String PROPERTY_RESOLUTION = 
 		BarcodeComponent.PROPERTY_PREFIX + "image.resolution";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_BARCODE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.COMPONENT},
+			scopeQualifications = {Barcode4jComponent.COMPONENT_DESIGNATION},
+			sinceVersion = PropertyConstants.VERSION_3_5_2,
+			valueType = Boolean.class,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE
+			)
 	public static final String PROPERTY_GRAY = 
 		BarcodeComponent.PROPERTY_PREFIX + "image.gray";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_BARCODE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.COMPONENT},
+			scopeQualifications = {Barcode4jComponent.COMPONENT_DESIGNATION},
+			sinceVersion = PropertyConstants.VERSION_3_5_2,
+			valueType = Boolean.class,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE
+			)
 	public static final String PROPERTY_ANTIALIAS = 
 		BarcodeComponent.PROPERTY_PREFIX + "image.antiAlias";
 	
+	@Override
 	public Renderable createImage(
 		JasperReportsContext jasperReportsContext,
 		JRComponentElement componentElement, 
 		BarcodeGenerator barcode, 
-		String message, 
-		int orientation
+		String message
 		)
 	{
 		try
@@ -74,13 +100,16 @@ public class BarcodeRasterizedImageProducer implements BarcodeImageProducer
 			int imageType = gray ? BufferedImage.TYPE_BYTE_GRAY 
 					: BufferedImage.TYPE_BYTE_BINARY;
 			
-			BitmapCanvasProvider provider = new BitmapCanvasProvider(
-				out, "image/x-png", resolution, imageType, antiAlias, orientation);
+			BitmapCanvasProvider provider = 
+				new BitmapCanvasProvider(
+					out, "image/x-png", resolution, imageType, antiAlias, 
+					((Barcode4jComponent)componentElement.getComponent()).getOrientationValue().getValue()
+					);
 			barcode.generateBarcode(provider, message);
 			provider.finish();
 			
 			byte[] imageData = out.toByteArray();
-			return JRImageRenderer.getInstance(imageData);
+			return SimpleDataRenderer.getInstance(imageData);
 		}
 		catch (Exception e)
 		{

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,11 +32,10 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxFormatHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxFormatHelper extends BaseHelper
 {
-	private Map<String,Integer> formatCache = new HashMap<String,Integer>();//FIXMEXLSX use soft cache? check other exporter caches as well
+	private Map<String,Integer> formatCache = new HashMap<>();//FIXMEXLSX use soft cache? check other exporter caches as well
 
 	/**
 	 *
@@ -60,11 +59,11 @@ public class XlsxFormatHelper extends BaseHelper
 		Integer formatIndex = formatCache.get(formatInfo.getId());
 		if (formatIndex == null)
 		{
-			formatIndex = Integer.valueOf(formatCache.size());
+			formatIndex = formatCache.size();
 			export(formatInfo, formatIndex);
 			formatCache.put(formatInfo.getId(), formatIndex);
 		}
-		return formatIndex.intValue();
+		return formatIndex;
 	}
 
 	/**

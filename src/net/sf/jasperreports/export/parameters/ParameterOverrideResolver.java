@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,10 +23,10 @@
  */
 package net.sf.jasperreports.export.parameters;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.JasperPrint;
@@ -36,13 +36,12 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParameterOverrideResolver.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParameterOverrideResolver implements ParameterResolver
 {
 	private final JRPropertiesUtil propertiesUtil;
 	private final JasperPrint jasperPrint;
-	private final Map<JRExporterParameter, Object> parameters;
+	private final Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters;
 	
 
 	/**
@@ -51,7 +50,7 @@ public class ParameterOverrideResolver implements ParameterResolver
 	public ParameterOverrideResolver(
 		JasperReportsContext jasperReportsContext,
 		JasperPrint jasperPrint,
-		Map<JRExporterParameter, Object> parameters
+		Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters
 		)
 	{
 		this.propertiesUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
@@ -60,7 +59,8 @@ public class ParameterOverrideResolver implements ParameterResolver
 	}
 	
 	
-	public String getStringParameter(JRExporterParameter parameter, String property)
+	@Override
+	public String getStringParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property)
 	{
 		if (parameters.containsKey(parameter))
 		{
@@ -76,7 +76,8 @@ public class ParameterOverrideResolver implements ParameterResolver
 		}
 	}
 
-	public String[] getStringArrayParameter(JRExporterParameter parameter, String propertyPrefix)
+	@Override
+	public String[] getStringArrayParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String propertyPrefix)
 	{
 		String[] values = null; 
 		if (parameters.containsKey(parameter))
@@ -98,7 +99,8 @@ public class ParameterOverrideResolver implements ParameterResolver
 		return values;
 	}
 
-	public String getStringParameterOrDefault(JRExporterParameter parameter, String property)
+	@Override
+	public String getStringParameterOrDefault(net.sf.jasperreports.engine.JRExporterParameter parameter, String property)
 	{
 		if (parameters.containsKey(parameter))
 		{
@@ -122,7 +124,8 @@ public class ParameterOverrideResolver implements ParameterResolver
 		}
 	}
 
-	public boolean getBooleanParameter(JRExporterParameter parameter, String property, boolean defaultValue)
+	@Override
+	public boolean getBooleanParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property, boolean defaultValue)
 	{
 		if (parameters.containsKey(parameter))
 		{
@@ -133,7 +136,7 @@ public class ParameterOverrideResolver implements ParameterResolver
 			}
 			else
 			{
-				return booleanValue.booleanValue();
+				return booleanValue;
 			}
 		}
 		else
@@ -147,7 +150,8 @@ public class ParameterOverrideResolver implements ParameterResolver
 		}
 	}
 
-	public int getIntegerParameter(JRExporterParameter parameter, String property, int defaultValue)
+	@Override
+	public int getIntegerParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property, int defaultValue)
 	{
 		if (parameters.containsKey(parameter))
 		{
@@ -158,7 +162,7 @@ public class ParameterOverrideResolver implements ParameterResolver
 			}
 			else
 			{
-				return integerValue.intValue();
+				return integerValue;
 			}
 		}
 		else
@@ -172,7 +176,8 @@ public class ParameterOverrideResolver implements ParameterResolver
 		}
 	}
 	
-	public float getFloatParameter(JRExporterParameter parameter, String property, float defaultValue)
+	@Override
+	public float getFloatParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String property, float defaultValue)
 	{
 		if (parameters.containsKey(parameter))
 		{
@@ -183,7 +188,7 @@ public class ParameterOverrideResolver implements ParameterResolver
 			}
 			else
 			{
-				return floatValue.floatValue();
+				return floatValue;
 			}
 		}
 		else
@@ -197,8 +202,11 @@ public class ParameterOverrideResolver implements ParameterResolver
 		}
 	}
 	
-	public Character getCharacterParameter(JRExporterParameter parameter, 
-			String property)
+	@Override
+	public Character getCharacterParameter(
+		net.sf.jasperreports.engine.JRExporterParameter parameter, 
+		String property
+		)
 	{
 		if (parameters.containsKey(parameter))
 		{
@@ -211,6 +219,29 @@ public class ParameterOverrideResolver implements ParameterResolver
 		}
 	}
 
+	@Override
+	public Map<String, String> getMapParameter(net.sf.jasperreports.engine.JRExporterParameter parameter, String  propertyPrefix)
+	{
+		Map<String, String> values = null; 
+		if (parameters.containsKey(parameter))
+		{
+			values = (Map<String, String>)parameters.get(parameter);
+		}
+		else
+		{
+			List<PropertySuffix> properties = JRPropertiesUtil.getProperties(jasperPrint.getPropertiesMap(), propertyPrefix);
+			if (properties != null && !properties.isEmpty())
+			{
+				values = new HashMap<>();
+				for(PropertySuffix property : properties)
+				{
+					values.put(property.getSuffix(), property.getValue());
+				}
+			}
+		}
+		return values;
+	}
+	
 	/**
 	 *
 	 */

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,13 +32,17 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * <p>Implementation of {@link DateRange} for relative range of dates.</p>
  *
  * @author Sergey Prilukin
- * @version $Id: RelativeDateRange.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RelativeDateRange extends AbstractDateRange implements DateRangeExpression 
 {
@@ -50,6 +54,13 @@ public class RelativeDateRange extends AbstractDateRange implements DateRangeExp
 	public static final String WEEK_START_DAY_KEY = "week.start.day";
 	public static final String PROPERTIES_FILE_NAME = "relativedate.properties";
 
+	@Property (
+			category = PropertyConstants.CATEGORY_OTHER,
+			scopes = {PropertyScope.GLOBAL},
+			sinceVersion = PropertyConstants.VERSION_6_4_3,
+			valueType = Integer.class
+	)
+	public static final String PROPERTY_WEEK_START_DAY = JRPropertiesUtil.PROPERTY_PREFIX + "week.start.day";
 	private static final Pattern PATTERN = Pattern.compile(DATE_RANGE_REGEXP);
 
 	private static Properties props;
@@ -83,6 +94,7 @@ public class RelativeDateRange extends AbstractDateRange implements DateRangeExp
 		}
 	}
 
+	@Override
 	public String getExpression() {
 		return expression;
 	}
@@ -95,7 +107,7 @@ public class RelativeDateRange extends AbstractDateRange implements DateRangeExp
 			String numberAsString = matcher.group(2);
 
 			if (numberAsString != null) {
-				this.number = Integer.parseInt(numberAsString.replaceAll("\\+", ""));
+				this.number = Integer.parseInt(numberAsString.replace("+", ""));
 			} else {
 				this.number = 0;
 			}
@@ -135,7 +147,10 @@ public class RelativeDateRange extends AbstractDateRange implements DateRangeExp
 			}
 
 			if (weekStart == null) {
-				this.weekStart = DEFAULT_WEEK_START_DAY;
+				//FIXME: set an appropriate context
+				this.weekStart = JRPropertiesUtil
+						.getInstance(DefaultJasperReportsContext.getInstance())
+						.getIntegerProperty(PROPERTY_WEEK_START_DAY, DEFAULT_WEEK_START_DAY);
 			}
 		}
 
@@ -158,6 +173,7 @@ public class RelativeDateRange extends AbstractDateRange implements DateRangeExp
 		return RelativeDateRange.props;
 	}
 
+	@Override
 	public Date getStart() {
 		Calendar calendar = getCalendar();
 
@@ -195,6 +211,7 @@ public class RelativeDateRange extends AbstractDateRange implements DateRangeExp
 		return calendar.getTime();
 	}
 
+	@Override
 	public Date getEnd() {
 		Calendar calendar = getCalendar();
 
@@ -242,11 +259,10 @@ public class RelativeDateRange extends AbstractDateRange implements DateRangeExp
 	}
 
 	protected Calendar getCalendar() {
-		Calendar calendar = new GregorianCalendar();
+		//setting the timezone as early as possible
+		//if the timezone is set after setTime(), set(HOUR_OF_DAY) might change the day
+		Calendar calendar = timeZone == null ? new GregorianCalendar() : new GregorianCalendar(timeZone);
 		calendar.setTime(getCurrentDate());
-		if (this.timeZone != null) {
-			calendar.setTimeZone(timeZone);
-		}
 
 		calendar.set(Calendar.HOUR_OF_DAY, 0);
 		calendar.set(Calendar.MINUTE, 0);

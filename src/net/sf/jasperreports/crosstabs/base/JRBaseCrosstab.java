@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -56,13 +56,11 @@ import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 /**
  * Base read-only {@link net.sf.jasperreports.crosstabs.JRCrosstab crosstab} implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstab.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 {
@@ -122,12 +120,10 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		lineBox = crosstab.getLineBox().clone(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 	
 	private void copyParameters(JRCrosstab crosstab, JRBaseObjectFactory factory)
@@ -213,36 +209,43 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		}
 	}
 	
+	@Override
 	public int getId()
 	{
 		return id;
 	}
 
+	@Override
 	public JRCrosstabDataset getDataset()
 	{
 		return dataset;
 	}
 
+	@Override
 	public JRCrosstabRowGroup[] getRowGroups()
 	{
 		return rowGroups;
 	}
 
+	@Override
 	public JRCrosstabColumnGroup[] getColumnGroups()
 	{
 		return columnGroups;
 	}
 
+	@Override
 	public JRCrosstabMeasure[] getMeasures()
 	{
 		return measures;
 	}
 
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitCrosstab(this);
@@ -253,36 +256,43 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		}
 	}
 
+	@Override
 	public int getColumnBreakOffset()
 	{
 		return columnBreakOffset;
 	}
 
+	@Override
 	public boolean isRepeatColumnHeaders()
 	{
 		return repeatColumnHeaders;
 	}
 
+	@Override
 	public boolean isRepeatRowHeaders()
 	{
 		return repeatRowHeaders;
 	}
 
+	@Override
 	public JRCrosstabCell[][] getCells()
 	{
 		return cells;
 	}
 
+	@Override
 	public JRCrosstabParameter[] getParameters()
 	{
 		return parameters;
 	}
 
+	@Override
 	public JRExpression getParametersMapExpression()
 	{
 		return parametersMapExpression;
 	}
 
+	@Override
 	public JRCellContents getWhenNoDataCell()
 	{
 		return whenNoDataCell;
@@ -382,6 +392,7 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 	}
 
 	
+	@Override
 	public JRElement getElementByKey(String elementKey)
 	{
 		return getElementByKey(this, elementKey);
@@ -393,28 +404,26 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		return titleCell;
 	}
 
+	@Override
 	public JRCellContents getHeaderCell()
 	{
 		return headerCell;
 	}
 
+	@Override
 	public JRVariable[] getVariables()
 	{
 		return variables;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public RunDirectionEnum getRunDirectionValue()
 	{
 		return this.runDirectionValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRunDirection(RunDirectionEnum runDirectionValue)
 	{
 		RunDirectionEnum old = this.runDirectionValue;
@@ -436,9 +445,7 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		getEventSupport().firePropertyChange(PROPERTY_RUN_DIRECTION, old, this.horizontalPosition);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		CrosstabBaseCloneFactory factory = new CrosstabBaseCloneFactory();
@@ -474,11 +481,13 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 		return clone;
 	}
 
+	@Override
 	public Boolean getIgnoreWidth()
 	{
 		return ignoreWidth;
 	}
 
+	@Override
 	public void setIgnoreWidth(Boolean ignoreWidth)
 	{
 		Object old = this.ignoreWidth;
@@ -487,16 +496,13 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 				old, this.ignoreWidth);
 	}
 
-	public void setIgnoreWidth(boolean ignoreWidth)
-	{
-		setIgnoreWidth(Boolean.valueOf(ignoreWidth));
-	}
-	
+	@Override
 	public Color getDefaultLineColor()
 	{
 		return getForecolor();
 	}
 
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
@@ -511,6 +517,7 @@ public class JRBaseCrosstab extends JRBaseElement implements JRCrosstab
 	 */
 	private byte runDirection;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

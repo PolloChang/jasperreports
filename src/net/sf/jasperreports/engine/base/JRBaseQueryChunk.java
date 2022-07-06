@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.util.JRQueryParser;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseQueryChunk.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseQueryChunk implements JRQueryChunk, Serializable
 {
@@ -85,17 +84,13 @@ public class JRBaseQueryChunk implements JRQueryChunk, Serializable
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public byte getType()
 	{
 		return this.type;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getText()
 	{
 		if (type == TYPE_CLAUSE_TOKENS)
@@ -107,21 +102,21 @@ public class JRBaseQueryChunk implements JRQueryChunk, Serializable
 	}
 
 
+	@Override
 	public String[] getTokens()
 	{
 		return tokens;
 	}
 		
 
+	@Override
 	public Character getTokenSeparator()
 	{
 		return tokenSeparator;
 	}
 		
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		try

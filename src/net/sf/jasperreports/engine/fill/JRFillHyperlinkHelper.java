@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.base.JRBasePrintHyperlink;
  * Utility class used to evaluate custom hyperlink parameters.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillHyperlinkHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRFillHyperlinkHelper
 {
@@ -109,18 +108,16 @@ public final class JRFillHyperlinkHelper
 			return null;
 		}
 		
+		Boolean hyperlinkWhen = (Boolean) expressionEvaluator.evaluate(hyperlink.getHyperlinkWhenExpression(), evaluationType);
+		if (hyperlink.getHyperlinkWhenExpression() != null && !Boolean.TRUE.equals(hyperlinkWhen))
+		{
+			return null;
+		}
+		
 		JRBasePrintHyperlink printHyperlink = new JRBasePrintHyperlink();
 		printHyperlink.setLinkType(hyperlink.getLinkType());
 		printHyperlink.setLinkTarget(hyperlink.getLinkTarget());
-		Boolean hyperlinkWhen = (Boolean) expressionEvaluator.evaluate(hyperlink.getHyperlinkWhenExpression(), evaluationType);
-		if (hyperlink.getHyperlinkWhenExpression() == null || hyperlinkWhen == Boolean.TRUE)
-		{
-			printHyperlink.setHyperlinkReference((String) expressionEvaluator.evaluate(hyperlink.getHyperlinkReferenceExpression(), evaluationType));
-		}
-		else
-		{
-			printHyperlink.setHyperlinkReference(null);
-		}
+		printHyperlink.setHyperlinkReference((String) expressionEvaluator.evaluate(hyperlink.getHyperlinkReferenceExpression(), evaluationType));
 		printHyperlink.setHyperlinkAnchor((String) expressionEvaluator.evaluate(hyperlink.getHyperlinkAnchorExpression(), evaluationType));
 		printHyperlink.setHyperlinkPage((Integer) expressionEvaluator.evaluate(hyperlink.getHyperlinkPageExpression(), evaluationType));
 		printHyperlink.setHyperlinkTooltip((String) expressionEvaluator.evaluate(hyperlink.getHyperlinkTooltipExpression(), evaluationType));

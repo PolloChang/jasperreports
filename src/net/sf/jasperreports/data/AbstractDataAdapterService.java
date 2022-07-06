@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,47 +26,44 @@ package net.sf.jasperreports.data;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractDataAdapterService implements DataAdapterService
 {
 	public static final String SECRETS_CATEGORY = "net.sf.jasperreports.data.adapter";
-	/**
-	 *
-	 */
-	private final JasperReportsContext jasperReportsContext;
+
+	private final ParameterContributorContext paramContribContext;
 	private String name;
 	private DataAdapter dataAdapter;
 
-	/**
-	 * @deprecated Replaced by {@link #AbstractDataAdapterService(JasperReportsContext, DataAdapter)}. 
+ 	/**
+	 * @deprecated Replaced by {@link #AbstractDataAdapterService(ParameterContributorContext, DataAdapter)}.
 	 */
-	public AbstractDataAdapterService()
+	protected AbstractDataAdapterService(JasperReportsContext jasperReportsContext, DataAdapter dataAdapter)
 	{
-		this(DefaultJasperReportsContext.getInstance(), null);
-	}
-	  
-	/**
-	 * @deprecated Replaced by {@link #AbstractDataAdapterService(JasperReportsContext, DataAdapter)}. 
-	 */
-	public AbstractDataAdapterService(DataAdapter dataAdapter)
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataAdapter);
+		this(new ParameterContributorContext(jasperReportsContext, null, null), dataAdapter);
 	}
 	  
 	/**
 	 *
 	 */
-	public AbstractDataAdapterService(JasperReportsContext jasperReportsContext, DataAdapter dataAdapter)
+	public AbstractDataAdapterService(ParameterContributorContext paramContribContext, DataAdapter dataAdapter)
 	{
 		this.dataAdapter = dataAdapter;
-		this.jasperReportsContext = jasperReportsContext;
+		this.paramContribContext = paramContribContext;
+	}
+	  
+	/**
+	 *
+	 */
+	public ParameterContributorContext getParameterContributorContext()
+	{
+		return paramContribContext;
 	}
 	  
 	/**
@@ -74,7 +71,7 @@ public abstract class AbstractDataAdapterService implements DataAdapterService
 	 */
 	public JasperReportsContext getJasperReportsContext()
 	{
-		return jasperReportsContext;
+		return paramContribContext == null ? null : paramContribContext.getJasperReportsContext();
 	}
 	  
 	/**
@@ -109,24 +106,18 @@ public abstract class AbstractDataAdapterService implements DataAdapterService
 		this.dataAdapter = dataAdapter;
 	}
 	  
-	/**
-	 *
-	 */
+	@Override
 	public abstract void contributeParameters(Map<String, Object> parameters) throws JRException;
 	
-	/**
-	 *
-	 */
+	@Override
 	public void dispose() 
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void test() throws JRException
 	{
-		contributeParameters(new HashMap<String, Object>());
+		contributeParameters(new HashMap<>());
 		dispose();
 	}
  

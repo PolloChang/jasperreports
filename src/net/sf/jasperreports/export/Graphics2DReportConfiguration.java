@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,11 +23,14 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.export.JRGraphics2DExporter;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.export.annotations.ExporterParameter;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -36,14 +39,36 @@ import net.sf.jasperreports.export.annotations.ExporterProperty;
  * @see JRGraphics2DExporter
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: Graphics2DReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface Graphics2DReportConfiguration extends ReportExportConfiguration
 {
 	/**
 	 * Property that provides a default value for the {@link #isMinimizePrinterJobSize()} exporter configuration setting.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_1_2_8,
+			valueType = Boolean.class
+			)
 	public static final String MINIMIZE_PRINTER_JOB_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "export.graphics2d.min.job.size";
+
+	/**
+	 * Property whose value is used as default state of the {@link #isWhitePageBackground()} export configuration flag.
+	 * <p/>
+	 * This property is set by default (<code>true</code>).
+	 * 
+	 * @see #isWhitePageBackground()
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_5_0,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_WHITE_PAGE_BACKGROUND = JRPropertiesUtil.PROPERTY_PREFIX + "export.graphics2d.white.page.background";
 
 	/**
 	 * The zoom ratio used for the export. The default value is 1.
@@ -86,4 +111,16 @@ public interface Graphics2DReportConfiguration extends ReportExportConfiguration
 		booleanDefault=false
 		)
 	public Boolean isIgnoreMissingFont();
+	
+	/**
+	 * Flag that determines whether the exporter is to draw white backgrounds for exported pages.
+	 *  
+	 * @see #PROPERTY_WHITE_PAGE_BACKGROUND
+	 * @since 6.5.0
+	 */
+	@ExporterProperty(
+		value=PROPERTY_WHITE_PAGE_BACKGROUND, 
+		booleanDefault=true
+		)
+	public Boolean isWhitePageBackground();
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,15 +23,12 @@
  */
 package net.sf.jasperreports.engine.type;
 
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRImage;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
+import net.sf.jasperreports.renderers.DimensionRenderable;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ScaleImageEnum.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public enum ScaleImageEnum implements JREnum
 {
@@ -62,7 +59,7 @@ public enum ScaleImageEnum implements JREnum
 	 * Several restrictions apply to the image stretching mechanism:
 	 * <ul>
 	 * 	<li>It only works when the image renderer implements
-	 *  {@link Renderable#getDimension(JasperReportsContext)}.</li>
+	 *  {@link DimensionRenderable}.</li>
 	 *  <li>If the actual image width exceeds the declared image element width,
 	 * the image is proportionally stretched to fit the declared width.</li>
 	 * 	<li>Images with delayed evaluation (see {@link JRImage#getEvaluationTimeValue()}) 
@@ -80,8 +77,8 @@ public enum ScaleImageEnum implements JREnum
 	
 	/**
 	 * A scale image type that stretches the images height in the same way as 
-	 * {@link #REAL_HEIGHT}, and in addition it changes the image
-	 * width to the actual with of the image.
+	 * {@link #REAL_HEIGHT}, and in addition it reduces the image
+	 * width to the actual width of the image.
 	 * 
 	 * This can be useful when, for instance, a border has to be drawn around
 	 * the image, respecting its actual size.
@@ -91,7 +88,6 @@ public enum ScaleImageEnum implements JREnum
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient byte value;
 	private final transient String name;
 
@@ -102,24 +98,24 @@ public enum ScaleImageEnum implements JREnum
 	}
 
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
 	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
 	{
 		return value;
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
+	public final byte getValue()
+	{
+		return value;
+	}
+	
+	@Override
 	public String getName()
 	{
 		return name;
@@ -130,11 +126,11 @@ public enum ScaleImageEnum implements JREnum
 	 */
 	public static ScaleImageEnum getByName(String name)
 	{
-		return (ScaleImageEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static ScaleImageEnum getByValue(Byte value)
 	{
@@ -142,11 +138,10 @@ public enum ScaleImageEnum implements JREnum
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static ScaleImageEnum getByValue(byte value)
 	{
-		return getByValue(new Byte(value));
+		return getByValue((Byte)value);
 	}
-
 }

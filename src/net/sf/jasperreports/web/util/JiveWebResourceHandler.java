@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.util.MessageUtil;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JiveWebResourceHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JiveWebResourceHandler extends AbstractWebResourceHandler 
 {
@@ -48,9 +47,10 @@ public class JiveWebResourceHandler extends AbstractWebResourceHandler
 	public JiveWebResourceHandler(String bundleName) 
 	{
 		this.bundleName = bundleName;
-		this.keyToFileMappings = new HashMap<String, String>();
+		this.keyToFileMappings = new HashMap<>();
 	}
 
+	@Override
 	public WebResource getResource(JasperReportsContext jasperReportsContext, HttpServletRequest request, String resourceKey) 
 	{
 		SimpleWebResource resource = null;
@@ -62,7 +62,7 @@ public class JiveWebResourceHandler extends AbstractWebResourceHandler
 			try 
 			{
 				Locale locale = LocaleResolverUtil.instance(jasperReportsContext).getLocale(request);
-				Map<String, Object> contextMap = new HashMap<String, Object>();
+				Map<String, Object> contextMap = new HashMap<>();
 				contextMap.put("path", request.getContextPath() + webUtil.getResourcesBasePath());
 				contextMap.put("msgProvider", MessageUtil.getInstance(jasperReportsContext).getLocalizedMessageProvider(bundleName, locale)); 
 				String resourceString = VelocityUtil.processTemplate(keyToFileMappings.get(resourceKey), contextMap);

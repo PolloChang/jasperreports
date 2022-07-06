@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.type.LineDirectionEnum;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintLine.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintLine extends JRTemplatePrintGraphicElement implements JRPrintLine
 {
@@ -55,29 +54,6 @@ public class JRTemplatePrintLine extends JRTemplatePrintGraphicElement implement
 	 * Creates a print line element.
 	 * 
 	 * @param line the template line that the element will use
-	 * @deprecated provide a source Id via {@link #JRTemplatePrintLine(JRTemplateLine, int)}
-	 */
-	public JRTemplatePrintLine(JRTemplateLine line)
-	{
-		super(line);
-	}
-
-	/**
-	 * Creates a print line element.
-	 * 
-	 * @param line the template line that the element will use
-	 * @param sourceElementId the Id of the source element
-	 * @deprecated replaced by {@link #JRTemplatePrintLine(JRTemplateLine, PrintElementOriginator)}
-	 */
-	public JRTemplatePrintLine(JRTemplateLine line, int sourceElementId)
-	{
-		super(line, sourceElementId);
-	}
-
-	/**
-	 * Creates a print line element.
-	 * 
-	 * @param line the template line that the element will use
 	 * @param originator
 	 */
 	public JRTemplatePrintLine(JRTemplateLine line, PrintElementOriginator originator)
@@ -85,21 +61,18 @@ public class JRTemplatePrintLine extends JRTemplatePrintGraphicElement implement
 		super(line, originator);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public LineDirectionEnum getDirectionValue()
 	{
 		return ((JRTemplateLine)this.template).getDirectionValue();
 	}
 		
-	/**
-	 * 
-	 */
+	@Override
 	public void setDirection(LineDirectionEnum direction)
 	{
 	}
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);

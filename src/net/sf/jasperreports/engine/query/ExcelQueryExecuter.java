@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,8 +29,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.data.excel.ExcelFormatEnum;
-import net.sf.jasperreports.data.xls.AbstractXlsDataAdapterService;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
@@ -39,15 +41,12 @@ import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.AbstractXlsDataSource;
 import net.sf.jasperreports.engine.util.JRClassLoader;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.repo.RepositoryContext;
 
 /**
  * Excel query executer implementation.
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ExcelQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class ExcelQueryExecuter extends AbstractXlsQueryExecuter 
 {
@@ -56,8 +55,6 @@ public class ExcelQueryExecuter extends AbstractXlsQueryExecuter
 	private static final String EXCEL_DATA_SOURCE_CLASS = "net.sf.jasperreports.engine.data.ExcelDataSource";
 	private static final String XLS_DATA_SOURCE_CLASS = "net.sf.jasperreports.engine.data.XlsDataSource";
 	private static final String XLSX_DATA_SOURCE_CLASS = "net.sf.jasperreports.engine.data.JRXlsxDataSource";
-	private static final String JXL_DATA_SOURCE_CLASS = "net.sf.jasperreports.engine.data.JRXlsDataSource";
-	private static final String JXL_WORKBOOK_CLASS = "jxl.Workbook";
 	private static final String XLS_WORKBOOK_CLASS = "org.apache.poi.hssf.usermodel.HSSFWorkbook";
 	private static final String XLSX_WORKBOOK_CLASS = "org.apache.poi.xssf.usermodel.XSSFWorkbook";
 	
@@ -69,9 +66,19 @@ public class ExcelQueryExecuter extends AbstractXlsQueryExecuter
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
 		Map<String,? extends JRValueParameter> parametersMap
+		)
+	{
+		this(SimpleQueryExecutionContext.of(jasperReportsContext),
+				dataset, parametersMap);
+	}
+	
+	protected ExcelQueryExecuter(
+		QueryExecutionContext context, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parametersMap
 		) 
 	{
-		super(jasperReportsContext, dataset, parametersMap);
+		super(context, dataset, parametersMap);
 	}
 
 	protected ExcelQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap) 
@@ -79,6 +86,7 @@ public class ExcelQueryExecuter extends AbstractXlsQueryExecuter
 		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
 	}
 
+	@Override
 	public JRDataSource createDatasource() throws JRException 
 	{
 		String dataSourceClassName = null;
@@ -94,11 +102,7 @@ public class ExcelQueryExecuter extends AbstractXlsQueryExecuter
 		if (workbook != null) 
 		{
 			String workbookClassName = workbook.getClass().getName();
-			if (JXL_WORKBOOK_CLASS.equals(workbookClassName))
-			{
-				dataSourceClassName = JXL_DATA_SOURCE_CLASS;
-			}
-			else if (XLS_WORKBOOK_CLASS.equals(workbookClassName))
+			if (XLS_WORKBOOK_CLASS.equals(workbookClassName))
 			{
 				dataSourceClassName = XLS_DATA_SOURCE_CLASS;
 			}
@@ -130,14 +134,7 @@ public class ExcelQueryExecuter extends AbstractXlsQueryExecuter
 			{
 				case XLS :
 				{
-					if (getBooleanParameterOrProperty(AbstractXlsDataAdapterService.PROPERTY_DATA_ADAPTER_USE_LEGACY_JEXCELAPI, false))
-					{
-						dataSourceClassName = JXL_DATA_SOURCE_CLASS;
-					}
-					else
-					{
-						dataSourceClassName = XLS_DATA_SOURCE_CLASS;
-					}
+					dataSourceClassName = XLS_DATA_SOURCE_CLASS;
 					break;
 				}
 				case XLSX :
@@ -186,8 +183,8 @@ public class ExcelQueryExecuter extends AbstractXlsQueryExecuter
 					}
 					if (xlsSource != null) 
 					{
-						constrParamTypes = new Class<?>[]{JasperReportsContext.class, String.class};
-						constrParamValues = new Object[]{getJasperReportsContext(), xlsSource};
+						constrParamTypes = new Class<?>[]{RepositoryContext.class, String.class};
+						constrParamValues = new Object[]{getRepositoryContext(), xlsSource};
 					}
 					else 
 					{
@@ -225,23 +222,7 @@ public class ExcelQueryExecuter extends AbstractXlsQueryExecuter
 			Constructor<? extends AbstractXlsDataSource> constructor = dataSourceClass.getConstructor(constrParamTypes);
 			datasource = constructor.newInstance(constrParamValues);
 		}
-		catch (InvocationTargetException e)
-		{
-			throw new JRException(e);
-		}
-		catch (IllegalAccessException e)
-		{
-			throw new JRException(e);
-		}
-		catch (InstantiationException e)
-		{
-			throw new JRException(e);
-		}
-		catch (NoSuchMethodException e)
-		{
-			throw new JRException(e);
-		}
-		catch (ClassNotFoundException e)
+		catch (InvocationTargetException | IllegalAccessException | InstantiationException | NoSuchMethodException | ClassNotFoundException e)
 		{
 			throw new JRException(e);
 		}

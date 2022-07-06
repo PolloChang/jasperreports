@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.xml.JRXmlWriter;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: IconLabelComponentXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class IconLabelComponentXmlWriter implements ComponentXmlWriter 
 {
@@ -57,6 +56,7 @@ public class IconLabelComponentXmlWriter implements ComponentXmlWriter
 	}
 
 
+	@Override
 	public boolean isToWrite(JRComponentElement componentElement, JRXmlWriter reportWriter) 
 	{
 		String version = ComponentsXmlWriter.getVersion(jasperReportsContext, componentElement, reportWriter);
@@ -64,6 +64,7 @@ public class IconLabelComponentXmlWriter implements ComponentXmlWriter
 	}
 	
 	
+	@Override
 	public void writeToXml(JRComponentElement componentElement, JRXmlWriter reportWriter) throws IOException 
 	{
 		Component component = componentElement.getComponent();
@@ -89,8 +90,8 @@ public class IconLabelComponentXmlWriter implements ComponentXmlWriter
 		
 		writer.addAttribute(IconLabelComponent.PROPERTY_ICON_POSITION, iconLabelComponent.getIconPosition());
 		writer.addAttribute(IconLabelComponent.PROPERTY_LABEL_FILL, iconLabelComponent.getLabelFill());
-		writer.addAttribute(IconLabelComponent.PROPERTY_HORIZONTAL_ALIGNMENT, iconLabelComponent.getOwnHorizontalAlignmentValue());
-		writer.addAttribute(IconLabelComponent.PROPERTY_VERTICAL_ALIGNMENT, iconLabelComponent.getOwnVerticalAlignmentValue());
+		writer.addAttribute(IconLabelComponent.PROPERTY_HORIZONTAL_ALIGNMENT, iconLabelComponent.getOwnHorizontalImageAlign());
+		writer.addAttribute(IconLabelComponent.PROPERTY_VERTICAL_ALIGNMENT, iconLabelComponent.getOwnVerticalImageAlign());
 
 		reportWriter.writeBox(iconLabelComponent.getLineBox(), JRXmlWriter.JASPERREPORTS_NAMESPACE);
 		writer.startElement("label", componentNamespace);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,23 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * Class utilities.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ClassUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class ClassUtils
 {
+	public static final String EXCEPTION_MESSAGE_KEY_CLASS_INSTANCE_ERROR = "util.class.instance.error";
+	public static final String EXCEPTION_MESSAGE_KEY_CLASS_LOADING_ERROR = "util.class.loading.error";
+	public static final String EXCEPTION_MESSAGE_KEY_CLASS_UNEXPECTED_TYPE = "util.class.unexpected.type";
 
 	/**
 	 * Instantiates a class.
@@ -53,28 +60,47 @@ public final class ClassUtils
 			Class<?> clazz = JRClassLoader.loadClassForName(className);
 			if (!expectedType.isAssignableFrom(clazz))
 			{
-				throw new JRRuntimeException("Class " + className 
-						+ " does not implement/extend " + expectedType.getName());
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_CLASS_UNEXPECTED_TYPE,
+						new Object[]{className, expectedType.getName()});
 			}
-			return clazz.newInstance();
+			return clazz.getDeclaredConstructor().newInstance();
 		}
 		catch (ClassNotFoundException e)
 		{
-			throw new JRRuntimeException(
-					"Could not load class " + className, e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CLASS_LOADING_ERROR,
+					new Object[]{className},
+					e);
 		}
-		catch (InstantiationException e)
+		catch (InstantiationException | IllegalAccessException 
+			| NoSuchMethodException | InvocationTargetException e)
 		{
-			throw new JRRuntimeException(
-					"Could not instantiate class " + className, e);
-		}
-		catch (IllegalAccessException e)
-		{
-			throw new JRRuntimeException(
-					"Could not instantiate class " + className, e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CLASS_INSTANCE_ERROR,
+					new Object[]{className},
+					e);
 		}
 	}
 	
+	/**
+	 * @param clazz
+	 * @return a list of interfaces implemented by this class and by its superclasses, 
+	 * or an empty list in case there are no implemented interfaces
+	 */
+	public static List<Class<?>> getInterfaces(Class<?> clazz)
+	{
+		List<Class<?>> interfaces = new ArrayList<>();
+		while(clazz != null)
+		{
+			interfaces.addAll(Arrays.asList(clazz.getInterfaces()));
+			clazz = clazz.getSuperclass();
+		}
+		return interfaces;
+	}
 
 	private ClassUtils()
 	{

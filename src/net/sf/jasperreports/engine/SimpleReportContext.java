@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,18 +23,18 @@
  */
 package net.sf.jasperreports.engine;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import net.sf.jasperreports.engine.ReportContext;
-
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SimpleReportContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class SimpleReportContext implements ReportContext
+public class SimpleReportContext implements ReportContext, Serializable
 {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	private static final Random RND = new Random();
 	
@@ -46,27 +46,48 @@ public class SimpleReportContext implements ReportContext
 		this.id = System.currentTimeMillis() 
 				+ "_" + System.identityHashCode(this)
 				+ "_" + RND.nextInt();
-		this.parameters = new HashMap<String, Object>();
+		this.parameters = new HashMap<>();
 	}
 	
+	@Override
 	public String getId()
 	{
 		return id;
 	}
 
+	@Override
 	public Object getParameterValue(String parameterName)
 	{
 		return parameters.get(parameterName);
 	}
 
+	@Override
 	public void setParameterValue(String parameterName, Object value)
 	{
 		parameters.put(parameterName, value);
 	}
 
+	@Override
 	public boolean containsParameter(String parameterName)
 	{
 		return parameters.containsKey(parameterName);
+	}
+
+	@Override
+	public Map<String, Object> getParameterValues() {
+		return parameters;
+	}
+
+	@Override
+	public Object removeParameterValue(String parameterName)
+	{
+		return parameters.remove(parameterName);
+	}
+
+	@Override
+	public void clearParameterValues()
+	{
+		parameters.clear();
 	}
 
 }

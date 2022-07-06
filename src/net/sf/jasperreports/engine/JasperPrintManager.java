@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,9 +26,12 @@ package net.sf.jasperreports.engine;
 import java.awt.Image;
 import java.io.InputStream;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.export.JRPrintServiceExporter;
 import net.sf.jasperreports.engine.print.JRPrinterAWT;
 import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -44,10 +47,11 @@ import net.sf.jasperreports.engine.util.JRLoader;
  * manager class.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperPrintManager.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JasperPrintManager
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NO_AVAILABLE_PRINTER = "print.no.available.printer";
+	
 	private JasperReportsContext jasperReportsContext;
 
 
@@ -118,7 +122,10 @@ public final class JasperPrintManager
 		boolean checkAvailablePrinters = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(jasperPrint, PROPERTY_CHECK_AVAILABLE_PRINTERS, true);
 		if (checkAvailablePrinters && !(unixSunJDK || JRPrintServiceExporter.checkAvailablePrinters())) 
 		{
-			throw new JRException("No printer available.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_NO_AVAILABLE_PRINTER,
+					(Object[])null);
 		}
 		//END - artf1936
 		
@@ -448,6 +455,12 @@ public final class JasperPrintManager
 	 * <p/>
 	 * This property is by default set to <code>true</code>.
 	 */
+	@Property(
+			valueType = Boolean.class,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_7_3
+			)
 	public static final String PROPERTY_CHECK_AVAILABLE_PRINTERS = JRPropertiesUtil.PROPERTY_PREFIX + "awt.check.available.printers";
 
 	/* http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6604109 (artf2423) workaround */

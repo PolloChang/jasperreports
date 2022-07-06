@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,19 +25,18 @@ package net.sf.jasperreports.engine;
 
 import java.util.Map;
 
+import net.sf.jasperreports.repo.RepositoryContext;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParameterContributorContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class ParameterContributorContext
+public class ParameterContributorContext implements Cloneable
 {
 
-	/**
-	 * @deprecated To be removed.
-	 */
-	private JasperReport jasperReport;
 	private JasperReportsContext jasperReportsContext;
+	private RepositoryContext repositoryContext;
 	private JRDataset dataset;
 	private Map<String,Object> parameterValues;
 
@@ -50,44 +49,48 @@ public class ParameterContributorContext
 		Map<String,Object> parameterValues
 		)
 	{
-		this.jasperReportsContext = jasperReportsContext;
-		this.dataset = dataset;
-		this.parameterValues = parameterValues;
-		this.jasperReport = (JasperReport)parameterValues.get(JRParameter.JASPER_REPORT);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #ParameterContributorContext(JasperReportsContext, JRDataset, Map)}.
-	 */
-	public ParameterContributorContext(Map<String,Object> parameterValues, JRDataset dataset)
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parameterValues);
-	}
-
-	/**
-	 * Returns the {@link JasperReport} object for this context.
-	 * 
-	 * <p>
-	 * Note that this context might correspond to a subdataset in the report.
-	 * Use {@link #getDataset()} to retrieve the dataset for which scriptlets
-	 * are to be created
-	 * </p>
-	 * 
-	 * @return the current {@link JasperReport} object
-	 * @see #getDataset()
-	 * @deprecated To be removed.
-	 */
-	public JasperReport getJasperReport()
-	{
-		return jasperReport;
+		this(SimpleRepositoryContext.of(jasperReportsContext),
+				dataset, parameterValues);
 	}
 	
+	public ParameterContributorContext(
+		RepositoryContext repositoryContext,
+		JRDataset dataset,
+		Map<String,Object> parameterValues
+		)
+	{
+		this.jasperReportsContext = repositoryContext.getJasperReportsContext();
+		this.repositoryContext = repositoryContext;
+		this.dataset = dataset;
+		this.parameterValues = parameterValues;
+	}
+	
+	public ParameterContributorContext withRepositoryContext(RepositoryContext repositoryContext)
+	{
+		try
+		{
+			ParameterContributorContext clone = (ParameterContributorContext) clone();
+			clone.repositoryContext = repositoryContext;
+			return clone;
+		}
+		catch (CloneNotSupportedException e)
+		{
+			// should not happen
+			throw new JRRuntimeException(e);
+		}
+	}
+
 	/**
 	 *
 	 */
 	public JasperReportsContext getJasperReportsContext()
 	{
 		return jasperReportsContext;
+	}
+	
+	public RepositoryContext getRepositoryContext()
+	{
+		return repositoryContext;
 	}
 	
 	/**

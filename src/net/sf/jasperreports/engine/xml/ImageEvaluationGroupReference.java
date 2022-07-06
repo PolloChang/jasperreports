@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.design.JRValidationException;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ImageEvaluationGroupReference.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ImageEvaluationGroupReference implements XmlGroupReference
 {
@@ -43,16 +42,19 @@ public class ImageEvaluationGroupReference implements XmlGroupReference
 		this.image = image;
 	}
 
+	@Override
 	public JRGroup getGroupReference()
 	{
 		return image.getEvaluationGroup();
 	}
 
+	@Override
 	public void assignGroup(JRGroup group)
 	{
 		image.setEvaluationGroup(group);
 	}
 
+	@Override
 	public void groupNotFound(String groupName) throws JRValidationException
 	{
 		throw new JRValidationException("Unknown evaluation group '" + groupName + "' for image.", image);

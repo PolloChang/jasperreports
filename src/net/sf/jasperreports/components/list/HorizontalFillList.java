@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,10 @@ import java.util.List;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
+import net.sf.jasperreports.engine.fill.JRFillCloneFactory;
+import net.sf.jasperreports.engine.fill.JRFillCloneable;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 import org.apache.commons.logging.Log;
@@ -38,12 +41,12 @@ import org.apache.commons.logging.LogFactory;
  * Horizontal fill list component implementation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: HorizontalFillList.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HorizontalFillList extends BaseFillList
 {
 	
 	private static final Log log = LogFactory.getLog(HorizontalFillList.class);
+	public static final String EXCEPTION_MESSAGE_KEY_ROW_OVERFLOW = "fill.horizontal.list.row.overflow";
 	
 	private final int contentsWidth;
 	private final boolean ignoreWidth;
@@ -51,25 +54,41 @@ public class HorizontalFillList extends BaseFillList
 
 	private int overflowStartPage;
 	private int overflowColumnIndex;
+	private boolean advancedToNext;
 	
 	public HorizontalFillList(ListComponent component, JRFillObjectFactory factory) throws JRException
 	{
 		super(component, factory);
 		
 		ListContents listContents = component.getContents();
-		this.contentsWidth = listContents.getWidth().intValue();
+		this.contentsWidth = listContents.getWidth();
 		
 		Boolean listIgnoreWidth = component.getIgnoreWidth();
-		this.ignoreWidth = listIgnoreWidth != null && listIgnoreWidth.booleanValue();
+		this.ignoreWidth = listIgnoreWidth != null && listIgnoreWidth;
 		
 		JRFillObjectFactory datasetFactory = new JRFillObjectFactory(factory, 
 				createDatasetExpressionEvaluator());
 		FillListContents fillContents = new FillListContents(
 				listContents, datasetFactory);
-		this.contentsList = new ArrayList<FillListContents>();
+		this.contentsList = new ArrayList<>();
 		this.contentsList.add(fillContents);
 	}
 
+	protected HorizontalFillList(HorizontalFillList list, JRFillCloneFactory factory)
+	{
+		super(list, factory);
+		
+		this.contentsWidth = list.contentsWidth;
+		this.ignoreWidth = list.ignoreWidth;
+		
+		FillListContents listContents = list.contentsList.get(0);
+		FillListContents contentsClone = new FillListContents(listContents, factory);
+		
+		this.contentsList = new ArrayList<>();
+		this.contentsList.add(contentsClone);
+	}
+
+	@Override
 	public FillPrepareResult prepare(int availableHeight)
 	{
 		createPrintFrame();
@@ -107,6 +126,7 @@ public class HorizontalFillList extends BaseFillList
 				
 				datasetRun.start();
 				fillStarted = true;
+				advancedToNext = false;
 				
 				// reset the overflow page
 				overflowStartPage = 0;
@@ -118,6 +138,7 @@ public class HorizontalFillList extends BaseFillList
 			// also breaks when there are no more records, see below
 			while(!overflow)
 			{
+				boolean refillOverflowed = columnIndex < overflowColumnIndex;
 				int contentsAvailableHeight = availableHeight 
 						- printFrame.getHeight();
 				if (contentsAvailableHeight < contentsHeight)
@@ -128,12 +149,36 @@ public class HorizontalFillList extends BaseFillList
 						log.debug("Not enough space left for a list row, overflowing");
 					}
 					
+					if (!refillOverflowed && !advancedToNext)
+					{
+						advancedToNext = datasetRun.next();
+						if (!advancedToNext)
+						{
+							//no more records
+							break;
+						}
+					}
+
 					overflow = true;
 				}
 				else
 				{
-					boolean refillOverflowed = columnIndex < overflowColumnIndex;
-					if (!refillOverflowed && !datasetRun.next())
+					boolean hasNextContents;
+					if (refillOverflowed)
+					{
+						hasNextContents = true;
+					}
+					else if (advancedToNext)
+					{
+						hasNextContents = true;
+						advancedToNext = false;
+					}
+					else
+					{
+						hasNextContents = datasetRun.next();
+					}
+					
+					if (!hasNextContents)
 					{
 						// no more records
 						break;
@@ -206,8 +251,11 @@ public class HorizontalFillList extends BaseFillList
 				}
 				else if (pageCount >= overflowStartPage + 2)
 				{
-					throw new JRRuntimeException("List row overflowed on 3 consecutive pages, "
-							+ "likely infinite loop");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_ROW_OVERFLOW,  
+							(Object[])null 
+							);
 				}
 				
 				// set the filling flag so that we know that we are continuing
@@ -293,6 +341,18 @@ public class HorizontalFillList extends BaseFillList
 			printContainer.setXOffset(idx * contentsWidth);
 			contents.fillElements(printContainer);
 		}
+		
+		if (ignoreWidth)
+		{
+			JRStyle style = printFrame.getStyle();
+			int leftPadding = style == null ? 0 : style.getLineBox().getLeftPadding();
+			int rightPadding = style == null ? 0 : style.getLineBox().getRightPadding();
+			int requiredWidth = columnCount * contentsWidth + leftPadding + rightPadding;
+			if (requiredWidth > printFrame.getWidth())
+			{
+				printFrame.setWidth(requiredWidth);
+			}
+		}
 	}
 
 	protected FillListContents getContents(int columnIndex)
@@ -314,11 +374,19 @@ public class HorizontalFillList extends BaseFillList
 		return contentsList.get(columnIndex);
 	}
 
+	@Override
 	public void rewind()
 	{
 		super.rewind();
 
 		overflowStartPage = 0;
 		overflowColumnIndex = 0;
+		advancedToNext = false;
+	}
+
+	@Override
+	public JRFillCloneable createClone(JRFillCloneFactory factory)
+	{
+		return new HorizontalFillList(this, factory);
 	}
 }

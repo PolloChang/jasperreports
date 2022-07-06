@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.util.JRColorUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: BorderStyle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BorderStyle extends Style
 {
@@ -65,13 +64,13 @@ public abstract class BorderStyle extends Style
 		if (box != null)
 		{
 			appendBorder(box.getTopPen(), TOP_BORDER);
-			borderPadding[TOP_BORDER] = String.valueOf(LengthUtil.inchNoRound(box.getTopPadding().intValue()));
+			borderPadding[TOP_BORDER] = String.valueOf(LengthUtil.inchFloor4Dec(box.getTopPadding()));
 			appendBorder(box.getLeftPen(), LEFT_BORDER);
-			borderPadding[LEFT_BORDER] = String.valueOf(LengthUtil.inchNoRound(box.getLeftPadding().intValue()));
+			borderPadding[LEFT_BORDER] = String.valueOf(LengthUtil.inchFloor4Dec(box.getLeftPadding()));
 			appendBorder(box.getBottomPen(), BOTTOM_BORDER);
-			borderPadding[BOTTOM_BORDER] = String.valueOf(LengthUtil.inchNoRound(box.getBottomPadding().intValue()));
+			borderPadding[BOTTOM_BORDER] = String.valueOf(LengthUtil.inchFloor4Dec(box.getBottomPadding()));
 			appendBorder(box.getRightPen(), RIGHT_BORDER);
-			borderPadding[RIGHT_BORDER] = String.valueOf(LengthUtil.inchNoRound(box.getRightPadding().intValue()));
+			borderPadding[RIGHT_BORDER] = String.valueOf(LengthUtil.inchFloor4Dec(box.getRightPadding()));
 		}
 	}
 
@@ -94,9 +93,7 @@ public abstract class BorderStyle extends Style
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getId()
 	{
 		return 
@@ -139,7 +136,7 @@ public abstract class BorderStyle extends Style
 	 */
 	private void appendBorder(JRPen pen, int side)
 	{
-		double width = pen.getLineWidth().doubleValue();
+		double width = pen.getLineWidth();
 		String style = null;
 
 		if (width > 0f)
@@ -164,7 +161,7 @@ public abstract class BorderStyle extends Style
 				}
 			}
 
-			borderWidth[side] = String.valueOf(LengthUtil.inchNoRound(width));
+			borderWidth[side] = String.valueOf(LengthUtil.inchFloor4Dec(width));
 		}
 		else
 		{

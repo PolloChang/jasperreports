@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.export.CommonExportConfiguration;
 import net.sf.jasperreports.export.ExporterConfiguration;
 import net.sf.jasperreports.export.ExporterInput;
@@ -32,8 +34,8 @@ import net.sf.jasperreports.export.ReportExportConfiguration;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
 import net.sf.jasperreports.export.SimpleWriterExporterOutput;
-import net.sf.jasperreports.export.WriterExporterOutput;
 import net.sf.jasperreports.export.XlsReportConfiguration;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -54,7 +56,6 @@ import net.sf.jasperreports.export.XlsReportConfiguration;
  *
  * @deprecated Replaced by {@link ExporterInput}, {@link ExporterConfiguration} and {@link ExporterOutput}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRExporterParameter
 {
@@ -75,9 +76,7 @@ public class JRExporterParameter
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public String toString()
 	{
 		return this.name;
@@ -94,6 +93,11 @@ public class JRExporterParameter
 	 * @deprecated Replaced by {@link SimpleExporterInput#getInstance(java.util.List)}.
 	 */
 	public static final JRExporterParameter JASPER_PRINT_LIST = new JRExporterParameter("JasperPrint List");
+
+	/**
+	 * @deprecated Replace by {@link SimpleExporterInput#SimpleExporterInput(java.util.List)}
+	 */
+	public static final JRExporterParameter INPUT_ITEM_LIST = new JRExporterParameter("ExporterInputItem List");
 
 
 	/**
@@ -180,12 +184,6 @@ public class JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link WriterExporterOutput#PROPERTY_CHARACTER_ENCODING}.
-	 */
-	public static final String PROPERTY_CHARACTER_ENCODING = WriterExporterOutput.PROPERTY_CHARACTER_ENCODING;
-
-
-	/**
 	 * @deprecated Replaced by {@link ReportExportConfiguration#getProgressMonitor()}.
 	 */
 	public static final JRExporterParameter PROGRESS_MONITOR = new JRExporterParameter("Progress Monitor");
@@ -221,13 +219,6 @@ public class JRExporterParameter
 
 	
 	/**
-	 * The {@link net.sf.jasperreports.engine.util.FileResolver FileResolver} instance to be used while exporting the report.
-	 * @deprecated Replaced by {@link JasperReportsContext}.
-	 */
-	public static final JRExporterParameter FILE_RESOLVER = new JRExporterParameter("File REsolver");
-
-	
-	/**
 	 * @deprecated Replaced by {@link ReportExportConfiguration#getHyperlinkProducerFactory()}.
 	 */
 	public static final JRExporterParameter HYPERLINK_PRODUCER_FACTORY = new JRExporterParameter("Hyperlink producer factory");
@@ -249,6 +240,13 @@ public class JRExporterParameter
 	 * This property cannot be used as a report export hint.
 	 * @deprecated Replaced by {@link CommonExportConfiguration#PROPERTY_EXPORT_CONFIGURATION_OVERRIDE_REPORT_HINTS}.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_2_0_2,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_EXPORT_PARAMETERS_OVERRIDE_REPORT_HINTS = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "export.parameters.override.report.hints";
 	
@@ -266,11 +264,5 @@ public class JRExporterParameter
 	 * and {@link XlsReportConfiguration#isIgnorePageMargins()}.
 	 */
 	public static final JRExporterParameter IGNORE_PAGE_MARGINS = new JRExporterParameter("Ignore page margins");
-	
-
-	/**
-	 * @deprecated Replaced by {@link ReportExportConfiguration#PROPERTY_IGNORE_PAGE_MARGINS}.
-	 */
-	public static final String PROPERTY_IGNORE_PAGE_MARGINS = ReportExportConfiguration.PROPERTY_IGNORE_PAGE_MARGINS;
 
 }

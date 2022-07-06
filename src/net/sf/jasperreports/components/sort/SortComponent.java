@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,8 +24,11 @@
 package net.sf.jasperreports.components.sort;
 
 import java.awt.Color;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRFont;
 import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 import net.sf.jasperreports.engine.component.BaseComponentContext;
@@ -34,13 +37,12 @@ import net.sf.jasperreports.engine.component.ContextAwareComponent;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortComponent implements ContextAwareComponent, Serializable, JRChangeEventsSupport {
 
@@ -66,8 +68,8 @@ public class SortComponent implements ContextAwareComponent, Serializable, JRCha
 	private String sortFieldName;
 	private SortFieldTypeEnum sortFieldType;
 	private Color handlerColor;
-	private VerticalAlignEnum handlerVerticalAlign = VerticalAlignEnum.MIDDLE;
-	private HorizontalAlignEnum handlerHorizontalAlign = HorizontalAlignEnum.LEFT;
+	private VerticalImageAlignEnum handlerVerticalImageAlign = VerticalImageAlignEnum.MIDDLE;
+	private HorizontalImageAlignEnum handlerHorizontalImageAlign = HorizontalImageAlignEnum.LEFT;
 	
 	private JRFont symbolFont;
 
@@ -86,17 +88,19 @@ public class SortComponent implements ContextAwareComponent, Serializable, JRCha
 		this.sortFieldName = component.getSortFieldName();
 		this.sortFieldType = component.getSortFieldType();
 		this.handlerColor = component.getHandlerColor();
-		this.handlerVerticalAlign = component.getHandlerVerticalAlign();
-		this.handlerHorizontalAlign = component.getHandlerHorizontalAlign();
+		this.handlerVerticalImageAlign = component.getHandlerVerticalImageAlign();
+		this.handlerHorizontalImageAlign = component.getHandlerHorizontalImageAlign();
 		
 		this.symbolFont = component.getSymbolFont();
 	}
 
+	@Override
 	public void setContext(ComponentContext context)
 	{
 		this.context = context;
 	}
 	
+	@Override
 	public ComponentContext getContext()
 	{
 		return context;
@@ -185,39 +189,40 @@ public class SortComponent implements ContextAwareComponent, Serializable, JRCha
 	}
 
 	/**
-	 * @return the handlerVerticalAlign
+	 * @return the handlerVerticalImageAlign
 	 */
-	public VerticalAlignEnum getHandlerVerticalAlign() {
-		return handlerVerticalAlign;
+	public VerticalImageAlignEnum getHandlerVerticalImageAlign() {
+		return handlerVerticalImageAlign;
 	}
 
 	/**
-	 * @param handlerVerticalAlign the handlerVerticalAlign to set
+	 * @param handlerVerticalImageAlign the handlerVerticalImageAlign to set
 	 */
-	public void setHandlerVerticalAlign(VerticalAlignEnum handlerVerticalAlign) {
-		Object old = this.handlerVerticalAlign;
-		this.handlerVerticalAlign = handlerVerticalAlign;
+	public void setHandlerVerticalImageAlign(VerticalImageAlignEnum handlerVerticalImageAlign) {
+		Object old = this.handlerVerticalImageAlign;
+		this.handlerVerticalImageAlign = handlerVerticalImageAlign;
 		getEventSupport().firePropertyChange(PROPERTY_HANDLER_VERTICAL_ALIGN, 
-				old, this.handlerVerticalAlign);
+				old, this.handlerVerticalImageAlign);
 	}
 
 	/**
-	 * @return the handlerHorizontalAlign
+	 * @return the handlerHorizontalImageAlign
 	 */
-	public HorizontalAlignEnum getHandlerHorizontalAlign() {
-		return handlerHorizontalAlign;
+	public HorizontalImageAlignEnum getHandlerHorizontalImageAlign() {
+		return handlerHorizontalImageAlign;
 	}
 
 	/**
-	 * @param handlerHorizontalAlign the handlerHorizontalAlign to set
+	 * @param handlerHorizontalImageAlign the handlerHorizontalImageAlign to set
 	 */
-	public void setHandlerHorizontalAlign(HorizontalAlignEnum handlerHorizontalAlign) {
-		Object old = this.handlerHorizontalAlign;
-		this.handlerHorizontalAlign = handlerHorizontalAlign;
+	public void setHandlerHorizontalImageAlign(HorizontalImageAlignEnum handlerHorizontalImageAlign) {
+		Object old = this.handlerHorizontalImageAlign;
+		this.handlerHorizontalImageAlign = handlerHorizontalImageAlign;
 		getEventSupport().firePropertyChange(PROPERTY_HANDLER_HORIZONTAL_ALIGN, 
-				old, this.handlerHorizontalAlign);
+				old, this.handlerHorizontalImageAlign);
 	}
 
+	@Override
 	public JRPropertyChangeSupport getEventSupport() {
 		synchronized (this)
 		{
@@ -241,4 +246,32 @@ public class SortComponent implements ContextAwareComponent, Serializable, JRCha
 				old, this.symbolFont);
 	}
 
+
+	/*
+	 * These fields are only for serialization backward compatibility.
+	 */
+	private int PSEUDO_SERIAL_VERSION_UID = JRConstants.PSEUDO_SERIAL_VERSION_UID; //NOPMD
+	/**
+	 * @deprecated
+	 */
+	private net.sf.jasperreports.engine.type.VerticalAlignEnum handlerVerticalAlign;
+	/**
+	 * @deprecated
+	 */
+	private net.sf.jasperreports.engine.type.HorizontalAlignEnum handlerHorizontalAlign;
+
+	@SuppressWarnings("deprecation")
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
+	{
+		in.defaultReadObject();
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_6_0_2)
+		{
+			handlerHorizontalImageAlign = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getHorizontalImageAlignEnum(handlerHorizontalAlign);
+			handlerVerticalImageAlign = net.sf.jasperreports.engine.type.VerticalAlignEnum.getVerticalImageAlignEnum(handlerVerticalAlign);
+
+			handlerHorizontalAlign = null;
+			handlerVerticalAlign = null;
+		}
+	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,13 +26,13 @@ package net.sf.jasperreports.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleDocxReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleDocxReportConfiguration extends SimpleReportExportConfiguration implements DocxReportConfiguration
 {
 	private Boolean isFramesAsNestedTables;
 	private Boolean isFlexibleRowHeight;
 	private Boolean isIgnoreHyperlink;
+	private Boolean isNewLineAsParagraph;
 
 	
 	/**
@@ -42,9 +42,7 @@ public class SimpleDocxReportConfiguration extends SimpleReportExportConfigurati
 	{
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isFramesAsNestedTables()
 	{
 		return isFramesAsNestedTables;
@@ -58,9 +56,7 @@ public class SimpleDocxReportConfiguration extends SimpleReportExportConfigurati
 		this.isFramesAsNestedTables = isFramesAsNestedTables;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isFlexibleRowHeight()
 	{
 		return isFlexibleRowHeight;
@@ -74,9 +70,7 @@ public class SimpleDocxReportConfiguration extends SimpleReportExportConfigurati
 		this.isFlexibleRowHeight = isFlexibleRowHeight;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreHyperlink()
 	{
 		return isIgnoreHyperlink;
@@ -88,5 +82,19 @@ public class SimpleDocxReportConfiguration extends SimpleReportExportConfigurati
 	public void setIgnoreHyperlink(Boolean isIgnoreHyperlink)
 	{
 		this.isIgnoreHyperlink = isIgnoreHyperlink;
+	}
+	
+	@Override
+	public Boolean isNewLineAsParagraph()
+	{
+		return isNewLineAsParagraph;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setNewLineAsParagraph(Boolean isNewLineAsParagraph)
+	{
+		this.isNewLineAsParagraph = isNewLineAsParagraph;
 	}
 }

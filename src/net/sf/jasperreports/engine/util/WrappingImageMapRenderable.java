@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,18 +27,15 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
-import net.sf.jasperreports.engine.ImageMapRenderable;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRImageMapRenderer;
 import net.sf.jasperreports.engine.JRPrintImageAreaHyperlink;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: WrappingImageMapRenderable.java 7199 2014-08-27 13:58:10Z teodord $
  * @deprecated To be removed.
  */
-public class WrappingImageMapRenderable extends WrappingRenderable implements ImageMapRenderable
+public class WrappingImageMapRenderable extends WrappingRenderable implements net.sf.jasperreports.engine.ImageMapRenderable
 {
 	/**
 	 *
@@ -48,31 +45,34 @@ public class WrappingImageMapRenderable extends WrappingRenderable implements Im
 	/**
 	 *
 	 */
-	private JRImageMapRenderer imageMapRenderer;
+	private net.sf.jasperreports.engine.JRImageMapRenderer imageMapRenderer;
 	
 	
 	/**
 	 *
 	 */
-	public WrappingImageMapRenderable(JRImageMapRenderer imageMapRenderer)
+	public WrappingImageMapRenderable(net.sf.jasperreports.engine.JRImageMapRenderer imageMapRenderer)
 	{
 		super(imageMapRenderer);
 		this.imageMapRenderer = imageMapRenderer;
 	}
 
 
+	@Override
 	public List<JRPrintImageAreaHyperlink> renderWithHyperlinks(Graphics2D grx,
 			Rectangle2D rectangle) throws JRException {
 		return imageMapRenderer.renderWithHyperlinks(grx, rectangle);
 	}
 
 
+	@Override
 	public List<JRPrintImageAreaHyperlink> getImageAreaHyperlinks(
 			Rectangle2D renderingArea) throws JRException {
 		return imageMapRenderer.getImageAreaHyperlinks(renderingArea);
 	}
 
 
+	@Override
 	public boolean hasImageAreaHyperlinks() {
 		return imageMapRenderer.hasImageAreaHyperlinks();
 	}

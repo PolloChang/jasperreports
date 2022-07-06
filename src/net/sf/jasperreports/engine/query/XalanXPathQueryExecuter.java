@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,10 @@ import java.util.TimeZone;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.Document;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
@@ -40,10 +43,6 @@ import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.XalanXmlDataSource;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.w3c.dom.Document;
 
 /**
  * Xalan XPath query executer implementation.
@@ -56,7 +55,6 @@ import org.w3c.dom.Document;
  * on the parameter value.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: XalanXPathQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XalanXPathQueryExecuter extends JRAbstractQueryExecuter
 {
@@ -67,18 +65,30 @@ public class XalanXPathQueryExecuter extends JRAbstractQueryExecuter
 	private final DocumentBuilderFactory documentBuilderFactory;
 	
 	private Map<String, String> namespacesMap;
+
+	/**
+	 *
+	 */
+	public XalanXPathQueryExecuter(
+		JasperReportsContext jasperReportsContext,
+		JRDataset dataset,
+		Map<String,? extends JRValueParameter> parametersMap
+		)
+	{
+		this(SimpleQueryExecutionContext.of(jasperReportsContext), dataset, parametersMap);
+	}
 	
 	/**
 	 * 
 	 */
 	public XalanXPathQueryExecuter(
-		JasperReportsContext jasperReportsContext, 
-		JRDataset dataset, 
+		QueryExecutionContext context,
+		JRDataset dataset,
 		Map<String,? extends JRValueParameter> parametersMap
 		)
 	{
-		super(jasperReportsContext, dataset, parametersMap);
-				
+		super(context, dataset, parametersMap);
+		
 		document = (Document) getParameterValue(XalanXPathQueryExecuterFactory.PARAMETER_XML_DATA_DOCUMENT);
 		documentBuilderFactory = (DocumentBuilderFactory) getParameterValue(
 				XalanXPathQueryExecuterFactory.PARAMETER_DOCUMENT_BUILDER_FACTORY, true);
@@ -93,25 +103,19 @@ public class XalanXPathQueryExecuter extends JRAbstractQueryExecuter
 		parseQuery();
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #XalanXPathQueryExecuter(JasperReportsContext, JRDataset, Map)}.
-	 */
-	public XalanXPathQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parametersMap)
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
-	}
-
 	@Override
 	protected String getCanonicalQueryLanguage()
 	{
 		return JRXPathQueryExecuter.CANONICAL_LANGUAGE;
 	}
 
+	@Override
 	protected String getParameterReplacement(String parameterName)
 	{
 		return String.valueOf(getParameterValue(parameterName));
 	}
 
+	@Override
 	public JRDataSource createDatasource() throws JRException
 	{
 		XalanXmlDataSource datasource = null;
@@ -145,11 +149,13 @@ public class XalanXPathQueryExecuter extends JRAbstractQueryExecuter
 		return datasource;
 	}
 
+	@Override
 	public void close()
 	{
 		//nothing to do
 	}
 
+	@Override
 	public boolean cancelQuery() throws JRException
 	{
 		//nothing to cancel
@@ -158,7 +164,7 @@ public class XalanXPathQueryExecuter extends JRAbstractQueryExecuter
 	
 	private Map<String, String> extractXmlNamespacesFromProperties() throws JRException 
 	{
-		Map<String, String> namespaces = new HashMap<String, String>();
+		Map<String, String> namespaces = new HashMap<>();
 		
 		String xmlnsPrefix = XalanXPathQueryExecuterFactory.XML_NAMESPACE_PREFIX;
 		List<PropertySuffix> nsProperties = JRPropertiesUtil.getProperties(dataset, xmlnsPrefix);

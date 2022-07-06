@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,7 @@ import net.sf.jasperreports.repo.RepositoryService;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: LocalJasperReportsContext.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated To be removed.
  */
 public class LocalJasperReportsContext extends SimpleJasperReportsContext
 {
@@ -45,7 +45,7 @@ public class LocalJasperReportsContext extends SimpleJasperReportsContext
 	 *
 	 */
 	private List<RepositoryService> localRepositoryServices;
-	private DefaultRepositoryService localRepositoryService;
+	protected DefaultRepositoryService localRepositoryService;
 
 	/**
 	 *
@@ -58,13 +58,10 @@ public class LocalJasperReportsContext extends SimpleJasperReportsContext
 	/**
 	 *
 	 */
-	@SuppressWarnings("deprecation")
 	public static JasperReportsContext getLocalContext(JasperReportsContext jasperReportsContext, Map<String,Object> parameterValues)
 	{
 		if (
 			parameterValues.containsKey(JRParameter.REPORT_CLASS_LOADER)
-			|| parameterValues.containsKey(JRParameter.REPORT_URL_HANDLER_FACTORY)
-			|| parameterValues.containsKey(JRParameter.REPORT_FILE_RESOLVER)
 			)
 		{
 			LocalJasperReportsContext localJasperReportsContext = new LocalJasperReportsContext(jasperReportsContext);
@@ -74,16 +71,6 @@ public class LocalJasperReportsContext extends SimpleJasperReportsContext
 				localJasperReportsContext.setClassLoader((ClassLoader)parameterValues.get(JRParameter.REPORT_CLASS_LOADER));
 			}
 
-			if (parameterValues.containsKey(JRParameter.REPORT_URL_HANDLER_FACTORY))
-			{
-				localJasperReportsContext.setURLStreamHandlerFactory((URLStreamHandlerFactory)parameterValues.get(JRParameter.REPORT_URL_HANDLER_FACTORY));
-			}
-
-			if (parameterValues.containsKey(JRParameter.REPORT_FILE_RESOLVER))
-			{
-				localJasperReportsContext.setFileResolver((FileResolver)parameterValues.get(JRParameter.REPORT_FILE_RESOLVER));
-			}
-			
 			return localJasperReportsContext;
 		}
 
@@ -93,7 +80,7 @@ public class LocalJasperReportsContext extends SimpleJasperReportsContext
 	/**
 	 *
 	 */
-	private DefaultRepositoryService getLocalRepositoryService()
+	protected DefaultRepositoryService getLocalRepositoryService()
 	{
 		if (localRepositoryService == null)
 		{
@@ -119,7 +106,7 @@ public class LocalJasperReportsContext extends SimpleJasperReportsContext
 	}
 
 	/**
-	 *
+	 * @deprecated To be removed.
 	 */
 	public void setFileResolver(FileResolver fileResolver)
 	{
@@ -140,7 +127,7 @@ public class LocalJasperReportsContext extends SimpleJasperReportsContext
 				List<RepositoryService> repoServices = super.getExtensions(RepositoryService.class);
 				if (repoServices != null && repoServices.size() > 0)
 				{
-					localRepositoryServices = new ArrayList<RepositoryService>();
+					localRepositoryServices = new ArrayList<>();
 					for (RepositoryService repoService : repoServices)
 					{
 						if (repoService instanceof DefaultRepositoryService)

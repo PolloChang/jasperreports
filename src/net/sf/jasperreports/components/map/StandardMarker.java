@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,8 +34,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @deprecated Replaced by {@link StandardItem}.
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: StandardMarker.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class StandardMarker implements Marker, JRChangeEventsSupport, Serializable
 {
@@ -45,7 +44,7 @@ public class StandardMarker implements Marker, JRChangeEventsSupport, Serializab
 	
 	private transient JRPropertyChangeSupport eventSupport;
 
-	private List<MarkerProperty> properties = new ArrayList<MarkerProperty>();
+	private List<MarkerProperty> properties = new ArrayList<>();
 
 	public StandardMarker()
 	{
@@ -56,6 +55,7 @@ public class StandardMarker implements Marker, JRChangeEventsSupport, Serializab
 		this.properties = properties;
 	}
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -69,6 +69,7 @@ public class StandardMarker implements Marker, JRChangeEventsSupport, Serializab
 		return eventSupport;
 	}
 
+	@Override
 	public Object clone()
 	{
 		try

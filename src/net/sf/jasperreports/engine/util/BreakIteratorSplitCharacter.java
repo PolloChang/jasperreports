@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import com.lowagie.text.pdf.PdfChunk;
  * uses the same logic as AWT to break texts into lines.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BreakIteratorSplitCharacter.java 7199 2014-08-27 13:58:10Z teodord $
  * 
  * @see PdfReportConfiguration#isForceLineBreakPolicy()
  */
@@ -61,6 +60,7 @@ public class BreakIteratorSplitCharacter implements SplitCharacter
 		this.breakIter = breakIter;
 	}
 
+	@Override
 	public boolean isSplitCharacter(int startIdx, int current, int endIdx, char[] cc, PdfChunk[] ck)
 	{
 		++current;
@@ -117,6 +117,7 @@ public class BreakIteratorSplitCharacter implements SplitCharacter
 	
 	protected static class ArrayCharIterator implements CharacterIterator
 	{
+		public static final String EXCEPTION_MESSAGE_KEY_INVALID_INDEX = "util.array.char.iterator.invalid.index";
 
 		private char[] chars;
 		private int start;
@@ -130,12 +131,14 @@ public class BreakIteratorSplitCharacter implements SplitCharacter
 			this.end = end;
 		}
 
+		@Override
 		public char first()
 		{
 			curr = start;
 			return current();
 		}
 
+		@Override
 		public char last()
 		{
 			if (end == start)
@@ -149,16 +152,21 @@ public class BreakIteratorSplitCharacter implements SplitCharacter
 			return current();
 		}
 
+		@Override
 		public char setIndex(int position)
 		{
 			if (position < start || position > end)
 			{
-				throw new JRRuntimeException("Invalid index " + position + " (start = " + start + ", end = " + end + ")");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_INVALID_INDEX,
+						new Object[]{position, start, end});
 			}
 			curr = position;
 			return current();
 		}
 
+		@Override
 		public char current()
 		{
 			if (curr < start || curr >= end)
@@ -168,6 +176,7 @@ public class BreakIteratorSplitCharacter implements SplitCharacter
 			return chars[curr];
 		}
 
+		@Override
 		public char next()
 		{
 			if (curr >= end - 1)
@@ -179,6 +188,7 @@ public class BreakIteratorSplitCharacter implements SplitCharacter
 			return chars[curr];
 		}
 
+		@Override
 		public char previous()
 		{
 			if (curr <= start)
@@ -189,21 +199,25 @@ public class BreakIteratorSplitCharacter implements SplitCharacter
 			return chars[curr];
 		}
 
+		@Override
 		public int getBeginIndex()
 		{
 			return start;
 		}
 
+		@Override
 		public int getEndIndex()
 		{
 			return end;
 		}
 
+		@Override
 		public int getIndex()
 		{
 			return curr;
 		}
 
+		@Override
 		public Object clone()
 		{
 			try

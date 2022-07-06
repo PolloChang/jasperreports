@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,40 +23,28 @@
  */
 package net.sf.jasperreports.data;
 
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.util.CompositeClassloader;
-import net.sf.jasperreports.engine.util.FileResolver;
-import net.sf.jasperreports.engine.util.SimpleFileResolver;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractClasspathAwareDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractClasspathAwareDataAdapterService extends AbstractDataAdapterService 
 {
 	public static final String CURRENT_CLASS_LOADER = "CURRENT_CLASS_LOADER";
+
 	/**
 	 *
 	 */
-	public AbstractClasspathAwareDataAdapterService(JasperReportsContext jasperReportsContext, ClasspathAwareDataAdapter dataAdapter) 
+	public AbstractClasspathAwareDataAdapterService(ParameterContributorContext paramContribContext, ClasspathAwareDataAdapter dataAdapter) 
 	{
-		super(jasperReportsContext, dataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #AbstractClasspathAwareDataAdapterService(JasperReportsContext, ClasspathAwareDataAdapter)}.
-	 */
-	public AbstractClasspathAwareDataAdapterService(ClasspathAwareDataAdapter dataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataAdapter);
+		super(paramContribContext, dataAdapter);
 	}
 
 	/**
@@ -67,36 +55,35 @@ public abstract class AbstractClasspathAwareDataAdapterService extends AbstractD
 		Object obj = getJasperReportsContext().getValue(CURRENT_CLASS_LOADER);
 		if(obj != null && obj instanceof ClassLoader)
 			cloader = (ClassLoader)obj ; 
-		return new CompositeClassloader(getPathClassloader(), cloader); 
+		URL[] localURLs = getPathClassloader();
+		if(localURLs == null || localURLs.length == 0)
+			return cloader;
+		return new CompositeClassloader(new URLClassLoader(localURLs), cloader); 
 	}
 
-	private ClassLoader getPathClassloader() {
-		FileResolver fileResolver = null;//FIXMECONTEXT JRResourcesUtil.getFileResolver(null);
-		if (fileResolver == null)
-		{
-			SimpleFileResolver sfr = new SimpleFileResolver(new File("."));//FIXMEREPO
-			sfr.setResolveAbsolutePath(true);
-			fileResolver = sfr;
-		}
-
+	protected URL[] getPathClassloader() {  
 		ClasspathAwareDataAdapter dataAdapter = (ClasspathAwareDataAdapter)getDataAdapter();
 		List<String> classpath = dataAdapter.getClasspath();
-		List<URL> urls = new ArrayList<URL>();
+		if(classpath.isEmpty())
+			return null;
+		List<URL> urls = new ArrayList<>();
 		for (String path : classpath) 
 		{
-			File file = fileResolver.resolveFile(path);
-
-			if (file != null && file.exists()) {
-				try {
-					urls.add(file.toURI().toURL());
-				} catch (MalformedURLException e) {
-					// e.printStackTrace();
-					// We don't care if the entry cannot be found.
-				}
+			if(path == null || path.isEmpty())
+				continue;
+			try { 
+				if(path.startsWith("\\w+?://"))
+					urls.add( new URL(path));
+				else
+					urls.add( new URL("file", "", path));
+			} catch (MalformedURLException e) {
+				// e.printStackTrace();
+				// We don't care if the entry cannot be found.
 			}
-		}
-
-		return new URLClassLoader(urls.toArray(new URL[urls.size()]));
+		} 
+		if(urls.isEmpty())
+			return null;
+		return  urls.toArray(new URL[urls.size()]) ;
 	}
 
 }

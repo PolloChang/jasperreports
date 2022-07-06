@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,14 +36,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import net.sf.jasperreports.charts.ChartContext;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRChart;
-import net.sf.jasperreports.engine.JRChartDataset;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExpression;
-import net.sf.jasperreports.engine.JasperReportsContext;
-
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.category.IntervalCategoryDataset;
@@ -72,25 +64,36 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.data.xy.XYZDataset;
 import org.jfree.date.DateUtilities;
 
+import net.sf.jasperreports.charts.ChartContext;
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRChart;
+import net.sf.jasperreports.engine.JRChartDataset;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JasperReportsContext;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ConvertChartContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ConvertChartContext implements ChartContext
 {
+	private final ReportConverter reportConverter;
 	private final JRChart chart;
 	
-	protected ConvertChartContext(JRChart chart)
+	protected ConvertChartContext(ReportConverter reportConverter, JRChart chart)
 	{
+		this.reportConverter = reportConverter;
 		this.chart = chart;
 	}
 	
+	@Override
 	public JasperReportsContext getJasperReportsContext()
 	{
 		return DefaultJasperReportsContext.getInstance();//FIXMECONTEXT
 	}
 	
+	@Override
 	public String evaluateTextExpression(JRExpression expression) throws JRException 
 	{
 		if (expression != null)
@@ -100,18 +103,18 @@ public class ConvertChartContext implements ChartContext
 		return null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object evaluateExpression(JRExpression expression) throws JRException 
 	{
 		return null;
 	}
 
+	@Override
 	public JRChart getChart() {
 		return chart;
 	}
 
+	@Override
 	public Dataset getDataset()
 	{//FIXMETHEME make different datasets
 		Dataset dataset = null;
@@ -143,25 +146,29 @@ public class ConvertChartContext implements ChartContext
 		case JRChartDataset.XYZ_DATASET:
 			dataset = createXyzDataset();
 			break;
+		default:
 		}
 		return dataset;
 	}
 
+	@Override
 	public Object getLabelGenerator() {
 		return null;
 	}
 
+	@Override
 	public Locale getLocale() {
-		return null;//FIXMETHEME
+		return reportConverter.getLocale();
 	}
 
+	@Override
 	public TimeZone getTimeZone() {
-		return null;
+		return reportConverter.getTimeZone();
 	}
 	
 	private static DefaultCategoryDataset sampleCategoryDataset;
 	
-	private CategoryDataset createCategoryDataset()
+	private static CategoryDataset createCategoryDataset()
 	{
 		if (sampleCategoryDataset == null)
 		{
@@ -199,16 +206,16 @@ public class ConvertChartContext implements ChartContext
 	
 	private static PieDataset samplePieDataset;
 	
-	private PieDataset createPieDataset()
+	private static PieDataset createPieDataset()
 	{
 		if (samplePieDataset == null)
 		{
 			DefaultPieDataset dataset = new DefaultPieDataset();
-			dataset.setValue("First", new Double(45));
-			dataset.setValue("Second", new Double(10));
-			dataset.setValue("Third", new Double(15));
-			dataset.setValue("Fourth", new Double(25));
-			dataset.setValue("Fifth", new Double(5));
+			dataset.setValue("First", 45d);
+			dataset.setValue("Second", 10d);
+			dataset.setValue("Third", 15d);
+			dataset.setValue("Fourth", 25d);
+			dataset.setValue("Fifth", 5d);
 			
 			samplePieDataset = dataset;
 		}
@@ -218,7 +225,7 @@ public class ConvertChartContext implements ChartContext
 	
 	private static XYSeriesCollection sampleXyDataset;
 	
-	private XYDataset createXyDataset()
+	private static XYDataset createXyDataset()
 	{
 		if (sampleXyDataset == null)
 		{
@@ -268,7 +275,7 @@ public class ConvertChartContext implements ChartContext
 	
 	private static TimeSeriesCollection sampleTimeSeriesDataset;
 	
-	private TimeSeriesCollection createTimeSeriesDataset()
+	private static TimeSeriesCollection createTimeSeriesDataset()
 	{
 //		TimeSeries series1 = new TimeSeries("Series 1", Day.class);
 //		series1.add(new Day(1, 1, 2003), 54.3);
@@ -291,38 +298,38 @@ public class ConvertChartContext implements ChartContext
 		{
 			TimeSeriesCollection dataset = new TimeSeriesCollection();
 			
-			TimeSeries series = new TimeSeries("First", "Year", "Count", Year.class);
+			TimeSeries series = new TimeSeries("First", "Year", "Count");
 
-			series.add(new Year(1976), Integer.valueOf(0));
-			series.add(new Year(1977), Integer.valueOf(1));
-			series.add(new Year(1978), Integer.valueOf(0));
-			series.add(new Year(1979), Integer.valueOf(2));
-			series.add(new Year(1980), Integer.valueOf(0));
-			series.add(new Year(1981), Integer.valueOf(1));
-			series.add(new Year(1982), Integer.valueOf(2));
-			series.add(new Year(1983), Integer.valueOf(5));
-			series.add(new Year(1984), Integer.valueOf(21));
-			series.add(new Year(1985), Integer.valueOf(18));
-			series.add(new Year(1986), Integer.valueOf(18));
-			series.add(new Year(1987), Integer.valueOf(25));
-			series.add(new Year(1988), Integer.valueOf(11));
-			series.add(new Year(1989), Integer.valueOf(16));
-			series.add(new Year(1990), Integer.valueOf(23));
-			series.add(new Year(1991), Integer.valueOf(14));
-			series.add(new Year(1992), Integer.valueOf(31));
-			series.add(new Year(1993), Integer.valueOf(38));
-			series.add(new Year(1994), Integer.valueOf(31));
-			series.add(new Year(1995), Integer.valueOf(56));
-			series.add(new Year(1996), Integer.valueOf(45));
-			series.add(new Year(1997), Integer.valueOf(74));
-			series.add(new Year(1998), Integer.valueOf(68));
-			series.add(new Year(1999), Integer.valueOf(98));
-			series.add(new Year(2000), Integer.valueOf(85));
-			series.add(new Year(2001), Integer.valueOf(66));
-			series.add(new Year(2002), Integer.valueOf(71));
-			series.add(new Year(2003), Integer.valueOf(65));
-			series.add(new Year(2004), Integer.valueOf(59));
-			series.add(new Year(2005), Integer.valueOf(60));
+			series.add(new Year(1976), 0);
+			series.add(new Year(1977), 1);
+			series.add(new Year(1978), 0);
+			series.add(new Year(1979), 2);
+			series.add(new Year(1980), 0);
+			series.add(new Year(1981), 1);
+			series.add(new Year(1982), 2);
+			series.add(new Year(1983), 5);
+			series.add(new Year(1984), 21);
+			series.add(new Year(1985), 18);
+			series.add(new Year(1986), 18);
+			series.add(new Year(1987), 25);
+			series.add(new Year(1988), 11);
+			series.add(new Year(1989), 16);
+			series.add(new Year(1990), 23);
+			series.add(new Year(1991), 14);
+			series.add(new Year(1992), 31);
+			series.add(new Year(1993), 38);
+			series.add(new Year(1994), 31);
+			series.add(new Year(1995), 56);
+			series.add(new Year(1996), 45);
+			series.add(new Year(1997), 74);
+			series.add(new Year(1998), 68);
+			series.add(new Year(1999), 98);
+			series.add(new Year(2000), 85);
+			series.add(new Year(2001), 66);
+			series.add(new Year(2002), 71);
+			series.add(new Year(2003), 65);
+			series.add(new Year(2004), 59);
+			series.add(new Year(2005), 60);
 			
 			dataset.addSeries(series);
 			
@@ -334,7 +341,7 @@ public class ConvertChartContext implements ChartContext
 	
 	private static DefaultXYZDataset sampleXyzDataset;
 	
-	private XYZDataset createXyzDataset()
+	private static XYZDataset createXyzDataset()
 	{
 		if (sampleXyzDataset == null)
 		{
@@ -357,7 +364,7 @@ public class ConvertChartContext implements ChartContext
 
 	private static TaskSeriesCollection sampleGanttDataset;
 	
-	private IntervalCategoryDataset createGanttDataset() 
+	private static IntervalCategoryDataset createGanttDataset() 
 	{
 		if (sampleGanttDataset == null)
 		{
@@ -394,7 +401,7 @@ public class ConvertChartContext implements ChartContext
 
 	private static DefaultHighLowDataset sampleHighLowDataset;
 	
-	private OHLCDataset createHighLowDataset() 
+	private static OHLCDataset createHighLowDataset() 
 	{
 		if (sampleHighLowDataset == null)
 		{
@@ -745,7 +752,7 @@ public class ConvertChartContext implements ChartContext
 	
 	private static TimePeriodValuesCollection sampleTimePeriodDataset;
 	
-	private XYDataset createTimePeriodDataset()
+	private static XYDataset createTimePeriodDataset()
 	{
 		if (sampleTimePeriodDataset == null)
 		{

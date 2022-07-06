@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,11 +25,14 @@ package net.sf.jasperreports.engine.query;
 
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -40,7 +43,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * Query executer factory instances must be thread-safe as they are cached and used as singletons.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: QueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.query.JRQueryExecuter
  */
 @SuppressWarnings("deprecation")
@@ -54,6 +56,12 @@ public interface QueryExecuterFactory extends JRQueryExecuterFactory
 	 * To obtain query executer factories, a property having the query language appended to this prefix is used 
 	 * to get the query executer factory name.
 	 */
+	@Property(
+			name = "net.sf.jasperreports.query.executer.factory.{language}",
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_1_2_0
+			)
 	public static final String QUERY_EXECUTER_FACTORY_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "query.executer.factory.";
 
 	
@@ -68,6 +76,7 @@ public interface QueryExecuterFactory extends JRQueryExecuterFactory
 	 * 
 	 * @return array of built-in parameter names and types associated with this query type
 	 */
+	@Override
 	public Object[] getBuiltinParameters();
 	
 	
@@ -91,6 +100,14 @@ public interface QueryExecuterFactory extends JRQueryExecuterFactory
 		Map<String,? extends JRValueParameter> parameters
 		) throws JRException;
 
+	default public JRQueryExecuter createQueryExecuter(
+			QueryExecutionContext context, 
+			JRDataset dataset, 
+			Map<String,? extends JRValueParameter> parameters
+			) throws JRException
+	{
+		return createQueryExecuter(context.getJasperReportsContext(), dataset, parameters);
+	}
 	
 	/**
 	 * Decides whether the query executers created by this factory support a query parameter type.
@@ -100,6 +117,7 @@ public interface QueryExecuterFactory extends JRQueryExecuterFactory
 	 * @param className the value class name of the parameter
 	 * @return whether the parameter value type is supported
 	 */
+	@Override
 	public boolean supportsQueryParameterType(String className);
 
 

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,15 +28,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.collections4.map.ReferenceMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRGenericElementType;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.extensions.ExtensionsEnvironment;
-
-import org.apache.commons.collections.map.ReferenceMap;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /**
  * A class that provides access to 
@@ -48,16 +47,19 @@ import org.apache.commons.logging.LogFactory;
  * framework (see {@link ExtensionsEnvironment}). 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: GenericElementHandlerEnviroment.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class GenericElementHandlerEnviroment
 {
 
 	private static final Log log = LogFactory.getLog(
 			GenericElementHandlerEnviroment.class);
+	public static final String EXCEPTION_MESSAGE_KEY_HANDLERS_NOT_FOUND_FOR_NAMESPACE = 
+			"export.common.handlers.not.found.for.namespace";
 	
-	private final ReferenceMap handlersCache = new ReferenceMap(
-			ReferenceMap.WEAK, ReferenceMap.HARD);
+	private final ReferenceMap<Object, Map<String, GenericElementHandlerBundle>> handlersCache = 
+		new ReferenceMap<>(
+			ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.HARD
+			);
 	
 	private JasperReportsContext jasperReportsContext;
 
@@ -68,15 +70,6 @@ public final class GenericElementHandlerEnviroment
 	private GenericElementHandlerEnviroment(JasperReportsContext jasperReportsContext)
 	{
 		this.jasperReportsContext = jasperReportsContext;
-	}
-	
-	
-	/**
-	 *
-	 */
-	private static GenericElementHandlerEnviroment getDefaultInstance()
-	{
-		return new GenericElementHandlerEnviroment(DefaultJasperReportsContext.getInstance());
 	}
 	
 	
@@ -113,9 +106,10 @@ public final class GenericElementHandlerEnviroment
 		GenericElementHandlerBundle bundle = handlerBundles.get(type.getNamespace());
 		if (bundle == null)
 		{
-			throw new JRRuntimeException(
-					"No generic element handlers found for namespace " 
-					+ type.getNamespace());
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_HANDLERS_NOT_FOUND_FOR_NAMESPACE,
+					new Object[]{type.getNamespace()});
 		}
 		return bundle.getHandler(type.getName(), exporterKey);
 	}
@@ -126,7 +120,7 @@ public final class GenericElementHandlerEnviroment
 		Map<String,GenericElementHandlerBundle> handlerBundles;
 		synchronized (handlersCache)
 		{
-			handlerBundles = (Map<String,GenericElementHandlerBundle>) handlersCache.get(cacheKey);
+			handlerBundles = handlersCache.get(cacheKey);
 			if (handlerBundles == null)
 			{
 				handlerBundles = loadBundles();
@@ -139,7 +133,7 @@ public final class GenericElementHandlerEnviroment
 	protected Map<String,GenericElementHandlerBundle> loadBundles()
 	{
 		List<GenericElementHandlerBundle> bundleList = jasperReportsContext.getExtensions(GenericElementHandlerBundle.class);
-		Map<String,GenericElementHandlerBundle> bundles = new HashMap<String,GenericElementHandlerBundle>();
+		Map<String,GenericElementHandlerBundle> bundles = new HashMap<>();
 		for (Iterator<GenericElementHandlerBundle> it = bundleList.iterator(); it.hasNext();)
 		{
 			GenericElementHandlerBundle bundle = it.next();
@@ -155,30 +149,5 @@ public final class GenericElementHandlerEnviroment
 			}
 		}
 		return bundles;
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #getElementHandler(JRGenericElementType, String)}.
-	 */
-	public static GenericElementHandler getHandler(JRGenericElementType type,
-			String exporterKey)
-	{
-		return getDefaultInstance().getElementHandler(type, exporterKey);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #getBundles()}.
-	 */
-	protected static Map<String,GenericElementHandlerBundle> getHandlerBundles()
-	{
-		return getDefaultInstance().getBundles();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #loadBundles()}.
-	 */
-	protected static Map<String,GenericElementHandlerBundle> loadHandlerBundles()
-	{
-		return getDefaultInstance().loadBundles();
 	}
 }

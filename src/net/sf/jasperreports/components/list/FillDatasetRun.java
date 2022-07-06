@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,9 @@ package net.sf.jasperreports.components.list;
 import java.sql.Connection;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.data.cache.DataCacheHandler;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
@@ -36,28 +39,22 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRewindableDataSource;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.fill.FillDatasetPosition;
+import net.sf.jasperreports.engine.fill.JRFillCloneFactory;
 import net.sf.jasperreports.engine.fill.JRFillDataset;
 import net.sf.jasperreports.engine.fill.JRFillDatasetRun;
-import net.sf.jasperreports.engine.fill.JRFillExpressionEvaluator;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 import net.sf.jasperreports.engine.fill.JRFillSubreport;
 import net.sf.jasperreports.engine.util.JRReportUtils;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /**
  * Used to iterate on the list subdataset at fill time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillDatasetRun.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillDatasetRun extends JRFillDatasetRun
 {
 
 	private static final Log log = LogFactory.getLog(FillDatasetRun.class);
-	
-	private final JRFillExpressionEvaluator expressionEvaluator;
 	
 	private Map<String, Object> parameterValues;
 	private FillDatasetPosition datasetPosition;
@@ -69,22 +66,29 @@ public class FillDatasetRun extends JRFillDatasetRun
 	public FillDatasetRun(JRDatasetRun datasetRun,
 			JRFillObjectFactory factory) throws JRException
 	{
-		super(factory.getFiller(), datasetRun, 
+		super(factory.getReportFiller(), factory.getExpressionEvaluator(),
+				datasetRun, 
 				createFillDataset(datasetRun, factory));
-		
-		this.expressionEvaluator = factory.getExpressionEvaluator();
 		
 		initReturnValues(factory);
 		factory.registerDatasetRun(this);
 	}
 
+	public FillDatasetRun(FillDatasetRun datasetRun, JRFillCloneFactory factory)
+	{
+		super(datasetRun, factory);
+	}
+
 	private static JRFillDataset createFillDataset(JRDatasetRun datasetRun,
 			JRFillObjectFactory factory) throws JRException
 	{
-		JasperReport jasperReport = factory.getFiller().getJasperReport();
+		JasperReport jasperReport = factory.getReportFiller().getJasperReport();
 		JRDataset reportDataset = JRReportUtils.findSubdataset(datasetRun, jasperReport);
-		JRFillDataset fillDataset = new JRFillDataset(factory.getFiller(), reportDataset, factory);
+		
+		FillListDatasetFactory datasetFactory = new FillListDatasetFactory(factory);
+		JRFillDataset fillDataset = datasetFactory.getDataset(reportDataset);
 		fillDataset.createCalculator(jasperReport);
+		fillDataset.inheritFromMain();
 		return fillDataset;
 	}
 	
@@ -158,11 +162,10 @@ public class FillDatasetRun extends JRFillDatasetRun
 		copyConnectionParameter(parameterValues);
 		dataset.initCalculator();
 		dataset.setParameterValues(parameterValues);
-		
+		dataset.evaluateFieldProperties();
 		dataset.initDatasource();
 		
 		dataset.start();
-		init();
 		first = true;
 	}
 	
@@ -172,7 +175,12 @@ public class FillDatasetRun extends JRFillDatasetRun
 		
 		if (dataset.next())
 		{
-			if (!first)
+			if (first)
+			{
+				startData();
+				first = false;
+			}
+			else
 			{
 				group();
 			}
@@ -180,6 +188,13 @@ public class FillDatasetRun extends JRFillDatasetRun
 			detail();
 			
 			return true;
+		}
+		
+		//no records in the dataset
+		if (first)
+		{
+			//might not be required, but it's safer to do it because it used to happen before dataset.next() 
+			startData();
 		}
 		
 		return false;

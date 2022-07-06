@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,14 +36,16 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * instance and a map of {@link ComponentManager component managers}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultComponentsBundle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultComponentsBundle implements ComponentsBundle
 {
 
 	private ComponentsXmlParser xmlParser;
 	private Map<String,ComponentManager> componentManagers;
+	
+	public static final String EXCEPTION_MESSAGE_KEY_COMPONENT_MANAGER_NOT_FOUND = "components.component.manager.not.found";
 
+	@Override
 	public ComponentsXmlParser getXmlParser()
 	{
 		return xmlParser;
@@ -60,18 +62,22 @@ public class DefaultComponentsBundle implements ComponentsBundle
 		this.xmlParser = xmlParser;
 	}
 
+	@Override
 	public Set<String> getComponentNames()
 	{
 		return componentManagers.keySet();
 	}
 	
+	@Override
 	public ComponentManager getComponentManager(String componentName)
 	{
 		ComponentManager manager = componentManagers.get(componentName);
 		if (manager == null)
 		{
-			throw new JRRuntimeException("No component manager found for name " + componentName 
-					+ ", namespace " + xmlParser.getNamespace());
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_COMPONENT_MANAGER_NOT_FOUND,
+					new Object[]{componentName, xmlParser.getNamespace()});
 		}
 		return manager;
 	}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,10 +31,15 @@ import net.sf.jasperreports.engine.export.PrintElementIndex;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableCell
 {
+	public static enum CellType
+	{
+		COLUMN_HEADER,
+		ROW_HEADER
+	}
+	
 	private final Tabulator tabulator;
 	private final TablePosition position;
 	private final Cell cell;
@@ -42,18 +47,20 @@ public class TableCell
 	
 	private int colSpan;
 	private int rowSpan;
+	private CellType cellType;
 	private Color backcolor;
 	private JRLineBox box;
 	
 	public TableCell(Tabulator tabulator, 
 			TablePosition position, Cell cell, JRPrintElement element,
-			int colSpan, int rowSpan, Color backcolor, JRLineBox box)
+			CellType cellType, int colSpan, int rowSpan, Color backcolor, JRLineBox box)
 	{
 		this.tabulator = tabulator;
 		this.position = position;
 		this.cell = cell;
 		this.element = element;
 		
+		this.cellType = cellType;
 		this.colSpan = colSpan;
 		this.rowSpan = rowSpan;
 		this.backcolor = backcolor;
@@ -78,6 +85,16 @@ public class TableCell
 	public JRPrintElement getElement()
 	{
 		return element;
+	}
+
+	public CellType getCellType()
+	{
+		return cellType;
+	}
+
+	public void setCellType(CellType cellType)
+	{
+		this.cellType = cellType;
 	}
 
 	public int getColumnSpan()

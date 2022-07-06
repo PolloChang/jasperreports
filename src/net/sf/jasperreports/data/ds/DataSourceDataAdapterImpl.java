@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,30 +23,37 @@
  */
 package net.sf.jasperreports.data.ds;
 
+import com.fasterxml.jackson.annotation.JsonRootName;
+
 import net.sf.jasperreports.data.AbstractClasspathAwareDataAdapter;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DataSourceDataAdapterImpl.java 7199 2014-08-27 13:58:10Z teodord $
  */
+
+@JsonRootName(value = "dsDataAdapter")
 public class DataSourceDataAdapterImpl extends AbstractClasspathAwareDataAdapter implements DataSourceDataAdapter
 {
 	private String factoryClass;
 	private String methodToCall;
 	
+	@Override
 	public String getFactoryClass() {
 		return factoryClass;
 	}
 
+	@Override
 	public void setFactoryClass(String factoryClass) {
 		this.factoryClass = factoryClass;
 	}
 
+	@Override
 	public String getMethodToCall() {
 		return methodToCall;
 	}
 
+	@Override
 	public void setMethodToCall(String methodToCall) {
 		this.methodToCall = methodToCall;
 	}

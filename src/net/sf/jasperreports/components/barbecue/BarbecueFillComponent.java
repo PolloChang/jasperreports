@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,14 +42,13 @@ import net.sourceforge.barbecue.Barcode;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarbecueFillComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarbecueFillComponent extends BaseFillComponent
 {
 
 	private final BarbecueComponent barcodeComponent;
 	
-	private final Map<JRStyle, JRTemplateImage> printTemplates = new HashMap<JRStyle, JRTemplateImage>();
+	private final Map<JRStyle, JRTemplateImage> printTemplates = new HashMap<>();
 	
 	private String code;
 	private String applicationIdentifier;
@@ -64,6 +63,7 @@ public class BarbecueFillComponent extends BaseFillComponent
 		return barcodeComponent;
 	}
 	
+	@Override
 	public void evaluate(byte evaluation) throws JRException
 	{
 		if (isEvaluateNow())
@@ -84,6 +84,7 @@ public class BarbecueFillComponent extends BaseFillComponent
 		return barcodeComponent.getEvaluationTimeValue() == EvaluationTimeEnum.NOW;
 	}
 
+	@Override
 	public FillPrepareResult prepare(int availableHeight)
 	{
 		//FIXMENOW do like for map and spider chart, because it crashes with null code one evaluationTime != NOW; check barbecue too
@@ -92,6 +93,7 @@ public class BarbecueFillComponent extends BaseFillComponent
 				: FillPrepareResult.PRINT_NO_STRETCH;
 	}
 
+	@Override
 	public JRPrintElement fill()
 	{
 		JRTemplateImage templateImage = getTemplateImage();
@@ -118,6 +120,7 @@ public class BarbecueFillComponent extends BaseFillComponent
 		return image;
 	}
 
+	@Override
 	public void evaluateDelayedElement(JRPrintElement element, byte evaluation)
 			throws JRException
 	{
@@ -137,10 +140,10 @@ public class BarbecueFillComponent extends BaseFillComponent
 		barcodeInfo.setBarHeight(barcodeComponent.getBarHeight());
 		
 		Barcode barcode = BarcodeProviders.createBarcode(barcodeInfo);
-		BarbecueRenderer renderer = new BarbecueRenderer(barcode);
+		BarbecueRendererImpl renderer = new BarbecueRendererImpl(barcode);
 		renderer.setRotation(BarbecueStyleResolver.getRotationValue(fillContext.getComponentElement()));
 		
-		image.setRenderable(renderer);
+		image.setRenderer(renderer);
 	}
 
 	protected JRTemplateImage getTemplateImage()
@@ -154,6 +157,7 @@ public class BarbecueFillComponent extends BaseFillComponent
 					fillContext.getDefaultStyleProvider());
 			templateImage.setStyle(elementStyle);
 			templateImage.setScaleImage(ScaleImageEnum.RETAIN_SHAPE);
+			templateImage.setUsingCache(false);
 			
 			templateImage = deduplicate(templateImage);
 			printTemplates.put(elementStyle, templateImage);

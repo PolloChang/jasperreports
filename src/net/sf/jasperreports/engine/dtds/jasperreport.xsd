@@ -13,6 +13,7 @@
   <complexType>
    <sequence>
     <element ref="jr:property" minOccurs="0" maxOccurs="unbounded"/>
+    <element name="propertyExpression" type="jr:datasetPropertyExpressionType" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:import" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:template" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:reportFont" minOccurs="0" maxOccurs="unbounded"/>
@@ -119,7 +120,7 @@
      </restriction>
     </simpleType>
    </attribute>
-   <attribute name="whenNoDataType" use="optional" default="NoPages">
+   <attribute name="whenNoDataType" use="optional">
    	<annotation>
    		<documentation>Allows users to customize the behavior of the reporting engine when there are now rows in the data source.</documentation>
    	</annotation>
@@ -145,6 +146,25 @@
 	   		<documentation>The generated document contains only the noData section.</documentation>
 	   	</annotation>
 	  </enumeration>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name="sectionType" use="optional" default="Band">
+   	<annotation>
+   		<documentation>Specifies if the report design is made of sections containing bands or containing parts.</documentation>
+   	</annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Band">
+	   	<annotation>
+	   		<documentation>The report template is made of sections containing bands.</documentation>
+	   	</annotation>
+	  </enumeration>      
+      <enumeration value="Part">
+	   	<annotation>
+	   		<documentation>The report template is made of sections containing parts.</documentation>
+	   	</annotation>
+      </enumeration>
      </restriction>
     </simpleType>
    </attribute>
@@ -331,7 +351,7 @@
   <annotation>
    <documentation>Allows the creation of a name-value pair property for a report object (e.g. the report itself, a field, a parameter, etc).</documentation>
   </annotation>
-  <complexType>
+  <complexType mixed="true">
    <attribute name="name" type="string" use="required">
 	<annotation>
 	 <documentation>Name of the object property.</documentation>
@@ -345,20 +365,71 @@
   </complexType>
  </element>
 
- <element name="propertyExpression">
+ <complexType name="propertyExpressionType" mixed="true">
+  <attribute name="name" type="string" use="required">
+   <annotation>
+	<documentation>Name of the object property.</documentation>
+   </annotation>
+  </attribute>
+  <attribute name="type" use="optional">
+   <annotation>
+    <documentation>Specifies the type of expression.</documentation>
+   </annotation>  
+   <simpleType>
+    <restriction base="string">
+     <enumeration value="default">
+	  <annotation>
+       <documentation>Expression is written in the report expression language.</documentation>
+      </annotation>  
+     </enumeration>
+     <enumeration value="simpleText">
+	  <annotation>
+	   <documentation>Expression is a simple text expression where parameter, field, variable references have their values converted to string and expanded in-place in the resulting text.</documentation>
+	  </annotation>  
+     </enumeration>
+    </restriction>
+   </simpleType>
+  </attribute>
+ </complexType>
+
+ <element name="propertyExpression" type="jr:propertyExpressionType">
   <annotation>
    <documentation>Allows the creation of a dynamic name-value pair property for a report element.
   The contents of this element is interpreted as a <code>java.lang.String</code> expression,
   which will be evaluated at fill time, the result being used as property value.</documentation>
   </annotation>
-  <complexType mixed="true">
-   <attribute name="name" type="string" use="required">
-	<annotation>
-	 <documentation>Name of the object property.</documentation>
-	</annotation>
-   </attribute>
-  </complexType>
  </element>
+
+ <complexType name="datasetPropertyExpressionType" mixed="true">
+  <complexContent>
+    <extension base="jr:propertyExpressionType">
+     <attribute name="evaluationTime" use="optional">
+  	  <annotation>
+   	   <documentation>Specifies when the default value expression of a parameter is evaluated.</documentation>
+  	  </annotation>  
+      <simpleType>
+       <restriction base="string">
+        <enumeration value="Early">
+	     <annotation>
+	   	  <documentation>Evaluate the property expression before parameter contributors.</documentation>
+	  	 </annotation>  
+        </enumeration>
+        <enumeration value="Late">
+	  	 <annotation>
+	   	  <documentation>Evaluate the property expression after parameter contributors.</documentation>
+	  	 </annotation>  
+        </enumeration>
+        <enumeration value="Report">
+	  	 <annotation>
+	   	  <documentation>Evaluate the property expression at the end of the report.</documentation>
+	  	 </annotation>  
+        </enumeration>
+       </restriction>
+      </simpleType>
+     </attribute>
+    </extension>
+  </complexContent>
+ </complexType>
 
  <element name="import">
   <annotation>
@@ -573,7 +644,45 @@
      </restriction>
     </simpleType>
    </attribute>
+   <attribute name="hTextAlign" use="optional">
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Left"/>
+      <enumeration value="Center"/>
+      <enumeration value="Right"/>
+      <enumeration value="Justified"/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name="hImageAlign" use="optional">
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Left"/>
+      <enumeration value="Center"/>
+      <enumeration value="Right"/>
+     </restriction>
+    </simpleType>
+   </attribute>
    <attribute name="vAlign" use="optional">
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Top"/>
+      <enumeration value="Middle"/>
+      <enumeration value="Bottom"/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name="vTextAlign" use="optional">
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Top"/>
+      <enumeration value="Middle"/>
+      <enumeration value="Bottom"/>
+      <enumeration value="Justified"/>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name="vImageAlign" use="optional">
     <simpleType>
      <restriction base="string">
       <enumeration value="Top"/>
@@ -877,7 +986,7 @@
 	  </enumeration>
       <enumeration value="Fixed">
 		<annotation>
-		 <documentation>Line spacing is exactly as specified bye lineSpacingSize.</documentation>
+		 <documentation>Line spacing is exactly as specified by lineSpacingSize.</documentation>
 		</annotation>
 	  </enumeration>
       <enumeration value="Proportional">
@@ -993,6 +1102,7 @@
   <complexType>
    <sequence>
     <element ref="jr:property" minOccurs="0" maxOccurs="unbounded"/>
+    <element name="propertyExpression" type="jr:datasetPropertyExpressionType" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:scriptlet" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:parameter" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:queryString" minOccurs="0" maxOccurs="1"/>
@@ -1106,6 +1216,25 @@
      </restriction>
     </simpleType>
    </attribute>
+   <attribute name="evaluationTime" use="optional">
+  	<annotation>
+   	 <documentation>Specifies when the default value expression of a parameter is evaluated.</documentation>
+  	</annotation>  
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="Early">
+	  	<annotation>
+	   	 <documentation>Evaluate the parameter default value expression before parameter contributors.</documentation>
+	  	</annotation>  
+      </enumeration>
+      <enumeration value="Late">
+	  	<annotation>
+	   	 <documentation>Evaluate the parameter default value expression after parameter contributors.</documentation>
+	  	</annotation>  
+      </enumeration>
+     </restriction>
+    </simpleType>
+   </attribute>
   </complexType>
  </element>
 
@@ -1135,7 +1264,7 @@
    	 <documentation>Specifies the query language.
 	  <p/>
 		Based on the query language, a corresponding
-		<code>net.sf.jasperreports.engine.query.JRQueryExecuterFactory</code> is used to create
+		<code>net.sf.jasperreports.engine.query.QueryExecuterFactory</code> is used to create
 		<code>net.sf.jasperreports.engine.query.JRQueryExecuter</code> instance.
 		The query executer is responsible for executing the query and creating a <code>JRDataSource</code> from the result.
 	  <p/>
@@ -1153,6 +1282,7 @@
   <complexType>
    <sequence>
     <element ref="jr:property" minOccurs="0" maxOccurs="unbounded"/>
+    <element ref="jr:propertyExpression" minOccurs="0" maxOccurs="unbounded"/>
     <element ref="jr:fieldDescription" minOccurs="0" maxOccurs="1"/>
    </sequence>
    <attribute name="name" type="string" use="required">
@@ -1217,6 +1347,7 @@
   </annotation>  
   <complexType>
    <sequence>
+    <element ref="jr:variableDescription" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:variableExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:initialValueExpression" minOccurs="0" maxOccurs="1"/>
    </sequence>
@@ -1259,6 +1390,11 @@
       <enumeration value="Group">
 	  	<annotation>
 	   	 <documentation>Variable is initialized when the group specified by the <code>resetGroup</code> attribute changes.</documentation>
+	  	</annotation>
+	  </enumeration> 
+      <enumeration value="Master">
+	  	<annotation>
+	   	 <documentation>Used internally for certain built-in variables.</documentation>
 	  	</annotation>
 	  </enumeration> 
      </restriction>
@@ -1377,6 +1513,14 @@
   	 <documentation>The name of a class that implements the <code>net.sf.jasperreports.engine.fill.JRIncrementerFactory</code> interface to use when creating the incrementer instance for this variable. Incrementers are objects that implement the <code>net.sf.jasperreports.engine.fill.JRIncrementer</code> interface and handle the incremental calculation performed on the variable's current value with every iteration in the data source.</documentation>
  	</annotation>
    </attribute> 
+  </complexType>
+ </element>
+
+ <element name="variableDescription">
+  <annotation>
+   <documentation>Can be used to specify a short text description for the variable.</documentation>
+  </annotation>  
+  <complexType mixed="true">
   </complexType>
  </element>
 
@@ -1504,9 +1648,33 @@
      </restriction>
     </simpleType>
    </attribute>
+   <attribute name="isReprintHeaderOnEachColumn" use="optional" default="false">
+ 	<annotation>
+  	 <documentation>Flag that signals if the group header should be reprinted at the beginning of each column, in vertically filled reports only.</documentation>
+ 	</annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="true">
+	  	<annotation>
+	   	 <documentation>Group header section is reprinted always at the beginning of a new column.</documentation>
+	  	</annotation>
+	  </enumeration> 
+      <enumeration value="false">
+	  	<annotation>
+	   	 <documentation>Group header section is not reprinted at the beginning of a new column.</documentation>
+	  	</annotation>
+	  </enumeration> 
+     </restriction>
+    </simpleType>
+   </attribute>
    <attribute name="minHeightToStartNewPage" type="NMTOKEN" use="optional" default="0">
  	<annotation>
   	 <documentation>Minimum amount of vertically space needed at the bottom of the column in order to place the group header on the current column.</documentation>
+ 	</annotation>
+   </attribute>
+   <attribute name="minDetailsToStartFromTop" type="NMTOKEN" use="optional" default="0">
+ 	<annotation>
+  	 <documentation>Minimum number of details to be rendered on the current column, to avoid starting the group on a new column.</documentation>
  	</annotation>
    </attribute>
    <attribute name="footerPosition" use="optional" default="Normal">
@@ -1557,6 +1725,25 @@
      </restriction>
     </simpleType>
    </attribute>
+   <attribute name="preventOrphanFooter" use="optional" default="false">
+ 	<annotation>
+  	 <documentation>Flag that prevents the group from appearing alone at the top of a new page/column.</documentation>
+ 	</annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="true">
+	  	<annotation>
+	   	 <documentation>The last detail section is moved onto the new page/column so that the group footer does not appear alone.</documentation>
+	  	</annotation>
+	  </enumeration> 
+      <enumeration value="false">
+	  	<annotation>
+	   	 <documentation>The group footer can appear alone at the top of a new page/column, without a detail section.</documentation>
+	  	</annotation>
+	  </enumeration> 
+     </restriction>
+    </simpleType>
+   </attribute>
   </complexType>
  </element>
 
@@ -1573,9 +1760,10 @@
    <documentation>Contains the definition of the header section for this group.</documentation>
   </annotation>  
   <complexType>
-   <sequence>
+   <choice minOccurs="0" maxOccurs="1">
     <element ref="jr:band" minOccurs="0" maxOccurs="unbounded"/>
-   </sequence>
+    <element ref="jr:part" minOccurs="0" maxOccurs="unbounded"/>
+   </choice>
   </complexType>
  </element>
 
@@ -1584,9 +1772,10 @@
    <documentation>Contains the definition of the footer section for this group.</documentation>
   </annotation>  
   <complexType>
-   <sequence>
+   <choice minOccurs="0" maxOccurs="1">
     <element ref="jr:band" minOccurs="0" maxOccurs="unbounded"/>
-   </sequence>
+    <element ref="jr:part" minOccurs="0" maxOccurs="unbounded"/>
+   </choice>
   </complexType>
  </element>
 
@@ -1639,9 +1828,10 @@
    <documentation>Definition of a detail band for this report. A detail band is repeated for each line of data supplied by the report's data source. There can be multiple detail bands in a report.</documentation>
   </annotation>  
   <complexType>
-   <sequence>
+   <choice minOccurs="0" maxOccurs="1">
     <element ref="jr:band" minOccurs="0" maxOccurs="unbounded"/>
-   </sequence>
+    <element ref="jr:part" minOccurs="0" maxOccurs="unbounded"/>
+   </choice>
   </complexType>
  </element>
 
@@ -1744,6 +1934,7 @@
      <element ref="jr:componentElement"/>
      <element ref="jr:genericElement"/>
     </choice>
+    <element name="returnValue" type="jr:expressionReturnValue" minOccurs="0" maxOccurs="unbounded"/>
    </sequence>
    <attribute name="height" type="NMTOKEN" use="optional" default="0">
 	<annotation>
@@ -1795,6 +1986,74 @@
    </attribute>
   </complexType>
  </element>
+
+ <element name="part">
+  <annotation>
+   <documentation>Generic definition of a report part.</documentation>
+  </annotation>  
+  <complexType>
+   <sequence>
+    <element ref="jr:property" minOccurs="0" maxOccurs="unbounded"/>
+    <element ref="jr:printWhenExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:partNameExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:partComponent"/>
+   </sequence>
+   <attribute name="uuid" type="string" use="optional">
+	<annotation>
+	 <documentation>This attribute is auto-generated and is used to uniquely identify parts.</documentation>
+	</annotation>
+   </attribute>  
+   <attribute name="evaluationTime" use="optional">
+     <annotation>
+       <documentation>Determines the time at which the part is to be evaluated.</documentation>
+     </annotation>
+     <simpleType>
+       <restriction base="string">
+         <enumeration value="Now">
+           <annotation>
+             <documentation>The part is to be evaluated immediately.</documentation>
+           </annotation>
+         </enumeration>
+         <enumeration value="Report">
+           <annotation>
+             <documentation>The part is to be evaluated when the report ends.</documentation>
+           </annotation>
+         </enumeration>
+         <enumeration value="Group">
+           <annotation>
+             <documentation>The part is to be evaluated when a group breaks.</documentation>
+           </annotation>
+         </enumeration>
+       </restriction>
+     </simpleType>
+   </attribute>  
+   <attribute name="evaluationGroup" type="string" use="optional">
+     <annotation>
+       <documentation>Specifies the group at which to evaluate the part when <code>evaluationTime</code> is Group.</documentation>
+     </annotation>
+   </attribute>  
+  </complexType>
+ </element>
+
+ <element name="partNameExpression">
+  <annotation>
+   <documentation>An expression that will provide a name for a report part.</documentation>
+  </annotation>
+  <complexType mixed="true">
+  </complexType>
+ </element>
+
+ <element name="partComponent" type="jr:partComponentType" abstract="true">
+  <annotation>
+   <documentation></documentation>
+  </annotation>
+ </element>
+  
+ <complexType name="partComponentType" abstract="true">
+  <annotation>
+   <documentation></documentation>
+  </annotation>
+ </complexType>
 
  <element name="break">
   <annotation>
@@ -1908,23 +2167,43 @@
    </attribute>
    <attribute name="stretchType" use="optional" default="NoStretch">
 	<annotation>
-	 <documentation>Specifies the graphic element stretch behavior when the report section is affected by stretch.</documentation>
+	 <documentation>Specifies the element stretch behavior relative to its element group siblings or element container stretch.</documentation>
 	</annotation>
     <simpleType>
      <restriction base="string">
       <enumeration value="NoStretch">
 		<annotation>
-		 <documentation>The graphic element won't stretch vertically as the band stretches to display field data.</documentation>
+		 <documentation>The element won't stretch vertically beyond its natural stretch height, when the container stretches to display other elements.</documentation>
 		</annotation>
 	  </enumeration>  
       <enumeration value="RelativeToTallestObject">
 		<annotation>
-		 <documentation>The graphic element will stretch to accommodate the tallest object in its group. See the <elem>elementGroup</elem> element, to see how to group elements in bands.</documentation>
+		 <documentation><i>Deprecated</i>. Replaced by ElementGroupHeight value.</documentation>
 		</annotation>
 	  </enumeration>  
       <enumeration value="RelativeToBandHeight">
 		<annotation>
-		 <documentation>The graphic element will stretch to fit in the band.</documentation>
+		 <documentation><i>Deprecated</i>. Replaced by ContainerHeight value.</documentation>
+		</annotation>
+	  </enumeration>  
+      <enumeration value="ElementGroupBottom">
+		<annotation>
+		 <documentation>The element will stretch to accommodate the overall natural growth of its group, but also taking into account the shifting Y position of the element within its group. See the <elem>elementGroup</elem> element, to see how to group elements.</documentation>
+		</annotation>
+	  </enumeration>  
+      <enumeration value="ElementGroupHeight">
+		<annotation>
+		 <documentation>The element will stretch to accommodate the overall natural growth of its group, without taking into account the shifting Y position of the element within its group. See the <elem>elementGroup</elem> element, to see how to group elements.</documentation>
+		</annotation>
+	  </enumeration>  
+      <enumeration value="ContainerBottom">
+		<annotation>
+		 <documentation>The element will stretch to fit the container height, while taking into account its new Y position. This results in the element preserving its distance to the container's bottom edge.</documentation>
+		</annotation>
+	  </enumeration>  
+      <enumeration value="ContainerHeight">
+		<annotation>
+		 <documentation>The element will stretch to fit the container height, but without taking into account its new Y position. This might results in the element being shifted up (due to collapsing elements above) or down (due to stretching elements above that push it downards) relative to the container bottom edge. In case the element its already pushed downwards, the additional stretch imposed by the container might actually throw it beyond the container's bottom edge, in which case the element will not render at all.</documentation>
 		</annotation>
 	  </enumeration>  
      </restriction>
@@ -2081,7 +2360,7 @@
    </sequence>
    <attribute name="stretchType" use="optional">
 	<annotation>
-	 <documentation>The element will be printed when the specified group changes.</documentation>
+	 <documentation><i>Deprecated</i>. Replaced by attribute with the same name in tag <elem>reportElement</elem>.</documentation>
 	</annotation>
     <simpleType>
      <restriction base="string">
@@ -2187,6 +2466,7 @@
     <element ref="jr:graphicElement" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:imageExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:anchorNameExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:bookmarkLevelExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
@@ -2232,10 +2512,39 @@ Several restrictions apply to the image stretching mechanism:
 	  </enumeration>
       <enumeration value="RealSize">
 		<annotation>
-		 <documentation>A scale image type that stretches the images height in the same way as <code>RealHeight</code>, and in addition it changes the image width to the actual with of the image.
+		 <documentation>A scale image type that stretches the images height in the same way as <code>RealHeight</code>, and in addition it reduces the image width to the actual width of the image.
 
 This can be useful when, for instance, a border has to be drawn around the image, respecting its actual size.
 		 </documentation>
+		</annotation>
+	  </enumeration>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name="rotation" use="optional">
+    <annotation>
+     <documentation>Type of rotation for the image object.</documentation>
+    </annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="None">
+		<annotation>
+		 <documentation>Image is not rotated.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="Left">
+		<annotation>
+		 <documentation>Image is rotated 90 degrees counter clockwise.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="Right">
+		<annotation>
+		 <documentation>Image is rotated 90 degrees clockwise.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="UpsideDown">
+		<annotation>
+		 <documentation>Image is rotated 180 degrees.</documentation>
 		</annotation>
 	  </enumeration>
      </restriction>
@@ -2402,7 +2711,7 @@ This can be useful when, for instance, a border has to be drawn around the image
 	 <documentation>The level of the bookmark corresponding to the anchor.
 	  <p/>
 	  The PDF exporter can create a bookmark tree using anchors defined in the report.
-	  This attributes specifies the level of the tree entry corresponding to this element's anchor.
+	  This attribute specifies the level of the tree entry corresponding to this element's anchor.
 	  If set to "0" (the default), no bookmark will be created for the anchor.
 	 </documentation>
 	</annotation>
@@ -2871,6 +3180,14 @@ This can be useful when, for instance, a border has to be drawn around the image
   </complexType>
  </element>
 
+ <element name="bookmarkLevelExpression">
+  <annotation>
+   <documentation>If specified, it will supply the bookmark level for the corresponding element. This setting overrides the bookmarkLevel attribute of the element.</documentation>
+  </annotation>
+  <complexType mixed="true">
+  </complexType>
+ </element>
+
  <element name="anchorNameExpression">
   <annotation>
    <documentation>If specified, it will supply the name of the local anchor that will mark to the corresponding element.</documentation>
@@ -3027,6 +3344,11 @@ This can be useful when, for instance, a border has to be drawn around the image
       <enumeration value="Bottom">
 		<annotation>
 		 <documentation>Text is aligned to the bottom.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="Justified">
+		<annotation>
+		 <documentation>Text is justified.</documentation>
 		</annotation>
 	  </enumeration>
      </restriction>
@@ -3255,6 +3577,7 @@ This can be useful when, for instance, a border has to be drawn around the image
     <element ref="jr:textFieldExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:patternExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:anchorNameExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:bookmarkLevelExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
@@ -3262,9 +3585,11 @@ This can be useful when, for instance, a border has to be drawn around the image
     <element ref="jr:hyperlinkTooltipExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkParameter" minOccurs="0" maxOccurs="unbounded"/>
    </sequence>
-   <attribute name="isStretchWithOverflow" use="optional" default="false">
+   <attribute name="isStretchWithOverflow" use="optional">
     <annotation>
-     <documentation>Instructs the report engine to allow the text field to stretch downwards in order to display all its text when it doesn't fit in the defined text field height.</documentation>
+     <documentation><i>Deprecated</i>. Replaced by attribute <a href="#textField_textAdjust">textAdjust</a>.
+     <p/>
+     Instructs the report engine to allow the text field to stretch downwards in order to display all its text when it doesn't fit in the defined text field height.</documentation>
     </annotation>
     <simpleType>
      <restriction base="string">
@@ -3276,6 +3601,40 @@ This can be useful when, for instance, a border has to be drawn around the image
       <enumeration value="false">
 		<annotation>
 		 <documentation></documentation>
+		</annotation>
+	  </enumeration>
+     </restriction>
+    </simpleType>
+   </attribute>
+   <attribute name="textAdjust" use="optional">
+    <annotation>
+     <documentation>Text adjust type.</documentation>
+    </annotation>
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="CutText">
+		<annotation>
+		 <documentation>The text is cut, if it does not fit the text field element size.</documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="StretchHeight">
+		<annotation>
+		 <documentation>The text field element is stretched in height to accommodate the entire content.
+		 <br/>
+		 <b>Note:</b> Text fields with delayed evaluation do not stretch to acquire all the expression's content. This is because the 
+		 text element height is calculated when the report section is generated, and even if the engine comes back later with the text 
+		 content of the text field, the element height will not adapt, because this would ruin the already created layout.
+		 </documentation>
+		</annotation>
+	  </enumeration>
+      <enumeration value="ScaleFont">
+		<annotation>
+		 <documentation>The font size of the text is scaled down so that the entire content fits the text field element size.
+		 <p/>
+		 Font size is scaled down using decreasing font size increments/decrements, until the best fit is found. The minimum font size increment/decrement amount 
+		 is configured using the <a href="http://jasperreports.sourceforge.net/api/net/sf/jasperreports/engine/fill/JRFillTextElement.html#PROPERTY_SCALE_FONT_STEP_LIMIT">net.sf.jasperreports.scale.font.step.limit</a> 
+		 property, which also serves as minimum acceptable font size.
+		 </documentation>
 		</annotation>
 	  </enumeration>
      </restriction>
@@ -3356,7 +3715,7 @@ This can be useful when, for instance, a border has to be drawn around the image
      <documentation>The level of the bookmark corresponding to the anchor.
 	  <p/>
 	  The PDF exporter can create a bookmark tree using anchors defined in the report.
-	  This attributes specifies the level of the tree entry corresponding to this element's anchor.
+	  This attribute specifies the level of the tree entry corresponding to this element's anchor.
 	  If set to "0" (the default), no bookmark will be created for the anchor.
 	 </documentation>
     </annotation>
@@ -3658,6 +4017,7 @@ This can be useful when, for instance, a border has to be drawn around the image
     <element ref="jr:chartSubtitle" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:chartLegend" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:anchorNameExpression" minOccurs="0" maxOccurs="1"/>
+    <element ref="jr:bookmarkLevelExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkReferenceExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkWhenExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:hyperlinkAnchorExpression" minOccurs="0" maxOccurs="1"/>
@@ -3735,7 +4095,7 @@ This can be useful when, for instance, a border has to be drawn around the image
      <documentation>The level of the bookmark corresponding to the anchor.
 	  <p/>
 	  The PDF exporter can create a bookmark tree using anchors defined in the report.
-	  This attributes specifies the level of the tree entry corresponding to this element's anchor.
+	  This attribute specifies the level of the tree entry corresponding to this element's anchor.
 	  If set to "0" (the default), no bookmark will be created for the anchor.
 	 </documentation>
     </annotation>
@@ -4213,7 +4573,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
      <element ref="jr:connectionExpression"/>
      <element ref="jr:dataSourceExpression"/>
     </choice>
-   <element name="returnValue" type="jr:datasetReturnValue" minOccurs="0" maxOccurs="unbounded"/>
+   <element name="returnValue" type="jr:variableReturnValue" minOccurs="0" maxOccurs="unbounded"/>
    </sequence>
    <attribute name="subDataset" type="string" use="required">
 	<annotation>
@@ -4228,12 +4588,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
   </complexType>
  </element>
  
- <complexType name="datasetReturnValue">
-  <attribute name="fromVariable" type="string" use="optional">
-   <annotation>
-    <documentation>Name of the source variable whose value will be returned.</documentation>
-   </annotation>
-  </attribute>
+ <complexType name="commonReturnValue" abstract="true">
   <attribute name="toVariable" type="string" use="optional">
    <annotation>
     <documentation>Name of the variable to which the value is returned. This should be a variable with<code>calculation="System"</code></documentation>
@@ -4303,6 +4658,34 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
     <documentation>The name of a class that implements the<code>net.sf.jasperreports.engine.fill.JRIncrementerFactory</code> interface to use when creating the incrementer instance to handle the returned value.</documentation>
    </annotation>
   </attribute>
+ </complexType>
+ 
+ <complexType name="variableReturnValue">
+  <complexContent>
+   <extension base="jr:commonReturnValue">
+    <attribute name="fromVariable" type="string" use="optional">
+     <annotation>
+      <documentation>Name of the source variable whose value will be returned.</documentation>
+     </annotation>
+    </attribute>
+   </extension>
+  </complexContent>
+ </complexType>
+
+ <complexType name="expressionReturnValue">
+  <complexContent>
+   <extension base="jr:commonReturnValue">
+    <sequence>
+     <element name="expression">
+      <annotation>
+       <documentation>Allows bulk passing the parameters to the subreport/subdataset into a <code>java.lang.Map</code> object. There are cases when we want to pass to the subreport/subdataset the same parameters that the master report has received. This can be achieved by passing the system-defined parameter called REPORT_PARAMETERS_MAP and maybe adding to or overriding those parameters using additional <elem>subreportParameter</elem> elements.</documentation>
+      </annotation>
+      <complexType mixed="true">
+      </complexType>
+     </element>
+    </sequence>
+   </extension>
+  </complexContent>
  </complexType>
 
  <element name="datasetParameter">
@@ -5836,7 +6219,7 @@ should extend <code>net.sf.jasperreports.engine.JRAbstractChartCustomizer</code>
    </attribute>
    <attribute name="isShowValueLines" use="optional" default="false">
   	<annotation>
-   	 <documentation>Defines whether or not lines are drawn showing values on the thermometer.</documentation>
+   	 <documentation><i>Deprecated</i>. No longer used. Defines whether or not lines are drawn showing values on the thermometer.</documentation>
   	</annotation>
     <simpleType>
      <restriction base="string">
@@ -6102,8 +6485,8 @@ exporters such as the HTML or XLS ones, but will not be visible in export
 formats that observe the page width, such as the PDF exporter.
 </p>
 <p>
-The default value of this flag is given by the
-<a href="http://jasperreports.sourceforge.net/api/net/sf/jasperreports/crosstabs/JRCrosstab.html#PROPERTY_IGNORE_WIDTH">net.sf.jasperreports.crosstab.ignore.width</a>
+The default value of this flag is given by the 
+<a href="http://jasperreports.sourceforge.net/api/net/sf/jasperreports/crosstabs/JRCrosstab.html#PROPERTY_IGNORE_WIDTH">net.sf.jasperreports.crosstab.ignore.width</a> 
 property.
 </p>
    	 </documentation>
@@ -6299,6 +6682,20 @@ property.
      </restriction>
     </simpleType>
    </attribute>
+   <attribute name="mergeHeaderCells" type="boolean" use="optional">
+  	<annotation>
+   	 <documentation>
+   	 Determines whether the header cell of this group spans across all rows in the group,
+   	 or whether the header cell repeats for each sub group entry.
+   	 <p>
+   	 If the header cell is set to repeat, the sub group should not have a total row.
+   	 </p>
+   	 <p>
+   	 By default the header cell spans across all rows that are part of the group.
+   	 </p>
+   	 </documentation>
+  	</annotation>
+   </attribute>
   </complexType>
  </element>
 
@@ -6427,6 +6824,20 @@ property.
 	  </enumeration>
      </restriction>
     </simpleType>
+   </attribute>
+   <attribute name="mergeHeaderCells" type="boolean" use="optional">
+  	<annotation>
+   	 <documentation>
+   	 Determines whether the header cell of this group spans across all columns in the group,
+   	 or whether the header cell repeats for each sub group entry.
+   	 <p>
+   	 If the header cell is set to repeat, the sub group should not have a total column.
+   	 </p>
+   	 <p>
+   	 By default the header cell spans across all columns that are part of the group.
+   	 </p>
+   	 </documentation>
+  	</annotation>
    </attribute>
   </complexType>
  </element>
@@ -6803,6 +7214,7 @@ property.
      <element ref="jr:image"/>
      <element ref="jr:staticText"/>
      <element ref="jr:textField"/>
+     <element ref="jr:subreport"/>
      <element ref="jr:elementGroup"/>
      <element ref="jr:frame"/>
      <element ref="jr:componentElement"/>
@@ -6914,6 +7326,25 @@ property.
      <element ref="jr:genericElement"/>
     </choice>
    </sequence>
+   <attribute name="borderSplitType" use="optional">
+	<annotation>
+	 <documentation>Specifies the way the frame border is to be drawn when the frame element splits.</documentation>
+	</annotation>  
+    <simpleType>
+     <restriction base="string">
+      <enumeration value="NoBorders">
+		<annotation>
+		 <documentation>When the frame splits, the bottom border of the first fragment and the top border of the second fragment are not drawn.</documentation>
+		</annotation> 
+	  </enumeration> 
+      <enumeration value="DrawBorders">
+		<annotation>
+		 <documentation>When the frame splits, both fragments are drawn will borders and paddings on all sides.</documentation>
+		</annotation> 
+	  </enumeration> 
+     </restriction>
+    </simpleType>
+   </attribute>
   </complexType>
  </element>
  
@@ -7017,6 +7448,7 @@ property.
    <enumeration value="Column"/>
    <enumeration value="Group"/>
    <enumeration value="Band"/>
+   <enumeration value="Master"/>
   </restriction>
  </simpleType>
 
@@ -7032,6 +7464,7 @@ property.
    <enumeration value="Group"/>
    <enumeration value="Band"/>
    <enumeration value="Auto"/>
+   <enumeration value="Master"/>
   </restriction>
  </simpleType>
 
@@ -7159,6 +7592,9 @@ property.
   <complexType>
    <sequence>
     <element ref="jr:bucketExpression" minOccurs="0" maxOccurs="1"/>
+    <element name="labelExpression" minOccurs="0" maxOccurs="1">
+     <complexType mixed="true"/>
+    </element>
     <element ref="jr:comparatorExpression" minOccurs="0" maxOccurs="1"/>
     <element ref="jr:bucketProperty" minOccurs="0" maxOccurs="unbounded"/>
    </sequence>

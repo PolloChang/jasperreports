@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: LongArrayStore.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class LongArrayStore implements BufferColumnStore, ArrayStore
 {
@@ -129,6 +128,7 @@ public class LongArrayStore implements BufferColumnStore, ArrayStore
 		runLengthStore.valueAdded();
 	}
 
+	@Override
 	public void addValue(Object value)
 	{
 		if (value instanceof Integer
@@ -148,16 +148,19 @@ public class LongArrayStore implements BufferColumnStore, ArrayStore
 		}
 	}
 
+	@Override
 	public boolean full()
 	{
 		return count >= values.length;
 	}
 	
+	@Override
 	public void resetValues()
 	{
 		reset();
 	}
 	
+	@Override
 	public ColumnValues createValues()
 	{
 		if (count == 0)
@@ -284,6 +287,7 @@ public class LongArrayStore implements BufferColumnStore, ArrayStore
 		return b;
 	}
 
+	@Override
 	public String toString()
 	{
 		return "LongArrayStore@" + hashCode();

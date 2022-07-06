@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,12 @@
  */
 package net.sf.jasperreports.engine;
 
+import java.util.List;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -79,7 +84,7 @@ import net.sf.jasperreports.engine.type.SplitTypeEnum;
  * <dd>The band is allowed to split anywhere except above its topmost element</dd>
  * </dl>
  * If a split type is not specified, the default is given by the
- * <code>net.sf.jasperreports.band.split.type</code> configuration property.
+ * {@link #PROPERTY_SPLIT_TYPE net.sf.jasperreports.band.split.type} configuration property.
  * <h3>Skipping Bands</h3>
  * All the report sections allow users to define a report expression that will be evaluated at
  * runtime to decide if that section should be generated or skipped when producing the
@@ -89,7 +94,6 @@ import net.sf.jasperreports.engine.type.SplitTypeEnum;
  * <code>java.lang.Boolean</code> object or null.
  * @see net.sf.jasperreports.engine.JRSection
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRBand extends JRElementGroup, JRPropertiesHolder
 {
@@ -98,6 +102,13 @@ public interface JRBand extends JRElementGroup, JRPropertiesHolder
 	/**
 	 * 
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			valueType = SplitTypeEnum.class,
+			defaultValue = "Stretch",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_5_2
+			)
 	public static final String PROPERTY_SPLIT_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "band.split.type";
 
 
@@ -121,5 +132,11 @@ public interface JRBand extends JRElementGroup, JRPropertiesHolder
 	 */
 	public JRExpression getPrintWhenExpression();
 
-		
+	/**
+	 * Returns the list of values to increment report variables with.
+	 *
+	 * @return the list of returned values.
+	 */
+	public List<ExpressionReturnValue> getReturnValues();
+
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.util.JRDelegationVisitor;
  * Deep crosstab visitor.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CrosstabDeepVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CrosstabDeepVisitor extends JRDelegationVisitor implements ElementsVisitor
 {
@@ -104,7 +103,7 @@ public class CrosstabDeepVisitor extends JRDelegationVisitor implements Elements
 			JRCrosstabCell[][] cells = crosstab.getCells();
 			if (cells != null)
 			{
-				Set<JRCellContents> cellContents = new HashSet<JRCellContents>();
+				Set<JRCellContents> cellContents = new HashSet<>();
 				for (int i = 0; i < cells.length; i++)
 				{
 					for (int j = 0; j < cells[i].length; j++)

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,9 +23,8 @@
  */
 package net.sf.jasperreports.charts.type;
 
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.type.EnumUtil;
-import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
 
 import org.jfree.data.time.Day;
 import org.jfree.data.time.Hour;
@@ -40,9 +39,8 @@ import org.jfree.data.time.Year;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: TimePeriodEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public enum TimePeriodEnum implements JREnum
+public enum TimePeriodEnum implements NamedEnum
 {
 	/**
 	 *
@@ -93,7 +91,6 @@ public enum TimePeriodEnum implements JREnum
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient Class<?> value;
 	private final transient String name;
 
@@ -103,25 +100,7 @@ public enum TimePeriodEnum implements JREnum
 		this.name = name;
 	}
 
-	/**
-	 *
-	 */
-	public Byte getValueByte()
-	{
-		return new Byte(getValue());
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
-	{
-		return (byte)-1;
-	}
-	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -140,7 +119,7 @@ public enum TimePeriodEnum implements JREnum
 	 */
 	public static TimePeriodEnum getByName(String name)
 	{
-		return (TimePeriodEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**

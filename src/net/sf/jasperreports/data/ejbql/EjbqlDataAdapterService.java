@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,19 +28,17 @@ import java.util.Map;
 
 import javax.persistence.Persistence;
 
-import net.sf.jasperreports.data.AbstractDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory;
-import net.sf.jasperreports.engine.util.JRClassLoader;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import net.sf.jasperreports.data.AbstractDataAdapterService;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.ParameterContributorContext;
+import net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory;
+import net.sf.jasperreports.engine.util.JRClassLoader;
+
 /**
  * @author Veaceslav Chicu (schicu@users.sourceforge.net)
- * @version $Id: EjbqlDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class EjbqlDataAdapterService extends AbstractDataAdapterService {
 	private static final Log log = LogFactory
@@ -50,17 +48,9 @@ public class EjbqlDataAdapterService extends AbstractDataAdapterService {
 	/**
 	 * 
 	 */
-	public EjbqlDataAdapterService(JasperReportsContext jasperReportsContext, EjbqlDataAdapter jsonDataAdapter) 
+	public EjbqlDataAdapterService(ParameterContributorContext paramContribContext, EjbqlDataAdapter jsonDataAdapter) 
 	{
-		super(jasperReportsContext, jsonDataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #EjbqlDataAdapterService(JasperReportsContext, EjbqlDataAdapter)}. 
-	 */
-	public EjbqlDataAdapterService(EjbqlDataAdapter jsonDataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), jsonDataAdapter);
+		super(paramContribContext, jsonDataAdapter);
 	}
 
 	public EjbqlDataAdapter getEjbqlDataAdapter() {
@@ -86,17 +76,8 @@ public class EjbqlDataAdapterService extends AbstractDataAdapterService {
 				parameters.put(
 						JRJpaQueryExecuterFactory.PARAMETER_JPA_ENTITY_MANAGER,
 						em);
-			} catch (IllegalArgumentException e) {
-				throw new JRException(e);
-			} catch (SecurityException e) {
-				throw new JRException(e);
-			} catch (IllegalAccessException e) {
-				throw new JRException(e);
-			} catch (InvocationTargetException e) {
-				throw new JRException(e);
-			} catch (NoSuchMethodException e) {
-				throw new JRException(e);
-			} catch (ClassNotFoundException e) {
+			} catch (IllegalArgumentException | SecurityException | IllegalAccessException 
+					| InvocationTargetException | NoSuchMethodException | ClassNotFoundException e) {
 				throw new JRException(e);
 			}
 		}

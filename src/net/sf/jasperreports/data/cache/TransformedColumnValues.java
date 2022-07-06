@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import net.sf.jasperreports.engine.JRConstants;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TransformedColumnValues.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TransformedColumnValues implements ColumnValues, Serializable
 {
@@ -60,11 +59,13 @@ public class TransformedColumnValues implements ColumnValues, Serializable
 		this.transformer = (ValueTransformer) in.readObject();
 	}
 
+	@Override
 	public int size()
 	{
 		return rawValues.size();
 	}
 
+	@Override
 	public ColumnValuesIterator iterator()
 	{
 		return new TransformedIterator();
@@ -79,16 +80,19 @@ public class TransformedColumnValues implements ColumnValues, Serializable
 			rawIterator = rawValues.iterator();
 		}
 		
+		@Override
 		public void moveFirst()
 		{
 			rawIterator.moveFirst();
 		}
 
+		@Override
 		public boolean next()
 		{
 			return rawIterator.next();
 		}
 
+		@Override
 		public Object get()
 		{
 			Object rawValue = rawIterator.get();

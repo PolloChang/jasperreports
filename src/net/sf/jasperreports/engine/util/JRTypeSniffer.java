@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import net.sf.jasperreports.engine.type.ImageTypeEnum;
 
 /**
  * @author George Stojanoff (gstojanoff@jaspersoft.com), Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRTypeSniffer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRTypeSniffer
 {
@@ -126,14 +125,6 @@ public final class JRTypeSniffer
 	}
 
 	/**
-	 * @deprecated Replaced by {@link #getImageTypeValue(byte[])}.
-	 */
-	public static byte getImageType(byte[] data) 
-	{
-		return getImageTypeValue(data).getValue();
-	}
-
-	/**
 	 * 
 	 */
 	public static ImageTypeEnum getImageTypeValue(byte[] data) 
@@ -156,15 +147,6 @@ public final class JRTypeSniffer
 		}
 		
 		return ImageTypeEnum.UNKNOWN;
-	}
-
-	/**
-	 * @deprecated Replaced by {@link ImageTypeEnum}.
-	 */
-	public static String getImageMimeType(byte imageType) 
-	{
-		ImageTypeEnum imageTypeEnum = ImageTypeEnum.getByValue(imageType);
-		return imageTypeEnum == null ? null : imageTypeEnum.getMimeType();
 	}
 
 	

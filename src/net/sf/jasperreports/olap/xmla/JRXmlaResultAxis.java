@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.olap.result.JROlapResultAxis;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlaResultAxis.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlaResultAxis implements JROlapResultAxis
 {
@@ -47,8 +46,8 @@ public class JRXmlaResultAxis implements JROlapResultAxis
 	public JRXmlaResultAxis(String axisName)
 	{
 		this.axisName = axisName;
-		this.hierarchyList = new ArrayList<JRXmlaHierarchy>();
-		this.tuples = new ArrayList<JRXmlaMemberTuple>();
+		this.hierarchyList = new ArrayList<>();
+		this.tuples = new ArrayList<>();
 	}
 	
 	public String getAxisName()
@@ -56,11 +55,13 @@ public class JRXmlaResultAxis implements JROlapResultAxis
 		return axisName;
 	}
 
+	@Override
 	public JROlapHierarchy[] getHierarchiesOnAxis()
 	{
 		return ensureHierarchyArray();
 	}
 
+	@Override
 	public JROlapMemberTuple getTuple(int index)
 	{
 		if (index < 0 || index >= tuples.size())
@@ -71,6 +72,7 @@ public class JRXmlaResultAxis implements JROlapResultAxis
 		return tuples.get(index);
 	}
 
+	@Override
 	public int getTupleCount()
 	{
 		return tuples.size();

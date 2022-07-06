@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,6 @@ package net.sf.jasperreports.engine.component;
  * A result of a {@link FillComponent#prepare(int) component fill preparation}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillPrepareResult.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillPrepareResult
 {
@@ -135,6 +134,11 @@ public class FillPrepareResult
 	public int getStretchHeight()
 	{
 		return stretchHeight;
+	}
+	
+	public FillPrepareResult addStretch(int delta)
+	{
+		return new FillPrepareResult(toPrint, stretchHeight + delta, overflow);
 	}
 
 }

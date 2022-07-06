@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,12 +35,13 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseMultiAxisData.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BaseMultiAxisData implements MultiAxisData, Serializable
 {
 
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	public static final String EXCEPTION_MESSAGE_KEY_DATA_AXIS_LEVEL_NOT_SPECIFIED = "engine.analytics.dataset.data.axis.level.not.specified";
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_AXIS = "engine.analytics.dataset.duplicate.axis";
 
 	protected MultiAxisDataset dataset;
 	private DataAxis[] axes = new DataAxis[Axis.axisCount()];
@@ -49,8 +50,8 @@ public class BaseMultiAxisData implements MultiAxisData, Serializable
 	
 	public BaseMultiAxisData()
 	{
-		this.axisList = new ArrayList<DataAxis>();
-		this.measures = new ArrayList<DataMeasure>();
+		this.axisList = new ArrayList<>();
+		this.measures = new ArrayList<>();
 	}
 	
 	public BaseMultiAxisData(MultiAxisData data, JRBaseObjectFactory factory)
@@ -60,7 +61,7 @@ public class BaseMultiAxisData implements MultiAxisData, Serializable
 		this.dataset = factory.getMultiAxisDataset(data.getDataset());
 		
 		List<DataAxis> dataAxes = data.getDataAxisList();
-		this.axisList = new ArrayList<DataAxis>(dataAxes.size());
+		this.axisList = new ArrayList<>(dataAxes.size());
 		for (DataAxis dataAxis : dataAxes)
 		{
 			DataAxis axis = factory.getDataAxis(dataAxis);
@@ -69,7 +70,7 @@ public class BaseMultiAxisData implements MultiAxisData, Serializable
 		}
 		
 		List<DataMeasure> dataMeasures = data.getMeasures();
-		this.measures = new ArrayList<DataMeasure>(dataMeasures.size());
+		this.measures = new ArrayList<>(dataMeasures.size());
 		for (DataMeasure measure : dataMeasures)
 		{
 			this.measures.add(factory.getDataMeasure(measure));
@@ -80,7 +81,10 @@ public class BaseMultiAxisData implements MultiAxisData, Serializable
 	{
 		if (axis.getAxis() == null)
 		{
-			throw new JRRuntimeException("Data axis level needs to be specified");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_DATA_AXIS_LEVEL_NOT_SPECIFIED,
+					(Object[])null);
 		}
 		
 		int axisIndex = axis.getAxis().ordinal();
@@ -92,7 +96,10 @@ public class BaseMultiAxisData implements MultiAxisData, Serializable
 		}
 		else if (existingAxis != axis)// testing for object identity
 		{
-			throw new JRRuntimeException("Axis " + axis.getAxis() + " already exists");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_AXIS,
+					new Object[]{axis.getAxis()});
 		}
 	}
 	
@@ -139,6 +146,7 @@ public class BaseMultiAxisData implements MultiAxisData, Serializable
 		return measures;
 	}
 
+	@Override
 	public Object clone() 
 	{
 		BaseMultiAxisData clone = null;

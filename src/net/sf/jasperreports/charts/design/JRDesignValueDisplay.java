@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
  * charts such as a meter or thermometer that display a single value.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRDesignValueDisplay.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignValueDisplay extends JRBaseValueDisplay implements JRChangeEventsSupport
 {
@@ -101,9 +100,7 @@ public class JRDesignValueDisplay extends JRBaseValueDisplay implements JRChange
 		getEventSupport().firePropertyChange(PROPERTY_FONT, old, this.font);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignValueDisplay clone = (JRDesignValueDisplay)super.clone();
@@ -113,6 +110,7 @@ public class JRDesignValueDisplay extends JRBaseValueDisplay implements JRChange
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

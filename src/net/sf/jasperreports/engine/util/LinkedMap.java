@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.util;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A doubly linked list that can also map entries on keys.
@@ -37,12 +38,11 @@ import java.util.HashMap;
  * </ul>
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: LinkedMap.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class LinkedMap<K, V>
 {
 
-	protected static class LinkedValue<K, V>
+	protected static class LinkedValue<K, V> implements Map.Entry<K, V>
 	{
 		private LinkedValue<K, V> prev;
 		private LinkedValue<K, V> next;
@@ -54,6 +54,24 @@ public class LinkedMap<K, V>
 			this.key = key;
 			this.value = value;
 		}
+
+		@Override
+		public K getKey()
+		{
+			return key;
+		}
+
+		@Override
+		public V getValue()
+		{
+			return value;
+		}
+
+		@Override
+		public V setValue(V value)
+		{
+			throw new UnsupportedOperationException();
+		}
 	}
 	
 	private final LinkedValue<K, V> header;
@@ -64,8 +82,8 @@ public class LinkedMap<K, V>
 	 */
 	public LinkedMap()
 	{
-		map = new HashMap<K, LinkedValue<K, V>>();
-		header = new LinkedValue<K, V>(null, null);
+		map = new HashMap<>();
+		header = new LinkedValue<>(null, null);
 		header.prev = header;
 		header.next = header;
 	}
@@ -85,7 +103,7 @@ public class LinkedMap<K, V>
 		}
 		
 		// add last
-		LinkedValue<K, V> entry = new LinkedValue<K, V>(key, value);
+		LinkedValue<K, V> entry = new LinkedValue<>(key, value);
 		entry.prev = header.prev;
 		entry.next = header;
 		header.prev.next = entry;
@@ -112,7 +130,7 @@ public class LinkedMap<K, V>
 		}
 		
 		// add first
-		LinkedValue<K, V> entry = new LinkedValue<K, V>(key, value);
+		LinkedValue<K, V> entry = new LinkedValue<>(key, value);
 		entry.next = header.next;
 		entry.prev = header;
 		header.next.prev = entry;
@@ -141,6 +159,22 @@ public class LinkedMap<K, V>
 	 */
 	public V pop()
 	{
+		LinkedValue<K, V> entry = removeFirst();
+		return entry.value;
+	}
+	
+	/**
+	 * Removes and returns the first element in the list.
+	 * 
+	 * @return the first element in the list
+	 */
+	public Map.Entry<K, V> popEntry()
+	{
+		return removeFirst();
+	}
+	
+	protected LinkedValue<K, V> removeFirst()
+	{
 		if (header.next == header)
 		{
 			throw new IllegalStateException("Empty map");
@@ -155,7 +189,7 @@ public class LinkedMap<K, V>
 			map.remove(entry.key);
 		}
 
-		return entry.value;
+		return entry;
 	}
 	
 	/**

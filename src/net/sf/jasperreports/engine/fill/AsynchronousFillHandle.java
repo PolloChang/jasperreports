@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,12 +27,15 @@ import java.sql.Connection;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Class used to perform report filling asychronously.
@@ -41,7 +44,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * The main benefit of this method is that the filling process can be cancelled.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: AsynchronousFillHandle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class AsynchronousFillHandle extends BaseFillHandle
 {	
@@ -52,6 +54,13 @@ public class AsynchronousFillHandle extends BaseFillHandle
 	 * Asynchronous report generation implies displaying report pages before the report is complete.
 	 */
 	// TODO lucianc use in web viewer
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_4_6_0,
+			valueType = Boolean.class,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE
+			)
 	public static final String PROPERTY_REPORT_ASYNC = JRPropertiesUtil.PROPERTY_PREFIX + "viewer.async";
 	
 	protected Thread fillThread;
@@ -95,7 +104,20 @@ public class AsynchronousFillHandle extends BaseFillHandle
 		Connection conn
 		) throws JRException
 	{
-		super(jasperReportsContext, jasperReport, parameters, dataSource, conn);
+		this(jasperReportsContext, SimpleJasperReportSource.from(jasperReport),
+				parameters, dataSource, conn);
+	}
+	
+	
+	protected AsynchronousFillHandle (
+		JasperReportsContext jasperReportsContext,
+		JasperReportSource reportSource,
+		Map<String,Object> parameters,
+		JRDataSource dataSource,
+		Connection conn
+		) throws JRException
+	{
+		super(jasperReportsContext, reportSource, parameters, dataSource, conn);
 	}
 	
 	/**
@@ -109,6 +131,7 @@ public class AsynchronousFillHandle extends BaseFillHandle
 
 	protected class ThreadExecutor implements Executor
 	{
+		@Override
 		public void execute(Runnable command)
 		{
 			if (threadName == null)
@@ -122,7 +145,7 @@ public class AsynchronousFillHandle extends BaseFillHandle
 			
 			if (priority != null)
 			{
-				fillThread.setPriority(priority.intValue());
+				fillThread.setPriority(priority);
 			}
 			
 			fillThread.start();
@@ -146,7 +169,18 @@ public class AsynchronousFillHandle extends BaseFillHandle
 		JRDataSource dataSource
 		) throws JRException
 	{
-		return new AsynchronousFillHandle(jasperReportsContext, jasperReport, parameters, dataSource);
+		return createHandle(jasperReportsContext, SimpleJasperReportSource.from(jasperReport),
+				parameters, dataSource);
+	}
+	
+	public static AsynchronousFillHandle createHandle(
+		JasperReportsContext jasperReportsContext,
+		JasperReportSource reportSource,
+		Map<String,Object> parameters,
+		JRDataSource dataSource
+		) throws JRException
+	{
+		return new AsynchronousFillHandle(jasperReportsContext, reportSource, parameters, dataSource, null);
 	}
 
 
@@ -167,7 +201,19 @@ public class AsynchronousFillHandle extends BaseFillHandle
 		Connection conn
 		) throws JRException
 	{
-		return new AsynchronousFillHandle(jasperReportsContext, jasperReport, parameters, conn);
+		return createHandle(jasperReportsContext, SimpleJasperReportSource.from(jasperReport), 
+				parameters, conn);
+	}
+
+	
+	public static AsynchronousFillHandle createHandle(
+		JasperReportsContext jasperReportsContext,
+		JasperReportSource reportSource,
+		Map<String,Object> parameters,
+		Connection conn
+		) throws JRException
+	{
+		return new AsynchronousFillHandle(jasperReportsContext, reportSource, parameters, null, conn);
 	}
 
 
@@ -186,7 +232,16 @@ public class AsynchronousFillHandle extends BaseFillHandle
 		Map<String,Object> parameters
 		) throws JRException
 	{
-		return new AsynchronousFillHandle(jasperReportsContext, jasperReport, parameters);
+		return createHandle(jasperReportsContext, SimpleJasperReportSource.from(jasperReport), parameters);
+	}
+	
+	public static AsynchronousFillHandle createHandle(
+		JasperReportsContext jasperReportsContext,
+		JasperReportSource reportSource,
+		Map<String,Object> parameters
+		) throws JRException
+	{
+		return new AsynchronousFillHandle(jasperReportsContext, reportSource, parameters, null, null);
 	}
 	
 	
@@ -238,7 +293,7 @@ public class AsynchronousFillHandle extends BaseFillHandle
 	{
 		synchronized (lock)
 		{
-			this.priority = Integer.valueOf(priority);
+			this.priority = priority;
 			if (fillThread != null)
 			{
 				fillThread.setPriority(priority);

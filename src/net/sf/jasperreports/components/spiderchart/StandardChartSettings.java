@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -47,8 +47,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: StandardChartSettings.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class StandardChartSettings implements ChartSettings, JRChangeEventsSupport
 {
@@ -86,6 +85,8 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 	public static final String PROPERTY_BACKCOLOR = "backcolor";
 	
 	public static final String PROPERTY_ANCHOR_NAME_EXPRESSION = "anchorNameExpression";
+	
+	public static final String PROPERTY_BOOKMARK_LEVEL_EXPRESSION = "bookmarkLevelExpression";
 	
 	public static final String PROPERTY_EVALUATION_GROUP = "evaluationGroup";
 	
@@ -135,7 +136,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 	protected Boolean showLegend;
 	protected String linkType;
 	protected String linkTarget;
-	protected List<JRHyperlinkParameter> hyperlinkParameters = new ArrayList<JRHyperlinkParameter>();
+	protected List<JRHyperlinkParameter> hyperlinkParameters = new ArrayList<>();
 	protected Color backcolor;
 	
 	protected Color titleColor;
@@ -160,6 +161,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 	protected JRExpression titleExpression;
 	protected JRExpression subtitleExpression;
 	protected JRExpression anchorNameExpression;
+	protected JRExpression bookmarkLevelExpression;
 	protected JRExpression hyperlinkReferenceExpression;
 	protected JRExpression hyperlinkWhenExpression;
 	protected JRExpression hyperlinkAnchorExpression;
@@ -205,6 +207,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 
 		subtitleExpression = factory.getExpression(chart.getSubtitleExpression());
 		anchorNameExpression = factory.getExpression(chart.getAnchorNameExpression());
+		bookmarkLevelExpression = factory.getExpression(chart.getBookmarkLevelExpression());
 		hyperlinkReferenceExpression = factory.getExpression(chart.getHyperlinkReferenceExpression());
 		hyperlinkWhenExpression = factory.getExpression(chart.getHyperlinkWhenExpression());
 		hyperlinkAnchorExpression = factory.getExpression(chart.getHyperlinkAnchorExpression());
@@ -222,9 +225,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 			}
 		}
 	}
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean getShowLegend()
 	{
 		return this.showLegend;
@@ -240,9 +241,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		getEventSupport().firePropertyChange(PROPERTY_SHOW_LEGEND, old, this.showLegend);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getBackcolor()
 	{
 		return this.backcolor;
@@ -258,17 +257,13 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		getEventSupport().firePropertyChange(PROPERTY_BACKCOLOR, old, this.backcolor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getTitleFont()
 	{
 		return this.titleFont;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public EdgeEnum getTitlePosition()
 	{
 		return this.titlePosition;
@@ -284,9 +279,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		getEventSupport().firePropertyChange(PROPERTY_TITLE_POSITION, old, this.titlePosition);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getTitleColor()
 	{
 		return this.titleColor;
@@ -302,17 +295,13 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		getEventSupport().firePropertyChange(PROPERTY_TITLE_COLOR, old, this.titleColor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getSubtitleFont()
 	{
 		return this.subtitleFont;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getSubtitleColor()
 	{
 		return this.subtitleColor;
@@ -328,23 +317,17 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		getEventSupport().firePropertyChange(PROPERTY_SUBTITLE_COLOR, old, this.subtitleColor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getLegendBackgroundColor() {
 		return this.legendBackgroundColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getLegendColor() {
 		return this.legendColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getLegendFont() {
 		return this.legendFont;
 	}
@@ -367,9 +350,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		getEventSupport().firePropertyChange(PROPERTY_LEGEND_COLOR, old, this.legendColor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public EdgeEnum getLegendPosition()
 	{
 		return this.legendPosition;
@@ -384,95 +365,74 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		this.legendPosition = legendPosition;
 		getEventSupport().firePropertyChange(PROPERTY_LEGEND_POSITION, old, this.legendPosition);
 	}
-
-	/**
-	 * @deprecated Replaced by {@link #getHyperlinkTypeValue()}.
-	 */
-	public byte getHyperlinkType()
-	{
-		return getHyperlinkTypeValue().getValue();
-	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTypeEnum getHyperlinkTypeValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTypeValue(this);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public byte getHyperlinkTarget()
 	{
 		return JRHyperlinkHelper.getHyperlinkTarget(this);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getTitleExpression()
 	{
 		return this.titleExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getSubtitleExpression()
 	{
 		return this.subtitleExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getAnchorNameExpression()
 	{
 		return this.anchorNameExpression;
 	}
+	
+	@Override
+	public JRExpression getBookmarkLevelExpression()
+	{
+		return this.bookmarkLevelExpression;
+	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkReferenceExpression()
 	{
 		return this.hyperlinkReferenceExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkWhenExpression()
 	{
 		return this.hyperlinkWhenExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return this.hyperlinkAnchorExpression;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkPageExpression()
 	{
 		return this.hyperlinkPageExpression;
 	}
 	
+	@Override
 	public byte getChartType()
 	{
 		return this.chartType;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getRenderType()
 	{
 		return this.renderType;
@@ -488,6 +448,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		getEventSupport().firePropertyChange(PROPERTY_RENDER_TYPE, old, this.renderType);
 	}
 
+	@Override
 	public int getBookmarkLevel()
 	{
 		return this.bookmarkLevel;
@@ -504,16 +465,19 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 	}
 
 
+	@Override
 	public String getLinkType()
 	{
 		return this.linkType;
 	}
 	
+	@Override
 	public String getLinkTarget()
 	{
 		return this.linkTarget;
 	}
 
+	@Override
 	public JRExpression getHyperlinkTooltipExpression()
 	{
 		return this.hyperlinkTooltipExpression;
@@ -523,6 +487,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 	/**
 	 * @return the customizerClass
 	 */
+	@Override
 	public String getCustomizerClass()
 	{
 		return this.customizerClass;
@@ -608,6 +573,16 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		this.anchorNameExpression = anchorNameExpression;
 		getEventSupport().firePropertyChange(PROPERTY_ANCHOR_NAME_EXPRESSION, old, this.anchorNameExpression);
 	}
+	
+	
+	/**
+	 * @param bookmarkLevelExpression the bookmarkLevelExpression to set
+	 */
+	public void setBookmarkLevelExpression(JRExpression bookmarkLevelExpression) {
+		Object old = this.bookmarkLevelExpression;
+		this.bookmarkLevelExpression = bookmarkLevelExpression;
+		getEventSupport().firePropertyChange(PROPERTY_BOOKMARK_LEVEL_EXPRESSION, old, this.bookmarkLevelExpression);
+	}
 
 
 	/**
@@ -675,6 +650,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		SpiderChartCompiler.collectExpressions(this, collector);
 	}
 
+	@Override
 	public Object clone() 
 	{
 		StandardChartSettings clone = null;
@@ -690,6 +666,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		clone.titleExpression = JRCloneUtils.nullSafeClone(titleExpression);
 		clone.subtitleExpression = JRCloneUtils.nullSafeClone(subtitleExpression);
 		clone.anchorNameExpression = JRCloneUtils.nullSafeClone(anchorNameExpression);
+		clone.bookmarkLevelExpression = JRCloneUtils.nullSafeClone(bookmarkLevelExpression);
 		clone.hyperlinkReferenceExpression = JRCloneUtils.nullSafeClone(hyperlinkReferenceExpression);
 		clone.hyperlinkWhenExpression = JRCloneUtils.nullSafeClone(hyperlinkWhenExpression);
 		clone.hyperlinkAnchorExpression = JRCloneUtils.nullSafeClone(hyperlinkAnchorExpression);
@@ -701,6 +678,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -714,6 +692,7 @@ public class StandardChartSettings implements ChartSettings, JRChangeEventsSuppo
 		return eventSupport;
 	}
 
+	@Override
 	public JRHyperlinkParameter[] getHyperlinkParameters()
 	{
 		JRHyperlinkParameter[] parameters = null;

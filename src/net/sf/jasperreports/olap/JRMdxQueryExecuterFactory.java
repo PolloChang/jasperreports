@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,6 +32,7 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.query.AbstractQueryExecuterFactory;
 import net.sf.jasperreports.engine.query.JREmptyQueryExecuter;
 import net.sf.jasperreports.engine.query.JRQueryExecuter;
+import net.sf.jasperreports.engine.util.Designated;
 import net.sf.jasperreports.olap.xmla.JRXmlaQueryExecuter;
 import net.sf.jasperreports.olap.xmla.JRXmlaQueryExecuterFactory;
 
@@ -41,10 +42,11 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRMdxQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRMdxQueryExecuterFactory extends AbstractQueryExecuterFactory
+public class JRMdxQueryExecuterFactory extends AbstractQueryExecuterFactory implements Designated
 {
+	
+	public static final String QUERY_EXECUTER_NAME = "net.sf.jasperreports.query.executer:MDX";
 	
 	private static final Log log = LogFactory.getLog(JRMdxQueryExecuterFactory.class);
 	
@@ -62,11 +64,13 @@ public class JRMdxQueryExecuterFactory extends AbstractQueryExecuterFactory
 		System.arraycopy(xmlaParams, 0, MDX_BUILTIN_PARAMETERS, mondrianParams.length, xmlaParams.length);
 	}
 	
+	@Override
 	public Object[] getBuiltinParameters()
 	{
 		return MDX_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext,
 		JRDataset dataset, 
@@ -96,9 +100,16 @@ public class JRMdxQueryExecuterFactory extends AbstractQueryExecuterFactory
 		return valueParam == null ? null : valueParam.getValue();
 	}
 	
+	@Override
 	public boolean supportsQueryParameterType(String className)
 	{
 		return true;
+	}
+
+	@Override
+	public String getDesignation()
+	{
+		return QUERY_EXECUTER_NAME;
 	}
 
 }

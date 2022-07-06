@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,11 +29,11 @@ import java.util.List;
 import net.sf.jasperreports.components.barbecue.BarbecueComponent;
 import net.sf.jasperreports.components.barcode4j.BarcodeComponent;
 import net.sf.jasperreports.components.barcode4j.BarcodeXmlWriter;
+import net.sf.jasperreports.components.items.Item;
+import net.sf.jasperreports.components.items.ItemData;
+import net.sf.jasperreports.components.items.ItemProperty;
 import net.sf.jasperreports.components.list.ListComponent;
 import net.sf.jasperreports.components.list.ListContents;
-import net.sf.jasperreports.components.map.Item;
-import net.sf.jasperreports.components.map.ItemData;
-import net.sf.jasperreports.components.map.ItemProperty;
 import net.sf.jasperreports.components.map.MapComponent;
 import net.sf.jasperreports.components.map.MapXmlFactory;
 import net.sf.jasperreports.components.map.type.MapImageTypeEnum;
@@ -43,14 +43,16 @@ import net.sf.jasperreports.components.sort.SortComponent;
 import net.sf.jasperreports.components.sort.SortComponentXmlWriter;
 import net.sf.jasperreports.components.spiderchart.SpiderChartComponent;
 import net.sf.jasperreports.components.spiderchart.SpiderChartXmlWriter;
+import net.sf.jasperreports.components.table.BaseCell;
 import net.sf.jasperreports.components.table.BaseColumn;
 import net.sf.jasperreports.components.table.Cell;
 import net.sf.jasperreports.components.table.Column;
 import net.sf.jasperreports.components.table.ColumnGroup;
 import net.sf.jasperreports.components.table.ColumnVisitor;
 import net.sf.jasperreports.components.table.GroupCell;
+import net.sf.jasperreports.components.table.GroupRow;
+import net.sf.jasperreports.components.table.Row;
 import net.sf.jasperreports.components.table.TableComponent;
-import net.sf.jasperreports.components.table.WhenNoDataTypeTableEnum;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDatasetRun;
@@ -70,7 +72,6 @@ import net.sf.jasperreports.engine.xml.JRXmlWriter;
  * XML writer for built-in component implementations.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ComponentsXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
  * @see ComponentsExtensionsRegistryFactory
  */
 public class ComponentsXmlWriter extends AbstractComponentXmlWriter
@@ -83,6 +84,7 @@ public class ComponentsXmlWriter extends AbstractComponentXmlWriter
 		super(jasperReportsContext);
 	}
 
+	@Override
 	public void writeToXml(JRComponentElement componentElement, JRXmlWriter reportWriter) throws IOException
 	{
 		Component component = componentElement.getComponent();
@@ -326,10 +328,10 @@ public class ComponentsXmlWriter extends AbstractComponentXmlWriter
 	private void writeItemProperty(ItemProperty itemProperty, JRXmlWriteHelper writer, JRXmlWriter reportWriter, XmlNamespace namespace, JRComponentElement componentElement) throws IOException
 	{
 		writer.startElement(MapXmlFactory.ELEMENT_itemProperty, namespace);
-		writer.addAttribute(JRXmlConstants.ATTRIBUTE_name, itemProperty.getName());
+		writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_name, itemProperty.getName());
 		if(itemProperty.getValue() != null)
 		{
-			writer.addAttribute(JRXmlConstants.ATTRIBUTE_value, itemProperty.getValue());
+			writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_value, itemProperty.getValue());
 		}
 		writeExpression(JRXmlConstants.ELEMENT_valueExpression, JRXmlWriter.JASPERREPORTS_NAMESPACE, itemProperty.getValueExpression(), false, componentElement, reportWriter);
 		writer.closeElement();
@@ -424,21 +426,25 @@ public class ComponentsXmlWriter extends AbstractComponentXmlWriter
 		writer.startElement("table", namespace);
 		if (isNewerVersionOrEqual(componentElement, reportWriter, JRConstants.VERSION_4_1_1))
 		{
-			writer.addAttribute(JRXmlConstants.ATTRIBUTE_whenNoDataType, table.getWhenNoDataType(), WhenNoDataTypeTableEnum.BLANK);
+			writer.addAttribute(JRXmlConstants.ATTRIBUTE_whenNoDataType, table.getWhenNoDataType());
 		}
 		reportWriter.writeDatasetRun(table.getDatasetRun());
 		
 		ColumnVisitor<Void> columnWriter = new ColumnVisitor<Void>()
 		{
+			@Override
 			public Void visitColumn(Column column)
 			{
 				try
 				{
 					writer.startElement("column");
 					writer.addAttribute("width", column.getWidth());
-					if(isNewerVersionOrEqual(componentElement, reportWriter, JRConstants.VERSION_4_6_0))
+					if (isNewerVersionOrEqual(componentElement, reportWriter, JRConstants.VERSION_4_6_0))
 					{
-						writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, column.getUUID().toString());
+						if (!reportWriter.isExcludeUuids())
+						{
+							writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, column.getUUID().toString());
+						}
 						reportWriter.writeProperties(column);
 						reportWriter.writePropertyExpressions(column.getPropertyExpressions());
 					}
@@ -465,15 +471,19 @@ public class ComponentsXmlWriter extends AbstractComponentXmlWriter
 				return null;
 			}
 
+			@Override
 			public Void visitColumnGroup(ColumnGroup columnGroup)
 			{
 				try
 				{
 					writer.startElement("columnGroup");
 					writer.addAttribute("width", columnGroup.getWidth());
-					if(isNewerVersionOrEqual(componentElement, reportWriter, JRConstants.VERSION_4_6_0))
+					if (isNewerVersionOrEqual(componentElement, reportWriter, JRConstants.VERSION_4_6_0))
 					{
-						writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, columnGroup.getUUID().toString());
+						if (!reportWriter.isExcludeUuids())
+						{
+							writer.addEncodedAttribute(JRXmlConstants.ATTRIBUTE_uuid, columnGroup.getUUID().toString());
+						}
 						reportWriter.writeProperties(columnGroup);
 						reportWriter.writePropertyExpressions(columnGroup.getPropertyExpressions());
 					}
@@ -512,9 +522,40 @@ public class ComponentsXmlWriter extends AbstractComponentXmlWriter
 			column.visitColumn(columnWriter);
 		}
 		
+		if (isNewerVersionOrEqual(componentElement, reportWriter, JRConstants.VERSION_6_11_0))
+		{
+			writeTableRow(componentElement, table.getTableHeader(), "tableHeader", reportWriter);
+			writeTableRow(componentElement, table.getColumnHeader(), "columnHeader", reportWriter);
+			writeGroupRows(componentElement, table.getGroupHeaders(), "groupHeader", reportWriter);
+			writeTableRow(componentElement, table.getDetail(), "detail", reportWriter);
+			writeGroupRows(componentElement, table.getGroupFooters(), "groupFooter", reportWriter);
+			writeTableRow(componentElement, table.getColumnFooter(), "columnFooter", reportWriter);
+			writeTableRow(componentElement, table.getTableFooter(), "tableFooter", reportWriter);
+			
+			writeTableBaseCell(componentElement, table.getNoData(), "noData", reportWriter);
+		}
+
 		writer.closeElement();
 	}
 	
+	protected void writeTableBaseCell(JRComponentElement componentElement, BaseCell cell, String name, 
+			JRXmlWriter reportWriter) throws IOException
+	{
+		if (cell != null)
+		{
+			JRXmlWriteHelper writer = reportWriter.getXmlWriteHelper();
+			writer.startElement(name);
+			reportWriter.writeStyleReferenceAttr(cell);
+			writer.addAttribute("height", cell.getHeight());
+			
+			reportWriter.writeProperties(cell);
+			reportWriter.writeBox(cell.getLineBox(), JRXmlWriter.JASPERREPORTS_NAMESPACE);
+			reportWriter.writeChildElements(cell);
+			
+			writer.closeElement();//cell
+		}
+	}
+
 	protected void writeGroupCells(JRComponentElement componentElement, List<GroupCell> cells, String name, 
 			JRXmlWriter reportWriter) throws IOException
 	{
@@ -548,6 +589,41 @@ public class ComponentsXmlWriter extends AbstractComponentXmlWriter
 			}
 			reportWriter.writeBox(cell.getLineBox(), JRXmlWriter.JASPERREPORTS_NAMESPACE);
 			reportWriter.writeChildElements(cell);
+			
+			writer.closeElement();//cell
+		}
+	}
+
+	protected void writeGroupRows(JRComponentElement componentElement, List<GroupRow> rows, String name, 
+			JRXmlWriter reportWriter) throws IOException
+	{
+		if (rows != null)
+		{
+			JRXmlWriteHelper writer = reportWriter.getXmlWriteHelper();
+			for (GroupRow groupRow : rows)
+			{
+				writer.startElement(name);
+				writer.addAttribute("groupName", groupRow.getGroupName());
+				writeTableRow(componentElement, groupRow.getRow(), "row", reportWriter);
+				writer.closeElement();
+			}
+		}
+	}
+	
+	protected void writeTableRow(JRComponentElement componentElement, Row row, String name, 
+			JRXmlWriter reportWriter) throws IOException
+	{
+		if (row != null)
+		{
+			JRXmlWriteHelper writer = reportWriter.getXmlWriteHelper();
+			writer.startElement(name);
+			
+			writeExpression(JRXmlConstants.ELEMENT_printWhenExpression, 
+				JRXmlWriter.JASPERREPORTS_NAMESPACE, 
+				row.getPrintWhenExpression(),
+				false, 
+				componentElement,
+				reportWriter);
 			
 			writer.closeElement();//cell
 		}

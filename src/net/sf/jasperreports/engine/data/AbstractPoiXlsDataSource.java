@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,18 +32,22 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.util.FormatUtils;
+import net.sf.jasperreports.repo.RepositoryContext;
 import net.sf.jasperreports.repo.RepositoryUtil;
-
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 
 /**
@@ -53,8 +57,7 @@ import org.apache.poi.ss.usermodel.Workbook;
  * in each row (these indices start with 0). To avoid this situation, users can either specify a collection of column 
  * names or set a flag to read the column names from the first row of the XLSX or XLS file.
  *
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: AbstractPoiXlsDataSource.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 {
@@ -112,7 +115,12 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 	 */
 	public AbstractPoiXlsDataSource(JasperReportsContext jasperReportsContext, String location) throws JRException, IOException
 	{
-		this(RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(location));
+		this(SimpleRepositoryContext.of(jasperReportsContext), location);
+	}
+
+	public AbstractPoiXlsDataSource(RepositoryContext context, String location) throws JRException, IOException
+	{
+		this(RepositoryUtil.getInstance(context).getInputStreamFromLocation(location));
 		this.closeInputStream = true;
 	}
 
@@ -132,9 +140,7 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 	protected abstract Workbook loadWorkbook(InputStream is) throws IOException;
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean next() throws JRException
 	{
 		if (workbook != null)
@@ -153,7 +159,10 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 						sheetIndex = Integer.parseInt(sheetSelection);
 						if (sheetIndex < 0 || sheetIndex > workbook.getNumberOfSheets() - 1)
 						{
-							throw new JRRuntimeException("Sheet index " + sheetIndex + " is out of range: [0.." + (workbook.getNumberOfSheets() - 1) + "]");
+							throw 
+								new JRRuntimeException(
+									EXCEPTION_MESSAGE_KEY_XLS_SHEET_INDEX_OUT_OF_RANGE,
+									new Object[]{sheetIndex, (workbook.getNumberOfSheets() - 1)});
 						}
 					}
 					catch (NumberFormatException e)
@@ -166,7 +175,10 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 
 						if (sheetIndex < 0)
 						{
-							throw new JRRuntimeException("Sheet '" + sheetSelection + "' not found in workbook.");
+							throw 
+								new JRRuntimeException(
+									EXCEPTION_MESSAGE_KEY_XLS_SHEET_NOT_FOUND,
+									new Object[]{sheetSelection});
 						}
 					}
 				}
@@ -193,7 +205,6 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 				readHeader();
 				recordIndex++;
 			}
-
 			if (recordIndex <= workbook.getSheetAt(sheetIndex).getLastRowNum())
 			{
 				return true;
@@ -212,9 +223,7 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void moveFirst()
 	{
 		this.recordIndex = -1;
@@ -222,87 +231,179 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(JRField jrField) throws JRException
 	{
-		String fieldName = jrField.getName();
-
-		Integer columnIndex = columnNames.get(fieldName);
-		if (columnIndex == null && fieldName.startsWith("COLUMN_")) 
-		{
-			columnIndex = Integer.valueOf(fieldName.substring(7));
-		}
-		if (columnIndex == null)
-		{
-			throw new JRException("Unknown column name : " + fieldName);
-		}
-		Sheet sheet = workbook.getSheetAt(sheetIndex);
-		Cell cell = sheet.getRow(recordIndex).getCell(columnIndex);
 		Class<?> valueClass = jrField.getValueClass();
-		
-		if (valueClass.equals(String.class)) 
-		{
-			return cell.getStringCellValue();
-		}
 		try 
 		{
+			Integer columnIndex = getColumnIndex(jrField);
+
+			Sheet sheet = workbook.getSheetAt(sheetIndex);
+			Cell cell = sheet.getRow(recordIndex).getCell(columnIndex);
+			if (cell == null)
+			{
+				return null;
+			}
+			CellType cellType = cell.getCellType();
+			if (cellType == CellType.FORMULA) 
+			{
+				FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+				Object value = null;
+				CellType evalCellType = evaluator.evaluateFormulaCell(cell);
+				switch (evalCellType) 
+				{
+				    case BOOLEAN:
+				    	value = cell.getBooleanCellValue();
+				        break;
+				    case NUMERIC:
+				    	if (Date.class.isAssignableFrom(valueClass)) 
+				    	{
+				    		value = cell.getDateCellValue();
+				    	} 
+				    	else 
+				    	{
+				    		value = cell.getNumericCellValue();
+				    	}
+				        break;
+				    case STRING:
+				    	value = cell.getStringCellValue();
+				    	if (Date.class.isAssignableFrom(valueClass))
+				    	{
+							if (value == null || ((String)value).trim().length() == 0)
+							{
+								value = null;
+							}
+							else
+							{
+								if (dateFormat != null)
+								{
+									value = FormatUtils.getFormattedDate(dateFormat, (String)value, valueClass);
+								}
+								else 
+								{
+									value = convertStringValue((String)value, valueClass);
+								}
+							}					
+				    	} 
+				    	else if (Number.class.isAssignableFrom(valueClass))
+				    	{
+							if (value == null || ((String)value).trim().length() == 0)
+							{
+								value = null;
+							}
+							else
+							{
+								if (numberFormat != null)
+								{
+									value = FormatUtils.getFormattedNumber(numberFormat, (String)value, valueClass);
+								}
+								else 
+								{
+									value = convertStringValue((String)value, valueClass);
+								}
+							}					
+				    	}
+				        break;
+				    case BLANK:
+				    case ERROR:
+				    case FORMULA: 
+				    default:	
+				        break;
+				}
+				return value;
+			}
+			
+			if (valueClass.equals(String.class)) 
+			{
+				return cell.getStringCellValue();
+			}
 			if (valueClass.equals(Boolean.class)) 
 			{
-				if (cell.getCellType() == Cell.CELL_TYPE_BOOLEAN)
+				if (cellType == CellType.BOOLEAN)
 				{
 					return cell.getBooleanCellValue();
 				}
-				else
+				else 
 				{
-					return convertStringValue(cell.getStringCellValue(), valueClass);
+					String value = cell.getStringCellValue();
+					if (value == null || value.trim().length() == 0)
+					{
+						return null;
+					}
+					else
+					{
+						return convertStringValue(value, valueClass);
+					}					
 				}
 			}
 			else if (Number.class.isAssignableFrom(valueClass))
 			{
-				if (cell.getCellType() == Cell.CELL_TYPE_NUMERIC)
+				if (cellType == CellType.NUMERIC)
 				{
 					return convertNumber(cell.getNumericCellValue(), valueClass);
 				}
 				else
 				{
-					if (numberFormat != null)
+					String value = cell.getStringCellValue();
+					if (value == null || value.trim().length() == 0)
 					{
-						return FormatUtils.getFormattedNumber(numberFormat, cell.getStringCellValue(), valueClass);
+						return null;
 					}
-					else 
+					else
 					{
-						return convertStringValue(cell.getStringCellValue(), valueClass);
-					}
+						if (numberFormat != null)
+						{
+							return FormatUtils.getFormattedNumber(numberFormat, value, valueClass);
+						}
+						else 
+						{
+							return convertStringValue(value, valueClass);
+						}
+					}					
 				}
 			}
 			else if (Date.class.isAssignableFrom(valueClass))
 			{
-				if (cell.getCellType() == Cell.CELL_TYPE_NUMERIC)
+				if (cellType == CellType.NUMERIC)
 				{
 					return cell.getDateCellValue();
 				}
 				else
 				{
-					if (dateFormat != null)
+					String value = cell.getStringCellValue();
+					if (value == null || value.trim().length() == 0)
 					{
-						return FormatUtils.getFormattedDate(dateFormat, cell.getStringCellValue(), valueClass);
-					} 
+						return null;
+					}
 					else
 					{
-						return convertStringValue(cell.getStringCellValue(), valueClass);
-					}
+						if (dateFormat != null)
+						{
+							return FormatUtils.getFormattedDate(dateFormat, value, valueClass);
+						}
+						else 
+						{
+							return convertStringValue(value, valueClass);
+						}
+					}					
 				}
 			}
 			else
 			{
-				throw new JRException("Field '" + jrField.getName() + "' is of class '" + valueClass.getName() + "' and can not be converted");
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_CANNOT_CONVERT_FIELD_TYPE,
+						new Object[]{jrField.getName(), valueClass.getName()});
 			}
 		}
 		catch (Exception e) 
 		{
-			throw new JRException("Unable to get value for field '" + jrField.getName() + "' of class '" + valueClass.getName() + "'", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XLS_FIELD_VALUE_NOT_RETRIEVED,
+					new Object[]{jrField.getName(), valueClass.getName()}, 
+					e);
 		}
 	}
 
@@ -319,7 +420,7 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 			for(int columnIndex = 0; columnIndex < row.getLastCellNum(); columnIndex++)
 			{
 				Cell cell = row.getCell(columnIndex);
-				if(cell != null)
+				if (cell != null)
 				{
 					columnNames.put(cell.toString(), columnIndex);
 				}
@@ -331,13 +432,13 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 		}
 		else
 		{
-			Map<String, Integer> newColumnNames = new LinkedHashMap<String, Integer>();
+			Map<String, Integer> newColumnNames = new LinkedHashMap<>();
 			for(Iterator<Integer> it = columnNames.values().iterator(); it.hasNext();)
 			{
 				Integer columnIndex = it.next();
 				Row row = sheet.getRow(recordIndex) ;
 				Cell cell = row.getCell(columnIndex);
-				if(cell != null)
+				if (cell != null)
 				{
 					newColumnNames.put(cell.toString(), columnIndex);
 				}
@@ -350,6 +451,7 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 	/**
 	 * Closes the reader. Users of this data source should close it after usage.
 	 */
+	@Override
 	public void close()
 	{
 		try
@@ -366,11 +468,69 @@ public abstract class AbstractPoiXlsDataSource extends AbstractXlsDataSource
 	}
 
 
+	@Override
 	protected void checkReadStarted()
 	{
 		if (sheetIndex >= 0)
 		{
-			throw new JRRuntimeException("Cannot modify data source properties after data reading has started.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_MODIFY_PROPERTIES_AFTER_START,
+					(Object[])null);
+		}
+	}
+	
+	// only used in JSS, to guess field types
+	public String getStringFieldValue(JRField jrField) throws JRException
+	{
+		try
+		{
+			Integer columnIndex = getColumnIndex(jrField);
+			Sheet sheet = workbook.getSheetAt(sheetIndex);
+			Cell cell = sheet.getRow(recordIndex).getCell(columnIndex);
+			if (cell == null)
+			{
+				return null;
+			}
+			else
+			{
+				return cell.toString();
+			}
+		}
+		catch (Exception e)
+		{
+			throw
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XLS_FIELD_VALUE_NOT_RETRIEVED,
+					new Object[]{jrField.getName(), String.class.getName()},
+					e);
+		}
+	}
+
+	// only used in JSS, to guess field types
+	public String getFieldFormatPattern(JRField jrField) throws JRException
+	{
+		try
+		{
+			Integer columnIndex = getColumnIndex(jrField);
+			Sheet sheet = workbook.getSheetAt(sheetIndex);
+			Cell cell = sheet.getRow(recordIndex).getCell(columnIndex);
+			if (cell == null)
+			{
+				return null;
+			}
+			else
+			{
+				return cell.getCellStyle().getDataFormatString();
+			}
+		}
+		catch (Exception e)
+		{
+			throw
+			new JRException(
+					EXCEPTION_MESSAGE_KEY_XLS_FIELD_VALUE_NOT_RETRIEVED,
+					new Object[]{jrField.getName(), String.class.getName()},
+					e);
 		}
 	}
 	

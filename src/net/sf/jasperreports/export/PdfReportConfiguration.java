@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,11 +23,14 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.export.JRPdfExporter;
 import net.sf.jasperreports.export.annotations.ExporterParameter;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -36,13 +39,19 @@ import net.sf.jasperreports.export.annotations.ExporterProperty;
  * @see JRPdfExporter
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PdfReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface PdfReportConfiguration extends ReportExportConfiguration
 {
 	/**
 	 * Property that provides a default value for the {@link #isForceSvgShapes()} PDF exporter configuration flag.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_2_0_1,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_FORCE_SVG_SHAPES = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.force.svg.shapes";
 
 	/**
@@ -56,6 +65,13 @@ public interface PdfReportConfiguration extends ReportExportConfiguration
 	 * @see net.sf.jasperreports.engine.JRAnchor#getBookmarkLevel()
 	 * @since 3.7.3
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_7_3,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_COLLAPSE_MISSING_BOOKMARK_LEVELS = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.collapse.missing.bookmark.levels";
 
@@ -64,18 +80,94 @@ public interface PdfReportConfiguration extends ReportExportConfiguration
 	 * 
 	 * @see JRPropertiesUtil
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_4_7_0,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_SIZE_PAGE_TO_CONTENT = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.size.page.to.content";
 
 	/**
 	 * Property that provides a default for the {@link #isIgnoreHyperlink()} export configuration flag.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.HYPERLINK},
+			sinceVersion = PropertyConstants.VERSION_5_1_2,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_IGNORE_HYPERLINK = JRPdfExporter.PDF_EXPORTER_PROPERTIES_PREFIX + JRPrintHyperlink.PROPERTY_IGNORE_HYPERLINK_SUFFIX;
 
 	/**
 	 * Property that provides a default value for the {@link #isForceLineBreakPolicy()} exporter configuration flag.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_2_0_1,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_FORCE_LINEBREAK_POLICY = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.force.linebreak.policy";
 
+	/**
+	 * Property that provides a default value for the {@link #getOddPageOffsetX()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = "0",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_0_4,
+			valueType = Integer.class
+			)
+	public static final String PROPERTY_ODD_PAGE_OFFSET_X = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.odd.page.offset.x";
+
+	/**
+	 * Property that provides a default value for the {@link #getOddPageOffsetY()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = "0",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_0_4,
+			valueType = Integer.class
+			)
+	public static final String PROPERTY_ODD_PAGE_OFFSET_Y = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.odd.page.offset.y";
+
+	/**
+	 * Property that provides a default value for the {@link #getEvenPageOffsetX()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = "0",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_0_4,
+			valueType = Integer.class
+			)
+	public static final String PROPERTY_EVEN_PAGE_OFFSET_X = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.even.page.offset.x";
+
+	/**
+	 * Property that provides a default value for the {@link #getEvenPageOffsetY()} export configuration setting.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = "0",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_0_4,
+			valueType = Integer.class
+			)
+	public static final String PROPERTY_EVEN_PAGE_OFFSET_Y = JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.even.page.offset.y";
+
+	//FIXME: add property annotation and configref description
+	public static final String PROPERTY_PREFIX_GLYPH_RENDERER_BLOCKS = 
+			JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.glyph.renderer.blocks.";
+	
+	//FIXME: add property annotation and configref description
+	public static final String PROPERTY_GLYPH_RENDERER_ADD_ACTUAL_TEXT =
+			JRPropertiesUtil.PROPERTY_PREFIX + "export.pdf.glyph.renderer.add.actual.text";
+	
 	/**
 	 * Flag to force the rendering of SVG images using shapes, on the PDF Graphics2D context.
 	 *
@@ -166,6 +258,43 @@ public interface PdfReportConfiguration extends ReportExportConfiguration
 		)
 	@ExporterProperty(
 		value=PROPERTY_FORCE_LINEBREAK_POLICY,
-		booleanDefault=false)
+		booleanDefault=false
+		)
 	public Boolean isForceLineBreakPolicy();
+
+	/**
+	 * Specifies the X offset for moving elements in odd page number pages, to simulate gutter margins.
+	 */
+	@ExporterProperty(
+		value=PROPERTY_ODD_PAGE_OFFSET_X,
+		intDefault=0
+		)
+	public Integer getOddPageOffsetX();
+	
+	/**
+	 * Specifies the Y offset for moving elements in odd page number pages, to simulate gutter margins.
+	 */
+	@ExporterProperty(
+		value=PROPERTY_ODD_PAGE_OFFSET_Y,
+		intDefault=0
+		)
+	public Integer getOddPageOffsetY();
+
+	/**
+	 * Specifies the X offset for moving elements in even page number pages, to simulate gutter margins.
+	 */
+	@ExporterProperty(
+		value=PROPERTY_EVEN_PAGE_OFFSET_X,
+		intDefault=0
+		)
+	public Integer getEvenPageOffsetX();
+	
+	/**
+	 * Specifies the Y offset for moving elements in even page number pages, to simulate gutter margins.
+	 */
+	@ExporterProperty(
+		value=PROPERTY_EVEN_PAGE_OFFSET_Y,
+		intDefault=0
+		)
+	public Integer getEvenPageOffsetY();
 }

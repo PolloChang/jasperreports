@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,12 +34,12 @@ import net.sf.jasperreports.engine.query.SQLBetweenBaseClause;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DateRangeSQLBetweenClause.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DateRangeSQLBetweenClause extends SQLBetweenBaseClause
 {
 
 	protected static final DateRangeSQLBetweenClause INSTANCE = new DateRangeSQLBetweenClause();
+	public static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_PARAMETER_TYPE = "date.range.unsupported.parameter.type";
 	
 	/**
 	 * Returns the singleton function instance.
@@ -69,8 +69,10 @@ public class DateRangeSQLBetweenClause extends SQLBetweenBaseClause
 
 		if (value != null && !(value instanceof DateRange))
 		{
-			throw new JRRuntimeException("Parameter " + parameterName + " in clause " + clauseId
-					+ " has unsupported type " + value.getClass().getName());
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNSUPPORTED_PARAMETER_TYPE,
+					new Object[]{parameterName, clauseId, value.getClass().getName()});
 		}
 		
 		boolean useRangeStart = left ? isLeftClosed(clauseId) : !isRightClosed(clauseId);

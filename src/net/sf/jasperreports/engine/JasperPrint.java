@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.base.StandardPrintParts;
+import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
+import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.OrientationEnum;
+import net.sf.jasperreports.engine.util.StyleResolver;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -54,29 +61,67 @@ import net.sf.jasperreports.engine.type.OrientationEnum;
  * other formats like PDF, HTML, XLS, CSV or XML.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperPrint.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JasperPrint implements Serializable, JRPropertiesHolder
+public class JasperPrint implements Serializable, JRPropertiesHolder, JRChangeEventsSupport
 {
 
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_STYLE = "engine.jasper.print.duplicate.style";
+	
 	/**
 	 * Prefix for JasperReports properties that specify properties to be
 	 * transfered from report templates to print objects.
 	 * 
 	 * @see JRPropertiesUtil#transferProperties(JRPropertiesHolder, JRPropertiesHolder, String)
 	 */
+	@Property(
+			name = "net.sf.jasperreports.print.transfer.{arbitrary_suffix}",
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_4_6_0
+			)
 	public static final String PROPERTIES_PRINT_TRANSFER_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "print.transfer.";
 
 	/**
 	 * 
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_5_5_2,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_CREATE_BOOKMARKS = JRPropertiesUtil.PROPERTY_PREFIX + "print.create.bookmarks";
 
 	/**
 	 * 
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_5_5_2,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_COLLAPSE_MISSING_BOOKMARK_LEVELS = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "print.collapse.missing.bookmark.levels";
+	
+	public static final String PROPERTY_NAME = "name";
+	public static final String PROPERTY_PAGE_WIDTH = "pageWidth";
+	public static final String PROPERTY_PAGE_HEIGHT = "pageHeight";
+	public static final String PROPERTY_TOP_MARGIN = "topMargin";
+	public static final String PROPERTY_LEFT_MARGIN = "leftMargin";
+	public static final String PROPERTY_BOTTOM_MARGIN = "bottomMargin";
+	public static final String PROPERTY_RIGHT_MARGIN = "rightMargin";
+	public static final String PROPERTY_ORIENTATION = "orientation";
+	public static final String PROPERTY_STYLES = "styles";
+	public static final String PROPERTY_ORIGINS = "origins";
+	public static final String PROPERTY_PARTS = "parts";
+	public static final String PROPERTY_PAGES = "pages";
+	public static final String PROPERTY_BOOKMARKS = "bookmarks";
+	public static final String PROPERTY_FORMAT_FACTORY_CLASS = "formatFactoryClass";
+	public static final String PROPERTY_LOCALE_CODE = "localeCode";
+	public static final String PROPERTY_TIME_ZONE_ID = "timeZoneId";
 	
 	/**
 	 * A small class for implementing just the style provider functionality.
@@ -86,12 +131,14 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 		private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 		
 		private JRStyle defaultStyle;
+		protected transient StyleResolver styleResolver = StyleResolver.getInstance();
 
 		DefaultStyleProvider(JRStyle style)
 		{
 			this.defaultStyle = style;
 		}
 
+		@Override
 		public JRStyle getDefaultStyle()
 		{
 			return defaultStyle;
@@ -100,6 +147,23 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 		void setDefaultStyle(JRStyle style)
 		{
 			this.defaultStyle = style;
+		}
+
+		public synchronized void setJasperReportsContext(JasperReportsContext jasperReportsContext)
+		{
+			styleResolver = new StyleResolver(jasperReportsContext);
+		}
+
+		@Override
+		public StyleResolver getStyleResolver()
+		{
+			return styleResolver;
+		}
+
+		private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
+		{
+			in.defaultReadObject();
+			styleResolver = StyleResolver.getInstance();
 		}
 	}
 
@@ -115,19 +179,60 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	private String name;
 	private int pageWidth;
 	private int pageHeight;
-	private Integer topMargin;
-	private Integer leftMargin;
-	private Integer bottomMargin;
-	private Integer rightMargin;
+	private Integer topMargin = 0;
+	private Integer leftMargin = 0;
+	private Integer bottomMargin = 0;
+	private Integer rightMargin = 0;
 	private OrientationEnum orientationValue = OrientationEnum.PORTRAIT;
+	
+	private transient PrintPageFormat pageFormat;
 
-	private Map<String, JRStyle> stylesMap = new HashMap<String, JRStyle>();
-	private List<JRStyle> stylesList = new ArrayList<JRStyle>();
-	private Map<JROrigin, Integer> originsMap = new HashMap<JROrigin, Integer>();
-	private List<JROrigin> originsList = new ArrayList<JROrigin>();
+	private class DefaultPrintPageFormat implements PrintPageFormat
+	{
+		@Override
+		public Integer getPageWidth() {
+			return JasperPrint.this.getPageWidth();
+		}
 
+		@Override
+		public Integer getPageHeight() {
+			return JasperPrint.this.getPageHeight();
+		}
+
+		@Override
+		public Integer getTopMargin() {
+			return JasperPrint.this.getTopMargin();
+		}
+
+		@Override
+		public Integer getLeftMargin() {
+			return JasperPrint.this.getLeftMargin();
+		}
+
+		@Override
+		public Integer getBottomMargin() {
+			return JasperPrint.this.getBottomMargin();
+		}
+
+		@Override
+		public Integer getRightMargin() {
+			return JasperPrint.this.getRightMargin();
+		}
+
+		@Override
+		public OrientationEnum getOrientation() {
+			return JasperPrint.this.getOrientationValue();
+		}
+	}
+
+	private Map<String, JRStyle> stylesMap = new HashMap<>();
+	private List<JRStyle> stylesList = new ArrayList<>();
+	private Map<JROrigin, Integer> originsMap = new HashMap<>();
+	private List<JROrigin> originsList = new ArrayList<>();
+
+	private PrintParts parts;
 	//FIXME unsynchronize on serialization?
-	private List<JRPrintPage> pages = Collections.synchronizedList(new ArrayList<JRPrintPage>());
+	private List<JRPrintPage> pages;
 
 	private transient Map<String,JRPrintAnchorIndex> anchorIndexes;
 	private DefaultStyleProvider defaultStyleProvider;
@@ -146,9 +251,24 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public JasperPrint()
 	{
+		this(new ArrayList<>());
+	}
+
+	protected JasperPrint(List<JRPrintPage> pages)
+	{
 		defaultStyleProvider = new DefaultStyleProvider(null);
 
 		propertiesMap = new JRPropertiesMap();
+		
+		this.pages = Collections.synchronizedList(pages);
+	}
+
+	/**
+	 *
+	 */
+	public synchronized void setJasperReportsContext(JasperReportsContext jasperReportsContext)
+	{
+		defaultStyleProvider.setJasperReportsContext(jasperReportsContext);
 	}
 
 	/**
@@ -166,9 +286,49 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setName(String name)
 	{
+		Object old = this.name;
 		this.name = name;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_NAME, old, this.name);
+		}
 	}
 
+	/**
+	 * @return Returns the page format for specified page index.
+	 */
+	public PrintPageFormat getPageFormat(int pageIndex)
+	{
+		if (parts == null || !parts.hasParts())
+		{
+			return getPageFormat();
+		}
+		else
+		{
+			PrintPageFormat partPageFormat = parts.getPageFormat(pageIndex);
+			if (partPageFormat == null)
+			{
+				return getPageFormat();
+			}
+			else
+			{
+				return partPageFormat;
+			}
+		}
+	}
+
+	/**
+	 *
+	 */
+	public synchronized PrintPageFormat getPageFormat()
+	{
+		if (pageFormat == null)
+		{
+			pageFormat = new DefaultPrintPageFormat();
+		}
+		return pageFormat;
+	}
+		
 	/**
 	 * @return Returns the page width
 	 */
@@ -184,7 +344,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setPageWidth(int pageWidth)
 	{
+		Object old = this.pageWidth;
 		this.pageWidth = pageWidth;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_PAGE_WIDTH, old, this.pageWidth);
+		}
 	}
 
 	/**
@@ -202,7 +367,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setPageHeight(int pageHeight)
 	{
+		Object old = this.pageHeight;
 		this.pageHeight = pageHeight;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_PAGE_HEIGHT, old, this.pageHeight);
+		}
 	}
 
 	/**
@@ -220,7 +390,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setTopMargin(Integer topMargin)
 	{
+		Object old = this.topMargin;
 		this.topMargin = topMargin;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_TOP_MARGIN, old, this.topMargin);
+		}
 	}
 
 	/**
@@ -238,7 +413,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setLeftMargin(Integer leftMargin)
 	{
+		Object old = this.leftMargin;
 		this.leftMargin = leftMargin;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_LEFT_MARGIN, old, this.leftMargin);
+		}
 	}
 
 	/**
@@ -256,7 +436,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setBottomMargin(Integer bottomMargin)
 	{
+		Object old = this.bottomMargin;
 		this.bottomMargin = bottomMargin;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_BOTTOM_MARGIN, old, this.bottomMargin);
+		}
 	}
 
 	/**
@@ -274,7 +459,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setRightMargin(Integer rightMargin)
 	{
+		Object old = this.rightMargin;
 		this.rightMargin = rightMargin;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_RIGHT_MARGIN, old, this.rightMargin);
+		}
 	}
 
 	/**
@@ -294,22 +484,27 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setOrientation(OrientationEnum orientationValue)
 	{
+		Object old = this.orientationValue;
 		this.orientationValue = orientationValue;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_ORIENTATION, old, this.orientationValue);
+		}
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
@@ -417,7 +612,10 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 		{
 			if (!isIgnoreDuplicate)
 			{
-				throw new JRException("Duplicate declaration of report style : " + style.getName());
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_DUPLICATE_STYLE,
+						new Object[]{style.getName()});
 			}
 		}
 		else
@@ -428,6 +626,11 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 			if (style.isDefault())
 			{
 				setDefaultStyle(style);
+			}
+			
+			if (hasEventSupport())
+			{
+				getEventSupport().fireCollectionElementAddedEvent(PROPERTY_STYLES, style, stylesList.size() - 1);
 			}
 		}
 	}
@@ -452,8 +655,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 				setDefaultStyle(null);
 			}
 
-			stylesList.remove(style);
+			boolean removed = stylesList.remove(style);
 			stylesMap.remove(style.getName());
+			if (removed && hasEventSupport())
+			{
+				getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_STYLES, style, -1);//FIXME index
+			}
 		}
 		
 		return style;
@@ -491,7 +698,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 		if (!originsMap.containsKey(origin))
 		{
 			originsList.add(origin);
-			originsMap.put(origin, Integer.valueOf(originsList.size() - 1));
+			originsMap.put(origin, originsList.size() - 1);
+			
+			if (hasEventSupport())
+			{
+				getEventSupport().fireCollectionElementAddedEvent(PROPERTY_ORIGINS, origin, originsList.size() - 1);
+			}
 		}
 	}
 
@@ -503,14 +715,76 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 		if (originsMap.containsKey(origin))
 		{
 			originsList.remove(origin);
-			originsMap = new HashMap<JROrigin, Integer>();
-			for(int i = 0; i < originsList.size(); i++)
+			originsMap = new HashMap<>();
+			for (int i = 0; i < originsList.size(); i++)
 			{
-				originsMap.put(originsList.get(i), Integer.valueOf(i));
+				originsMap.put(originsList.get(i), i);
+			}
+			
+			if (hasEventSupport())
+			{
+				getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_ORIGINS, origin, -1);//FIXME index
 			}
 		}
 		
 		return origin;
+	}
+
+	/**
+	 * Determines whether this document contains parts.
+	 * 
+	 * @return whether this document contains parts
+	 * @see #getParts()
+	 */
+	public boolean hasParts()
+	{
+		return parts != null && parts.hasParts();
+	}
+	
+	/**
+	 * Returns a list of all parts in the filled report.
+	 */
+	public PrintParts getParts()
+	{
+		return parts;
+	}
+
+	/**
+	 * Adds a new part to the document.
+	 */
+	public synchronized void addPart(int pageIndex, PrintPart part)
+	{
+		if (parts == null)
+		{
+			parts = new StandardPrintParts();
+		}
+
+		parts.addPart(pageIndex, part);
+		
+		if (hasEventSupport())
+		{
+			getEventSupport().fireCollectionElementAddedEvent(PROPERTY_PARTS, part, pageIndex);
+		}
+	}
+
+	/**
+	 * Removes a part from the document.
+	 */
+	public synchronized PrintPart removePart(int pageIndex)
+	{
+		if (parts == null)
+		{
+			return null;
+		}
+
+		PrintPart part = parts.removePart(pageIndex);
+		
+		if (part != null && hasEventSupport())
+		{
+			getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_PARTS, part, pageIndex);
+		}
+		
+		return part;
 	}
 
 	/**
@@ -520,7 +794,7 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	{
 		return pages;
 	}
-		
+
 	/**
 	 * Adds a new page to the document.
 	 */
@@ -528,6 +802,11 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	{
 		anchorIndexes = null;
 		pages.add(page);
+		
+		if (hasEventSupport())
+		{
+			getEventSupport().fireCollectionElementAddedEvent(PROPERTY_PAGES, page, pages.size() - 1);
+		}
 	}
 
 	/**
@@ -537,6 +816,11 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	{
 		anchorIndexes = null;
 		pages.add(index, page);
+		
+		if (hasEventSupport())
+		{
+			getEventSupport().fireCollectionElementAddedEvent(PROPERTY_PAGES, page, index);
+		}
 	}
 
 	/**
@@ -545,7 +829,14 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	public synchronized JRPrintPage removePage(int index)
 	{
 		anchorIndexes = null;
-		return pages.remove(index);
+		JRPrintPage page = pages.remove(index);
+		
+		if (page != null && hasEventSupport())
+		{
+			getEventSupport().fireCollectionElementRemovedEvent(PROPERTY_PAGES, page, index);
+		}
+		
+		return page;
 	}
 
 	/**
@@ -563,9 +854,14 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	{
 		if (bookmarks == null)
 		{
-			bookmarks = new ArrayList<PrintBookmark>();
+			bookmarks = new ArrayList<>();
 		}
 		bookmarks.add(bookmark);
+		
+		if (hasEventSupport())
+		{
+			getEventSupport().fireCollectionElementAddedEvent(PROPERTY_BOOKMARKS, bookmark, bookmarks.size() - 1);
+		}
 	}
 	
 	/**
@@ -573,7 +869,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setBookmarks(List<PrintBookmark> bookmarks)
 	{
+		Object old = this.bookmarks;
 		this.bookmarks = bookmarks;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_BOOKMARKS, old, this.bookmarks);
+		}
 	}
 
 	/**
@@ -583,7 +884,7 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	{
 		if (anchorIndexes == null)
 		{
-			anchorIndexes = new HashMap<String,JRPrintAnchorIndex>();
+			anchorIndexes = new HashMap<>();
 			
 			int i = 0;
 			for(Iterator<JRPrintPage> itp = pages.iterator(); itp.hasNext(); i++)
@@ -639,7 +940,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setFormatFactoryClass(String formatFactoryClass)
 	{
+		Object old = this.formatFactoryClass;
 		this.formatFactoryClass = formatFactoryClass;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_FORMAT_FACTORY_CLASS, old, this.formatFactoryClass);
+		}
 	}
 
 
@@ -672,7 +978,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setLocaleCode(String localeCode)
 	{
+		Object old = this.localeCode;
 		this.localeCode = localeCode;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_LOCALE_CODE, old, this.localeCode);
+		}
 	}
 
 
@@ -705,7 +1016,12 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	public void setTimeZoneId(String timeZoneId)
 	{
+		Object old = this.timeZoneId;
 		this.timeZoneId = timeZoneId;
+		if (hasEventSupport())
+		{
+			getEventSupport().firePropertyChange(PROPERTY_TIME_ZONE_ID, old, this.timeZoneId);
+		}
 	}
 		
 	/*
@@ -717,6 +1033,7 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 	 */
 	private byte orientation;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -725,6 +1042,66 @@ public class JasperPrint implements Serializable, JRPropertiesHolder
 		{
 			orientationValue = OrientationEnum.getByValue(orientation);
 		}
+	}
+	
+	public void copyFrom(JasperPrint jasperPrint)
+	{
+		this.name = jasperPrint.name;
+		this.pageWidth = jasperPrint.pageWidth;
+		this.pageHeight = jasperPrint.pageHeight;
+		this.topMargin = jasperPrint.topMargin;
+		this.leftMargin = jasperPrint.leftMargin;
+		this.bottomMargin = jasperPrint.bottomMargin;
+		this.rightMargin = jasperPrint.rightMargin;
+		this.orientationValue = jasperPrint.orientationValue;
+		this.formatFactoryClass = jasperPrint.formatFactoryClass;
+		this.localeCode = jasperPrint.localeCode;
+		this.timeZoneId = jasperPrint.timeZoneId;
+		
+		if (jasperPrint.propertiesMap != null)
+		{
+			this.propertiesMap = jasperPrint.propertiesMap.cloneProperties();
+		}
+		
+		this.stylesList.addAll(jasperPrint.stylesList);
+		this.stylesMap.putAll(jasperPrint.stylesMap);
+		this.defaultStyleProvider.setDefaultStyle(jasperPrint.defaultStyleProvider.getDefaultStyle());
+
+		this.originsList.addAll(jasperPrint.originsList);
+		this.originsMap.putAll(jasperPrint.originsMap);
+		
+		if (jasperPrint.bookmarks != null)
+		{
+			this.bookmarks = new ArrayList<>(jasperPrint.bookmarks);
+		}
+		
+		if (jasperPrint.parts != null)
+		{
+			this.parts = ((StandardPrintParts) jasperPrint.parts).shallowClone();
+		}
+		
+		this.pages.addAll(jasperPrint.pages);
+	}
+	
+	private transient JRPropertyChangeSupport eventSupport;
+	
+	protected boolean hasEventSupport()
+	{
+		return eventSupport != null;
+	}
+	
+	@Override
+	public JRPropertyChangeSupport getEventSupport()
+	{
+		synchronized (this)
+		{
+			if (eventSupport == null)
+			{
+				eventSupport = new JRPropertyChangeSupport(this);
+			}
+		}
+		
+		return eventSupport;
 	}
 
 

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.base.JRBoxPen;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CachingLineBox.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CachingLineBox implements JRLineBox
 {
@@ -56,187 +55,194 @@ public class CachingLineBox implements JRLineBox
 		rightPadding = base.getRightPadding();
 	}
 
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return base.getDefaultStyleProvider();
 	}
 
+	@Override
 	public Float getDefaultLineWidth()
 	{
 		return base.getDefaultLineWidth();
 	}
 
+	@Override
 	public JRStyle getStyle()
 	{
 		return base.getStyle();
 	}
 
+	@Override
 	public Color getDefaultLineColor()
 	{
 		return base.getDefaultLineColor();
 	}
 
+	@Override
 	public String getStyleNameReference()
 	{
 		return base.getStyleNameReference();
 	}
 
+	@Override
 	public JRBoxContainer getBoxContainer()
 	{
 		return base.getBoxContainer();
 	}
 
+	@Override
 	public JRLineBox clone(JRBoxContainer boxContainer)
 	{
 		// cloning the base line box
 		return base.clone(boxContainer);
 	}
 
+	@Override
 	public JRBoxPen getPen()
 	{
 		return base.getPen();
 	}
 
+	@Override
 	public void copyPen(JRBoxPen pen)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public JRBoxPen getTopPen()
 	{
 		return base.getTopPen();
 	}
 
+	@Override
 	public void copyTopPen(JRBoxPen topPen)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public JRBoxPen getLeftPen()
 	{
 		return base.getLeftPen();
 	}
 
+	@Override
 	public void copyLeftPen(JRBoxPen leftPen)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public JRBoxPen getBottomPen()
 	{
 		return base.getBottomPen();
 	}
 
+	@Override
 	public void copyBottomPen(JRBoxPen bottomPen)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public JRBoxPen getRightPen()
 	{
 		return base.getRightPen();
 	}
 
+	@Override
 	public void copyRightPen(JRBoxPen rightPen)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public Integer getPadding()
 	{
 		return padding;
 	}
 
+	@Override
 	public Integer getOwnPadding()
 	{
 		return base.getOwnPadding();
 	}
 
-	public void setPadding(int padding)
-	{
-		throw new UnsupportedOperationException();
-	}
-
+	@Override
 	public void setPadding(Integer padding)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public Integer getTopPadding()
 	{
 		return topPadding;
 	}
 
+	@Override
 	public Integer getOwnTopPadding()
 	{
 		return base.getOwnTopPadding();
 	}
 
-	public void setTopPadding(int padding)
-	{
-		throw new UnsupportedOperationException();
-	}
-
+	@Override
 	public void setTopPadding(Integer padding)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public Integer getLeftPadding()
 	{
 		return leftPadding;
 	}
 
+	@Override
 	public Integer getOwnLeftPadding()
 	{
 		return base.getOwnLeftPadding();
 	}
 
-	public void setLeftPadding(int padding)
-	{
-		throw new UnsupportedOperationException();
-	}
-
+	@Override
 	public void setLeftPadding(Integer padding)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public Integer getBottomPadding()
 	{
 		return bottomPadding;
 	}
 
+	@Override
 	public Integer getOwnBottomPadding()
 	{
 		return base.getOwnBottomPadding();
 	}
 
-	public void setBottomPadding(int padding)
-	{
-		throw new UnsupportedOperationException();
-	}
-
+	@Override
 	public void setBottomPadding(Integer padding)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public Integer getRightPadding()
 	{
 		return rightPadding;
 	}
 
+	@Override
 	public Integer getOwnRightPadding()
 	{
 		return base.getOwnRightPadding();
 	}
 
-	public void setRightPadding(int padding)
-	{
-		throw new UnsupportedOperationException();
-	}
-
+	@Override
 	public void setRightPadding(Integer padding)
 	{
 		throw new UnsupportedOperationException();

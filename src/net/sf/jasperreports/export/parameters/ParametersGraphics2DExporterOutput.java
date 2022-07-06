@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,19 +26,18 @@ package net.sf.jasperreports.export.parameters;
 import java.awt.Graphics2D;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.export.JRGraphics2DExporterParameter;
 import net.sf.jasperreports.export.Graphics2DExporterOutput;
 
 
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParametersGraphics2DExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParametersGraphics2DExporterOutput implements Graphics2DExporterOutput
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NO_OUTPUT_SPECIFIED = "export.parameters.graphics2d.no.output.specified";
+	
 	/**
 	 * 
 	 */
@@ -47,18 +46,19 @@ public class ParametersGraphics2DExporterOutput implements Graphics2DExporterOut
 	/**
 	 * 
 	 */
-	public ParametersGraphics2DExporterOutput(Map<JRExporterParameter, Object> parameters)
+	public ParametersGraphics2DExporterOutput(Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters)
 	{
-		grx = (Graphics2D)parameters.get(JRGraphics2DExporterParameter.GRAPHICS_2D);
+		grx = (Graphics2D)parameters.get(net.sf.jasperreports.engine.export.JRGraphics2DExporterParameter.GRAPHICS_2D);
 		if (grx == null)
 		{
-			throw new JRRuntimeException("No output specified for the exporter. java.awt.Graphics2D object expected.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NO_OUTPUT_SPECIFIED,
+					(Object[])null);
 		}
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Graphics2D getGraphics2D()
 	{
 		return grx;

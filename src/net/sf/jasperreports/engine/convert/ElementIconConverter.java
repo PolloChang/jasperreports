@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,30 +32,20 @@
 package net.sf.jasperreports.engine.convert;
 
 import net.sf.jasperreports.engine.JRElement;
-import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintElement;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.base.JRBasePrintImage;
-import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
  * Base converter that generates a static preview icon for the element.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ElementIconConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ElementIconConverter extends ElementConverter
 {
-
-	private static final Log log = LogFactory.getLog(ElementIconConverter.class);
-	
 	private final String iconLocation;
 	
 	public ElementIconConverter(String iconLocation)
@@ -63,6 +53,7 @@ public class ElementIconConverter extends ElementConverter
 		this.iconLocation = iconLocation;
 	}
 	
+	@Override
 	public JRPrintElement convert(ReportConverter reportConverter, JRElement element)
 	{
 		JRBasePrintImage printImage = new JRBasePrintImage(
@@ -71,24 +62,10 @@ public class ElementIconConverter extends ElementConverter
 		
 		printImage.getLineBox().setPadding(3);
 		printImage.setScaleImage(ScaleImageEnum.CLIP);
+		printImage.setRotation(RotationEnum.NONE);
 		
-		printImage.setRenderable(getRenderer(reportConverter.getJasperReportsContext()));
+		printImage.setRenderer(ResourceRenderer.getInstance(iconLocation, false));
+		
 		return printImage;
 	}
-
-	protected Renderable getRenderer(JasperReportsContext jasperReportsContext)
-	{
-		try
-		{
-			return RenderableUtil.getInstance(jasperReportsContext).getRenderable(
-					iconLocation, 
-					OnErrorTypeEnum.ERROR);
-		}
-		catch (JRException e)
-		{
-			log.warn("Error creating component design preview icon", e);
-			return null;
-		}
-	}
-
 }

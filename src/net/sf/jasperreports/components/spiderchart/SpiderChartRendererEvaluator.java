@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,16 +30,6 @@ import java.awt.geom.Rectangle2D;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import net.sf.jasperreports.charts.type.EdgeEnum;
-import net.sf.jasperreports.charts.util.ChartUtil;
-import net.sf.jasperreports.components.charts.ChartCustomizer;
-import net.sf.jasperreports.components.charts.ChartSettings;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRComponentElement;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.fonts.FontUtil;
-
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
@@ -49,11 +39,19 @@ import org.jfree.chart.title.TextTitle;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.ui.RectangleEdge;
 
+import net.sf.jasperreports.charts.type.EdgeEnum;
+import net.sf.jasperreports.charts.util.ChartUtil;
+import net.sf.jasperreports.components.charts.ChartCustomizer;
+import net.sf.jasperreports.components.charts.ChartSettings;
+import net.sf.jasperreports.engine.JRComponentElement;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.fonts.FontUtil;
+import net.sf.jasperreports.renderers.Renderable;
+
 /**
  * Spider Chart design evaluator.
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: SpiderChartRendererEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class SpiderChartRendererEvaluator
 {
@@ -64,23 +62,9 @@ public class SpiderChartRendererEvaluator
 	public static final String FILL_DATASET = "fillDataset";
 	public static final String SAMPLE_DATASET = "sampleDataset";
 	
-	public static final Double SAMPLE_MAXVALUE = Double.valueOf(10d);
+	public static final Double SAMPLE_MAXVALUE = 10d;
 	
 	private static DefaultCategoryDataset sampleDataset;
-	
-	/**
-	 * @deprecated Replaced by {@link #evaluateRenderable(JasperReportsContext, JRComponentElement, SpiderChartSharedBean, ChartCustomizer, String, String)}. 
-	 */
-	public static net.sf.jasperreports.engine.JRRenderable evaluateRenderer(
-		JRComponentElement element, 
-		SpiderChartSharedBean spiderchartBean, 
-		ChartCustomizer chartCustomizer, 
-		String defaultRenderType,
-		String datasetType
-		)
-	{
-		return evaluateRenderable(DefaultJasperReportsContext.getInstance(), element, spiderchartBean, chartCustomizer, defaultRenderType, datasetType);
-	}
 	
 	/**
 	 * 

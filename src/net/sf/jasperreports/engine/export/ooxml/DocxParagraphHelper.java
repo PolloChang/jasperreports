@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,18 +26,19 @@ package net.sf.jasperreports.engine.export.ooxml;
 import java.io.Writer;
 
 import net.sf.jasperreports.engine.JRParagraph;
+import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.TabStop;
 import net.sf.jasperreports.engine.export.LengthUtil;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.TabStopAlignEnum;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: DocxParagraphHelper.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class DocxParagraphHelper extends BaseHelper
 {
@@ -81,8 +82,8 @@ public class DocxParagraphHelper extends BaseHelper
 		exportPropsHeader(null, style.getParagraph());
 
 		exportAlignment(
-			getHorizontalAlignment(
-				style.getOwnHorizontalAlignmentValue() 
+			getHorizontalTextAlign(
+				style.getOwnHorizontalTextAlign() 
 				)
 			);
 
@@ -102,11 +103,12 @@ public class DocxParagraphHelper extends BaseHelper
 	 */
 	public void exportProps(JRPrintText text)
 	{
-		exportPropsHeader(text.getStyle() == null ? null : text.getStyle().getName(), text.getParagraph());//FIXMEDOCX why getStyleNameReference is not working?
+		JRStyle baseStyle = text.getDefaultStyleProvider().getStyleResolver().getBaseStyle(text); 
+		exportPropsHeader(baseStyle == null ? null : baseStyle.getName(), text.getParagraph()); //javadoc says getStyleNameReference is not supposed to work for print elements
 
 		exportAlignment(
-			getHorizontalAlignment(
-				text.getOwnHorizontalAlignmentValue()
+			getHorizontalTextAlign(
+				text.getOwnHorizontalTextAlign()
 				)
 			);
 		
@@ -127,6 +129,24 @@ public class DocxParagraphHelper extends BaseHelper
 	/**
 	 *
 	 */
+	public void exportProps(JRPrintImage image)
+	{
+		JRStyle baseStyle = image.getDefaultStyleProvider().getStyleResolver().getBaseStyle(image); 
+		exportPropsHeader(baseStyle == null ? null : baseStyle.getName(), null); 
+
+		exportAlignment(
+			getHorizontalImageAlign(
+				image.getOwnHorizontalImageAlign()
+				)
+			);
+		write("   <w:spacing w:lineRule=\"auto\" w:line=\"240\" w:after=\"0\" w:before=\"0\"/>\n");
+		exportPropsFooter();
+	}
+	
+	
+	/**
+	 *
+	 */
 	private void exportPropsHeader(String styleNameReference, JRParagraph paragraph)
 	{
 		write("      <w:pPr>\n");
@@ -134,20 +154,23 @@ public class DocxParagraphHelper extends BaseHelper
 		{
 			write("        <w:pStyle w:val=\"" + styleNameReference + "\"/>\n");
 		}
-		write("      <w:ind");
-		if (paragraph.getOwnFirstLineIndent() != null)
+		if(paragraph != null)
 		{
-			write(" w:firstLine=\"" + LengthUtil.twip(paragraph.getOwnFirstLineIndent().intValue()) + "\"");
+			write("      <w:ind");
+			if (paragraph.getOwnFirstLineIndent() != null)
+			{
+				write(" w:firstLine=\"" + LengthUtil.twip(paragraph.getOwnFirstLineIndent()) + "\"");
+			}
+			if (paragraph.getOwnLeftIndent() != null)
+			{
+				write(" w:left=\"" + LengthUtil.twip(paragraph.getOwnLeftIndent()) + "\"");
+			}
+			if (paragraph.getOwnRightIndent() != null)
+			{
+				write(" w:right=\"" + LengthUtil.twip(paragraph.getOwnRightIndent()) + "\"");
+			}
+			write("/>\n");
 		}
-		if (paragraph.getOwnLeftIndent() != null)
-		{
-			write(" w:left=\"" + LengthUtil.twip(paragraph.getOwnLeftIndent().intValue()) + "\"");
-		}
-		if (paragraph.getOwnRightIndent() != null)
-		{
-			write(" w:right=\"" + LengthUtil.twip(paragraph.getOwnRightIndent().intValue()) + "\"");
-		}
-		write("/>\n");
 		if (pageBreak)
 		{
 			write("        <w:pageBreakBefore/>\n");
@@ -204,19 +227,19 @@ public class DocxParagraphHelper extends BaseHelper
 				case AT_LEAST :
 				{
 					lineRule = "atLeast";
-					lineSpacing = String.valueOf(LengthUtil.twip(paragraph.getLineSpacingSize().floatValue())); 
+					lineSpacing = String.valueOf(LengthUtil.twip(paragraph.getLineSpacingSize())); 
 					break;
 				}
 				case FIXED :
 				{
 					lineRule = "exact";
-					lineSpacing = String.valueOf(LengthUtil.twip(paragraph.getLineSpacingSize().floatValue())); 
+					lineSpacing = String.valueOf(LengthUtil.twip(paragraph.getLineSpacingSize())); 
 					break;
 				}
 				case PROPORTIONAL :
 				{
 					lineRule = "auto";
-					lineSpacing = String.valueOf((int)(paragraph.getLineSpacingSize().floatValue() * LINE_SPACING_FACTOR)); 
+					lineSpacing = String.valueOf((int)(paragraph.getLineSpacingSize() * LINE_SPACING_FACTOR)); 
 					break;
 				}
 				case DOUBLE :
@@ -240,8 +263,8 @@ public class DocxParagraphHelper extends BaseHelper
 			}
 			
 			write("   <w:spacing w:lineRule=\"" + lineRule + "\" w:line=\"" + lineSpacing + "\"");
-			write(" w:after=\"" + LengthUtil.twip(paragraph.getSpacingAfter().intValue()) + "\"");
-			write(" w:before=\"" + LengthUtil.twip(paragraph.getSpacingBefore().intValue()) + "\"/>\n");
+			write(" w:after=\"" + LengthUtil.twip(paragraph.getSpacingAfter()) + "\"");
+			write(" w:before=\"" + LengthUtil.twip(paragraph.getSpacingBefore()) + "\"/>\n");
 		}
 	}
 	
@@ -286,7 +309,7 @@ public class DocxParagraphHelper extends BaseHelper
 	/**
 	 *
 	 */
-	public static String getHorizontalAlignment(HorizontalAlignEnum horizontalAlignment)
+	public static String getHorizontalTextAlign(HorizontalTextAlignEnum horizontalAlignment)
 	{
 		if (horizontalAlignment != null)
 		{
@@ -298,6 +321,27 @@ public class DocxParagraphHelper extends BaseHelper
 					return HORIZONTAL_ALIGN_CENTER;
 				case JUSTIFIED :
 					return HORIZONTAL_ALIGN_BOTH;
+				case LEFT :
+				default :
+					return HORIZONTAL_ALIGN_LEFT;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 *
+	 */
+	public static String getHorizontalImageAlign(HorizontalImageAlignEnum horizontalAlignment)
+	{
+		if (horizontalAlignment != null)
+		{
+			switch (horizontalAlignment)
+			{
+				case RIGHT :
+					return HORIZONTAL_ALIGN_RIGHT;
+				case CENTER :
+					return HORIZONTAL_ALIGN_CENTER;
 				case LEFT :
 				default :
 					return HORIZONTAL_ALIGN_LEFT;

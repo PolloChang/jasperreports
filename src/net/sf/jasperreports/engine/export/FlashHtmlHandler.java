@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,9 +33,9 @@ import net.sf.jasperreports.engine.util.FlashUtils;
  * {@link FlashPrintElement}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FlashHtmlHandler.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated To be removed.
  */
-public class FlashHtmlHandler implements GenericElementHtmlHandler//FIXME need to make a similar one for XHTML?
+public class FlashHtmlHandler implements GenericElementHtmlHandler
 {
 
 	private static final FlashHtmlHandler INSTANCE = new FlashHtmlHandler();
@@ -48,6 +48,7 @@ public class FlashHtmlHandler implements GenericElementHtmlHandler//FIXME need t
 	/**
 	 * Always exports.
 	 */
+	@Override
 	public boolean toExport(JRGenericPrintElement element)
 	{
 		return true;
@@ -59,6 +60,7 @@ public class FlashHtmlHandler implements GenericElementHtmlHandler//FIXME need t
 	 * @see FlashPrintElement#PARAMETER_SWF_URL
 	 * @see FlashPrintElement#PARAMETER_FLASH_VAR_PREFIX
 	 */
+	@Override
 	public String getHtmlFragment(JRHtmlExporterContext exporterContext,
 			JRGenericPrintElement element)
 	{

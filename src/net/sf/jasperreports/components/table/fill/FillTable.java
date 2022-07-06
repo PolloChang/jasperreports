@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,6 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.components.headertoolbar.HeaderToolbarElement;
 import net.sf.jasperreports.components.table.BaseColumn;
 import net.sf.jasperreports.components.table.Column;
@@ -53,23 +56,24 @@ import net.sf.jasperreports.engine.component.BaseFillComponent;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
 import net.sf.jasperreports.engine.design.JRAbstractCompiler;
 import net.sf.jasperreports.engine.design.JRReportCompileData;
+import net.sf.jasperreports.engine.export.JRPdfExporterTagHelper;
+import net.sf.jasperreports.engine.fill.JRFillCloneFactory;
 import net.sf.jasperreports.engine.fill.JRFillComponentElement;
 import net.sf.jasperreports.engine.fill.JRFillContext;
 import net.sf.jasperreports.engine.fill.JRFillDatasetRun;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 import net.sf.jasperreports.engine.fill.JRTemplateFrame;
 import net.sf.jasperreports.engine.fill.JRTemplatePrintFrame;
+import net.sf.jasperreports.engine.fill.VirtualizableFrame;
 import net.sf.jasperreports.engine.util.JRReportUtils;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.export.AccessibilityUtil;
+import net.sf.jasperreports.export.type.AccessibilityTagEnum;
 
 /**
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillTable.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillTable extends BaseFillComponent
 {
@@ -77,17 +81,17 @@ public class FillTable extends BaseFillComponent
 	private static final Log log = LogFactory.getLog(FillTable.class);
 	
 	protected static final String FILL_CACHE_KEY_TABLE_INSTANCE_COUNTER = FillTable.class.getName() + "#instanceCounter";
+	protected static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_REPORT_DATA_TYPE = "components.table.unsupported.report.data.type";
 	
 	private final TableComponent table;
 	private final JRFillObjectFactory factory;
-	private final Map<List<FillColumn>, FillTableSubreport> fillSubreports = 
-		new HashMap<List<FillColumn>, FillTableSubreport>();
+	private Map<List<FillColumn>, FillTableSubreportFactory> fillSubreportFactories;
 	private FillTableSubreport fillSubreport;
 	
 	private boolean filling;
 	private List<FillColumn> fillColumns;
 	private int fillWidth;
-	private Map<JRStyle, JRTemplateFrame> printFrameTemplates = new HashMap<JRStyle, JRTemplateFrame>();
+	private Map<JRStyle, JRTemplateFrame> printFrameTemplates = new HashMap<>();
 
 	public FillTable(TableComponent table, JRFillObjectFactory factory)
 	{
@@ -98,8 +102,22 @@ public class FillTable extends BaseFillComponent
 		JRFillDatasetRun fillDatasetRun = factory.getDatasetRun(table.getDatasetRun());
 		// this is needed for returned variables with evaluationTime=Auto
 		factory.registerDatasetRun(fillDatasetRun);
+		
+		this.fillSubreportFactories = new HashMap<>();
 	}
 
+	public FillTable(FillTable table, JRFillCloneFactory factory)
+	{
+		super(table, factory);
+		
+		this.table = table.table;
+		this.factory = table.factory;
+		
+		this.fillSubreportFactories = table.fillSubreportFactories;
+		this.printFrameTemplates = table.printFrameTemplates;
+	}
+
+	@Override
 	public void evaluate(byte evaluation) throws JRException
 	{
 		if (filling)
@@ -157,7 +175,7 @@ public class FillTable extends BaseFillComponent
 			}
 			else
 			{
-				toPrint = printWhenVal.booleanValue();
+				toPrint = printWhenVal;
 			}
 		}
 		return toPrint;
@@ -181,7 +199,7 @@ public class FillTable extends BaseFillComponent
 			{
 				JRPropertyExpression prop = propExprs[i];
 				String value = (String) evaluateExpression(prop.getValueExpression(), evaluation);
-				if (value != null)
+				//if (value != null) //for some properties such as data properties in metadata exporters, the null value is significant
 				{
 					dynamicProperties.setProperty(prop.getName(), value);
 				}
@@ -203,6 +221,7 @@ public class FillTable extends BaseFillComponent
 			this.evaluation = evaluation;
 		}
 
+		@Override
 		public FillColumn visitColumn(Column column)
 		{
 			try
@@ -221,6 +240,7 @@ public class FillTable extends BaseFillComponent
 			}
 		}
 
+		@Override
 		public FillColumn visitColumnGroup(ColumnGroup columnGroup)
 		{
 			try
@@ -230,7 +250,7 @@ public class FillTable extends BaseFillComponent
 				if (toPrint)
 				{
 					List<BaseColumn> columns = columnGroup.getColumns();
-					List<FillColumn> subColumns = new ArrayList<FillColumn>(columns.size());
+					List<FillColumn> subColumns = new ArrayList<>(columns.size());
 					int printWidth = 0;
 					for (BaseColumn column : columns)
 					{
@@ -271,7 +291,7 @@ public class FillTable extends BaseFillComponent
 	{
 		FillColumnEvaluator columnEvaluator = new FillColumnEvaluator(evaluation);
 		List<BaseColumn> columns = table.getColumns();
-		fillColumns = new ArrayList<FillColumn>(columns.size());
+		fillColumns = new ArrayList<>(columns.size());
 		fillWidth = 0;
 		for (BaseColumn column : columns)
 		{
@@ -286,15 +306,17 @@ public class FillTable extends BaseFillComponent
 
 	protected void createFillSubreport() throws JRException
 	{
-		fillSubreport = fillSubreports.get(fillColumns);
-		if (fillSubreport == null)
+		FillTableSubreportFactory subreportFactory = fillSubreportFactories.get(fillColumns);
+		if (subreportFactory == null)
 		{
-			fillSubreport = createFillTableSubreport();
-			fillSubreports.put(fillColumns, fillSubreport);
+			subreportFactory = createFillTableSubreportFactory();
+			fillSubreportFactories.put(fillColumns, subreportFactory);
 		}
+		
+		fillSubreport = subreportFactory.createFillSubreport();
 	}
 
-	protected FillTableSubreport createFillTableSubreport() throws JRException
+	protected FillTableSubreportFactory createFillTableSubreportFactory() throws JRException
 	{
 		JasperReport parentReport = fillContext.getFiller().getJasperReport();
 		JasperReport containingReport = containingReport(parentReport);
@@ -335,8 +357,8 @@ public class FillTable extends BaseFillComponent
 				((JRFillComponentElement)fillContext.getComponentElement()).getParent()
 				);
 		return 
-			new FillTableSubreport(
-				fillContext, subreport, factory, compiledTableReport,
+			new FillTableSubreportFactory(
+				subreport, compiledTableReport,
 				builtinEvaluatorFactory
 				);
 	}
@@ -358,8 +380,11 @@ public class FillTable extends BaseFillComponent
 		Serializable reportCompileDataObj = parentReport.getCompileData();
 		if (!(reportCompileDataObj instanceof JRReportCompileData))
 		{
-			throw new JRRuntimeException("Unsupported compiled report data of type " 
-					+ reportCompileDataObj.getClass().getName());
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNSUPPORTED_REPORT_DATA_TYPE,  
+					new Object[]{reportCompileDataObj.getClass().getName()} 
+					);
 		}
 		
 		JRReportCompileData reportCompileData = (JRReportCompileData) reportCompileDataObj;
@@ -383,6 +408,7 @@ public class FillTable extends BaseFillComponent
 		return tableReportCompileData;
 	}
 	
+	@Override
 	public FillPrepareResult prepare(int availableHeight)
 	{
 		try
@@ -395,12 +421,19 @@ public class FillTable extends BaseFillComponent
 			
 			JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate(), printElementOriginator);
 			JRLineBox lineBox = printFrame.getLineBox();
-
+			int verticalPadding = lineBox.getTopPadding() + lineBox.getBottomPadding();
+			
 			FillPrepareResult result = 
 				fillSubreport.prepareSubreport(
-					availableHeight - lineBox.getTopPadding() - lineBox.getBottomPadding(), 
+					availableHeight - verticalPadding, 
 					filling
 					);
+			
+			if (verticalPadding != 0)
+			{
+				result = result.addStretch(verticalPadding);
+			}
+			
 			filling = result.willOverflow();
 			return result;
 		}
@@ -410,18 +443,26 @@ public class FillTable extends BaseFillComponent
 		}
 	}
 
+	@Override
 	public JRPrintElement fill()
 	{
 		JRTemplatePrintFrame printFrame = new JRTemplatePrintFrame(getFrameTemplate(), printElementOriginator);
-		printFrame.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_TABLE_UUID, fillContext.getComponentElement().getUUID().toString());
+
+		if (fillSubreport.getTableReport().getBaseReport().isInteractiveTable()) {
+			printFrame.getPropertiesMap().setProperty(HeaderToolbarElement.PROPERTY_TABLE_UUID, fillContext.getComponentElement().getUUID().toString());
+		}
 
 		JRLineBox lineBox = printFrame.getLineBox();
 		
 		printFrame.setUUID(fillContext.getComponentElement().getUUID());
 		printFrame.setX(fillContext.getComponentElement().getX());
 		printFrame.setY(fillContext.getElementPrintY());
-		printFrame.setWidth(fillWidth + lineBox.getLeftPadding() + lineBox.getRightPadding());
 		printFrame.setHeight(fillSubreport.getContentsStretchHeight() + lineBox.getTopPadding() + lineBox.getBottomPadding());
+		if (fillSubreport.getTableReport().getBaseReport().isAccessibleTable())
+		{
+			printFrame.getPropertiesMap().setProperty(JRPdfExporterTagHelper.PROPERTY_TAG_TABLE, JRPdfExporterTagHelper.TAG_FULL);
+			printFrame.getPropertiesMap().setProperty(AccessibilityUtil.PROPERTY_ACCESSIBILITY_TAG, AccessibilityTagEnum.TABLE.getName());
+		}
 		
 		List<JRStyle> styles = fillSubreport.getSubreportStyles();
 		for (Iterator<JRStyle> it = styles.iterator(); it.hasNext();)
@@ -444,15 +485,24 @@ public class FillTable extends BaseFillComponent
 			fillContext.getFiller().getJasperPrint().addOrigin(origin);
 		}
 		
+		int contentsWidth = fillWidth;
 		Collection<JRPrintElement> elements = fillSubreport.getPrintElements();
 		if (elements != null)
 		{
-			for (Iterator<JRPrintElement> it = elements.iterator(); it.hasNext();)
+			VirtualizableFrame virtualizableFrame = new VirtualizableFrame(printFrame, 
+					fillContext.getFiller().getVirtualizationContext(), 
+					fillContext.getFiller().getCurrentPage());
+			
+			virtualizableFrame.addOffsetElements(elements, 0, 0);
+			virtualizableFrame.fill();
+			
+			if (fillSubreport.getPrintContentsWidth() > contentsWidth)
 			{
-				JRPrintElement element = it.next();
-				printFrame.addElement(element);
+				contentsWidth = fillSubreport.getPrintContentsWidth();
 			}
 		}
+		
+		printFrame.setWidth(contentsWidth + lineBox.getLeftPadding() + lineBox.getRightPadding());
 		
 		fillSubreport.subreportPageFilled();
 		
@@ -500,4 +550,27 @@ public class FillTable extends BaseFillComponent
 		}
 	}
 
+	protected class FillTableSubreportFactory
+	{
+		private final TableSubreport subreport;
+		private final TableJasperReport compiledTableReport;
+		private final BuiltinExpressionEvaluatorFactory builtinEvaluatorFactory;
+		
+		public FillTableSubreportFactory(TableSubreport subreport, TableJasperReport compiledTableReport, 
+				BuiltinExpressionEvaluatorFactory builtinEvaluatorFactory)
+		{
+			this.subreport = subreport;
+			this.compiledTableReport = compiledTableReport;
+			this.builtinEvaluatorFactory = builtinEvaluatorFactory;
+		}
+
+		public FillTableSubreport createFillSubreport()
+		{
+			return new FillTableSubreport(
+						fillContext, subreport, factory, compiledTableReport,
+						builtinEvaluatorFactory
+						);
+		}
+	}
+	
 }

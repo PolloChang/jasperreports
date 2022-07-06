@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.fill.JRFillVariable;
  * Base crosstab row/column group implementation used at fill time. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillCrosstabGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRFillCrosstabGroup implements JRCrosstabGroup
 {
@@ -56,34 +55,46 @@ public abstract class JRFillCrosstabGroup implements JRCrosstabGroup
 		variable = factory.getVariable(group.getVariable());
 	}
 
+	@Override
 	public String getName()
 	{
 		return parentGroup.getName();
 	}
 
+	@Override
 	public CrosstabTotalPositionEnum getTotalPositionValue()
 	{
 		return parentGroup.getTotalPositionValue();
 	}
 
+	@Override
 	public boolean hasTotal()
 	{
 		return parentGroup.hasTotal();
 	}
 
+	@Override
 	public JRCrosstabBucket getBucket()
 	{
 		return parentGroup.getBucket();
 	}
 
+	@Override
 	public JRCellContents getHeader()
 	{
 		return header;
 	}
 
+	@Override
 	public JRCellContents getTotalHeader()
 	{
 		return totalHeader;
+	}
+
+	@Override
+	public Boolean getMergeHeaderCells()
+	{
+		return parentGroup.getMergeHeaderCells();
 	}
 
 	public JRFillCellContents getFillHeader()
@@ -96,6 +107,7 @@ public abstract class JRFillCrosstabGroup implements JRCrosstabGroup
 		return totalHeader;
 	}
 	
+	@Override
 	public JRVariable getVariable()
 	{
 		return variable;
@@ -106,9 +118,7 @@ public abstract class JRFillCrosstabGroup implements JRCrosstabGroup
 		return variable;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();

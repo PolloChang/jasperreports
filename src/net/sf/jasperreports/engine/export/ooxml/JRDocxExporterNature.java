@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@
 
 package net.sf.jasperreports.engine.export.ooxml;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
@@ -40,8 +39,7 @@ import net.sf.jasperreports.export.DocxReportConfiguration;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRDocxExporterNature.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 {
@@ -58,17 +56,7 @@ public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 		this.deepGrid = deepGrid;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JRDocxExporterNature(JasperReportsContext, ExporterFilter, boolean)}.
-	 */
-	public JRDocxExporterNature(ExporterFilter filter, boolean deepGrid)
-	{
-		this(DefaultJasperReportsContext.getInstance(), filter, deepGrid);
-	}
-
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isToExport(JRPrintElement element)
 	{
 		boolean isToExport = true;
@@ -86,9 +74,7 @@ public class JRDocxExporterNature extends JROfficeOpenXmlExporterNature
 		return isToExport && super.isToExport(element);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isDeep(JRPrintFrame frame)
 	{
 		if (

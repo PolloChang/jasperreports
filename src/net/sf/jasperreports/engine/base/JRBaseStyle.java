@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,25 +43,26 @@ import net.sf.jasperreports.engine.JRStyleSetter;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.LineSpacingEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRPenUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.engine.util.ObjectUtils;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRBaseStyle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport, Deduplicable
 {
 
+	public static final String EXCEPTION_MESSAGE_KEY_CIRCULAR_DEPENDENCY = "engine.style.circular.dependency";
+	
 	/**
 	 *
 	 */
@@ -81,8 +82,15 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	
 	public static final String PROPERTY_FORECOLOR = "forecolor";
 	
+	/**
+	 * @deprecated Replaced by {@link #PROPERTY_HORIZONTAL_TEXT_ALIGNMENT} and {@link #PROPERTY_HORIZONTAL_IMAGE_ALIGNMENT}.
+	 */
 	public static final String PROPERTY_HORIZONTAL_ALIGNMENT = "horizontalAlignment";
 	
+	public static final String PROPERTY_HORIZONTAL_TEXT_ALIGNMENT = "horizontalTextAlignment";
+
+	public static final String PROPERTY_HORIZONTAL_IMAGE_ALIGNMENT = "horizontalImageAlignment";
+
 	public static final String PROPERTY_ITALIC = "isItalic";
 	
 	/**
@@ -112,13 +120,20 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	
 	public static final String PROPERTY_UNDERLINE = "isUnderline";
 	
+	/**
+	 * @deprecated Replaced by {@link #PROPERTY_VERTICAL_TEXT_ALIGNMENT} and {@value #PROPERTY_VERTICAL_IMAGE_ALIGNMENT}.
+	 */
 	public static final String PROPERTY_VERTICAL_ALIGNMENT = "verticalAlignment";
+	
+	public static final String PROPERTY_VERTICAL_TEXT_ALIGNMENT = "verticalTextAlignment";
+	
+	public static final String PROPERTY_VERTICAL_IMAGE_ALIGNMENT = "verticalImageAlignment";
 
 
 	/**
 	 *
 	 */
-	protected JRDefaultStyleProvider defaultStyleProvider;//FIXME this is never set; it has been like that for a long time; trying to solve causes a stack overflow
+	protected final JRDefaultStyleProvider defaultStyleProvider;
 	protected JRStyle parentStyle;
 	protected String parentStyleNameReference;
 
@@ -140,8 +155,10 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	protected Integer radius;
 
 	protected ScaleImageEnum scaleImageValue;
-	protected HorizontalAlignEnum horizontalAlignmentValue;
-	protected VerticalAlignEnum verticalAlignmentValue;
+	protected HorizontalTextAlignEnum horizontalTextAlign;
+	protected VerticalTextAlignEnum verticalTextAlign;
+	protected HorizontalImageAlignEnum horizontalImageAlign;
+	protected VerticalImageAlignEnum verticalImageAlign;
 
 	protected JRLineBox lineBox;
 	protected JRParagraph paragraph;
@@ -170,6 +187,16 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	 */
 	public JRBaseStyle()
 	{
+		this((JRDefaultStyleProvider)null);
+	}
+
+	/**
+	 *
+	 */
+	public JRBaseStyle(JRDefaultStyleProvider defaultStyleProvider)
+	{
+		this.defaultStyleProvider = defaultStyleProvider;
+		
 		linePen = new JRBasePen(this);
 		lineBox = new JRBaseLineBox(this);
 		paragraph = new JRBaseParagraph(this);
@@ -180,11 +207,19 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	 */
 	public JRBaseStyle(String name)
 	{
+		this((JRDefaultStyleProvider)null);
+		
 		this.name = name;
+	}
 
-		linePen = new JRBasePen(this);
-		lineBox = new JRBaseLineBox(this);
-		paragraph = new JRBaseParagraph(this);
+	/**
+	 *
+	 */
+	public JRBaseStyle(JRDefaultStyleProvider defaultStyleProvider, String name)
+	{
+		this(defaultStyleProvider);
+		
+		this.name = name;
 	}
 
 	/**
@@ -194,13 +229,17 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	{
 		name = style.getName();
 		
+		defaultStyleProvider = factory.getDefaultStyleProvider();
+		
 		factory.setStyle(new JRStyleSetter()
 		{
+			@Override
 			public void setStyle(JRStyle aStyle)
 			{
 				setParentStyle(aStyle);
 			}
 
+			@Override
 			public void setStyleNameReference(String name)
 			{
 				parentStyleNameReference = name;
@@ -219,8 +258,10 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		radius = style.getOwnRadius();
 
 		scaleImageValue = style.getOwnScaleImageValue();
-		horizontalAlignmentValue = style.getOwnHorizontalAlignmentValue();
-		verticalAlignmentValue = style.getOwnVerticalAlignmentValue();
+		horizontalTextAlign = style.getOwnHorizontalTextAlign();
+		verticalTextAlign = style.getOwnVerticalTextAlign();
+		horizontalImageAlign = style.getOwnHorizontalImageAlign();
+		verticalImageAlign = style.getOwnVerticalImageAlign();
 
 		lineBox = style.getLineBox().clone(this);
 		paragraph = style.getParagraph().clone(this);
@@ -263,15 +304,16 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		{
 			if (ancestor == this)
 			{
-				throw new JRRuntimeException("Circular dependency detected for style " + getName());
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_CIRCULAR_DEPENDENCY,
+						new Object[]{getName()});
 			}
 		}
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return defaultStyleProvider;
@@ -280,14 +322,23 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	/**
 	 *
 	 */
+	protected StyleResolver getStyleResolver() 
+	{
+		if (getDefaultStyleProvider() != null)
+		{
+			return getDefaultStyleProvider().getStyleResolver();
+		}
+		
+		return StyleResolver.getInstance();
+	}
+
+	@Override
 	public JRStyle getStyle()
 	{
 		return parentStyle;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -306,136 +357,151 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		this.name = newName;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public boolean isDefault()
 	{
 		return isDefault;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getForecolor()
 	{
-		return JRStyleResolver.getForecolor(this);
+		return getStyleResolver().getForecolor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnForecolor()
 	{
 		return forecolor;
 	}
 
+	@Override
 	public Color getBackcolor()
 	{
-		return JRStyleResolver.getBackcolor(this);
+		return getStyleResolver().getBackcolor(this);
 	}
 
+	@Override
 	public Color getOwnBackcolor()
 	{
 		return backcolor;
 	}
 
+	@Override
 	public JRPen getLinePen()
 	{
 		return linePen;
 	}
 
+	@Override
 	public FillEnum getFillValue()
 	{
-		return JRStyleResolver.getFillValue(this);
+		return getStyleResolver().getFillValue(this);
 	}
 
+	@Override
 	public FillEnum getOwnFillValue()
 	{
 		return fillValue;
 	}
 
+	@Override
 	public Integer getRadius()
 	{
-		return JRStyleResolver.getRadius(this);
+		return getStyleResolver().getRadius(this);
 	}
 
+	@Override
 	public Integer getOwnRadius()
 	{
 		return radius;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public ScaleImageEnum getScaleImageValue()
 	{
-		return JRStyleResolver.getScaleImageValue(this);
+		return getStyleResolver().getScaleImageValue(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public ScaleImageEnum getOwnScaleImageValue()
 	{
 		return this.scaleImageValue;
 	}
 
-	public HorizontalAlignEnum getHorizontalAlignmentValue()
+	@Override
+	public HorizontalTextAlignEnum getHorizontalTextAlign()
 	{
-		return JRStyleResolver.getHorizontalAlignmentValue(this);
+		return getStyleResolver().getHorizontalTextAlign(this);
+	}
+		
+	@Override
+	public HorizontalTextAlignEnum getOwnHorizontalTextAlign()
+	{
+		return horizontalTextAlign;
+	}
+		
+	@Override
+	public VerticalTextAlignEnum getVerticalTextAlign()
+	{
+		return getStyleResolver().getVerticalTextAlign(this);
+	}
+		
+	@Override
+	public VerticalTextAlignEnum getOwnVerticalTextAlign()
+	{
+		return verticalTextAlign;
 	}
 
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue()
+	@Override
+	public HorizontalImageAlignEnum getHorizontalImageAlign()
 	{
-		return horizontalAlignmentValue;
+		return getStyleResolver().getHorizontalImageAlign(this);
 	}
-
-	public VerticalAlignEnum getVerticalAlignmentValue()
+		
+	@Override
+	public HorizontalImageAlignEnum getOwnHorizontalImageAlign()
 	{
-		return JRStyleResolver.getVerticalAlignmentValue(this);
+		return horizontalImageAlign;
 	}
-
-	public VerticalAlignEnum getOwnVerticalAlignmentValue()
+		
+	@Override
+	public VerticalImageAlignEnum getVerticalImageAlign()
 	{
-		return verticalAlignmentValue;
+		return getStyleResolver().getVerticalImageAlign(this);
 	}
-
-	/**
-	 *
-	 */
+		
+	@Override
+	public VerticalImageAlignEnum getOwnVerticalImageAlign()
+	{
+		return verticalImageAlign;
+	}
+		
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRParagraph getParagraph()
 	{
 		return paragraph;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public RotationEnum getRotationValue()
 	{
-		return JRStyleResolver.getRotationValue(this);
+		return getStyleResolver().getRotationValue(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public RotationEnum getOwnRotationValue()
 	{
 		return this.rotationValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRotation(RotationEnum rotationValue)
 	{
 		Object old = this.rotationValue;
@@ -443,179 +509,164 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_ROTATION, old, this.rotationValue);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#getLineSpacing()}.
-	 */
-	public LineSpacingEnum getLineSpacingValue()
-	{
-		return getParagraph().getLineSpacing();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#getOwnLineSpacing()}.
-	 */
-	public LineSpacingEnum getOwnLineSpacingValue()
-	{
-		return getParagraph().getOwnLineSpacing();
-	}
-
+	@Override
 	public String getMarkup()
 	{
-		return JRStyleResolver.getMarkup(this);
+		return getStyleResolver().getMarkup(this);
 	}
 
+	@Override
 	public String getOwnMarkup()
 	{
 		return markup;
 	}
 
+	@Override
 	public Boolean isBlankWhenNull()
 	{
-		return JRStyleResolver.isBlankWhenNull(this);
+		return getStyleResolver().isBlankWhenNull(this);
 	}
 
+	@Override
 	public Boolean isOwnBlankWhenNull()
 	{
 		return isBlankWhenNull;
 	}
 
 
+	@Override
 	public String getFontName()
 	{
-		return JRStyleResolver.getFontName(this);
+		return getStyleResolver().getFontName(this);
 	}
 
+	@Override
 	public String getOwnFontName()
 	{
 		return fontName;
 	}
 
+	@Override
 	public Boolean isBold()
 	{
-		return JRStyleResolver.isBold(this);
+		return getStyleResolver().isBold(this);
 	}
 
+	@Override
 	public Boolean isOwnBold()
 	{
 		return isBold;
 	}
 
+	@Override
 	public Boolean isItalic()
 	{
-		return JRStyleResolver.isItalic(this);
+		return getStyleResolver().isItalic(this);
 	}
 
+	@Override
 	public Boolean isOwnItalic()
 	{
 		return isItalic;
 	}
 
+	@Override
 	public Boolean isUnderline()
 	{
-		return JRStyleResolver.isUnderline(this);
+		return getStyleResolver().isUnderline(this);
 	}
 
+	@Override
 	public Boolean isOwnUnderline()
 	{
 		return isUnderline;
 	}
 
+	@Override
 	public Boolean isStrikeThrough()
 	{
-		return JRStyleResolver.isStrikeThrough(this);
+		return getStyleResolver().isStrikeThrough(this);
 	}
 
+	@Override
 	public Boolean isOwnStrikeThrough()
 	{
 		return isStrikeThrough;
 	}
 
+	@Override
 	public Float getFontsize()
 	{
-		return JRStyleResolver.getFontsize(this);
+		return getStyleResolver().getFontsize(this);
 	}
 
+	@Override
 	public Float getOwnFontsize()
 	{
 		return fontsize;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #getFontsize()}.
-	 */
-	public Integer getFontSize()
-	{
-		Float fontSize = getFontsize();
-		return fontSize == null ? null : fontSize.intValue();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #getOwnFontsize()}.
-	 */
-	public Integer getOwnFontSize()
-	{
-		return fontsize == null ? null : fontsize.intValue();
-	}
-
+	@Override
 	public String getPdfFontName()
 	{
-		return JRStyleResolver.getPdfFontName(this);
+		return getStyleResolver().getPdfFontName(this);
 	}
 
+	@Override
 	public String getOwnPdfFontName()
 	{
 		return pdfFontName;
 	}
 
+	@Override
 	public String getPdfEncoding()
 	{
-		return JRStyleResolver.getPdfEncoding(this);
+		return getStyleResolver().getPdfEncoding(this);
 	}
 
+	@Override
 	public String getOwnPdfEncoding()
 	{
 		return pdfEncoding;
 	}
 
+	@Override
 	public Boolean isPdfEmbedded()
 	{
-		return JRStyleResolver.isPdfEmbedded(this);
+		return getStyleResolver().isPdfEmbedded(this);
 	}
 
+	@Override
 	public Boolean isOwnPdfEmbedded()
 	{
 		return isPdfEmbedded;
 	}
 
+	@Override
 	public String getPattern()
 	{
-		return JRStyleResolver.getPattern(this);
+		return getStyleResolver().getPattern(this);
 	}
 
+	@Override
 	public String getOwnPattern()
 	{
 		return pattern;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getModeValue(this);
+		return getStyleResolver().getModeValue(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getOwnModeValue()
 	{
 		return modeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setForecolor(Color forecolor)
 	{
 		Object old = this.forecolor;
@@ -623,9 +674,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_FORECOLOR, old, this.forecolor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setBackcolor(Color backcolor)
 	{
 		Object old = this.backcolor;
@@ -633,9 +682,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_BACKCOLOR, old, this.backcolor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMode(ModeEnum modeValue)
 	{
 		Object old = this.modeValue;
@@ -643,9 +690,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_MODE, old, this.modeValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setFill(FillEnum fillValue)
 	{
 		Object old = this.fillValue;
@@ -653,17 +698,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_FILL, old, this.fillValue);
 	}
 
-	/**
-	 *
-	 */
-	public void setRadius(int radius)
-	{
-		setRadius(Integer.valueOf(radius));
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setRadius(Integer radius)
 	{
 		Object old = this.radius;
@@ -671,9 +706,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_RADIUS, old, this.radius);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setScaleImage(ScaleImageEnum scaleImageValue)
 	{
 		Object old = this.scaleImageValue;
@@ -681,29 +714,39 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_SCALE_IMAGE, old, this.scaleImageValue);
 	}
 
-	/**
-	 *
-	 */
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlignmentValue)
+	@Override
+	public void setHorizontalImageAlign(HorizontalImageAlignEnum horizontalImageAlign)
 	{
-		Object old = this.horizontalAlignmentValue;
-		this.horizontalAlignmentValue = horizontalAlignmentValue;
-		getEventSupport().firePropertyChange(PROPERTY_HORIZONTAL_ALIGNMENT, old, this.horizontalAlignmentValue);
+		HorizontalImageAlignEnum old = this.horizontalImageAlign;
+		this.horizontalImageAlign = horizontalImageAlign;
+		getEventSupport().firePropertyChange(PROPERTY_HORIZONTAL_IMAGE_ALIGNMENT, old, this.horizontalImageAlign);
 	}
 
-	/**
-	 *
-	 */
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlignmentValue)
+	@Override
+	public void setVerticalImageAlign(VerticalImageAlignEnum verticalImageAlign)
 	{
-		Object old = this.verticalAlignmentValue;
-		this.verticalAlignmentValue = verticalAlignmentValue;
-		getEventSupport().firePropertyChange(PROPERTY_VERTICAL_ALIGNMENT, old, this.verticalAlignmentValue);
+		VerticalImageAlignEnum old = this.verticalImageAlign;
+		this.verticalImageAlign = verticalImageAlign;
+		getEventSupport().firePropertyChange(PROPERTY_VERTICAL_IMAGE_ALIGNMENT, old, this.verticalImageAlign);
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public void setHorizontalTextAlign(HorizontalTextAlignEnum horizontalTextAlign)
+	{
+		HorizontalTextAlignEnum old = this.horizontalTextAlign;
+		this.horizontalTextAlign = horizontalTextAlign;
+		getEventSupport().firePropertyChange(PROPERTY_HORIZONTAL_TEXT_ALIGNMENT, old, this.horizontalTextAlign);
+	}
+
+	@Override
+	public void setVerticalTextAlign(VerticalTextAlignEnum verticalTextAlign)
+	{
+		VerticalTextAlignEnum old = this.verticalTextAlign;
+		this.verticalTextAlign = verticalTextAlign;
+		getEventSupport().firePropertyChange(PROPERTY_VERTICAL_TEXT_ALIGNMENT, old, this.verticalTextAlign);
+	}
+
+	@Override
 	public void setFontName(String fontName)
 	{
 		Object old = this.fontName;
@@ -711,17 +754,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_FONT_NAME, old, this.fontName);
 	}
 
-	/**
-	 *
-	 */
-	public void setBold(boolean bold)
-	{
-		setBold(bold ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setBold(Boolean bold)
 	{
 		Object old = this.isBold;
@@ -729,17 +762,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_BOLD, old, this.isBold);
 	}
 
-	/**
-	 *
-	 */
-	public void setItalic(boolean italic)
-	{
-		setItalic(italic ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setItalic(Boolean italic)
 	{
 		Object old = this.isItalic;
@@ -747,17 +770,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_ITALIC, old, this.isItalic);
 	}
 
-	/**
-	 *
-	 */
-	public void setPdfEmbedded(boolean pdfEmbedded)
-	{
-		setPdfEmbedded(pdfEmbedded ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setPdfEmbedded(Boolean pdfEmbedded)
 	{
 		Object old = this.isPdfEmbedded;
@@ -765,17 +778,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_PDF_EMBEDDED, old, this.isPdfEmbedded);
 	}
 
-	/**
-	 *
-	 */
-	public void setStrikeThrough(boolean strikeThrough)
-	{
-		setStrikeThrough(strikeThrough ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setStrikeThrough(Boolean strikeThrough)
 	{
 		Object old = this.isStrikeThrough;
@@ -783,9 +786,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_STRIKE_THROUGH, old, this.isStrikeThrough);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMarkup(String markup)
 	{
 		Object old = this.markup;
@@ -793,17 +794,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_MARKUP, old, this.markup);
 	}
 
-	/**
-	 *
-	 */
-	public void setBlankWhenNull(boolean isBlankWhenNull)
-	{
-		setBlankWhenNull(isBlankWhenNull ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setBlankWhenNull(Boolean isBlankWhenNull)
 	{
 		Object old = this.isBlankWhenNull;
@@ -811,17 +802,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_BLANK_WHEN_NULL, old, this.isBlankWhenNull);
 	}
 
-	/**
-	 *
-	 */
-	public void setUnderline(boolean underline)
-	{
-		setUnderline(underline ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setUnderline(Boolean underline)
 	{
 		Object old = this.isUnderline;
@@ -829,17 +810,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_UNDERLINE, old, this.isUnderline);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#setLineSpacing(LineSpacingEnum)}.
-	 */
-	public void setLineSpacing(LineSpacingEnum lineSpacing)
-	{
-		getParagraph().setLineSpacing(lineSpacing);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setPattern(String pattern)
 	{
 		Object old = this.pattern;
@@ -847,9 +818,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_PATTERN, old, this.pattern);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPdfEncoding(String pdfEncoding)
 	{
 		Object old = this.pdfEncoding;
@@ -857,9 +826,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_PDF_ENCODING, old, this.pdfEncoding);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPdfFontName(String pdfFontName)
 	{
 		Object old = this.pdfFontName;
@@ -867,9 +834,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_PDF_FONT_NAME, old, this.pdfFontName);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setFontSize(Float fontSize)
 	{
 		Object old = this.fontsize;
@@ -877,46 +842,25 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_FONT_SIZE, old, this.fontsize);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #setFontSize(Float)}.
-	 */
-	public void setFontSize(int fontSize)
-	{
-		setFontSize((float)fontSize);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #setFontSize(Float)}.
-	 */
-	public void setFontSize(Integer fontSize)
-	{
-		setFontSize(fontSize == null ? null : fontSize.floatValue());
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public JRConditionalStyle[] getConditionalStyles()
 	{
 		return conditionalStyles;
 	}
 
+	@Override
 	public String getStyleNameReference()
 	{
 		return parentStyleNameReference;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Float getDefaultLineWidth()
 	{
 		return null;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getDefaultLineColor()
 	{
 		return getForecolor();
@@ -925,6 +869,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -958,6 +903,14 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	/**
 	 * @deprecated
 	 */
+	private net.sf.jasperreports.engine.type.HorizontalAlignEnum horizontalAlignmentValue;
+	/**
+	 * @deprecated
+	 */
+	private net.sf.jasperreports.engine.type.VerticalAlignEnum verticalAlignmentValue;
+	/**
+	 * @deprecated
+	 */
 	private Byte rotation;
 	/**
 	 * @deprecated
@@ -967,70 +920,6 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	 * @deprecated
 	 */
 	private LineSpacingEnum lineSpacingValue;
-	/**
-	 * @deprecated
-	 */
-	private Byte pen;
-	/**
-	 * @deprecated
-	 */
-	private Byte border;
-	/**
-	 * @deprecated
-	 */
-	private Byte topBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte leftBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte bottomBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte rightBorder;
-	/**
-	 * @deprecated
-	 */
-	private Color borderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color topBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color leftBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color bottomBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color rightBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Integer padding;
-	/**
-	 * @deprecated
-	 */
-	private Integer topPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer leftPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer bottomPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer rightPadding;
 	/**
 	 * @deprecated
 	 */
@@ -1048,6 +937,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 	 */
 	private Integer fontSize;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -1055,8 +945,8 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
 			modeValue = ModeEnum.getByValue(mode);
-			horizontalAlignmentValue = HorizontalAlignEnum.getByValue(horizontalAlignment);
-			verticalAlignmentValue = VerticalAlignEnum.getByValue(verticalAlignment);
+			horizontalAlignmentValue = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getByValue(horizontalAlignment);
+			verticalAlignmentValue = net.sf.jasperreports.engine.type.VerticalAlignEnum.getByValue(verticalAlignment);
 			rotationValue = RotationEnum.getByValue(rotation);
 			lineSpacingValue = LineSpacingEnum.getByValue(lineSpacing);
 			scaleImageValue = ScaleImageEnum.getByValue(scaleImage);
@@ -1071,54 +961,9 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 			fill = null;
 		}
 
-		if (linePen == null)
-		{
-			linePen = new JRBasePen(this);
-			JRPenUtil.setLinePenFromPen(pen, linePen);
-			pen = null;
-		}
-
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setToBox(
-				border,
-				topBorder,
-				leftBorder,
-				bottomBorder,
-				rightBorder,
-				borderColor,
-				topBorderColor,
-				leftBorderColor,
-				bottomBorderColor,
-				rightBorderColor,
-				padding,
-				topPadding,
-				leftPadding,
-				bottomPadding,
-				rightPadding,
-				lineBox
-				);
-			border = null;
-			topBorder = null;
-			leftBorder = null;
-			bottomBorder = null;
-			rightBorder = null;
-			borderColor = null;
-			topBorderColor = null;
-			leftBorderColor = null;
-			bottomBorderColor = null;
-			rightBorderColor = null;
-			padding = null;
-			topPadding = null;
-			leftPadding = null;
-			bottomPadding = null;
-			rightPadding = null;
-		}
-		
 		if (isStyledText != null)
 		{
-			markup = isStyledText.booleanValue() ? JRCommonText.MARKUP_STYLED_TEXT : JRCommonText.MARKUP_NONE;
+			markup = isStyledText ? JRCommonText.MARKUP_STYLED_TEXT : JRCommonText.MARKUP_NONE;
 			isStyledText = null;
 		}
 
@@ -1135,8 +980,21 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 
 			fontSize = null;
 		}
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_6_0_2)
+		{
+			horizontalTextAlign = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getHorizontalTextAlignEnum(horizontalAlignmentValue);
+			verticalTextAlign = net.sf.jasperreports.engine.type.VerticalAlignEnum.getVerticalTextAlignEnum(verticalAlignmentValue);
+
+			horizontalImageAlign = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getHorizontalImageAlignEnum(horizontalAlignmentValue);
+			verticalImageAlign = net.sf.jasperreports.engine.type.VerticalAlignEnum.getVerticalImageAlignEnum(verticalAlignmentValue);
+
+			horizontalAlignmentValue = null;
+			verticalAlignmentValue = null;
+		}
 	}
 	
+	@Override
 	public Object clone()
 	{
 		JRBaseStyle clone = null;
@@ -1158,6 +1016,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		return clone;
 	}
 
+	@Override
 	public int getHashCode()
 	{
 		ObjectUtils.HashCode hash = ObjectUtils.hash();
@@ -1182,8 +1041,10 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		hash.add(fillValue);
 		hash.add(radius);
 		hash.add(scaleImageValue);
-		hash.add(horizontalAlignmentValue);
-		hash.add(verticalAlignmentValue);
+		hash.add(horizontalTextAlign);
+		hash.add(verticalTextAlign);
+		hash.add(horizontalImageAlign);
+		hash.add(verticalImageAlign);
 		hash.addIdentical(lineBox); 
 		hash.addIdentical(paragraph); 
 		hash.add(fontName);
@@ -1201,6 +1062,7 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 		hash.add(isBlankWhenNull);
 	}
 
+	@Override
 	public boolean isIdentical(Object object)
 	{
 		if (this == object)
@@ -1233,8 +1095,10 @@ public class JRBaseStyle implements JRStyle, Serializable, JRChangeEventsSupport
 				&& ObjectUtils.equals(fillValue, style.fillValue)
 				&& ObjectUtils.equals(radius, style.radius)
 				&& ObjectUtils.equals(scaleImageValue, style.scaleImageValue)
-				&& ObjectUtils.equals(horizontalAlignmentValue, style.horizontalAlignmentValue)
-				&& ObjectUtils.equals(verticalAlignmentValue, style.verticalAlignmentValue)
+				&& ObjectUtils.equals(horizontalTextAlign, style.horizontalTextAlign)
+				&& ObjectUtils.equals(verticalTextAlign, style.verticalTextAlign)
+				&& ObjectUtils.equals(horizontalImageAlign, style.horizontalImageAlign)
+				&& ObjectUtils.equals(verticalImageAlign, style.verticalImageAlign)
 				&& ObjectUtils.identical(lineBox, style.lineBox)
 				&& ObjectUtils.identical(paragraph, style.paragraph)
 				&& ObjectUtils.equals(fontName, style.fontName)

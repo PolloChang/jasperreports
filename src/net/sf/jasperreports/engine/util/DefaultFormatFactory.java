@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.util;
 
+import java.lang.reflect.InvocationTargetException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -35,10 +36,11 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultFormatFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultFormatFactory implements FormatFactory
 {
+	public static final String EXCEPTION_MESSAGE_KEY_FACTORY_INSTANCE_ERROR = "util.format.factory.instance.error";
+	public static final String EXCEPTION_MESSAGE_KEY_FACTORY_LOADING_ERROR = "util.format.factory.loading.error";
 
 	/**
 	 * Used in the date pattern to specify the default style.
@@ -80,7 +82,13 @@ public class DefaultFormatFactory implements FormatFactory
 	 */
 	public static final String STANDARD_DATE_FORMAT_SEPARATOR = ",";
 
+	/**
+	 * Number pattern to show integer value as duration expressed in hours:minutes:seconds.
+	 */
+	public static final String STANDARD_NUMBER_FORMAT_DURATION = "[h]:mm:ss";
 
+
+	@Override
 	public DateFormat createDateFormat(String pattern, Locale locale, TimeZone tz)
 	{
 		int[] dateStyle = null;
@@ -197,23 +205,31 @@ public class DefaultFormatFactory implements FormatFactory
 	}
 	
 	
+	@Override
 	public NumberFormat createNumberFormat(String pattern, Locale locale)
 	{
 		NumberFormat format = null;
 		if (pattern != null && pattern.trim().length() > 0)
 		{
-			if (locale == null)
+			if (STANDARD_NUMBER_FORMAT_DURATION.equals(pattern))
 			{
-				format = NumberFormat.getNumberInstance();
+				format = new DurationNumberFormat();
 			}
 			else
 			{
-				format = NumberFormat.getNumberInstance(locale);
-			}
-			
-			if (format instanceof DecimalFormat)
-			{
-				((DecimalFormat) format).applyPattern(pattern);
+				if (locale == null)
+				{
+					format = NumberFormat.getNumberInstance();
+				}
+				else
+				{
+					format = NumberFormat.getNumberInstance(locale);
+				}
+				
+				if (format instanceof DecimalFormat)
+				{
+					((DecimalFormat) format).applyPattern(pattern);
+				}
 			}
 		}
 		return format;
@@ -229,15 +245,24 @@ public class DefaultFormatFactory implements FormatFactory
 			try
 			{
 				Class<?> formatFactoryClass = JRClassLoader.loadClassForName(formatFactoryClassName);	
-				formatFactory = (FormatFactory) formatFactoryClass.newInstance();
+				formatFactory = (FormatFactory) formatFactoryClass.getDeclaredConstructor().newInstance();
 			}
 			catch (ClassNotFoundException e)
 			{
-				throw new JRRuntimeException("Error loading format factory class : " + formatFactoryClassName, e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_FACTORY_LOADING_ERROR,
+						new Object[]{formatFactoryClassName},
+						e);
 			}
-			catch (Exception e)
+			catch (NoSuchMethodException | InvocationTargetException 
+				| IllegalAccessException | InstantiationException e)
 			{
-				throw new JRRuntimeException("Error creating format factory instance : " + formatFactoryClassName, e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_FACTORY_INSTANCE_ERROR,
+						new Object[]{formatFactoryClassName},
+						e);
 			}
 		}
 		else

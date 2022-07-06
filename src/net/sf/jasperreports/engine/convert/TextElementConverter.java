@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,16 +31,12 @@
  */
 package net.sf.jasperreports.engine.convert;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRTextElement;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
-import net.sf.jasperreports.engine.util.JRTextMeasurerUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: TextElementConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class TextElementConverter extends ElementConverter
 {
@@ -58,7 +54,7 @@ public abstract class TextElementConverter extends ElementConverter
 		printText.setBold(textElement.isOwnBold());
 		printText.setFontName(textElement.getOwnFontName());
 		printText.setFontSize(textElement.getOwnFontsize());
-		printText.setHorizontalAlignment(textElement.getOwnHorizontalAlignmentValue());
+		printText.setHorizontalTextAlign(textElement.getOwnHorizontalTextAlign());
 		printText.setItalic(textElement.isOwnItalic());
 		printText.setPdfEmbedded(textElement.isOwnPdfEmbedded());
 		printText.setPdfEncoding(textElement.getOwnPdfEncoding());
@@ -67,16 +63,7 @@ public abstract class TextElementConverter extends ElementConverter
 		printText.setStrikeThrough(textElement.isOwnStrikeThrough());
 		printText.setMarkup(textElement.getOwnMarkup());
 		printText.setUnderline(textElement.isOwnUnderline());
-		printText.setVerticalAlignment(textElement.getOwnVerticalAlignmentValue());
-	}
-
-	
-	/**
-	 * @deprecated Replaced by {@link JRTextMeasurerUtil#measureTextElement(JRPrintText)}.
-	 */
-	public static void measureTextElement(JRPrintText printText)
-	{
-		JRTextMeasurerUtil.getInstance(DefaultJasperReportsContext.getInstance()).measureTextElement(printText);
+		printText.setVerticalTextAlign(textElement.getOwnVerticalTextAlign());
 	}
 
 

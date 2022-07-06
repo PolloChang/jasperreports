@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,11 +27,9 @@ import java.util.List;
 
 import net.sf.jasperreports.engine.JRCloneable;
 import net.sf.jasperreports.engine.JRExpression;
-import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DataLevelBucket.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface DataLevelBucket extends JRCloneable
 {
@@ -47,22 +45,6 @@ public interface DataLevelBucket extends JRCloneable
 	 */
 	public String getValueClassName();
 		
-	/**
-	 * Returns the bucket sorting type.
-	 * <p>
-	 * The possible values are:
-	 * <ul>
-	 * 	<li>{@link SortOrderEnum#ASCENDING SortOrderEnum.ASCENDING}</li>
-	 * 	<li>{@link SortOrderEnum#DESCENDING SortOrderEnum.DESCENDING}</li>
-	 * </ul>
-	 * 
-	 * @return the bucket sorting type
-	 * 
-	 * @deprecated replaced by {@link #getOrder()}
-	 */
-	@Deprecated
-	public SortOrderEnum getOrderValue();
-
 	/**
 	 * Returns the bucket sorting type.
 	 * <p>
@@ -84,6 +66,13 @@ public interface DataLevelBucket extends JRCloneable
 	 * @return the grouping expression
 	 */
 	public JRExpression getExpression();
+	
+	/**
+	 * Optional expression that provides labels for buckets.
+	 * 
+	 * @return the bucket label expression
+	 */
+	public JRExpression getLabelExpression();
 	
 	
 	/**

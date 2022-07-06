@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,17 +26,18 @@ package net.sf.jasperreports.engine.util;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ValuePropertiesWrapper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ValuePropertiesWrapper implements Comparable<ValuePropertiesWrapper>
 {
 
 	private final Object value;
+	private final String label;
 	private final Object[] propertyValues;
 	
-	public ValuePropertiesWrapper(Object value, Object[] propertyValues)
+	public ValuePropertiesWrapper(Object value, String label, Object[] propertyValues)
 	{
 		this.value = value;
+		this.label = label;
 		this.propertyValues = propertyValues;
 	}
 
@@ -68,6 +69,11 @@ public class ValuePropertiesWrapper implements Comparable<ValuePropertiesWrapper
 	public Object getValue()
 	{
 		return value;
+	}
+	
+	public String getLabel()
+	{
+		return label;
 	}
 
 	public Object[] getPropertyValues()

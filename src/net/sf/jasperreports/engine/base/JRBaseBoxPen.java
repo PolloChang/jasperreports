@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,12 +29,10 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseBoxPen.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseBoxPen extends JRBasePen implements JRBoxPen
 {
@@ -56,50 +54,37 @@ public class JRBaseBoxPen extends JRBasePen implements JRBoxPen
 		this.lineBox = box;
 	}
 	
-	
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getBox() 
 	{
 		return lineBox;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Float getLineWidth()
 	{
-		return JRStyleResolver.getLineWidth(this, penContainer.getDefaultLineWidth());
+		return getStyleResolver().getLineWidth(this, penContainer.getDefaultLineWidth());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public LineStyleEnum getLineStyleValue()
 	{
-		return JRStyleResolver.getLineStyleValue(this);
+		return getStyleResolver().getLineStyleValue(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getLineColor()
 	{
-		return JRStyleResolver.getLineColor(this, penContainer.getDefaultLineColor());
+		return getStyleResolver().getLineColor(this, penContainer.getDefaultLineColor());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPen getPen(JRLineBox box) 
 	{
 		return box.getPen();
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public JRBoxPen clone(JRLineBox lineBox)
 	{
 		JRBaseBoxPen clone = (JRBaseBoxPen)super.clone(lineBox);

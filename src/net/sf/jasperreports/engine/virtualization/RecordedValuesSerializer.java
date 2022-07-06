@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.fill.JRRecordedValues;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: RecordedValuesSerializer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RecordedValuesSerializer implements ObjectSerializer<JRRecordedValues>
 {
@@ -99,7 +98,7 @@ public class RecordedValuesSerializer implements ObjectSerializer<JRRecordedValu
 	public JRRecordedValues read(VirtualizationInput in) throws IOException
 	{
 		int evalTimesCount = in.readIntCompressed();
-		HashSet<JREvaluationTime> evaluationTimes = new HashSet<JREvaluationTime>(evalTimesCount * 4 / 3 + 1, .75f);
+		HashSet<JREvaluationTime> evaluationTimes = new HashSet<>(evalTimesCount * 4 / 3 + 1, .75f);
 		for (int i = 0; i < evalTimesCount; i++)
 		{
 			evaluationTimes.add((JREvaluationTime) in.readJRObject());
@@ -120,7 +119,7 @@ public class RecordedValuesSerializer implements ObjectSerializer<JRRecordedValu
 			return null;
 		}
 		
-		Map<String, Object> map = new HashMap<String, Object>(size * 4 / 3 + 1, .75f);
+		Map<String, Object> map = new HashMap<>(size * 4 / 3 + 1, .75f);
 		for (int i = 0; i < size - 1; i++)
 		{
 			String key = (String) in.readJRObject();

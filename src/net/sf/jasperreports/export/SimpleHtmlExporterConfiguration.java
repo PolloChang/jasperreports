@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,6 @@ package net.sf.jasperreports.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleHtmlExporterConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleHtmlExporterConfiguration extends SimpleExporterConfiguration implements HtmlExporterConfiguration
 {
@@ -44,9 +43,7 @@ public class SimpleHtmlExporterConfiguration extends SimpleExporterConfiguration
 	{
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getHtmlHeader()
 	{
 		return htmlHeader;
@@ -60,9 +57,7 @@ public class SimpleHtmlExporterConfiguration extends SimpleExporterConfiguration
 		this.htmlHeader = htmlHeader;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getBetweenPagesHtml()
 	{
 		return betweenPagesHtml;
@@ -76,9 +71,7 @@ public class SimpleHtmlExporterConfiguration extends SimpleExporterConfiguration
 		this.betweenPagesHtml = betweenPagesHtml;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public String getHtmlFooter()
 	{
 		return htmlFooter;
@@ -92,9 +85,7 @@ public class SimpleHtmlExporterConfiguration extends SimpleExporterConfiguration
 		this.htmlFooter = htmlFooter;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isFlushOutput()
 	{
 		return flushOutput;

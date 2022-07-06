@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.engine.scriptlets;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,12 +35,13 @@ import net.sf.jasperreports.engine.util.JRClassLoader;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultScriptletFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class DefaultScriptletFactory implements ScriptletFactory
 {
 
 	private static final DefaultScriptletFactory INSTANCE = new DefaultScriptletFactory();
+	public static final String EXCEPTION_MESSAGE_KEY_CLASS_LOADING_ERROR = "scriptlets.class.loading.error";
+	public static final String EXCEPTION_MESSAGE_KEY_INSTANCE_LOADING_ERROR = "scriptlets.instance.loading.error";
 	
 	private DefaultScriptletFactory()
 	{
@@ -53,12 +55,10 @@ public final class DefaultScriptletFactory implements ScriptletFactory
 		return INSTANCE;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public List<JRAbstractScriptlet> getScriplets(ScriptletFactoryContext context) throws JRException
 	{
-		List<JRAbstractScriptlet> scriptlets = new ArrayList<JRAbstractScriptlet>();
+		List<JRAbstractScriptlet> scriptlets = new ArrayList<>();
 
 		JRAbstractScriptlet scriptlet = (JRAbstractScriptlet)context.getParameterValues().get(JRParameter.REPORT_SCRIPTLET);
 		if (scriptlet == null)
@@ -107,15 +107,24 @@ public final class DefaultScriptletFactory implements ScriptletFactory
 		try
 		{
 			Class<?> scriptletClass = JRClassLoader.loadClassForName(scriptletClassName);	
-			scriptlet = (JRAbstractScriptlet) scriptletClass.newInstance();
+			scriptlet = (JRAbstractScriptlet) scriptletClass.getDeclaredConstructor().newInstance();
 		}
 		catch (ClassNotFoundException e)
 		{
-			throw new JRException("Error loading scriptlet class : " + scriptletClassName, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_CLASS_LOADING_ERROR,
+					new Object[]{scriptletClassName}, 
+					e);
 		}
-		catch (Exception e)
+		catch (NoSuchMethodException | InvocationTargetException 
+			| IllegalAccessException | InstantiationException e)
 		{
-			throw new JRException("Error creating scriptlet class instance : " + scriptletClassName, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_INSTANCE_LOADING_ERROR,
+					new Object[]{scriptletClassName}, 
+					e);
 		}
 		
 		return scriptlet;

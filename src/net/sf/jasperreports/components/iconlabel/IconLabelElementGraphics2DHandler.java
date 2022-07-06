@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,8 +36,7 @@ import net.sf.jasperreports.engine.export.draw.FrameDrawer;
 import net.sf.jasperreports.engine.export.draw.Offset;
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: IconLabelElementGraphics2DHandler.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class IconLabelElementGraphics2DHandler implements GenericElementGraphics2DHandler
 {
@@ -49,6 +48,7 @@ public class IconLabelElementGraphics2DHandler implements GenericElementGraphics
 	}
 	
 
+	@Override
 	public void exportElement(
 			JRGraphics2DExporterContext exporterContext, 
 			JRGenericPrintElement element, 
@@ -88,7 +88,7 @@ public class IconLabelElementGraphics2DHandler implements GenericElementGraphics
 
 			JRGraphics2DExporter exporter = (JRGraphics2DExporter)exporterContext.getExporterRef();
 			
-			FrameDrawer frameDrawer = exporter.getFrameDrawer();
+			FrameDrawer frameDrawer = exporter.getDrawVisitor().getFrameDrawer();
 			frameDrawer.draw(
 				grx, 
 				frame, 
@@ -102,6 +102,7 @@ public class IconLabelElementGraphics2DHandler implements GenericElementGraphics
 		}
 	}
 
+	@Override
 	public boolean toExport(JRGenericPrintElement element) 
 	{
 		return true;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.extensions.ExtensionsRegistryFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleFontExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleFontExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
@@ -49,13 +48,11 @@ public class SimpleFontExtensionsRegistryFactory implements ExtensionsRegistryFa
 	public final static String PROPERTY_SIMPLE_FONT_FAMILIES_REGISTRY_FACTORY =
 		DefaultExtensionsRegistry.PROPERTY_REGISTRY_FACTORY_PREFIX + "simple.font.families";
 	
-	/**
-	 * 
-	 */
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties)
 	{
 		List<PropertySuffix> fontFamiliesProperties = JRPropertiesUtil.getProperties(properties, SIMPLE_FONT_FAMILIES_PROPERTY_PREFIX);
-		List<String> fontFamiliesLocations = new ArrayList<String>();
+		List<String> fontFamiliesLocations = new ArrayList<>();
 		for (Iterator<PropertySuffix> it = fontFamiliesProperties.iterator(); it.hasNext();)
 		{
 			PropertySuffix fontFamiliesProp = it.next();

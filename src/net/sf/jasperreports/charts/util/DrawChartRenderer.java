@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,25 +24,26 @@
 package net.sf.jasperreports.charts.util;
 
 import java.awt.Graphics2D;
+import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.ImageMapRenderable;
-import net.sf.jasperreports.engine.JRAbstractSvgRenderer;
+import org.jfree.chart.JFreeChart;
+
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintImageAreaHyperlink;
+import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
-
-import org.jfree.chart.JFreeChart;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Graphics2DRenderable;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DrawChartRenderer.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link DrawChartRendererImpl}.
  */
-public class DrawChartRenderer extends JRAbstractSvgRenderer implements ImageMapRenderable
+public class DrawChartRenderer extends net.sf.jasperreports.engine.JRAbstractSvgRenderer implements net.sf.jasperreports.engine.ImageMapRenderable, Graphics2DRenderable, DimensionRenderable
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
@@ -55,6 +56,13 @@ public class DrawChartRenderer extends JRAbstractSvgRenderer implements ImageMap
 		this.chartHyperlinkProvider = chartHyperlinkProvider;
 	}
 
+	@Override
+	public Dimension2D getDimension(JasperReportsContext jasperReportsContext) 
+	{
+		return null;
+	}
+	
+	@Override
 	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) 
 	{
 		if (chart != null)
@@ -64,31 +72,30 @@ public class DrawChartRenderer extends JRAbstractSvgRenderer implements ImageMap
 	}
 	
 	/**
-	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
-	 */
-	public void render(Graphics2D grx, Rectangle2D rectangle) 
-	{
-		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);
-	}
-	
-	/**
 	 * @deprecated To be removed.
 	 */
+	@Override
 	public List<JRPrintImageAreaHyperlink> renderWithHyperlinks(Graphics2D grx, Rectangle2D rectangle) 
 	{
-		render(grx, rectangle);
+		try
+		{
+			render(grx, rectangle);
+		}
+		catch (JRException e)
+		{
+			throw new JRRuntimeException(e);
+		}
 		
 		return ChartUtil.getImageAreaHyperlinks(chart, chartHyperlinkProvider, grx, rectangle);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public List<JRPrintImageAreaHyperlink> getImageAreaHyperlinks(Rectangle2D renderingArea) throws JRException
 	{
 		return ChartUtil.getImageAreaHyperlinks(chart, chartHyperlinkProvider, null, renderingArea);
 	}
 
+	@Override
 	public boolean hasImageAreaHyperlinks()
 	{
 		return chartHyperlinkProvider != null && chartHyperlinkProvider.hasHyperlinks();

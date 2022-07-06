@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,35 +39,49 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.fonts.AwtFontAttribute;
 import net.sf.jasperreports.engine.fonts.FontUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRStyledText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRStyledText implements Cloneable
 {
-
+	public static final String EXCEPTION_MESSAGE_KEY_CANNOT_COPY_CHARACTERS = "util.styled.text.cannot.copy.characters";
 	/**
 	 * 
 	 */
+	@Property(
+			valueType = Boolean.class,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_6_1
+			)
 	public static final String PROPERTY_AWT_IGNORE_MISSING_FONT = JRPropertiesUtil.PROPERTY_PREFIX + "awt.ignore.missing.font";
 	
-	private static final String PROPERTY_AWT_SUPERSCRIPT_FIX_ENABLED = JRPropertiesUtil.PROPERTY_PREFIX + "awt.superscript.fix.enabled";
-	@SuppressWarnings("deprecation")
+	@Property(
+			valueType = Boolean.class,
+			scopes = {PropertyScope.GLOBAL},
+			sinceVersion = PropertyConstants.VERSION_3_1_3
+			)
+	public static final String PROPERTY_AWT_SUPERSCRIPT_FIX_ENABLED = JRPropertiesUtil.PROPERTY_PREFIX + "awt.superscript.fix.enabled";
+
 	private static final boolean AWT_SUPERSCRIPT_FIX_ENABLED = 
-		System.getProperty("java.version").startsWith("1.6") 
-		&& JRProperties.getBooleanProperty(PROPERTY_AWT_SUPERSCRIPT_FIX_ENABLED);
+		JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(PROPERTY_AWT_SUPERSCRIPT_FIX_ENABLED);
 	
-	private static final Set<Attribute> FONT_ATTRS = new HashSet<Attribute>();
+	private static final Set<Attribute> FONT_ATTRS = new HashSet<>();
 	static
 	{
 		FONT_ATTRS.add(TextAttribute.FAMILY);
+		FONT_ATTRS.add(JRTextAttribute.FONT_INFO);
 		FONT_ATTRS.add(TextAttribute.WEIGHT);
 		FONT_ATTRS.add(TextAttribute.POSTURE);
 		FONT_ATTRS.add(TextAttribute.SIZE);
@@ -104,12 +118,26 @@ public class JRStyledText implements Cloneable
 		this.locale = locale;
 	}
 
+	public JRStyledText(Locale locale, String text)
+	{
+		this.locale = locale;
+		this.text = text;
+	}
+
 	public JRStyledText(Locale locale, String text, Map<Attribute,Object> globalAttributes)
 	{
 		this.locale = locale;
 		this.text = text;
 		this.globalAttributes = globalAttributes;
 		this.runs = Collections.singletonList(new Run(globalAttributes, 0, text.length()));
+	}
+	
+	public JRStyledText(Locale locale, String text, Map<Attribute,Object> globalAttributes, List<Run> runs)
+	{
+		this.locale = locale;
+		this.text = text;
+		this.globalAttributes = globalAttributes;
+		this.runs = runs;
 	}
 	
 	private void ensureBuffer()
@@ -156,7 +184,7 @@ public class JRStyledText implements Cloneable
 		{
 			if (currentSize == 1 && !(runs instanceof ArrayList))
 			{
-				List<Run> newRuns = new ArrayList<Run>();
+				List<Run> newRuns = new ArrayList<>();
 				newRuns.add(runs.get(0));
 				runs = newRuns;
 			}
@@ -217,14 +245,6 @@ public class JRStyledText implements Cloneable
 	}
 
 	/**
-	 * @deprecated Replaced by {@link #getAwtAttributedString(JasperReportsContext, boolean)}.
-	 */
-	public AttributedString getAwtAttributedString(boolean ignoreMissingFont)
-	{
-		return getAwtAttributedString(DefaultJasperReportsContext.getInstance(), ignoreMissingFont);
-	}
-
-	/**
 	 * Returns an attributed string that contains the AWT font attribute, as the font is actually loaded.
 	 */
 	public AttributedString getAwtAttributedString(JasperReportsContext jasperReportsContext, boolean ignoreMissingFont)
@@ -270,11 +290,11 @@ public class JRStyledText implements Cloneable
 			{
 				Map<Attribute,Object> attrs = iterator.getAttributes();
 					
-				String familyName = (String)attrs.get(TextAttribute.FAMILY); 
+				AwtFontAttribute fontAttribute = AwtFontAttribute.fromAttributes(attrs);
 				
-				Font awtFont = 
-					FontUtil.getInstance(jasperReportsContext).getAwtFontFromBundles(
-						familyName, 
+				FontUtil fontUtil = FontUtil.getInstance(jasperReportsContext);
+				Font awtFont = fontUtil.getAwtFontFromBundles(
+						fontAttribute, 
 						((TextAttribute.WEIGHT_BOLD.equals(attrs.get(TextAttribute.WEIGHT))?Font.BOLD:Font.PLAIN)
 							|(TextAttribute.POSTURE_OBLIQUE.equals(attrs.get(TextAttribute.POSTURE))?Font.ITALIC:Font.PLAIN)), 
 						(Float)attrs.get(TextAttribute.SIZE),
@@ -285,7 +305,7 @@ public class JRStyledText implements Cloneable
 				{
 					// The font was not found in any of the font extensions, so it is expected that the TextAttribute.FAMILY attribute
 					// will be used by AWT. In that case, we want make sure the font family name is available to the JVM.
-					FontUtil.getInstance(jasperReportsContext).checkAwtFont(familyName, ignoreMissingFont);
+					fontUtil.checkAwtFont(fontAttribute.getFamily(), ignoreMissingFont);
 				}
 				else
 				{
@@ -354,6 +374,7 @@ public class JRStyledText implements Cloneable
 			this.endIndex = endIndex;
 		}
 
+		@Override
 		protected Object clone()
 		{
 			return cloneRun();
@@ -392,6 +413,7 @@ public class JRStyledText implements Cloneable
 		return globalAttributes;
 	}
 	
+	@Override
 	protected Object clone() throws CloneNotSupportedException
 	{
 		// TODO Auto-generated method stub
@@ -400,7 +422,7 @@ public class JRStyledText implements Cloneable
 	
 	protected static Map<Attribute,Object> cloneAttributesMap(Map<Attribute,Object> attributes)
 	{
-		return attributes == null ? null : new HashMap<Attribute,Object>(attributes);
+		return attributes == null ? null : new HashMap<>(attributes);
 	}
 
 	
@@ -427,7 +449,7 @@ public class JRStyledText implements Cloneable
 			}
 			else
 			{
-				clone.runs = new ArrayList<Run>(runsCount);
+				clone.runs = new ArrayList<>(runsCount);
 				for (Iterator<Run> it = runs.iterator(); it.hasNext();)
 				{
 					Run run = it.next();
@@ -534,7 +556,10 @@ public class JRStyledText implements Cloneable
 		else if (srcBegin < srcEnd)
 		{
 			// should not happen
-			throw new JRRuntimeException("Cannot copy characters " + srcBegin + " to " + srcEnd);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_COPY_CHARACTERS,
+					new Object[]{srcBegin, srcEnd});
 		}
 	}
 }

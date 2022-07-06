@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -105,6 +105,8 @@ import net.sf.jasperreports.crosstabs.base.JRBaseCrosstabDataset;
 import net.sf.jasperreports.crosstabs.base.JRBaseCrosstabMeasure;
 import net.sf.jasperreports.crosstabs.base.JRBaseCrosstabParameter;
 import net.sf.jasperreports.crosstabs.base.JRBaseCrosstabRowGroup;
+import net.sf.jasperreports.engine.DatasetPropertyExpression;
+import net.sf.jasperreports.engine.ExpressionReturnValue;
 import net.sf.jasperreports.engine.JRAbstractObjectFactory;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRBreak;
@@ -131,6 +133,7 @@ import net.sf.jasperreports.engine.JRHyperlinkParameter;
 import net.sf.jasperreports.engine.JRImage;
 import net.sf.jasperreports.engine.JRLine;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPart;
 import net.sf.jasperreports.engine.JRPropertyExpression;
 import net.sf.jasperreports.engine.JRQuery;
 import net.sf.jasperreports.engine.JRQueryChunk;
@@ -170,11 +173,11 @@ import net.sf.jasperreports.engine.analytics.dataset.MultiAxisDataset;
  * Factory of objects used in compiled reports.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseObjectFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseObjectFactory extends JRAbstractObjectFactory
 {
-
+	public static final String EXCEPTION_MESSAGE_KEY_CROSSTAB_ID_NOT_FOUND = "engine.object.factory.crosstab.id.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_EXPRESSION_ID_NOT_FOUND = "engine.object.factory.expression.id.not.found";
 
 	/**
 	 *
@@ -218,18 +221,14 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 		this.defaultStyleProvider = defaultStyleProvider;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return defaultStyleProvider;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRStyle getStyle(JRStyle style)
 	{
 		JRBaseStyle baseStyle = null;
@@ -253,6 +252,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	 *
 	 * @see JRAbstractObjectFactory#setStyle(JRStyleSetter, JRStyleContainer)
 	 */
+	@Override
 	public void setStyle(JRStyleSetter setter, JRStyleContainer styleContainer)
 	{
 		JRStyle style = styleContainer.getStyle();
@@ -414,6 +414,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public JRExpression getExpression(JRExpression expression, boolean assignNotUsedId)
 	{
 		JRBaseExpression baseExpression = null;
@@ -446,7 +447,10 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 				}
 				else
 				{
-					throw new JRRuntimeException("Expression ID not found for expression <<" + expression.getText() + ">>.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_EXPRESSION_ID_NOT_FOUND,
+							new Object[]{expression.getText()});
 				}
 			}
 		}
@@ -537,6 +541,24 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	/**
 	 *
 	 */
+	protected JRBasePart getPart(JRPart part)
+	{
+		JRBasePart basePart = null;
+
+		if (part != null)
+		{
+			basePart = (JRBasePart)get(part);
+			if (basePart == null)
+			{
+				basePart = new JRBasePart(part, this);
+			}
+		}
+
+		return basePart;
+	}
+
+
+	@Override
 	public void visitElementGroup(JRElementGroup elementGroup)
 	{
 		JRElementGroup baseElementGroup = null;
@@ -554,9 +576,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitBreak(JRBreak breakElement)
 	{
 		JRBaseBreak baseBreak = null;
@@ -574,9 +594,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitLine(JRLine line)
 	{
 		JRBaseLine baseLine = null;
@@ -594,9 +612,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitRectangle(JRRectangle rectangle)
 	{
 		JRBaseRectangle baseRectangle = null;
@@ -614,9 +630,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitEllipse(JREllipse ellipse)
 	{
 		JRBaseEllipse baseEllipse = null;
@@ -634,9 +648,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitImage(JRImage image)
 	{
 		JRBaseImage baseImage = null;
@@ -654,9 +666,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitStaticText(JRStaticText staticText)
 	{
 		JRBaseStaticText baseStaticText = null;
@@ -674,9 +684,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitTextField(JRTextField textField)
 	{
 		JRBaseTextField baseTextField = null;
@@ -694,9 +702,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitSubreport(JRSubreport subreport)
 	{
 		JRBaseSubreport baseSubreport = null;
@@ -717,7 +723,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	/**
 	 *
 	 */
-	protected JRBaseSubreportParameter getSubreportParameter(JRSubreportParameter subreportParameter)
+	public JRBaseSubreportParameter getSubreportParameter(JRSubreportParameter subreportParameter)
 	{
 		JRBaseSubreportParameter baseSubreportParameter = null;
 
@@ -753,9 +759,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPieDataset getPieDataset(JRPieDataset pieDataset)
 	{
 		JRBasePieDataset basePieDataset = null;
@@ -773,9 +777,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPiePlot getPiePlot(JRPiePlot piePlot)
 	{
 		JRBasePiePlot basePiePlot = null;
@@ -793,9 +795,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPie3DPlot getPie3DPlot(JRPie3DPlot pie3DPlot)
 	{
 		JRBasePie3DPlot basePie3DPlot = null;
@@ -813,9 +813,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRCategoryDataset getCategoryDataset(JRCategoryDataset categoryDataset)
 	{
 		JRBaseCategoryDataset baseCategoryDataset = null;
@@ -832,6 +830,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 		return baseCategoryDataset;
 	}
 
+	@Override
 	public JRTimeSeriesDataset getTimeSeriesDataset( JRTimeSeriesDataset timeSeriesDataset ){
 		JRBaseTimeSeriesDataset baseTimeSeriesDataset = null;
 		if( timeSeriesDataset != null ){
@@ -845,6 +844,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public JRTimePeriodDataset getTimePeriodDataset( JRTimePeriodDataset timePeriodDataset ){
 		JRBaseTimePeriodDataset baseTimePeriodDataset = null;
 		if( timePeriodDataset != null ){
@@ -876,9 +876,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRPieSeries getPieSeries(JRPieSeries pieSeries)
 	{
 		JRBasePieSeries basePieSeries = null;
@@ -896,9 +894,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRCategorySeries getCategorySeries(JRCategorySeries categorySeries)
 	{
 		JRBaseCategorySeries baseCategorySeries = null;
@@ -936,9 +932,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRTimeSeries getTimeSeries(JRTimeSeries timeSeries)
 	{
 		JRBaseTimeSeries baseTimeSeries = null;
@@ -955,9 +949,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 		return baseTimeSeries;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRTimePeriodSeries getTimePeriodSeries( JRTimePeriodSeries timePeriodSeries ){
 		JRBaseTimePeriodSeries baseTimePeriodSeries = null;
 		if( timePeriodSeries != null ){
@@ -991,9 +983,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBarPlot getBarPlot(JRBarPlot barPlot)
 	{
 		JRBaseBarPlot baseBarPlot = null;
@@ -1014,6 +1004,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	/* (non-Javadoc)
 	 * @see net.sf.jasperreports.engine.JRAbstractObjectFactory#getBar3DPlot(net.sf.jasperreports.charts.JRBar3DPlot)
 	 */
+	@Override
 	public JRBar3DPlot getBar3DPlot(JRBar3DPlot barPlot) {
 		JRBaseBar3DPlot baseBarPlot = null;
 
@@ -1030,9 +1021,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRLinePlot getLinePlot(JRLinePlot linePlot) {
 		JRBaseLinePlot baseLinePlot = null;
 
@@ -1049,9 +1038,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRAreaPlot getAreaPlot(JRAreaPlot areaPlot) {
 		JRBaseAreaPlot baseAreaPlot = null;
 
@@ -1068,9 +1055,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/*
-	 *
-	 */
+	@Override
 	public JRXyzDataset getXyzDataset(JRXyzDataset xyzDataset) {
 		JRBaseXyzDataset baseXyzDataset = null;
 
@@ -1124,9 +1109,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRXyzSeries getXyzSeries(JRXyzSeries xyzSeries) {
 		JRBaseXyzSeries baseXyzSeries = null;
 
@@ -1143,9 +1126,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBubblePlot getBubblePlot(JRBubblePlot bubblePlot) {
 		JRBaseBubblePlot baseBubblePlot = null;
 
@@ -1162,10 +1143,8 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	 /**
-	  *
-	  */
-	 public JRCandlestickPlot getCandlestickPlot(JRCandlestickPlot candlestickPlot)
+	@Override
+	public JRCandlestickPlot getCandlestickPlot(JRCandlestickPlot candlestickPlot)
 	{
 		JRBaseCandlestickPlot baseCandlestickPlot = null;
 
@@ -1316,9 +1295,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visitChart(JRChart chart)
 	{
 		JRBaseChart baseChart = null;
@@ -1338,7 +1315,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	/**
 	 *
 	 */
-	protected JRBaseSubreportReturnValue getSubreportReturnValue(JRSubreportReturnValue returnValue)
+	public JRBaseSubreportReturnValue getSubreportReturnValue(JRSubreportReturnValue returnValue)
 	{
 		JRBaseSubreportReturnValue baseSubreportReturnValue = null;
 
@@ -1374,9 +1351,25 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
-	/**
-	 *
-	 */
+	protected BaseExpressionReturnValue getReturnValue(ExpressionReturnValue returnValue)
+	{
+		BaseExpressionReturnValue baseReturnValue = null;
+
+		if (returnValue != null)
+		{
+			baseReturnValue = (BaseExpressionReturnValue) get(returnValue);
+			if (baseReturnValue == null)
+			{
+				baseReturnValue = new BaseExpressionReturnValue(returnValue, this);
+				put(returnValue, baseReturnValue);
+			}
+		}
+
+		return baseReturnValue;
+	}
+
+
+	@Override
 	public JRConditionalStyle getConditionalStyle(JRConditionalStyle conditionalStyle, JRStyle style)
 	{
 		JRBaseConditionalStyle baseConditionalStyle = null;
@@ -1477,6 +1470,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public void visitCrosstab(JRCrosstab crosstab)
 	{
 		JRBaseCrosstab baseCrosstab = null;
@@ -1500,7 +1494,10 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 		Integer id = expressionCollector.getCrosstabId(crosstab);
 		if (id == null)
 		{
-			throw new JRRuntimeException("Crosstab ID not found.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CROSSTAB_ID_NOT_FOUND,
+					(Object[])null);
 		}
 		return id;
 	}
@@ -1591,6 +1588,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public void visitFrame(JRFrame frame)
 	{
 		JRBaseFrame baseFrame = null;
@@ -1668,6 +1666,20 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 		return baseTemplate;
 	}
 
+	public JRPropertyExpression[] getPropertyExpressions(JRPropertyExpression[] props)
+	{
+		JRPropertyExpression[] propertyExpressions = null;
+		if (props != null && props.length > 0)
+		{
+			propertyExpressions = new JRPropertyExpression[props.length];
+			for (int i = 0; i < props.length; i++)
+			{
+				propertyExpressions[i] = getPropertyExpression(props[i]);
+			}
+		}
+		return propertyExpressions;
+	}
+
 	public JRPropertyExpression getPropertyExpression(JRPropertyExpression propertyExpression)
 	{
 		JRPropertyExpression baseProp = null;
@@ -1682,7 +1694,36 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 		return baseProp;
 	}
 
+	public DatasetPropertyExpression[] getPropertyExpressions(DatasetPropertyExpression[] props)
+	{
+		DatasetPropertyExpression[] propertyExpressions = null;
+		if (props != null && props.length > 0)
+		{
+			propertyExpressions = new DatasetPropertyExpression[props.length];
+			for (int i = 0; i < props.length; i++)
+			{
+				propertyExpressions[i] = getPropertyExpression(props[i]);
+			}
+		}
+		return propertyExpressions;
+	}
 
+	public DatasetPropertyExpression getPropertyExpression(DatasetPropertyExpression propertyExpression)
+	{
+		DatasetPropertyExpression baseProp = null;
+		if (propertyExpression != null)
+		{
+			baseProp = (DatasetPropertyExpression) get(propertyExpression);
+			if (baseProp == null)
+			{
+				baseProp = new BaseDatasetPropertyExpression(propertyExpression, this);
+			}
+		}
+		return baseProp;
+	}
+
+
+	@Override
 	public void visitComponentElement(JRComponentElement componentElement)
 	{
 		JRBaseComponentElement base = null;
@@ -1717,6 +1758,7 @@ public class JRBaseObjectFactory extends JRAbstractObjectFactory
 	}
 
 
+	@Override
 	public void visitGenericElement(JRGenericElement element)
 	{
 		JRBaseGenericElement base = null;

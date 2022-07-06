@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * query executers.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: XlsQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsQueryExecuterFactory extends AbstractXlsQueryExecuterFactory 
 {
@@ -55,24 +54,40 @@ public class XlsQueryExecuterFactory extends AbstractXlsQueryExecuterFactory
 			XLS_NUMBER_FORMAT, "java.text.NumberFormat",
 			XLS_NUMBER_PATTERN, "java.lang.String",
 			XLS_USE_FIRST_ROW_AS_HEADER, "java.lang.Boolean",
+			XLS_LOCALE, "java.util.Locale",
 			XLS_LOCALE_CODE, "java.lang.String",
+			XLS_TIMEZONE, "java.util.TimeZone",
 			XLS_TIMEZONE_ID, "java.lang.String",
 			XLS_SHEET_SELECTION, "java.lang.String"
 			};
 	
+	@Override
 	public Object[] getBuiltinParameters() {
 		return XLS_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
 		Map<String,? extends JRValueParameter> parameters
 		) throws JRException 
 	{
-		return new XlsQueryExecuter(jasperReportsContext, dataset, parameters);
+		return createQueryExecuter(SimpleQueryExecutionContext.of(jasperReportsContext), 
+				dataset, parameters);
 	}
 
+	@Override
+	public JRQueryExecuter createQueryExecuter(
+		QueryExecutionContext context, 
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parameters
+		) throws JRException 
+	{
+		return new XlsQueryExecuter(context, dataset, parameters);
+	}
+
+	@Override
 	public boolean supportsQueryParameterType(String className) {
 		return true;
 	}

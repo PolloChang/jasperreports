@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,6 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * Print element visitor that delegates all visit calls to a single method.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: UniformPrintElementVisitor.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class UniformPrintElementVisitor<T> implements
 		PrintElementVisitor<T>
@@ -68,31 +67,37 @@ public abstract class UniformPrintElementVisitor<T> implements
 	
 	protected abstract void visitElement(JRPrintElement element, T arg);
 	
+	@Override
 	public void visit(JRPrintText textElement, T arg)
 	{
 		visitElement(textElement, arg);
 	}
 
+	@Override
 	public void visit(JRPrintImage image, T arg)
 	{
 		visitElement(image, arg);
 	}
 
+	@Override
 	public void visit(JRPrintRectangle rectangle, T arg)
 	{
 		visitElement(rectangle, arg);
 	}
 
+	@Override
 	public void visit(JRPrintLine line, T arg)
 	{
 		visitElement(line, arg);
 	}
 
+	@Override
 	public void visit(JRPrintEllipse ellipse, T arg)
 	{
 		visitElement(ellipse, arg);
 	}
 
+	@Override
 	public void visit(JRPrintFrame frame, T arg)
 	{
 		visitElement(frame, arg);
@@ -102,14 +107,20 @@ public abstract class UniformPrintElementVisitor<T> implements
 			List<JRPrintElement> elements = frame.getElements();
 			if (elements != null)
 			{
-				for (JRPrintElement element : elements)
-				{
-					element.accept(this, arg);
-				}
+				visitFrameElements(elements, arg);
 			}
 		}
 	}
 
+	protected void visitFrameElements(List<JRPrintElement> elements, T arg)
+	{
+		for (JRPrintElement element : elements)
+		{
+			element.accept(this, arg);
+		}
+	}
+
+	@Override
 	public void visit(JRGenericPrintElement printElement, T arg)
 	{
 		visitElement(printElement, arg);

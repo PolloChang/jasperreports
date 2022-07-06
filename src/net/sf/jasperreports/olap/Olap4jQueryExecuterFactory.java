@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,6 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author swood
- * @version $Id: Olap4jQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class Olap4jQueryExecuterFactory extends AbstractQueryExecuterFactory
 {
@@ -62,11 +61,13 @@ public class Olap4jQueryExecuterFactory extends AbstractQueryExecuterFactory
 		System.arraycopy(xmlaParams, 0, MDX_BUILTIN_PARAMETERS, mondrianParams.length, xmlaParams.length);
 	}
 	
+	@Override
 	public Object[] getBuiltinParameters()
 	{
 		return MDX_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext,
 		JRDataset dataset, 
@@ -96,6 +97,7 @@ public class Olap4jQueryExecuterFactory extends AbstractQueryExecuterFactory
 		return valueParam == null ? null : valueParam.getValue();
 	}
 	
+	@Override
 	public boolean supportsQueryParameterType(String className)
 	{
 		return true;

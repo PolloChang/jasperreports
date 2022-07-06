@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,19 +30,17 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 
-import net.sf.jasperreports.data.AbstractDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.JasperReportsContext;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.data.AbstractDataAdapterService;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JndiDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JndiDataAdapterService extends AbstractDataAdapterService 
 {
@@ -53,17 +51,9 @@ public class JndiDataAdapterService extends AbstractDataAdapterService
 	/**
 	 * 
 	 */
-	public JndiDataAdapterService(JasperReportsContext jasperReportsContext, JndiDataAdapter jndiDataAdapter)
+	public JndiDataAdapterService(ParameterContributorContext paramContribContext, JndiDataAdapter jndiDataAdapter)
 	{
-		super(jasperReportsContext, jndiDataAdapter);
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #JndiDataAdapterService(JasperReportsContext, JndiDataAdapter)}. 
-	 */
-	public JndiDataAdapterService(JndiDataAdapter jndiDataAdapter)
-	{
-		this(DefaultJasperReportsContext.getInstance(), jndiDataAdapter);
+		super(paramContribContext, jndiDataAdapter);
 	}
 	
 	public JndiDataAdapter getJndiDataAdapter()

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,14 +39,11 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRChartFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRChartFactory extends JRBaseFactory
 {
 
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JRXmlLoader xmlLoader = (JRXmlLoader)digester.peek(digester.getCount() - 1);
@@ -103,6 +100,7 @@ public class JRChartFactory extends JRBaseFactory
 	 */
 	public static class JRChartTitleFactory extends JRBaseFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			JRDesignChart chart = (JRDesignChart) digester.peek();
@@ -129,6 +127,7 @@ public class JRChartFactory extends JRBaseFactory
 	 */
 	public static class JRChartSubtitleFactory extends JRBaseFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			JRDesignChart chart = (JRDesignChart) digester.peek();
@@ -151,9 +150,7 @@ public class JRChartFactory extends JRBaseFactory
 	 */
 	public static class JRChartLegendFactory extends JRBaseFactory
 	{
-		/**
-		 *
-		 */
+		@Override
 		public Object createObject(Attributes atts) throws JRException
 		{
 			// Grab the chart from the object stack.
@@ -194,9 +191,7 @@ public class JRChartFactory extends JRBaseFactory
 	 */
 	public static class JRChartAxisFormatFactory extends JRBaseFactory
 	{
-		/**
-		 *
-		 */
+		@Override
 		public Object createObject(Attributes atts) throws JRException
 		{
 			// Create an empty axis formatting object
@@ -252,9 +247,7 @@ public class JRChartFactory extends JRBaseFactory
 	 */
 	public static class JRCategoryAxisFormatFactory extends JRBaseFactory
 	{
-		/**
-		 *
-		 */
+		@Override
 		public Object createObject(Attributes atts) throws JRException
 		{
 			JRCategoryAxisFormat categoryAxisFormat = (JRCategoryAxisFormat)digester.peek();

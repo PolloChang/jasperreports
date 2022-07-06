@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -47,7 +47,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * An immutable representation of the layout of a Meter chart.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRBaseMeterPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 {
@@ -79,7 +78,7 @@ public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 	 * The defined intervals for the Meter.  Each interval indicates a
 	 * subsection of the meter and a color to use for that section.
 	 */
-	protected List<JRMeterInterval> intervals = new java.util.ArrayList<JRMeterInterval>();
+	protected List<JRMeterInterval> intervals = new java.util.ArrayList<>();
 
 	/**
 	 * The extend of the meter face in degrees.  It will always be centered
@@ -183,96 +182,72 @@ public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 		tickLabelFont = factory.getFont(this.getChart(), meterPlot.getTickLabelFont());
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRDataRange getDataRange()
 	{
 		return dataRange;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRValueDisplay getValueDisplay()
 	{
 		return valueDisplay;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public MeterShapeEnum getShapeValue()
 	{
 		return shapeValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public List<JRMeterInterval> getIntervals(){
 		return intervals;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getMeterAngleInteger()
 	{
 		return meterAngleInteger;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getUnits()
 	{
 		return units;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Double getTickIntervalDouble()
 	{
 		return tickIntervalDouble;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getMeterBackgroundColor()
 	{
 		return meterBackgroundColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getNeedleColor()
 	{
 		return needleColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getTickColor()
 	{
 		return tickColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getTickCount()
 	{
 		return tickCount;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getTickLabelFont()
 	{
 		return tickLabelFont;
@@ -285,14 +260,13 @@ public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 	 *
 	 * @param collector the expression collector to use
 	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone(JRChart parentChart) 
 	{
 		JRBaseMeterPlot clone = (JRBaseMeterPlot)super.clone(parentChart);
@@ -323,6 +297,7 @@ public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 	 */
 	private Byte shapeByte;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -332,8 +307,8 @@ public class JRBaseMeterPlot extends JRBaseChartPlot implements JRMeterPlot
 			if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_1_3)
 			{
 				shapeValue = MeterShapeEnum.getByValue(shape);
-				meterAngleInteger = Integer.valueOf(meterAngle);
-				tickIntervalDouble = Double.valueOf(tickInterval);
+				meterAngleInteger = meterAngle;
+				tickIntervalDouble = tickInterval;
 			}
 			else
 			{

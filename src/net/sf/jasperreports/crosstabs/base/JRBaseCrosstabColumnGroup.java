@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base read-only implementation of crosstab column groups.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstabColumnGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCrosstabColumnGroup extends JRBaseCrosstabGroup implements JRCrosstabColumnGroup
 {
@@ -56,11 +55,13 @@ public class JRBaseCrosstabColumnGroup extends JRBaseCrosstabGroup implements JR
 		crosstabHeader = factory.getCell(group.getCrosstabHeader());
 	}
 
+	@Override
 	public CrosstabColumnPositionEnum getPositionValue()
 	{
 		return positionValue;
 	}
 
+	@Override
 	public int getHeight()
 	{
 		return height;
@@ -90,6 +91,7 @@ public class JRBaseCrosstabColumnGroup extends JRBaseCrosstabGroup implements JR
 	 */
 	private byte position;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

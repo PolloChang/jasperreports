@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,11 +23,14 @@
  */
 package net.sf.jasperreports.export;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.export.oasis.JROdtExporter;
 import net.sf.jasperreports.export.annotations.ExporterParameter;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -36,7 +39,6 @@ import net.sf.jasperreports.export.annotations.ExporterProperty;
  * @see JROdtExporter
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: OdtReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface OdtReportConfiguration extends ReportExportConfiguration
 {
@@ -47,12 +49,25 @@ public interface OdtReportConfiguration extends ReportExportConfiguration
 	 * </p>
 	 * @see JRPropertiesUtil
 	 */
-	public static final String PROPERTY_ODT_FLEXIBLE_ROW_HEIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "export.odt.flexible.row.height";
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_5_0_4,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_ODT_FLEXIBLE_ROW_HEIGHT = JROdtExporter.ODT_EXPORTER_PROPERTIES_PREFIX + "flexible.row.height";
 
 	/**
 	 * Property that provides a default for the {@link #isIgnoreHyperlink()} export configuration flag.
 	 */
-	public static final String PROPERTY_IGNORE_HYPERLINK = JRPropertiesUtil.PROPERTY_PREFIX + "export.odt." + JRPrintHyperlink.PROPERTY_IGNORE_HYPERLINK_SUFFIX;
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.HYPERLINK},
+			sinceVersion = PropertyConstants.VERSION_5_1_2,
+			valueType = Boolean.class
+			)
+	public static final String PROPERTY_IGNORE_HYPERLINK = JROdtExporter.ODT_EXPORTER_PROPERTIES_PREFIX + JRPrintHyperlink.PROPERTY_IGNORE_HYPERLINK_SUFFIX;
 
 	/**
 	 * Indicates whether table rows in ODT documents can grow if more text is added into cells.

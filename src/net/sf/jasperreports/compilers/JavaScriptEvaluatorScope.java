@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,9 +23,12 @@
  */
 package net.sf.jasperreports.compilers;
 
+import java.security.ProtectionDomain;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
@@ -34,19 +37,23 @@ import net.sf.jasperreports.engine.fill.JREvaluator;
 import net.sf.jasperreports.engine.fill.JRFillField;
 import net.sf.jasperreports.engine.fill.JRFillParameter;
 import net.sf.jasperreports.engine.fill.JRFillVariable;
+import net.sf.jasperreports.engine.util.JRClassLoader;
+import net.sf.jasperreports.engine.util.ProtectionDomainFactory;
 import net.sf.jasperreports.functions.FunctionsUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Context.ClassShutterSetter;
 import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.optimizer.Codegen;
+import org.mozilla.javascript.tools.shell.JavaPolicySecurity;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JavaScriptEvaluatorScope.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JavaScriptEvaluatorScope
 {
@@ -144,13 +151,20 @@ public class JavaScriptEvaluatorScope
 		}
 	}
 	
+	//TODO find a way to tell whether a Context is our own by only looking at it
+	private static Map<Context, Void> ownContexts = Collections.synchronizedMap(new WeakHashMap<>());
+
+	private ReportClassShutter classShutter;
 	private Context context;
 	private ScriptableObject scope;
-	private Map<String, Script> compiledExpressions = new HashMap<String, Script>();
+	private volatile ProtectionDomain protectionDomain;
+	private Map<String, Script> compiledExpressions = new HashMap<>();
 
 	public JavaScriptEvaluatorScope(JasperReportsContext jrContext, JREvaluator evaluator, FunctionsUtil functionsUtil)
 	{
+		classShutter = new ReportClassShutter(jrContext);
 		context = enter(null);
+		ownContexts.put(context, null);
 		
 		int optimizationLevel = JRPropertiesUtil.getInstance(jrContext).getIntegerProperty(JavaScriptEvaluator.PROPERTY_OPTIMIZATION_LEVEL);
 		if (log.isDebugEnabled())
@@ -160,6 +174,9 @@ public class JavaScriptEvaluatorScope
 		context.setOptimizationLevel(optimizationLevel);
 		
 		context.getWrapFactory().setJavaPrimitiveWrap(false);
+		
+		//using a protection domain in getCompiledExpression
+		context.setSecurityController(new JavaPolicySecurity());
 		
 		JavaScriptFunctionsObject functionsObject = new JavaScriptFunctionsObject(context, functionsUtil, evaluator);
 		this.scope = context.initStandardObjects();
@@ -252,6 +269,7 @@ public class JavaScriptEvaluatorScope
 		scope.put(name, scope, value);
 	}
 	
+	//TODO move expression compilation to a separate class
 	protected Script getCompiledExpression(String expression)
 	{
 		Script compiledExpression = compiledExpressions.get(expression);
@@ -264,14 +282,33 @@ public class JavaScriptEvaluatorScope
 			
 			ensureContext();
 			
-			compiledExpression = context.compileString(expression, "expression", 0, null);
+			compiledExpression = context.compileString(expression, "expression", 0, getProtectionDomain());
 			compiledExpressions.put(expression, compiledExpression);
 		}
 		return compiledExpression;
 	}
 	
+	protected ProtectionDomain getProtectionDomain()
+	{
+		ProtectionDomain domain = protectionDomain;
+		if (domain == null)
+		{
+			synchronized (this)
+			{
+				domain = protectionDomain;
+				if (domain == null)
+				{
+					ProtectionDomainFactory protectionDomainFactory = JRClassLoader.getProtectionDomainFactory();
+					domain = protectionDomain = protectionDomainFactory.getProtectionDomain(
+							Codegen.class.getClassLoader());
+				}
+			}
+		}
+		return domain;
+	}
+	
 	// enter a precreated context, or a new one if null is passed
-	protected static Context enter(Context context)
+	protected Context enter(Context context)
 	{
 		Context currentContext = Context.getCurrentContext();
 		if (context != null && context == currentContext)
@@ -281,12 +318,17 @@ public class JavaScriptEvaluatorScope
 		}
 		
 		// exit the current context if any
-		if (currentContext != null)
+		if (currentContext != null && ownContexts.containsKey(currentContext))
 		{
 			Context.exit();
 		}
 		
 		Context newContext = ContextFactory.getGlobal().enterContext(context);
+		ClassShutterSetter classShutterSetter = newContext.getClassShutterSetter();
+		if (classShutterSetter != null)
+		{
+			classShutterSetter.setClassShutter(classShutter);
+		}
 		
 		if (log.isDebugEnabled())
 		{

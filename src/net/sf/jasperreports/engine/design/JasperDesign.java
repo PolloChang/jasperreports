@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import net.sf.jasperreports.crosstabs.JRCrosstab;
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstab;
+import net.sf.jasperreports.engine.DatasetPropertyExpression;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRConstants;
@@ -51,6 +52,7 @@ import net.sf.jasperreports.engine.JRSection;
 import net.sf.jasperreports.engine.JRSortField;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBaseReport;
 import net.sf.jasperreports.engine.design.events.PropagationChangeListener;
 import net.sf.jasperreports.engine.type.BandTypeEnum;
@@ -111,7 +113,6 @@ import net.sf.jasperreports.engine.util.JRVisitorSupport;
  * @see net.sf.jasperreports.engine.base.JRBaseReport
  * @see net.sf.jasperreports.engine.xml.JRXmlLoader
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperDesign.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JasperDesign extends JRBaseReport
 {
@@ -119,6 +120,9 @@ public class JasperDesign extends JRBaseReport
 	 *
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_DATASET = "design.duplicate.dataset";
+	public static final String EXCEPTION_MESSAGE_KEY_DUPLICATE_REPORT_STYLE = "design.duplicate.report.style";
 
 	public static final String PROPERTY_BACKGROUND = "background";
 
@@ -199,10 +203,10 @@ public class JasperDesign extends JRBaseReport
 	/**
 	 * Report templates.
 	 */
-	private List<JRReportTemplate> templateList = new ArrayList<JRReportTemplate>();
+	private List<JRReportTemplate> templateList = new ArrayList<>();
 
-	private Map<String, JRStyle> stylesMap = new HashMap<String, JRStyle>();
-	private List<JRStyle> stylesList = new ArrayList<JRStyle>();
+	private Map<String, JRStyle> stylesMap = new HashMap<>();
+	private List<JRStyle> stylesList = new ArrayList<>();
 
 	/**
 	 * Main report dataset.
@@ -212,16 +216,21 @@ public class JasperDesign extends JRBaseReport
 	/**
 	 * Report sub datasets indexed by name.
 	 */
-	private Map<String, JRDataset> datasetMap = new HashMap<String, JRDataset>();
-	private List<JRDataset> datasetList = new ArrayList<JRDataset>();
+	private Map<String, JRDataset> datasetMap = new HashMap<>();
+	private List<JRDataset> datasetList = new ArrayList<>();
 	
 	/**
 	 * Constructs a JasperDesign object and fills it with the default variables and parameters.
 	 */
-	@SuppressWarnings("deprecation")
 	public JasperDesign()
 	{
-		setMainDataset(new JRDesignDataset(true));
+		this(DefaultJasperReportsContext.getInstance());
+	}
+
+	@SuppressWarnings("deprecation")
+	public JasperDesign(JasperReportsContext context)
+	{
+		setMainDataset(new JRDesignDataset(context, true));
 		
 		detailSection = new JRDesignSection(new JROrigin(BandTypeEnum.DETAIL));
 	}
@@ -641,6 +650,7 @@ public class JasperDesign extends JRBaseReport
 	/**
 	 * Gets an array of report level styles. These styles can be referenced by report elements.
 	 */
+	@Override
 	public JRStyle[] getStyles()
 	{
 		JRStyle[] stylesArray = new JRStyle[stylesList.size()];
@@ -685,7 +695,10 @@ public class JasperDesign extends JRBaseReport
 	{
 		if (stylesMap.containsKey(style.getName()))
 		{
-			throw new JRException("Duplicate declaration of report style : " + style.getName());
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_REPORT_STYLE,
+					new Object[]{style.getName()});
 		}
 
 		stylesList.add(index, style);
@@ -767,6 +780,42 @@ public class JasperDesign extends JRBaseReport
 	public JRScriptlet removeScriptlet(String scriptletName)
 	{
 		return mainDesignDataset.removeScriptlet(scriptletName);
+	}
+
+
+	/**
+	 *
+	 */
+	public void addPropertyExpression(DatasetPropertyExpression propertyExpression)
+	{
+		mainDesignDataset.addPropertyExpression(propertyExpression);
+	}
+
+
+	/**
+	 *
+	 */
+	public void removePropertyExpression(DatasetPropertyExpression propertyExpression)
+	{
+		mainDesignDataset.removePropertyExpression(propertyExpression);
+	}
+
+	
+	/**
+	 *
+	 */
+	public DatasetPropertyExpression removePropertyExpression(String name)
+	{
+		return mainDesignDataset.removePropertyExpression(name);
+	}
+
+	
+	/**
+	 *
+	 */
+	public List<DatasetPropertyExpression> getPropertyExpressionsList()
+	{
+		return mainDesignDataset.getPropertyExpressionsList();
 	}
 
 
@@ -1013,6 +1062,7 @@ public class JasperDesign extends JRBaseReport
 	}
 
 
+	@Override
 	public JRDataset[] getDatasets()
 	{
 		JRDataset[] datasetArray = new JRDataset[datasetList.size()];
@@ -1067,7 +1117,10 @@ public class JasperDesign extends JRBaseReport
 	{
 		if (datasetMap.containsKey(dataset.getName()))
 		{
-			throw new JRException("Duplicate declaration of dataset : " + dataset.getName());
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DUPLICATE_DATASET,
+					new Object[]{dataset.getName()});
 		}
 
 		datasetList.add(index, dataset);
@@ -1154,9 +1207,10 @@ public class JasperDesign extends JRBaseReport
 
 	protected List<JRCrosstab> getCrosstabs()
 	{
-		final List<JRCrosstab> crosstabs = new ArrayList<JRCrosstab>();
+		final List<JRCrosstab> crosstabs = new ArrayList<>();
 		JRElementsVisitor.visitReport(this, new JRVisitorSupport()
 		{
+			@Override
 			public void visitCrosstab(JRCrosstab crosstab)
 			{
 				crosstabs.add(crosstab);
@@ -1247,6 +1301,7 @@ public class JasperDesign extends JRBaseReport
 		return false;
 	}
 
+	@Override
 	public JRReportTemplate[] getTemplates()
 	{
 		return templateList.toArray(new JRReportTemplate[templateList.size()]);

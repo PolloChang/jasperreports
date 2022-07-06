@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,9 +26,8 @@ package net.sf.jasperreports.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleJsonReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class SimpleJsonReportConfiguration extends SimpleReportExportConfiguration implements JsonReportConfiguration
+public class SimpleJsonReportConfiguration extends SimpleReportExportConfiguration implements JsonReportConfiguration //FIXMENOW check if it makes sense
 {
 	private Boolean isIgnoreHyperlink;
 
@@ -39,9 +38,7 @@ public class SimpleJsonReportConfiguration extends SimpleReportExportConfigurati
 	{
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreHyperlink()
 	{
 		return isIgnoreHyperlink;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,46 +37,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.SortedSet;
 import java.util.TimeZone;
-
-import net.sf.jasperreports.charts.ChartContext;
-import net.sf.jasperreports.charts.ChartTheme;
-import net.sf.jasperreports.charts.ChartThemeBundle;
-import net.sf.jasperreports.charts.JRAreaPlot;
-import net.sf.jasperreports.charts.JRBar3DPlot;
-import net.sf.jasperreports.charts.JRBarPlot;
-import net.sf.jasperreports.charts.JRBubblePlot;
-import net.sf.jasperreports.charts.JRCandlestickPlot;
-import net.sf.jasperreports.charts.JRChartAxis;
-import net.sf.jasperreports.charts.JRDataRange;
-import net.sf.jasperreports.charts.JRHighLowPlot;
-import net.sf.jasperreports.charts.JRItemLabel;
-import net.sf.jasperreports.charts.JRLinePlot;
-import net.sf.jasperreports.charts.JRMeterPlot;
-import net.sf.jasperreports.charts.JRPie3DPlot;
-import net.sf.jasperreports.charts.JRPiePlot;
-import net.sf.jasperreports.charts.JRScatterPlot;
-import net.sf.jasperreports.charts.JRThermometerPlot;
-import net.sf.jasperreports.charts.JRTimeSeriesPlot;
-import net.sf.jasperreports.charts.JRValueDisplay;
-import net.sf.jasperreports.charts.type.AxisPositionEnum;
-import net.sf.jasperreports.charts.type.EdgeEnum;
-import net.sf.jasperreports.charts.type.MeterShapeEnum;
-import net.sf.jasperreports.charts.type.PlotOrientationEnum;
-import net.sf.jasperreports.charts.type.ScaleTypeEnum;
-import net.sf.jasperreports.charts.util.ChartUtil;
-import net.sf.jasperreports.charts.util.JRMeterInterval;
-import net.sf.jasperreports.engine.JRChart;
-import net.sf.jasperreports.engine.JRChartDataset;
-import net.sf.jasperreports.engine.JRChartPlot;
-import net.sf.jasperreports.engine.JRChartPlot.JRSeriesColor;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExpression;
-import net.sf.jasperreports.engine.JRFont;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.base.JRBaseFont;
-import net.sf.jasperreports.engine.fonts.FontUtil;
-import net.sf.jasperreports.engine.type.ModeEnum;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
@@ -116,7 +76,6 @@ import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.BarRenderer3D;
 import org.jfree.chart.renderer.category.GanttRenderer;
 import org.jfree.chart.renderer.category.LineAndShapeRenderer;
-import org.jfree.chart.renderer.category.StackedBarRenderer;
 import org.jfree.chart.renderer.category.StackedBarRenderer3D;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.HighLowRenderer;
@@ -140,30 +99,125 @@ import org.jfree.ui.RectangleAnchor;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.TextAnchor;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.charts.ChartContext;
+import net.sf.jasperreports.charts.ChartTheme;
+import net.sf.jasperreports.charts.ChartThemeBundle;
+import net.sf.jasperreports.charts.JRAreaPlot;
+import net.sf.jasperreports.charts.JRBar3DPlot;
+import net.sf.jasperreports.charts.JRBarPlot;
+import net.sf.jasperreports.charts.JRBubblePlot;
+import net.sf.jasperreports.charts.JRCandlestickPlot;
+import net.sf.jasperreports.charts.JRChartAxis;
+import net.sf.jasperreports.charts.JRDataRange;
+import net.sf.jasperreports.charts.JRHighLowPlot;
+import net.sf.jasperreports.charts.JRItemLabel;
+import net.sf.jasperreports.charts.JRLinePlot;
+import net.sf.jasperreports.charts.JRMeterPlot;
+import net.sf.jasperreports.charts.JRPie3DPlot;
+import net.sf.jasperreports.charts.JRPiePlot;
+import net.sf.jasperreports.charts.JRScatterPlot;
+import net.sf.jasperreports.charts.JRThermometerPlot;
+import net.sf.jasperreports.charts.JRTimeSeriesPlot;
+import net.sf.jasperreports.charts.JRValueDisplay;
+import net.sf.jasperreports.charts.type.AxisPositionEnum;
+import net.sf.jasperreports.charts.type.EdgeEnum;
+import net.sf.jasperreports.charts.type.MeterShapeEnum;
+import net.sf.jasperreports.charts.type.PlotOrientationEnum;
+import net.sf.jasperreports.charts.type.ScaleTypeEnum;
+import net.sf.jasperreports.charts.util.ChartUtil;
+import net.sf.jasperreports.charts.util.JRMeterInterval;
+import net.sf.jasperreports.engine.JRChart;
+import net.sf.jasperreports.engine.JRChartDataset;
+import net.sf.jasperreports.engine.JRChartPlot;
+import net.sf.jasperreports.engine.JRChartPlot.JRSeriesColor;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRExpression;
+import net.sf.jasperreports.engine.JRFont;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.base.JRBaseFont;
+import net.sf.jasperreports.engine.fonts.FontUtil;
+import net.sf.jasperreports.engine.type.ModeEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
+
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
  * @author Some enhancements by Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: DefaultChartTheme.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultChartTheme implements ChartTheme
 {
 
+	public static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_CHART_TYPE = "fill.chart.theme.unsupported.chart.type";
+	
 	/**
 	 *
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_CHART_THEME,
+			valueType = Boolean.class,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_5_0
+			)
 	public static final String PROPERTY_DIAL_VALUE_DISPLAY_VISIBLE = JRPropertiesUtil.PROPERTY_PREFIX + "chart.dial.value.display.visible";
+	
+	@Property(
+			category = PropertyConstants.CATEGORY_CHART_THEME,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_5_0
+			)
 	public static final String PROPERTY_DIAL_LABEL = JRPropertiesUtil.PROPERTY_PREFIX + "chart.dial.label";
+	
+	@Property(
+			category = PropertyConstants.CATEGORY_CHART_THEME,
+			valueType = Integer.class,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_5_0
+			)
 	public static final String PROPERTY_RANGE_AXIS_TICK_COUNT = JRPropertiesUtil.PROPERTY_PREFIX + "chart.range.axis.tick.count";
+	@Property(
+			category = PropertyConstants.CATEGORY_CHART_THEME,
+			valueType = Double.class,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_1_4
+			)
 	public static final String PROPERTY_RANGE_AXIS_TICK_INTERVAL = JRPropertiesUtil.PROPERTY_PREFIX + "chart.range.axis.tick.interval";
+	@Property(
+			category = PropertyConstants.CATEGORY_CHART_THEME,
+			valueType = Boolean.class,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_6_0
+			)
 	public static final String PROPERTY_RANGE_AXIS_INTEGER_UNIT = JRPropertiesUtil.PROPERTY_PREFIX + "chart.range.axis.integer.unit";
+	@Property(
+			category = PropertyConstants.CATEGORY_CHART_THEME,
+			valueType = Integer.class,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_5_0
+			)
 	public static final String PROPERTY_DOMAIN_AXIS_TICK_COUNT = JRPropertiesUtil.PROPERTY_PREFIX + "chart.domain.axis.tick.count";
+	@Property(
+			category = PropertyConstants.CATEGORY_CHART_THEME,
+			valueType = Double.class,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_1_4
+			)
 	public static final String PROPERTY_DOMAIN_AXIS_TICK_INTERVAL = JRPropertiesUtil.PROPERTY_PREFIX + "chart.domain.axis.tick.interval";
+	@Property(
+			category = PropertyConstants.CATEGORY_CHART_THEME,
+			valueType = Boolean.class,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_6_0
+			)
 	public static final String PROPERTY_DOMAIN_AXIS_INTEGER_UNIT = JRPropertiesUtil.PROPERTY_PREFIX + "chart.domain.axis.integer.unit";
 
 	/**
 	 *
 	 */
+	// do not use unless actually necessary as it results in rasterized images for PostScript printing
 	protected static final Color TRANSPARENT_PAINT = new Color(0, 0, 0, 0);
 	
 	/**
@@ -257,9 +311,7 @@ public class DefaultChartTheme implements ChartTheme
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public JFreeChart createChart(ChartContext chartContext) throws JRException
 	{
 		this.chartContext = chartContext;
@@ -339,7 +391,11 @@ public class DefaultChartTheme implements ChartTheme
 				jfreeChart = createGanttChart();
 				break;
 			default:
-				throw new JRRuntimeException("Chart type " + getChart().getChartType() + " not supported.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNSUPPORTED_CHART_TYPE,  
+						new Object[]{getChart().getChartType()} 
+						);
 		}
 
 		return jfreeChart;
@@ -357,7 +413,7 @@ public class DefaultChartTheme implements ChartTheme
 		}
 		else
 		{
-			jfreeChart.setBackgroundPaint(TRANSPARENT_PAINT);
+			jfreeChart.setBackgroundPaint(null);
 		}
 		
 		RectangleEdge titleEdge = getEdge(getChart().getTitlePositionValue(), RectangleEdge.TOP);
@@ -391,7 +447,7 @@ public class DefaultChartTheme implements ChartTheme
 
 			if (getChart().getOwnLegendBackgroundColor() == null)// in a way, legend backcolor inheritance from chart is useless
 			{
-				legend.setBackgroundPaint(TRANSPARENT_PAINT);
+				legend.setBackgroundPaint(null);
 			}
 			else
 			{
@@ -411,19 +467,19 @@ public class DefaultChartTheme implements ChartTheme
 	 */
 	protected void configurePlot(Plot plot)
 	{
-		plot.setOutlinePaint(TRANSPARENT_PAINT);
+		plot.setOutlinePaint(null);
 
 		if (getPlot().getOwnBackcolor() == null)// in a way, plot backcolor inheritence from chart is useless
 		{
-			plot.setBackgroundPaint(TRANSPARENT_PAINT);
+			plot.setBackgroundPaint(null);
 		}
 		else
 		{
 			plot.setBackgroundPaint(getPlot().getBackcolor());
 		}
 
-		float backgroundAlpha = getPlot().getBackgroundAlphaFloat() == null ? 1f : getPlot().getBackgroundAlphaFloat().floatValue();
-		float foregroundAlpha = getPlot().getForegroundAlphaFloat() == null ? 1f : getPlot().getForegroundAlphaFloat().floatValue();
+		float backgroundAlpha = getPlot().getBackgroundAlphaFloat() == null ? 1f : getPlot().getBackgroundAlphaFloat();
+		float foregroundAlpha = getPlot().getForegroundAlphaFloat() == null ? 1f : getPlot().getForegroundAlphaFloat();
 		plot.setBackgroundAlpha(backgroundAlpha);
 		plot.setForegroundAlpha(foregroundAlpha);
 
@@ -594,7 +650,7 @@ public class DefaultChartTheme implements ChartTheme
 
 		if (verticalTickLabels != null && axis instanceof ValueAxis)
 		{
-			((ValueAxis)axis).setVerticalTickLabels(verticalTickLabels.booleanValue());
+			((ValueAxis)axis).setVerticalTickLabels(verticalTickLabels);
 		}
 		
 		setAxisBounds(axis, isRangeAxis, axisMinValue, axisMaxValue);
@@ -659,13 +715,13 @@ public class DefaultChartTheme implements ChartTheme
 
 		BarRenderer3D barRenderer3D =
 			new BarRenderer3D(
-				bar3DPlot.getXOffsetDouble() == null ? BarRenderer3D.DEFAULT_X_OFFSET : bar3DPlot.getXOffsetDouble().doubleValue(),
-				bar3DPlot.getYOffsetDouble() == null ? BarRenderer3D.DEFAULT_Y_OFFSET : bar3DPlot.getYOffsetDouble().doubleValue()
+				bar3DPlot.getXOffsetDouble() == null ? BarRenderer3D.DEFAULT_X_OFFSET : bar3DPlot.getXOffsetDouble(),
+				bar3DPlot.getYOffsetDouble() == null ? BarRenderer3D.DEFAULT_Y_OFFSET : bar3DPlot.getYOffsetDouble()
 				);
 
-		boolean isShowLabels = bar3DPlot.getShowLabels() == null ? false : bar3DPlot.getShowLabels().booleanValue();
+		boolean isShowLabels = bar3DPlot.getShowLabels() == null ? false : bar3DPlot.getShowLabels();
 		barRenderer3D.setBaseItemLabelsVisible( isShowLabels );
-		if(isShowLabels)
+		if (isShowLabels)
 		{
 			JRItemLabel itemLabel = bar3DPlot.getItemLabel();
 
@@ -676,9 +732,9 @@ public class DefaultChartTheme implements ChartTheme
 					)
 				);
 			
-			if(itemLabel != null)
+			if (itemLabel != null)
 			{
-				if(itemLabel.getColor() != null)
+				if (itemLabel.getColor() != null)
 				{
 					barRenderer3D.setBaseItemLabelPaint(itemLabel.getColor());
 				}
@@ -687,7 +743,7 @@ public class DefaultChartTheme implements ChartTheme
 					barRenderer3D.setBaseItemLabelPaint(getChart().getForecolor());
 				}
 //				categoryRenderer.setBaseFillPaint(itemLabel.getBackgroundColor());
-//				if(itemLabel.getMask() != null)
+//				if (itemLabel.getMask() != null)
 //				{
 //					barRenderer3D.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator(
 //							StandardCategoryItemLabelGenerator.DEFAULT_LABEL_FORMAT_STRING, 
@@ -751,8 +807,8 @@ public class DefaultChartTheme implements ChartTheme
 		//plot.setNoDataMessage("No data to display");
 		
 		JRBarPlot barPlot = (JRBarPlot)getPlot();
-		boolean isShowTickMarks = barPlot.getShowTickMarks() == null ? true : barPlot.getShowTickMarks().booleanValue();
-		boolean isShowTickLabels = barPlot.getShowTickLabels() == null ? true : barPlot.getShowTickLabels().booleanValue();
+		boolean isShowTickMarks = barPlot.getShowTickMarks() == null ? true : barPlot.getShowTickMarks();
+		boolean isShowTickLabels = barPlot.getShowTickLabels() == null ? true : barPlot.getShowTickLabels();
 
 		categoryPlot.getDomainAxis().setTickMarksVisible(isShowTickMarks);
 		categoryPlot.getDomainAxis().setTickLabelsVisible(isShowTickLabels);
@@ -776,9 +832,9 @@ public class DefaultChartTheme implements ChartTheme
 				rangeAxisMaxValue);
 
 		BarRenderer categoryRenderer = (BarRenderer)categoryPlot.getRenderer();
-		boolean isShowLabels = barPlot.getShowLabels() == null ? false : barPlot.getShowLabels().booleanValue();
+		boolean isShowLabels = barPlot.getShowLabels() == null ? false : barPlot.getShowLabels();
 		categoryRenderer.setBaseItemLabelsVisible( isShowLabels );
-		if(isShowLabels)
+		if (isShowLabels)
 		{
 			if (rangeAxisMaxValue == null)
 			{
@@ -787,7 +843,7 @@ public class DefaultChartTheme implements ChartTheme
 				Axis axis = categoryPlot.getRangeAxis();
 				if (axis instanceof ValueAxis)
 				{
-					if(!(axis instanceof DateAxis))
+					if (!(axis instanceof DateAxis))
 					{
 						float rangeAxisMaxRatio = 1f;
 						
@@ -820,9 +876,9 @@ public class DefaultChartTheme implements ChartTheme
 					)
 				);
 			
-			if(itemLabel != null)
+			if (itemLabel != null)
 			{
-				if(itemLabel.getColor() != null)
+				if (itemLabel.getColor() != null)
 				{
 					categoryRenderer.setBaseItemLabelPaint(itemLabel.getColor());
 				}
@@ -831,7 +887,7 @@ public class DefaultChartTheme implements ChartTheme
 					categoryRenderer.setBaseItemLabelPaint(getChart().getForecolor());
 				}
 //				categoryRenderer.setBaseFillPaint(itemLabel.getBackgroundColor());
-//				if(itemLabel.getMask() != null)
+//				if (itemLabel.getMask() != null)
 //				{
 //					categoryRenderer.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator(
 //							StandardCategoryItemLabelGenerator.DEFAULT_LABEL_FORMAT_STRING, 
@@ -915,7 +971,7 @@ public class DefaultChartTheme implements ChartTheme
 		XYPlot xyPlot = (XYPlot) jfreeChart.getPlot();
 		JRCandlestickPlot candlestickPlot = (JRCandlestickPlot)getPlot();
 		CandlestickRenderer candlestickRenderer = (CandlestickRenderer) xyPlot.getRenderer();
-		boolean isShowVolume = candlestickPlot.getShowVolume() == null ? true : candlestickPlot.getShowVolume().booleanValue();
+		boolean isShowVolume = candlestickPlot.getShowVolume() == null ? true : candlestickPlot.getShowVolume();
 		candlestickRenderer.setDrawVolume(isShowVolume);
 
 		// Handle the axis formating for the category axis
@@ -958,8 +1014,8 @@ public class DefaultChartTheme implements ChartTheme
 		XYPlot xyPlot = (XYPlot) jfreeChart.getPlot();
 		JRHighLowPlot highLowPlot = (JRHighLowPlot)getPlot();
 		HighLowRenderer hlRenderer = (HighLowRenderer) xyPlot.getRenderer();
-		boolean isShowOpenTicks = highLowPlot.getShowOpenTicks() == null ? false : highLowPlot.getShowOpenTicks().booleanValue();
-		boolean isShowCloseTicks = highLowPlot.getShowCloseTicks() == null ? false : highLowPlot.getShowCloseTicks().booleanValue();
+		boolean isShowOpenTicks = highLowPlot.getShowOpenTicks() == null ? false : highLowPlot.getShowOpenTicks();
+		boolean isShowCloseTicks = highLowPlot.getShowCloseTicks() == null ? false : highLowPlot.getShowCloseTicks();
 		
 		hlRenderer.setDrawOpenTicks(isShowOpenTicks);
 		hlRenderer.setDrawCloseTicks(isShowCloseTicks);
@@ -1003,8 +1059,8 @@ public class DefaultChartTheme implements ChartTheme
 		JRLinePlot linePlot = (JRLinePlot)getPlot();
 
 		LineAndShapeRenderer lineRenderer = (LineAndShapeRenderer)categoryPlot.getRenderer();
-		boolean isShowShapes = linePlot.getShowShapes() == null ? true : linePlot.getShowShapes().booleanValue();
-		boolean isShowLines = linePlot.getShowLines() == null ? true : linePlot.getShowLines().booleanValue();
+		boolean isShowShapes = linePlot.getShowShapes() == null ? true : linePlot.getShowShapes();
+		boolean isShowLines = linePlot.getShowLines() == null ? true : linePlot.getShowLines();
 		
 		lineRenderer.setBaseShapesVisible( isShowShapes );//FIXMECHART check this
 		lineRenderer.setBaseLinesVisible( isShowLines );
@@ -1053,14 +1109,14 @@ public class DefaultChartTheme implements ChartTheme
 		//plot.setDirection(Rotation.CLOCKWISE);
 		//plot.setNoDataMessage("No data to display");
 		JRPie3DPlot jrPie3DPlot = (JRPie3DPlot)getPlot();
-		double depthFactor = jrPie3DPlot.getDepthFactorDouble() == null ? JRPie3DPlot.DEPTH_FACTOR_DEFAULT : jrPie3DPlot.getDepthFactorDouble().doubleValue();
-		boolean isCircular =  jrPie3DPlot.getCircular() == null ? false : jrPie3DPlot.getCircular().booleanValue();
+		double depthFactor = jrPie3DPlot.getDepthFactorDouble() == null ? JRPie3DPlot.DEPTH_FACTOR_DEFAULT : jrPie3DPlot.getDepthFactorDouble();
+		boolean isCircular =  jrPie3DPlot.getCircular() == null ? false : jrPie3DPlot.getCircular();
 		piePlot3D.setDepthFactor(depthFactor);
 		piePlot3D.setCircular(isCircular);
 		
-		boolean isShowLabels = jrPie3DPlot.getShowLabels() == null ? true : jrPie3DPlot.getShowLabels().booleanValue();
+		boolean isShowLabels = jrPie3DPlot.getShowLabels() == null ? true : jrPie3DPlot.getShowLabels();
 
-		if(isShowLabels)
+		if (isShowLabels)
 		{
 			PieSectionLabelGenerator labelGenerator = (PieSectionLabelGenerator)getLabelGenerator();
 			JRItemLabel itemLabel = jrPie3DPlot.getItemLabel();
@@ -1090,7 +1146,7 @@ public class DefaultChartTheme implements ChartTheme
 					)
 				);
 	
-			if(itemLabel != null && itemLabel.getColor() != null)
+			if (itemLabel != null && itemLabel.getColor() != null)
 			{
 				piePlot3D.setLabelPaint(itemLabel.getColor());
 			}
@@ -1099,7 +1155,7 @@ public class DefaultChartTheme implements ChartTheme
 				piePlot3D.setLabelPaint(getChart().getForecolor());
 			}
 	
-			if(itemLabel != null && itemLabel.getBackgroundColor() != null)
+			if (itemLabel != null && itemLabel.getBackgroundColor() != null)
 			{
 				piePlot3D.setLabelBackgroundPaint(itemLabel.getBackgroundColor());
 			}
@@ -1147,12 +1203,12 @@ public class DefaultChartTheme implements ChartTheme
 		//plot.setDirection(Rotation.CLOCKWISE);
 		//plot.setNoDataMessage("No data to display");
 		JRPiePlot jrPiePlot = (JRPiePlot)getPlot();
-		boolean isCircular = jrPiePlot.getCircular() == null ? true : jrPiePlot.getCircular().booleanValue();
+		boolean isCircular = jrPiePlot.getCircular() == null ? true : jrPiePlot.getCircular();
 		piePlot.setCircular(isCircular);
 
-		boolean isShowLabels = jrPiePlot.getShowLabels() == null ? true : jrPiePlot.getShowLabels().booleanValue();
+		boolean isShowLabels = jrPiePlot.getShowLabels() == null ? true : jrPiePlot.getShowLabels();
 		
-		if(isShowLabels)
+		if (isShowLabels)
 		{
 			PieSectionLabelGenerator labelGenerator = (PieSectionLabelGenerator)getLabelGenerator();
 			JRItemLabel itemLabel = jrPiePlot.getItemLabel();
@@ -1182,7 +1238,7 @@ public class DefaultChartTheme implements ChartTheme
 					)
 				);
 	
-			if(itemLabel != null && itemLabel.getColor() != null)
+			if (itemLabel != null && itemLabel.getColor() != null)
 			{
 				piePlot.setLabelPaint(itemLabel.getColor());
 			}
@@ -1191,7 +1247,7 @@ public class DefaultChartTheme implements ChartTheme
 				piePlot.setLabelPaint(getChart().getForecolor());
 			}
 	
-			if(itemLabel != null && itemLabel.getBackgroundColor() != null)
+			if (itemLabel != null && itemLabel.getBackgroundColor() != null)
 			{
 				piePlot.setLabelBackgroundPaint(itemLabel.getBackgroundColor());
 			}
@@ -1235,8 +1291,8 @@ public class DefaultChartTheme implements ChartTheme
 		XYLineAndShapeRenderer plotRenderer = (XYLineAndShapeRenderer) ((XYPlot)jfreeChart.getPlot()).getRenderer();
 
 		JRScatterPlot scatterPlot = (JRScatterPlot) getPlot();
-		boolean isShowLines = scatterPlot.getShowLines() == null ? true : scatterPlot.getShowLines().booleanValue();
-		boolean isShowShapes = scatterPlot.getShowShapes() == null ? true : scatterPlot.getShowShapes().booleanValue();
+		boolean isShowLines = scatterPlot.getShowLines() == null ? true : scatterPlot.getShowLines();
+		boolean isShowShapes = scatterPlot.getShowShapes() == null ? true : scatterPlot.getShowShapes();
 		
 		plotRenderer.setBaseLinesVisible(isShowLines);
 		plotRenderer.setBaseShapesVisible(isShowShapes);
@@ -1286,13 +1342,50 @@ public class DefaultChartTheme implements ChartTheme
 
 		StackedBarRenderer3D stackedBarRenderer3D =
 			new StackedBarRenderer3D(
-				bar3DPlot.getXOffsetDouble() == null ? StackedBarRenderer3D.DEFAULT_X_OFFSET : bar3DPlot.getXOffsetDouble().doubleValue(),
-				bar3DPlot.getYOffsetDouble() == null ? StackedBarRenderer3D.DEFAULT_Y_OFFSET : bar3DPlot.getYOffsetDouble().doubleValue()
+				bar3DPlot.getXOffsetDouble() == null ? StackedBarRenderer3D.DEFAULT_X_OFFSET : bar3DPlot.getXOffsetDouble(),
+				bar3DPlot.getYOffsetDouble() == null ? StackedBarRenderer3D.DEFAULT_Y_OFFSET : bar3DPlot.getYOffsetDouble()
 				);
+		boolean isShowLabels = bar3DPlot.getShowLabels() == null ? false : bar3DPlot.getShowLabels();
+		stackedBarRenderer3D.setBaseItemLabelsVisible(isShowLabels);
+		if (isShowLabels)
+		{
+			JRItemLabel itemLabel = bar3DPlot.getItemLabel();
 
-		stackedBarRenderer3D.setBaseItemLabelGenerator((CategoryItemLabelGenerator)getLabelGenerator());
-		stackedBarRenderer3D.setBaseItemLabelsVisible(bar3DPlot.getShowLabels() == null ? false : bar3DPlot.getShowLabels().booleanValue());
-
+			stackedBarRenderer3D.setBaseItemLabelFont(
+				fontUtil.getAwtFont(
+					getFont(itemLabel == null ? null : itemLabel.getFont()), 
+					getLocale()
+					)
+				);
+			
+			if (itemLabel != null)
+			{
+				if (itemLabel.getColor() != null)
+				{
+					stackedBarRenderer3D.setBaseItemLabelPaint(itemLabel.getColor());
+				}
+				else
+				{
+					stackedBarRenderer3D.setBaseItemLabelPaint(getChart().getForecolor());
+				}
+//				categoryRenderer.setBaseFillPaint(itemLabel.getBackgroundColor());
+//				if (itemLabel.getMask() != null)
+//				{
+//					barRenderer3D.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator(
+//							StandardCategoryItemLabelGenerator.DEFAULT_LABEL_FORMAT_STRING, 
+//							new DecimalFormat(itemLabel.getMask())));
+//				}
+//				else
+//				{
+				stackedBarRenderer3D.setBaseItemLabelGenerator((CategoryItemLabelGenerator)getLabelGenerator());
+//				}
+			}
+			else
+			{
+				stackedBarRenderer3D.setBaseItemLabelGenerator((CategoryItemLabelGenerator)getLabelGenerator());
+				stackedBarRenderer3D.setBaseItemLabelPaint(getChart().getForecolor());
+			}
+		}
 		categoryPlot.setRenderer(stackedBarRenderer3D);
 
 		// Handle the axis formating for the category axis
@@ -1338,18 +1431,88 @@ public class DefaultChartTheme implements ChartTheme
 		CategoryPlot categoryPlot = (CategoryPlot)jfreeChart.getPlot();
 		JRBarPlot barPlot = (JRBarPlot)getPlot();
 		//plot.setNoDataMessage("No data to display");
-		boolean isShowTickMarks = barPlot.getShowTickMarks() == null ? true : barPlot.getShowTickMarks().booleanValue();
-		boolean isShowTickLabels = barPlot.getShowTickLabels() == null ? true : barPlot.getShowTickLabels().booleanValue();
-		boolean isShowLabels = barPlot.getShowLabels() == null ? false : barPlot.getShowLabels().booleanValue();
+		boolean isShowTickMarks = barPlot.getShowTickMarks() == null ? true : barPlot.getShowTickMarks();
+		boolean isShowTickLabels = barPlot.getShowTickLabels() == null ? true : barPlot.getShowTickLabels();
+		boolean isShowLabels = barPlot.getShowLabels() == null ? false : barPlot.getShowLabels();
 		
 		categoryPlot.getDomainAxis().setTickMarksVisible(isShowTickMarks);
 		categoryPlot.getDomainAxis().setTickLabelsVisible(isShowTickLabels);
 		((NumberAxis)categoryPlot.getRangeAxis()).setTickMarksVisible(isShowTickMarks);
 		((NumberAxis)categoryPlot.getRangeAxis()).setTickLabelsVisible(isShowTickLabels);
 
-		StackedBarRenderer categoryRenderer = (StackedBarRenderer)categoryPlot.getRenderer();
-		categoryRenderer.setBaseItemLabelGenerator((CategoryItemLabelGenerator)getLabelGenerator());
-		categoryRenderer.setBaseItemLabelsVisible(isShowLabels);
+		BarRenderer categoryRenderer = (BarRenderer)categoryPlot.getRenderer();
+		categoryRenderer.setBaseItemLabelsVisible( isShowLabels );
+		Comparable<?> rangeAxisMaxValue = (Comparable<?>)evaluateExpression(barPlot.getRangeAxisMaxValueExpression());
+		if (isShowLabels)
+		{
+			if (rangeAxisMaxValue == null)
+			{
+				//in case the bars are horizontal and there was no range max value specified, 
+				//we try to make the axis a little longer for labels to fit on the plot
+				Axis axis = categoryPlot.getRangeAxis();
+				if (axis instanceof ValueAxis)
+				{
+					if (!(axis instanceof DateAxis))
+					{
+						float rangeAxisMaxRatio = 1f;
+						
+						if (barPlot.getOrientationValue() == PlotOrientationEnum.HORIZONTAL)
+						{
+							rangeAxisMaxRatio = 
+								JRPropertiesUtil.getInstance(chartContext.getJasperReportsContext()).getFloatProperty(
+									getChart(), "net.sf.jasperreports.chart.bar.horizontal.range.max.value.ratio", 1.25f
+									);
+						}
+						else
+						{
+							rangeAxisMaxRatio = 
+								JRPropertiesUtil.getInstance(chartContext.getJasperReportsContext()).getFloatProperty(
+									getChart(), "net.sf.jasperreports.chart.bar.vertical.range.max.value.ratio", 1.1f
+									);
+						}
+						
+						((ValueAxis)axis).setUpperBound(((ValueAxis)axis).getUpperBound() * rangeAxisMaxRatio);
+					}
+				}
+			}
+
+			JRItemLabel itemLabel = barPlot.getItemLabel();
+			
+			categoryRenderer.setBaseItemLabelFont(
+				fontUtil.getAwtFont(
+					getFont(itemLabel == null ? null : itemLabel.getFont()), 
+					getLocale()
+					)
+				);
+			
+			if (itemLabel != null)
+			{
+				if (itemLabel.getColor() != null)
+				{
+					categoryRenderer.setBaseItemLabelPaint(itemLabel.getColor());
+				}
+				else
+				{
+					categoryRenderer.setBaseItemLabelPaint(getChart().getForecolor());
+				}
+//				categoryRenderer.setBaseFillPaint(itemLabel.getBackgroundColor());
+//				if (itemLabel.getMask() != null)
+//				{
+//					categoryRenderer.setBaseItemLabelGenerator(new StandardCategoryItemLabelGenerator(
+//							StandardCategoryItemLabelGenerator.DEFAULT_LABEL_FORMAT_STRING, 
+//							new DecimalFormat(itemLabel.getMask())));
+//				}
+//				else
+//				{
+					categoryRenderer.setBaseItemLabelGenerator((CategoryItemLabelGenerator)getLabelGenerator());
+//				}
+			}
+			else
+			{
+				categoryRenderer.setBaseItemLabelGenerator((CategoryItemLabelGenerator)getLabelGenerator());
+				categoryRenderer.setBaseItemLabelPaint(getChart().getForecolor());
+			}
+		}
 		categoryRenderer.setShadowVisible(false);
 
 		// Handle the axis formating for the category axis
@@ -1366,7 +1529,7 @@ public class DefaultChartTheme implements ChartTheme
 				barPlot.getValueAxisTickLabelColor(), barPlot.getValueAxisTickLabelMask(), barPlot.getValueAxisVerticalTickLabels(),
 				barPlot.getValueAxisLineColor(), true,
 				(Comparable<?>)evaluateExpression(barPlot.getRangeAxisMinValueExpression()),
-				(Comparable<?>)evaluateExpression(barPlot.getRangeAxisMaxValueExpression()));
+				rangeAxisMaxValue);
 
 		return jfreeChart;
 	}
@@ -1458,7 +1621,7 @@ public class DefaultChartTheme implements ChartTheme
 		IntervalXYDataset tmpDataset = (IntervalXYDataset)getDataset();
 
 		boolean isDate = true;
-		if( getChart().getDataset().getDatasetType() == JRChartDataset.XY_DATASET )
+		if ( getChart().getDataset().getDatasetType() == JRChartDataset.XY_DATASET )
 		{
 			isDate = false;
 		}
@@ -1501,7 +1664,7 @@ public class DefaultChartTheme implements ChartTheme
 		
 
 		JRBarPlot barPlot = (JRBarPlot)getPlot();
-		boolean isShowLabels = barPlot.getShowLabels() == null ? false : barPlot.getShowLabels().booleanValue();
+		boolean isShowLabels = barPlot.getShowLabels() == null ? false : barPlot.getShowLabels();
 		
 		itemRenderer.setBaseItemLabelsVisible( isShowLabels );
 
@@ -1560,8 +1723,8 @@ public class DefaultChartTheme implements ChartTheme
 				(Comparable<?>)evaluateExpression(linePlot.getRangeAxisMaxValueExpression()));
 
 		XYLineAndShapeRenderer lineRenderer = (XYLineAndShapeRenderer) jfreeChart.getXYPlot().getRenderer();
-		boolean isShowShapes = linePlot.getShowShapes() == null ? true : linePlot.getShowShapes().booleanValue();
-		boolean isShowLines = linePlot.getShowLines() == null ? true : linePlot.getShowLines().booleanValue();
+		boolean isShowShapes = linePlot.getShowShapes() == null ? true : linePlot.getShowShapes();
+		boolean isShowLines = linePlot.getShowLines() == null ? true : linePlot.getShowLines();
 		lineRenderer.setBaseShapesVisible(isShowShapes);
 		lineRenderer.setBaseLinesVisible(isShowLines);
 
@@ -1590,8 +1753,8 @@ public class DefaultChartTheme implements ChartTheme
 
 		XYLineAndShapeRenderer lineRenderer = (XYLineAndShapeRenderer)xyPlot.getRenderer();
 		
-		boolean isShowShapes = timeSeriesPlot.getShowShapes() == null ? true : timeSeriesPlot.getShowShapes().booleanValue();
-		boolean isShowLines = timeSeriesPlot.getShowLines() == null ? true : timeSeriesPlot.getShowLines().booleanValue();
+		boolean isShowShapes = timeSeriesPlot.getShowShapes() == null ? true : timeSeriesPlot.getShowShapes();
+		boolean isShowLines = timeSeriesPlot.getShowLines() == null ? true : timeSeriesPlot.getShowLines();
 		lineRenderer.setBaseLinesVisible(isShowLines);
 		lineRenderer.setBaseShapesVisible(isShowShapes);
 
@@ -1639,9 +1802,9 @@ public class DefaultChartTheme implements ChartTheme
 		//plot.setNoDataMessage("No data to display");
 		
 		JRBarPlot barPlot = (JRBarPlot)getPlot();
-		boolean isShowTickMarks = barPlot.getShowTickMarks() == null ? true : barPlot.getShowTickMarks().booleanValue();
-		boolean isShowTickLabels = barPlot.getShowTickLabels() == null ? true : barPlot.getShowTickLabels().booleanValue();
-		boolean isShowLabels = barPlot.getShowLabels() == null ? false : barPlot.getShowLabels().booleanValue();
+		boolean isShowTickMarks = barPlot.getShowTickMarks() == null ? true : barPlot.getShowTickMarks();
+		boolean isShowTickLabels = barPlot.getShowTickLabels() == null ? true : barPlot.getShowTickLabels();
+		boolean isShowLabels = barPlot.getShowLabels() == null ? false : barPlot.getShowLabels();
 		
 		categoryPlot.getDomainAxis().setTickMarksVisible(isShowTickMarks);
 		categoryPlot.getDomainAxis().setTickLabelsVisible(isShowTickLabels);
@@ -1713,7 +1876,7 @@ public class DefaultChartTheme implements ChartTheme
 		Color color = interval.getBackgroundColor() == null ? getChart().getBackcolor() : interval.getBackgroundColor();//FIXMETHEME check this null protection
 		float[] components = color.getRGBColorComponents(null);
 
-		float alpha = interval.getAlphaDouble() == null ? (float)JRMeterInterval.DEFAULT_TRANSPARENCY : interval.getAlphaDouble().floatValue();
+		float alpha = (float)(interval.getAlphaDouble() == null ? JRMeterInterval.DEFAULT_TRANSPARENCY : interval.getAlphaDouble());
 		Color alphaColor = new Color(components[0], components[1], components[2], alpha);
 
 		return new MeterInterval(label, range, alphaColor, null, alphaColor);
@@ -1748,7 +1911,7 @@ public class DefaultChartTheme implements ChartTheme
 		chartPlot.setRange(convertRange(jrPlot.getDataRange()));
 
 		// Set the size of the meter
-		int meterAngle = jrPlot.getMeterAngleInteger() == null ? 180 : jrPlot.getMeterAngleInteger().intValue();
+		int meterAngle = jrPlot.getMeterAngleInteger() == null ? 180 : jrPlot.getMeterAngleInteger();
 		chartPlot.setMeterAngle(meterAngle);
 
 		// Set the units - this is just a string that will be shown next to the
@@ -1760,14 +1923,14 @@ public class DefaultChartTheme implements ChartTheme
 		}
 
 		// Set the font used for tick labels
-		if(jrPlot.getTickLabelFont() != null)
+		if (jrPlot.getTickLabelFont() != null)
 		{
 			chartPlot.setTickLabelFont(fontUtil.getAwtFont(jrPlot.getTickLabelFont(), getLocale()));
 		}
 		
 		// Set the spacing between ticks.  I hate the name "tickSize" since to me it
 		// implies I am changing the size of the tick, not the spacing between them.
-		double tickInterval = jrPlot.getTickIntervalDouble() == null ? 10.0 : jrPlot.getTickIntervalDouble().doubleValue();
+		double tickInterval = jrPlot.getTickIntervalDouble() == null ? 10.0 : jrPlot.getTickIntervalDouble();
 		chartPlot.setTickSize(tickInterval);
 
 		// Set all the colors we support
@@ -1937,7 +2100,13 @@ public class DefaultChartTheme implements ChartTheme
 		}
 
 		// Build a chart around this plot
-		JFreeChart jfreeChart = new JFreeChart(chartPlot);
+		JFreeChart jfreeChart = 
+				new JFreeChart(
+					evaluateTextExpression(getChart().getTitleExpression()),
+					null, 
+					chartPlot, 
+					isShowLegend()
+					);
 
 		// Set the generic options
 		configureChart(jfreeChart);
@@ -1974,7 +2143,7 @@ public class DefaultChartTheme implements ChartTheme
 				);
 		scale.setTickRadius(0.9);
 		scale.setTickLabelOffset(0.16);
-		if(jrPlot.getTickLabelFont() != null)
+		if (jrPlot.getTickLabelFont() != null)
 		{
 			scale.setTickLabelFont(fontUtil.getAwtFont(jrPlot.getTickLabelFont(), getLocale()));
 		}
@@ -1995,7 +2164,7 @@ public class DefaultChartTheme implements ChartTheme
 		{
 			int size = Math.min(3, intervals.size());
 			int colorStep = 0;
-			if(size > 0)
+			if (size > 0)
 			{
 				colorStep = 255 / size;
 			}
@@ -2023,16 +2192,17 @@ public class DefaultChartTheme implements ChartTheme
 		JRValueDisplay display = jrPlot.getValueDisplay();
 		String displayVisibility = display != null && getChart().hasProperties() 
 			? getChart().getPropertiesMap().getProperty(PROPERTY_DIAL_VALUE_DISPLAY_VISIBLE) : "false";
-		if(Boolean.valueOf(displayVisibility).booleanValue())
+		if (Boolean.valueOf(displayVisibility))
 		{
 			DialValueIndicator dvi = new DialValueIndicator(0);
+			// we need the transparent paint because null is not accepted
 			dvi.setBackgroundPaint(TRANSPARENT_PAINT);
 //			dvi.setFont(fontUtil.getAwtFont(jrFont).deriveFont(10f).deriveFont(Font.BOLD));
 			dvi.setOutlinePaint(TRANSPARENT_PAINT);
 			dvi.setPaint(Color.WHITE);
 
 			String pattern = display.getMask() != null ? display.getMask() : "#,##0.####";
-			if(pattern != null)
+			if (pattern != null)
 			{
 				dvi.setNumberFormat( new DecimalFormat(pattern, DecimalFormatSymbols.getInstance(getLocale())));
 			}
@@ -2045,7 +2215,7 @@ public class DefaultChartTheme implements ChartTheme
 		String label = getChart().hasProperties() ?
 				getChart().getPropertiesMap().getProperty(PROPERTY_DIAL_LABEL) : null;
 		
-		if(label != null)
+		if (label != null)
 		{
 			JRFont displayFont = display == null ? null : display.getFont();
 			
@@ -2053,11 +2223,11 @@ public class DefaultChartTheme implements ChartTheme
 			for(int i = 0; i < textLines.length; i++)
 			{
 				DialTextAnnotation dialAnnotation = new DialTextAnnotation(textLines[i]);
-				if(displayFont != null)
+				if (displayFont != null)
 				{
 					dialAnnotation.setFont(fontUtil.getAwtFont(displayFont, getLocale()));
 				}
-				if(display != null && display.getColor() != null)
+				if (display != null && display.getColor() != null)
 				{
 					dialAnnotation.setPaint(jrPlot.getValueDisplay().getColor());
 				}
@@ -2117,24 +2287,24 @@ public class DefaultChartTheme implements ChartTheme
 	{
 		if (axis instanceof ValueAxis)
 		{
-			if(axis instanceof DateAxis)
+			if (axis instanceof DateAxis)
 			{
-				if(axisMinValue != null)
+				if (axisMinValue != null)
 				{
 					((DateAxis)axis).setMinimumDate((Date)axisMinValue);
 				}
-				if(axisMaxValue != null)
+				if (axisMaxValue != null)
 				{
 					((DateAxis)axis).setMaximumDate((Date)axisMaxValue);
 				}
 			}
 			else
 			{
-				if(axisMinValue != null)
+				if (axisMinValue != null)
 				{
 					((ValueAxis)axis).setLowerBound(((Number)axisMinValue).doubleValue());
 				}
-				if(axisMaxValue != null)
+				if (axisMaxValue != null)
 				{
 					((ValueAxis)axis).setUpperBound(((Number)axisMaxValue).doubleValue());
 				}
@@ -2154,13 +2324,13 @@ public class DefaultChartTheme implements ChartTheme
 		Number tickInterval = null;
 		boolean axisIntegerUnit = false;
 		
-		if(getChart().hasProperties())
+		if (getChart().hasProperties())
 		{
 			String tickCountProperty = null;
 			String tickIntervalProperty = null;
 			String axisIntegerUnitProperty = null;
 			
-			if(isRangeAxis)
+			if (isRangeAxis)
 			{
 				tickCountProperty = getChart().getPropertiesMap().getProperty(DefaultChartTheme.PROPERTY_RANGE_AXIS_TICK_COUNT);
 				tickIntervalProperty = getChart().getPropertiesMap().getProperty(DefaultChartTheme.PROPERTY_RANGE_AXIS_TICK_INTERVAL);
@@ -2172,36 +2342,36 @@ public class DefaultChartTheme implements ChartTheme
 				tickIntervalProperty = getChart().getPropertiesMap().getProperty(DefaultChartTheme.PROPERTY_DOMAIN_AXIS_TICK_INTERVAL);
 				axisIntegerUnitProperty = getChart().getPropertiesMap().getProperty(DefaultChartTheme.PROPERTY_DOMAIN_AXIS_INTEGER_UNIT);
 			}
-			if(tickCountProperty != null && tickCountProperty.trim().length() > 0)
+			if (tickCountProperty != null && tickCountProperty.trim().length() > 0)
 			{
 				tickCount = Integer.valueOf(tickCountProperty);
 			}
-			if(tickIntervalProperty != null && tickIntervalProperty.trim().length() > 0)
+			if (tickIntervalProperty != null && tickIntervalProperty.trim().length() > 0)
 			{
 				tickInterval = Double.valueOf(tickIntervalProperty);
 			}
-			if(axisIntegerUnitProperty != null && axisIntegerUnitProperty.trim().length() > 0)
+			if (axisIntegerUnitProperty != null && axisIntegerUnitProperty.trim().length() > 0)
 			{
 				axisIntegerUnit = Boolean.valueOf(axisIntegerUnitProperty);
 			}
 		}
 		
-		if(axis instanceof NumberAxis)
+		if (axis instanceof NumberAxis)
 		{
 			NumberAxis numberAxis = (NumberAxis)axis;
 			int axisRange = (int)numberAxis.getRange().getLength();
 			
-			if(axisIntegerUnit)
+			if (axisIntegerUnit)
 			{
 				ChartUtil chartUtil = ChartUtil.getInstance(chartContext.getJasperReportsContext());
 				numberAxis.setStandardTickUnits(chartUtil.createIntegerTickUnits(getLocale()));
 				chartUtil.setAutoTickUnit(numberAxis);
 			}
-			else if(axisRange > 0)
+			else if (axisRange > 0)
 			{
-				if(tickInterval != null)
+				if (tickInterval != null)
 				{
-					if(numberAxis.getNumberFormatOverride() != null)
+					if (numberAxis.getNumberFormatOverride() != null)
 					{
 						numberAxis.setTickUnit(new NumberTickUnit(tickInterval.doubleValue(), numberAxis.getNumberFormatOverride()));
 					}
@@ -2212,13 +2382,13 @@ public class DefaultChartTheme implements ChartTheme
 				}
 				else if (tickCount != null)
 				{
-					if(numberAxis.getNumberFormatOverride() != null)
+					if (numberAxis.getNumberFormatOverride() != null)
 					{
-						numberAxis.setTickUnit(new NumberTickUnit(axisRange / tickCount.intValue(), numberAxis.getNumberFormatOverride()));
+						numberAxis.setTickUnit(new NumberTickUnit(axisRange / tickCount, numberAxis.getNumberFormatOverride()));
 					}
 					else
 					{
-						numberAxis.setTickUnit(new NumberTickUnit(axisRange / tickCount.intValue(), NumberFormat.getNumberInstance(getLocale())));
+						numberAxis.setTickUnit(new NumberTickUnit(axisRange / tickCount, NumberFormat.getNumberInstance(getLocale())));
 					}
 				}
 				else
@@ -2229,11 +2399,11 @@ public class DefaultChartTheme implements ChartTheme
 				}
 			}
 		}
-//		else if(axis instanceof DateAxis)
+//		else if (axis instanceof DateAxis)
 //		{
 //			DateAxis dateAxis = (DateAxis)axis;
 //			int axisRange = (int)dateAxis.getRange().getLength();
-//			if(dateAxis.getDateFormatOverride() != null)
+//			if (dateAxis.getDateFormatOverride() != null)
 //			{
 //				dateAxis.setTickUnit(new DateTickUnit(timePeriodUnit, axisRange/tickCount, dateAxis.getDateFormatOverride()));
 //			}
@@ -2251,7 +2421,7 @@ public class DefaultChartTheme implements ChartTheme
 	@SuppressWarnings("deprecation")
 	private double getLabelRotation()
 	{
-		return getPlot().getLabelRotationDouble() == null ? 0d : getPlot().getLabelRotationDouble().doubleValue();
+		return getPlot().getLabelRotationDouble() == null ? 0d : getPlot().getLabelRotationDouble();
 	}
 
 	
@@ -2261,7 +2431,7 @@ public class DefaultChartTheme implements ChartTheme
 	private static RectangleEdge getEdge(EdgeEnum position, RectangleEdge defaultPosition)
 	{
 		RectangleEdge edge = defaultPosition;
-		if(position != null)
+		if (position != null)
 		{
 			switch (position)
 			{
@@ -2296,11 +2466,13 @@ public class DefaultChartTheme implements ChartTheme
 		{
 			private static final String NAME = "default";
 
+			@Override
 			public String[] getChartThemeNames() 
 			{
 				return new String[]{NAME};
 			}
 		
+			@Override
 			public ChartTheme getChartTheme(String themeName) 
 			{
 				if (NAME.equals(themeName))
@@ -2317,7 +2489,7 @@ public class DefaultChartTheme implements ChartTheme
 	 */
 	protected boolean isShowLegend()
 	{
-		return getChart().getShowLegend() == null ? true : getChart().getShowLegend().booleanValue();
+		return getChart().getShowLegend() == null ? true : getChart().getShowLegend();
 	}
 
 }

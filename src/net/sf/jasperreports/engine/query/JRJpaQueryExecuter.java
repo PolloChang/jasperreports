@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,9 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
@@ -44,9 +46,6 @@ import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.data.JRJpaDataSource;
 import net.sf.jasperreports.engine.util.JRStringUtil;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /**
  * EJBQL query executer that uses the Java Persistence API.
@@ -83,14 +82,14 @@ import org.apache.commons.logging.LogFactory;
  * &lt;property name="net.sf.jasperreports.ejbql.query.hint.fetchSize" value="100"/&gt;
  * </pre>
  * </code>
- * The name of the query hint need to be prefixed with <code>net.sf.jasperreports.ejbql.query.hint.</code> ({@link net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory#PROPERTY_JPA_QUERY_HINT_PREFIX}).
+ * The name of the query hint need to be prefixed with {@link net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory#PROPERTY_JPA_QUERY_HINT_PREFIX net.sf.jasperreports.ejbql.query.hint.}.
  * Above example will set a query hint with the name <code>fetchSize</code> and the <code>String</code> value <code>100</code>.
  * <p/>
  * Example using map:
  * <code>
  * <pre>
  * Map hints = new HashMap();
- * hints.put("fetchSize", Integer.valueOf(100));
+ * hints.put("fetchSize", 100);
  * hints.put("anyName", anyObject());
  * Map parameters = new HashMap();
  * EntityManager em = emf.createEntityManager();
@@ -103,7 +102,6 @@ import org.apache.commons.logging.LogFactory;
  * When using a query hints map, any <code>Object</code> can be set as value.
  * 
  * @author Marcel Overdijk (marceloverdijk@hotmail.com)
- * @version $Id: JRJpaQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.query.JRJpaQueryExecuterFactory
  */
 public class JRJpaQueryExecuter extends JRAbstractQueryExecuter 
@@ -111,7 +109,7 @@ public class JRJpaQueryExecuter extends JRAbstractQueryExecuter
 
 	private static final Log log = LogFactory.getLog(JRJpaQueryExecuter.class);
 
-	protected static final String CANONICAL_LANGUAGE = "EJBQL";
+	public static final String CANONICAL_LANGUAGE = "EJBQL";
 	
 	private final Integer reportMaxCount;
 	
@@ -139,20 +137,13 @@ public class JRJpaQueryExecuter extends JRAbstractQueryExecuter
 		parseQuery();
 	}
 	
-	/**
-	 * @deprecated Replaced by {@link #JRJpaQueryExecuter(JasperReportsContext, JRDataset, Map)}.
-	 */
-	public JRJpaQueryExecuter(JRDataset dataset, Map<String,? extends JRValueParameter> parameters) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parameters);
-	}
-
 	@Override
 	protected String getCanonicalQueryLanguage()
 	{
 		return CANONICAL_LANGUAGE;
 	}
 	
+	@Override
 	public JRDataSource createDatasource() throws JRException {
 		JRDataSource datasource = null;
 		String queryString = getQueryString();
@@ -184,7 +175,7 @@ public class JRJpaQueryExecuter extends JRAbstractQueryExecuter
 		List<String> parameterNames = getCollectedParameterNames();
 		if (!parameterNames.isEmpty()) {
 			// Use set to prevent the parameter to be set multiple times.
-			Set<String> namesSet = new HashSet<String>();
+			Set<String> namesSet = new HashSet<>();
 			for (Iterator<String> iter = parameterNames.iterator(); iter.hasNext();) {
 				String parameterName = iter.next();
 				if (namesSet.add(parameterName)) {
@@ -248,21 +239,27 @@ public class JRJpaQueryExecuter extends JRAbstractQueryExecuter
 			resDatasource = new JRJpaDataSource(this, pageSize);
 		}
 		catch (NumberFormatException e) {
-			throw new JRRuntimeException("The " + JRJpaQueryExecuterFactory.PROPERTY_JPA_QUERY_PAGE_SIZE +
-					" property must be numerical.",e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NUMERIC_TYPE_REQUIRED,
+					new Object[]{JRJpaQueryExecuterFactory.PROPERTY_JPA_QUERY_PAGE_SIZE},
+					e);
 		}
 		
 		return resDatasource;
 	}
 
+	@Override
 	public synchronized void close() {
 		query = null;
 	}
 
+	@Override
 	public synchronized boolean cancelQuery() throws JRException {
 		return false;
 	}
 	
+	@Override
 	protected String getParameterReplacement(String parameterName) {
 		return ':' + getEjbqlParameterName(parameterName);
 	}
@@ -280,7 +277,7 @@ public class JRJpaQueryExecuter extends JRAbstractQueryExecuter
 	 */
 	public List<?> getResultList() {
 		if (reportMaxCount != null) {
-			query.setMaxResults(reportMaxCount.intValue());
+			query.setMaxResults(reportMaxCount);
 		}
 		
 		return query.getResultList();
@@ -294,8 +291,8 @@ public class JRJpaQueryExecuter extends JRAbstractQueryExecuter
 	 * @return result row list
 	 */
 	public List<?> getResultList(int firstIndex, int resultCount) {
-		if (reportMaxCount != null && firstIndex + resultCount > reportMaxCount.intValue()) {
-			resultCount = reportMaxCount.intValue() - firstIndex;
+		if (reportMaxCount != null && firstIndex + resultCount > reportMaxCount) {
+			resultCount = reportMaxCount - firstIndex;
 		}
 		
 		query.setFirstResult(firstIndex);

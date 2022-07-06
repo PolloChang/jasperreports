@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,13 +30,11 @@ import net.sf.jasperreports.engine.JRRectangle;
 import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.base.JRBaseStyle;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * The actual implementation of a graphic element representing a rectangle, used at design time.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignRectangle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignRectangle extends JRDesignGraphicElement implements JRRectangle
 {
@@ -70,30 +68,19 @@ public class JRDesignRectangle extends JRDesignGraphicElement implements JRRecta
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public int getRadius()
 	{
-		return JRStyleResolver.getRadius(this);
+		return getStyleResolver().getRadius(this);
 	}
 
+	@Override
 	public Integer getOwnRadius()
 	{
 		return this.radius;
 	}
 
-	/**
-	 *
-	 */
-	public void setRadius(int radius)
-	{
-		setRadius(Integer.valueOf(radius));
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setRadius(Integer radius)
 	{
 		Object old = this.radius;
@@ -101,25 +88,19 @@ public class JRDesignRectangle extends JRDesignGraphicElement implements JRRecta
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_RADIUS, old, this.radius);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitRectangle(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignRectangle clone = (JRDesignRectangle)super.clone();
@@ -129,6 +110,7 @@ public class JRDesignRectangle extends JRDesignGraphicElement implements JRRecta
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

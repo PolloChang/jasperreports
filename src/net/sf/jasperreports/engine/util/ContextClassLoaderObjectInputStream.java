@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.fonts.FontUtil;
 
@@ -39,7 +38,6 @@ import net.sf.jasperreports.engine.fonts.FontUtil;
  * classes encountered in the input stream.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ContextClassLoaderObjectInputStream.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ContextClassLoaderObjectInputStream extends ObjectInputStream
 {
@@ -70,14 +68,6 @@ public class ContextClassLoaderObjectInputStream extends ObjectInputStream
 	}
 
 	/**
-	 * @deprecated Replaced by {@link #ContextClassLoaderObjectInputStream(JasperReportsContext, InputStream)}.
-	 */
-	public ContextClassLoaderObjectInputStream(InputStream in) throws IOException
-	{
-		this(DefaultJasperReportsContext.getInstance(), in);
-	}
-
-	/**
 	 *
 	 */
 	public JasperReportsContext getJasperReportsContext()
@@ -85,11 +75,12 @@ public class ContextClassLoaderObjectInputStream extends ObjectInputStream
 		return jasperReportsContext;
 	}
 
-	/**.classpath
+	/**
 	 * Calls <code>super.resolveClass()</code> and in case this fails with
 	 * {@link ClassNotFoundException} attempts to load the class using the
 	 * context class loader.
 	 */
+	@Override
 	protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException,
 			ClassNotFoundException
 	{
@@ -121,28 +112,17 @@ public class ContextClassLoaderObjectInputStream extends ObjectInputStream
 
 	
 	/**
-	 * Calls <code>super.resolveObject()</code> and in case the object is 
-	 * a <code>java.awt.Font</code>, it look up for it is fails with
-	 * {@link ClassNotFoundException} attempts to load the class using the
-	 * context class loader.
+	 * Checks to see if the object is an instance of <code>java.awt.Font</code>, 
+	 * and in case it is, it replaces it with the one looked up for in the font extensions.
 	 */
-	protected Object resolveObject(Object obj) throws IOException//FIXMENOW fix the javadoc comment
+	@Override
+	protected Object resolveObject(Object obj) throws IOException
 	{
 		Font font = (obj instanceof Font) ? (Font)obj : null;
 		
 		if (font != null)
 		{
-			//String fontName = (String)font.getAttributes().get(TextAttribute.FAMILY);//FIXMEFONT check this
-			String fontName = font.getName();
-			// We load an instance of an AWT font, even if the specified fontName is not available (ignoreMissingFont=true),
-			// because only third-party visualization packages such as JFreeChart (chart themes) store serialized java.awt.Font objects,
-			// and they are responsible for the drawing as well.
-			Font newFont = FontUtil.getInstance(jasperReportsContext).getAwtFontFromBundles(fontName, font.getStyle(), font.getSize2D(), null, true);
-			
-			if (newFont != null)
-			{
-				return newFont.deriveFont(font.getAttributes());
-			}
+			return FontUtil.getInstance(jasperReportsContext).resolveDeserializedFont(font);
 		}
 		
 		return obj;

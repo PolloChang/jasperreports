@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,12 +38,13 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlaHierarchy.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlaHierarchy implements JROlapHierarchy
 {
 	
 	private final static Log log = LogFactory.getLog(JRXmlaHierarchy.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_XMLA_INVALID_DIMENSION_HIERARCHY = "data.olap.xmla.invalid.dimension.hierarchy";
 
 	private static final Pattern DIMENSION_HIERARCHY_PATTERN = Pattern.compile("\\[.*\\]\\.\\[.*\\]");
 
@@ -58,14 +59,16 @@ public class JRXmlaHierarchy implements JROlapHierarchy
 		// Dimension name could be of the form [Dimension].[Hierarchy]
 		// in that case, just put in the Hierarchy as uniqueName
 		this.uniqueName = parseUniqueName(dimensionName);
-		this.levels = new ArrayList<JRXmlaHierarchyLevel>();
+		this.levels = new ArrayList<>();
 	}
 
+	@Override
 	public String getDimensionName()
 	{
 		return dimensionName;
 	}
 
+	@Override
 	public JROlapHierarchyLevel[] getLevels()
 	{
 		return ensureLevelArray();
@@ -100,6 +103,7 @@ public class JRXmlaHierarchy implements JROlapHierarchy
 	}
 	
 	// MPenningroth 21-April-2009 deal with case when dimension is <dimension>.<hierarchy> form
+	@Override
 	public String getHierarchyUniqueName()
 	{
 		return uniqueName;
@@ -130,7 +134,10 @@ public class JRXmlaHierarchy implements JROlapHierarchy
 			int endIndex = originalDimensionName.lastIndexOf(']'); 
 			if (startIndex == -1 || endIndex == -1 || startIndex + 3 >= endIndex)
 			{
-				throw new JRRuntimeException("Invalid [Dimension].[Hierarchy]: " + originalDimensionName);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_XMLA_INVALID_DIMENSION_HIERARCHY,
+						new Object[]{originalDimensionName});
 			}
 			else
 			{

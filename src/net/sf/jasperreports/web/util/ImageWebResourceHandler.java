@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.web.util;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.io.IOException;
 import java.util.Collections;
@@ -35,34 +36,38 @@ import javax.servlet.http.HttpServletResponse;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JRWrappingSvgRenderer;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
 import net.sf.jasperreports.engine.export.HtmlExporter;
 import net.sf.jasperreports.engine.type.ImageTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.type.RenderableTypeEnum;
+import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.util.JRImageLoader;
+import net.sf.jasperreports.engine.util.JRTypeSniffer;
+import net.sf.jasperreports.renderers.DataRenderable;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.ResourceRenderer;
+import net.sf.jasperreports.renderers.util.RendererUtil;
+import net.sf.jasperreports.repo.RepositoryUtil;
 import net.sf.jasperreports.web.WebReportContext;
 import net.sf.jasperreports.web.servlets.JasperPrintAccessor;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ImageWebResourceHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ImageWebResourceHandler implements WebResourceHandler
 {
+	public static final String EXCEPTION_MESSAGE_KEY_JASPERPRINT_NOT_FOUND = "web.util.jasperprint.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_REPORT_CONTEXT_NOT_FOUND = "web.util.report.context.not.found";
+	
 	/**
 	 *
 	 */
 	public static final String REQUEST_PARAMETER_IMAGE_NAME = "image";
 
 			
-	/**
-	 *
-	 */
+	@Override
 	public boolean handleResource(JasperReportsContext jasperReportsContext, HttpServletRequest request, HttpServletResponse response)
 	{
 		String imageName = request.getParameter(REQUEST_PARAMETER_IMAGE_NAME);
@@ -78,9 +83,7 @@ public class ImageWebResourceHandler implements WebResourceHandler
 		{
 			try
 			{
-				Renderable pxRenderer = 
-					RenderableUtil.getInstance(jasperReportsContext).getRenderable("net/sf/jasperreports/engine/images/pixel.GIF");
-				imageData = pxRenderer.getImageData(jasperReportsContext);
+				imageData = RepositoryUtil.getInstance(jasperReportsContext).getBytesFromLocation(JRImageLoader.PIXEL_IMAGE_RESOURCE);
 				imageMimeType = ImageTypeEnum.GIF.getMimeType();
 			}
 			catch (JRException e)
@@ -94,41 +97,57 @@ public class ImageWebResourceHandler implements WebResourceHandler
 			
 			if (webReportContext == null)
 			{
-				throw new JRRuntimeException("No web report context found.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_REPORT_CONTEXT_NOT_FOUND,
+						(Object[])null);
 			}
 			
 			JasperPrintAccessor jasperPrintAccessor = (JasperPrintAccessor) webReportContext.getParameterValue(
 					WebReportContext.REPORT_CONTEXT_PARAMETER_JASPER_PRINT_ACCESSOR);
 			if (jasperPrintAccessor == null)
 			{
-				throw new JRRuntimeException("No JasperPrint found in report context.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_JASPERPRINT_NOT_FOUND,
+						(Object[])null);
 			}
 			
 			List<JasperPrint> jasperPrintList = Collections.singletonList(jasperPrintAccessor.getJasperPrint());
 			
 			JRPrintImage image = HtmlExporter.getImage(jasperPrintList, imageName);
 			
-			Renderable renderer = image.getRenderable();
-			if (renderer.getTypeValue() == RenderableTypeEnum.SVG)
-			{
-				renderer = 
-					new JRWrappingSvgRenderer(
-						renderer, 
-						new Dimension(image.getWidth(), image.getHeight()),
-						ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null
-						);
-			}
+			Renderable renderer = image.getRenderer();
+			
+			Dimension dimension = new Dimension(image.getWidth(), image.getHeight());
+			Color backcolor = ModeEnum.OPAQUE == image.getModeValue() ? image.getBackcolor() : null;
 
-			imageMimeType = renderer.getImageTypeValue().getMimeType();
+			RendererUtil rendererUtil = RendererUtil.getInstance(jasperReportsContext);
 			
 			try
 			{
-				imageData = renderer.getImageData(jasperReportsContext);
+				imageData = process(jasperReportsContext, renderer, dimension, backcolor);
 			}
-			catch (JRException e)
+			catch (Exception e)
 			{
-				throw new JRRuntimeException(e);
+				try
+				{
+					Renderable onErrorRenderer = rendererUtil.handleImageError(e, image.getOnErrorTypeValue());
+					if (onErrorRenderer != null)
+					{
+						imageData = process(jasperReportsContext, onErrorRenderer, dimension, backcolor);
+					}
+				}
+				catch (JRException je)
+				{
+					throw new JRRuntimeException(je);
+				}
 			}
+			
+			imageMimeType =
+				RendererUtil.getInstance(jasperReportsContext).isSvgData(imageData)
+				? RendererUtil.SVG_MIME_TYPE
+				: JRTypeSniffer.getImageTypeValue(imageData).getMimeType();
 		}
 
 		if (imageData != null && imageData.length > 0)
@@ -168,5 +187,32 @@ public class ImageWebResourceHandler implements WebResourceHandler
 		return true;
 	}
 
+	
+	protected byte[] process(
+		JasperReportsContext jasperReportsContext,
+		Renderable renderer,
+		Dimension dimension,
+		Color backcolor
+		) throws JRException
+	{
+		RendererUtil rendererUtil = RendererUtil.getInstance(jasperReportsContext);
+		
+		if (renderer instanceof ResourceRenderer)
+		{
+			renderer = //hard to use a cache here and it would be just for some icon type of images, if any 
+				rendererUtil.getNonLazyRenderable(
+					((ResourceRenderer)renderer).getResourceLocation(), 
+					OnErrorTypeEnum.ERROR
+					);
+		}
+		
+		DataRenderable dataRenderer = 
+			rendererUtil.getDataRenderable(
+				renderer,
+				dimension,
+				backcolor
+				);
 
+		return dataRenderer.getData(jasperReportsContext);
+	}
 }

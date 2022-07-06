@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.export.HtmlResourceHandler;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleHtmlExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleHtmlExporterOutput extends SimpleWriterExporterOutput implements HtmlExporterOutput
 {
@@ -51,6 +50,15 @@ public class SimpleHtmlExporterOutput extends SimpleWriterExporterOutput impleme
 	public SimpleHtmlExporterOutput(StringBuffer sbuffer)
 	{
 		super(sbuffer);
+	}
+
+	
+	/**
+	 * 
+	 */
+	public SimpleHtmlExporterOutput(StringBuilder sbuilder)
+	{
+		super(sbuilder);
 	}
 
 	
@@ -124,9 +132,7 @@ public class SimpleHtmlExporterOutput extends SimpleWriterExporterOutput impleme
 		setFileHandlers(new File(fileName));
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public HtmlResourceHandler getImageHandler() 
 	{
 		return imageHandler;
@@ -141,24 +147,23 @@ public class SimpleHtmlExporterOutput extends SimpleWriterExporterOutput impleme
 	}
 	
 	/**
-	 * 
+	 *
 	 */
+	@Override
 	public HtmlResourceHandler getFontHandler() 
 	{
 		return fontHandler;
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	public void setFontHandler(HtmlResourceHandler fontHandler)
 	{
 		this.fontHandler = fontHandler;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public HtmlResourceHandler getResourceHandler() 
 	{
 		return resourceHandler;
@@ -179,8 +184,8 @@ public class SimpleHtmlExporterOutput extends SimpleWriterExporterOutput impleme
 	{
 		File resourcesDir = new File(destFile.getParent(), destFile.getName() + "_files");
 		String pathPattern = resourcesDir.getName() + "/{0}";
-		imageHandler = new FileHtmlResourceHandler(resourcesDir, pathPattern);
-		fontHandler = new FileHtmlResourceHandler(resourcesDir, pathPattern);
-		resourceHandler = new FileHtmlResourceHandler(resourcesDir);
+		resourceHandler = new FileHtmlResourceHandler(resourcesDir, pathPattern);
+		imageHandler = resourceHandler;
+		fontHandler = resourceHandler;
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,14 +37,15 @@ import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.FooterPositionEnum;
+import net.sf.jasperreports.engine.util.CloneStore;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
+import net.sf.jasperreports.engine.util.StoreCloneable;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
+public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport, StoreCloneable<JRBaseGroup>
 {
 
 
@@ -55,13 +56,19 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 	
 	public static final String PROPERTY_MIN_HEIGHT_TO_START_NEW_PAGE = "minHeightToStartNewPage";
 	
+	public static final String PROPERTY_MIN_DETAILS_TO_START_FROM_TOP = "minDetailsToStartFromTop";
+	
 	public static final String PROPERTY_FOOTER_POSITION = "footerPosition";
 	
 	public static final String PROPERTY_KEEP_TOGETHER = "keepTogether";
 	
+	public static final String PROPERTY_PREVENT_ORPHAN_FOOTER = "preventOrphanFooter";
+	
 	public static final String PROPERTY_RESET_PAGE_NUMBER = "isResetPageNumber";
 	
 	public static final String PROPERTY_REPRINT_HEADER_ON_EACH_PAGE = "isReprintHeaderOnEachPage";
+	
+	public static final String PROPERTY_REPRINT_HEADER_ON_EACH_COLUMN = "isReprintHeaderOnEachColumn";
 	
 	public static final String PROPERTY_START_NEW_COLUMN = "isStartNewColumn";
 	
@@ -75,9 +82,12 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 	protected boolean isStartNewPage;
 	protected boolean isResetPageNumber;
 	protected boolean isReprintHeaderOnEachPage;
+	protected boolean isReprintHeaderOnEachColumn;
 	protected int minHeightToStartNewPage;
+	protected int minDetailsToStartFromTop;
 	protected FooterPositionEnum footerPositionValue = FooterPositionEnum.NORMAL;
 	protected boolean keepTogether;
+	protected boolean preventOrphanFooter;
 
 	/**
 	 *
@@ -108,9 +118,12 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 		isStartNewPage = group.isStartNewPage();
 		isResetPageNumber = group.isResetPageNumber();
 		isReprintHeaderOnEachPage = group.isReprintHeaderOnEachPage();
+		isReprintHeaderOnEachColumn = group.isReprintHeaderOnEachColumn();
 		minHeightToStartNewPage = group.getMinHeightToStartNewPage();
+		minDetailsToStartFromTop = group.getMinDetailsToStartFromTop();
 		footerPositionValue = group.getFooterPositionValue();
 		keepTogether = group.isKeepTogether();
+		preventOrphanFooter = group.isPreventOrphanFooter();
 		
 		expression = factory.getExpression(group.getExpression());
 
@@ -120,25 +133,19 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return this.name;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public boolean isStartNewColumn()
 	{
 		return this.isStartNewColumn;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setStartNewColumn(boolean isStart)
 	{
 		boolean old = this.isStartNewColumn;
@@ -146,17 +153,13 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_START_NEW_COLUMN, old, this.isStartNewColumn);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isStartNewPage()
 	{
 		return this.isStartNewPage;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setStartNewPage(boolean isStart)
 	{
 		boolean old = this.isStartNewPage;
@@ -164,17 +167,13 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_START_NEW_PAGE, old, this.isStartNewPage);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isResetPageNumber()
 	{
 		return this.isResetPageNumber;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setResetPageNumber(boolean isReset)
 	{
 		boolean old = this.isResetPageNumber;
@@ -182,17 +181,13 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_RESET_PAGE_NUMBER, old, this.isResetPageNumber);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isReprintHeaderOnEachPage()
 	{
 		return this.isReprintHeaderOnEachPage;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setReprintHeaderOnEachPage(boolean isReprint)
 	{
 		boolean old = this.isReprintHeaderOnEachPage;
@@ -200,35 +195,55 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_REPRINT_HEADER_ON_EACH_PAGE, old, this.isReprintHeaderOnEachPage);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public boolean isReprintHeaderOnEachColumn()
+	{
+		return this.isReprintHeaderOnEachColumn;
+	}
+		
+	@Override
+	public void setReprintHeaderOnEachColumn(boolean isReprint)
+	{
+		boolean old = this.isReprintHeaderOnEachColumn;
+		this.isReprintHeaderOnEachColumn = isReprint;
+		getEventSupport().firePropertyChange(PROPERTY_REPRINT_HEADER_ON_EACH_COLUMN, old, this.isReprintHeaderOnEachColumn);
+	}
+		
+	@Override
 	public int getMinHeightToStartNewPage()
 	{
 		return this.minHeightToStartNewPage;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMinHeightToStartNewPage(int minHeight)
 	{
 		int old = this.minHeightToStartNewPage;
 		this.minHeightToStartNewPage = minHeight;
 		getEventSupport().firePropertyChange(PROPERTY_MIN_HEIGHT_TO_START_NEW_PAGE, old, this.minHeightToStartNewPage);
 	}
-
-	/**
-	 *
-	 */
+	
+	@Override
+	public int getMinDetailsToStartFromTop()
+	{
+		return this.minDetailsToStartFromTop;
+	}
+	
+	@Override
+	public void setMinDetailsToStartFromTop(int minDetails)
+	{
+		int old = this.minDetailsToStartFromTop;
+		this.minDetailsToStartFromTop = minDetails;
+		getEventSupport().firePropertyChange(PROPERTY_MIN_DETAILS_TO_START_FROM_TOP, old, this.minDetailsToStartFromTop);
+	}
+	
+	@Override
 	public FooterPositionEnum getFooterPositionValue()
 	{
 		return this.footerPositionValue;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setFooterPosition(FooterPositionEnum footerPositionValue)
 	{
 		FooterPositionEnum old = this.footerPositionValue;
@@ -236,17 +251,13 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_FOOTER_POSITION, old, this.footerPositionValue);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isKeepTogether()
 	{
 		return this.keepTogether;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setKeepTogether(boolean keepTogether)
 	{
 		boolean old = this.keepTogether;
@@ -254,43 +265,53 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_KEEP_TOGETHER, old, this.keepTogether);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public boolean isPreventOrphanFooter()
+	{
+		return this.preventOrphanFooter;
+	}
+		
+	@Override
+	public void setPreventOrphanFooter(boolean preventOrphanFooter)
+	{
+		boolean old = this.preventOrphanFooter;
+		this.preventOrphanFooter = preventOrphanFooter;
+		getEventSupport().firePropertyChange(PROPERTY_PREVENT_ORPHAN_FOOTER, old, this.preventOrphanFooter);
+	}
+		
+	@Override
 	public JRExpression getExpression()
 	{
 		return this.expression;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRSection getGroupHeaderSection()
 	{
 		return this.groupHeaderSection;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRSection getGroupFooterSection()
 	{
 		return this.groupFooterSection;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRVariable getCountVariable()
 	{
 		return this.countVariable;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
+	{
+		return clone(null);
+	}
+
+	@Override
+	public JRBaseGroup clone(CloneStore cloneStore)
 	{
 		JRBaseGroup clone = null;
 
@@ -302,11 +323,18 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 		{
 			throw new JRRuntimeException(e);
 		}
+		
+		if (cloneStore != null)
+		{
+			//early store for circular dependencies
+			cloneStore.store(this, clone);
+		}
 	
 		clone.expression = JRCloneUtils.nullSafeClone(expression);
 		clone.groupHeader = JRCloneUtils.nullSafeClone(groupHeader);
 		clone.groupFooter = JRCloneUtils.nullSafeClone(groupFooter);
-		clone.countVariable = JRCloneUtils.nullSafeClone(countVariable);
+		clone.countVariable = cloneStore == null ? JRCloneUtils.nullSafeClone(countVariable) 
+				: cloneStore.clone(countVariable);
 		clone.eventSupport = null;
 		
 		return clone;
@@ -315,6 +343,7 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -346,6 +375,7 @@ public class JRBaseGroup implements JRGroup, Serializable, JRChangeEventsSupport
 	 */
 	private JRBand groupFooter;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

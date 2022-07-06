@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import java.io.Serializable;
  * the organization that implemented the generic element type) and a type name.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRGenericElementType.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRGenericElementType implements Serializable
 {
@@ -79,6 +78,7 @@ public class JRGenericElementType implements Serializable
 		return name;
 	}
 	
+	@Override
 	public int hashCode()
 	{
 		int hash = 17;
@@ -87,6 +87,7 @@ public class JRGenericElementType implements Serializable
 		return hash;
 	}
 	
+	@Override
 	public boolean equals(Object o)
 	{
 		if (o == this)
@@ -104,6 +105,7 @@ public class JRGenericElementType implements Serializable
 				&& name.equals(key.name);
 	}
 
+	@Override
 	public String toString()
 	{
 		return namespace + "#" + name;

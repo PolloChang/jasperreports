@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,22 +29,21 @@ import net.sf.jasperreports.engine.JRCloneable;
 
 /**
  * @deprecated Replaced by {@link Item}.
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: Marker.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public interface Marker extends JRCloneable {
 	/**
-	 * @deprecated Replaced by {@link MapComponent#PROPERTY_latitude}.
+	 * @deprecated Replaced by {@link MapComponent#ITEM_PROPERTY_latitude}.
 	 */
-	public static final String PROPERTY_latitude = MapComponent.PROPERTY_latitude;
+	public static final String PROPERTY_latitude = MapComponent.ITEM_PROPERTY_latitude;
 	/**
-	 * @deprecated Replaced by {@link MapComponent#PROPERTY_longitude}.
+	 * @deprecated Replaced by {@link MapComponent#ITEM_PROPERTY_longitude}.
 	 */
-	public static final String PROPERTY_longitude = MapComponent.PROPERTY_longitude;
+	public static final String PROPERTY_longitude = MapComponent.ITEM_PROPERTY_longitude;
 	/**
-	 * @deprecated Replaced by {@link MapComponent#PROPERTY_title}.
+	 * @deprecated Replaced by {@link MapComponent#ITEM_PROPERTY_MARKER_title}.
 	 */
-	public static final String PROPERTY_title = MapComponent.PROPERTY_title;
+	public static final String PROPERTY_title = MapComponent.ITEM_PROPERTY_MARKER_title;
 	
 	public List<MarkerProperty> getProperties();
 }

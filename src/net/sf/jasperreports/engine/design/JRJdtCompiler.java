@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,16 +37,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRReport;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.util.JRClassLoader;
-import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.functions.FunctionsUtil;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -67,13 +56,24 @@ import org.eclipse.jdt.internal.compiler.env.NameEnvironmentAnswer;
 import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.eclipse.jdt.internal.compiler.problem.DefaultProblemFactory;
 
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRReport;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.JRClassLoader;
+import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.functions.FunctionsUtil;
+
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRJdtCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRJdtCompiler extends JRAbstractJavaCompiler
 {
 	private static final String JDT_PROPERTIES_PREFIX = "org.eclipse.jdt.core.";
+	
+	public static final String EXCEPTION_MESSAGE_KEY_CLASS_LOADING_ERROR = "compilers.jdt.class.loading.error";
+	public static final String EXCEPTION_MESSAGE_KEY_NAME_ENVIRONMENT_ANSWER_INSTANCE_ERROR = "compilers.jdt.name.environment.answer.instance.error";
 	
 	/**
 	 *  
@@ -101,17 +101,13 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 		boolean success;
 		try //FIXME remove support for pre 3.1 jdt
 		{
-			Class<?> classAccessRestriction = loadClass("org.eclipse.jdt.internal.compiler.env.AccessRestriction");
+			Class<?> classAccessRestriction = NameEnvironmentAnswer.class.getClassLoader().loadClass("org.eclipse.jdt.internal.compiler.env.AccessRestriction");
 			constrNameEnvAnsBin2Args = NameEnvironmentAnswer.class.getConstructor(new Class[]{IBinaryType.class, classAccessRestriction});
 			constrNameEnvAnsCompUnit2Args = NameEnvironmentAnswer.class.getConstructor(new Class[]{ICompilationUnit.class, classAccessRestriction});
 			is2ArgsConstr = true;
 			success = true;
 		}
-		catch (NoSuchMethodException e)
-		{
-			success = false;
-		}
-		catch (ClassNotFoundException ex)
+		catch (NoSuchMethodException | ClassNotFoundException ex)
 		{
 			success = false;
 		}
@@ -126,24 +122,17 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 			}
 			catch (NoSuchMethodException ex)
 			{
-				throw new JRRuntimeException("Not able to load JDT classes", ex);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_CLASS_LOADING_ERROR,
+						(Object[])null,
+						ex);
 			}
 		}
 	}	
 	
 
-	/**
-	 * @deprecated Replaced by {@link #JRJdtCompiler(JasperReportsContext)}.
-	 */
-	public JRJdtCompiler()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}	
-
-	
-	/**
-	 *
-	 */
+	@Override
 	protected String compileUnits(final JRCompilationUnit[] units, String classpath, File tempDirFile)
 	{
 		final INameEnvironment env = getNameEnvironment(units);
@@ -151,14 +140,14 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 		final IErrorHandlingPolicy policy = 
 			DefaultErrorHandlingPolicies.proceedWithAllProblems();
 
-		final Map<String,String> settings = getJdtSettings();
+		final CompilerOptions options = new CompilerOptions(getJdtSettings());
 
 		final IProblemFactory problemFactory = 
 			new DefaultProblemFactory(Locale.getDefault());
 
 		final CompilerRequestor requestor = getCompilerRequestor(units);
 
-		final Compiler compiler = new Compiler(env, policy, settings, requestor, problemFactory);
+		final Compiler compiler = new Compiler(env, policy, options, requestor, problemFactory);
 
 		do
 		{
@@ -180,9 +169,10 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 	{
 		final INameEnvironment env = new INameEnvironment() 
 		{
+			@Override
 			public NameEnvironmentAnswer findType(char[][] compoundTypeName) 
 			{
-				StringBuffer result = new StringBuffer();
+				StringBuilder result = new StringBuilder();
 				String sep = "";
 				for (int i = 0; i < compoundTypeName.length; i++) {
 					result.append(sep);
@@ -192,9 +182,10 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 				return findType(result.toString());
 			}
 
+			@Override
 			public NameEnvironmentAnswer findType(char[] typeName, char[][] packageName) 
 			{
-				StringBuffer result = new StringBuffer();
+				StringBuilder result = new StringBuilder();
 				String sep = "";
 				for (int i = 0; i < packageName.length; i++) {
 					result.append(sep);
@@ -283,21 +274,13 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 				{
 					log.error("Compilation error", exc);
 				}
-				catch (InvocationTargetException e)
+				catch (InvocationTargetException | IllegalArgumentException | InstantiationException | IllegalAccessException e)
 				{
-					throw new JRRuntimeException("Not able to create NameEnvironmentAnswer", e);
-				}
-				catch (IllegalArgumentException e)
-				{
-					throw new JRRuntimeException("Not able to create NameEnvironmentAnswer", e);
-				}
-				catch (InstantiationException e)
-				{
-					throw new JRRuntimeException("Not able to create NameEnvironmentAnswer", e);
-				}
-				catch (IllegalAccessException e)
-				{
-					throw new JRRuntimeException("Not able to create NameEnvironmentAnswer", e);
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_NAME_ENVIRONMENT_ANSWER_INSTANCE_ERROR,
+							(Object[])null,
+							e);
 				}
 				return null;
 			}
@@ -320,7 +303,7 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 				{              // with sun.plugin.cache.EmptyInputStream on JRE 1.5 plugin
 					try        // http://sourceforge.net/tracker/index.php?func=detail&aid=1478460&group_id=36382&atid=416703
 					{
-						isPackage = (is.read() > 0);
+						isPackage = (is.read() < 0);
 					}
 					catch(IOException e)
 					{
@@ -342,9 +325,10 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 				return isPackage;
 			}
 
+			@Override
 			public boolean isPackage(char[][] parentPackageName, char[] packageName) 
 			{
-				StringBuffer result = new StringBuffer();
+				StringBuilder result = new StringBuilder();
 				String sep = "";
 				if (parentPackageName != null) 
 				{
@@ -367,6 +351,7 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 				return isPackage(result.toString());
 			}
 
+			@Override
 			public void cleanup() 
 			{
 			}
@@ -386,7 +371,7 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 
 	protected Map<String,String> getJdtSettings()
 	{
-		final Map<String,String> settings = new HashMap<String,String>();
+		final Map<String,String> settings = new HashMap<>();
 		settings.put(CompilerOptions.OPTION_LineNumberAttribute, CompilerOptions.GENERATE);
 		settings.put(CompilerOptions.OPTION_SourceFileAttribute, CompilerOptions.GENERATE);
 		settings.put(CompilerOptions.OPTION_ReportDeprecation, CompilerOptions.IGNORE);
@@ -411,9 +396,8 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 		}
 		
 		Properties systemProps = System.getProperties();
-		for (Enumeration<String> it = (Enumeration<String>)systemProps.propertyNames(); it.hasMoreElements();)
+		for (String propName : systemProps.stringPropertyNames())
 		{
-			String propName = it.nextElement();
 			if (propName.startsWith(JDT_PROPERTIES_PREFIX))
 			{
 				String propVal = systemProps.getProperty(propName);
@@ -477,16 +461,15 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 	}
 
 	
+	@Override
 	protected void checkLanguage(String language) throws JRException
 	{		
 		if (!JRReport.LANGUAGE_JAVA.equals(language))
 		{
 			throw 
 				new JRException(
-					"Language \"" + language 
-					+ "\" not supported by this report compiler.\n"
-					+ "Expecting \"java\" instead."
-					);
+					EXCEPTION_MESSAGE_KEY_EXPECTED_JAVA_LANGUAGE,
+					new Object[]{language, JRReport.LANGUAGE_JAVA});
 		}
 	}
 
@@ -502,23 +485,28 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 		File saveSourceDir = sourceFile == null ? null : sourceFile.getParentFile();
 		sourceFile = getSourceFile(saveSourceDir, unitName, sourceCode);
 
-		return new JRCompilationUnit(unitName, sourceCode, sourceFile, 
-				compilationUnit.getExpressions(), sourceTask);
+		JRCompilationUnit newUnit = new JRCompilationUnit(unitName);
+		newUnit.setDirectEvaluations(compilationUnit.getDirectEvaluations());
+		newUnit.setSource(sourceCode, sourceFile, sourceTask);
+		return newUnit;
 	}
 
 	
+	@Override
 	protected JRCompilationSourceCode generateSourceCode(JRSourceCompileTask sourceTask) throws JRException
 	{
 		return JRClassGenerator.generateClass(sourceTask);
 	}
 
 	
+	@Override
 	protected String getSourceFileName(String unitName)
 	{
 		return unitName + ".java";
 	}
 
 
+	@Override
 	protected String getCompilerClass()
 	{
 		return JRJavacCompiler.class.getName();
@@ -530,6 +518,9 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 	 */
 	public static class CompilerRequestor implements ICompilerRequestor
 	{
+		public static final String EXCEPTION_MESSAGE_KEY_METHOD_INVOKING_ERROR = "compilers.jdt.method.invoking.error";
+		public static final String EXCEPTION_MESSAGE_KEY_METHOD_RESOLVING_ERROR = "compilers.jdt.method.resolving.error";
+		
 		private final JasperReportsContext jasperReportsContext;
 		protected final JRJdtCompiler compiler;
 		protected final JRCompilationUnit[] units;
@@ -545,6 +536,7 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 			reset();
 		}
 			
+		@Override
 		public void acceptResult(CompilationResult result) 
 		{
 			String className = ((CompilationUnit) result.getCompilationUnit()).className;
@@ -619,7 +611,7 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 		 */
 		public String getFormattedProblems() 
 		{
-			StringBuffer problemBuffer = new StringBuffer();
+			StringBuilder problemBuilder = new StringBuilder();
 			
 			for (int u = 0; u < units.length; u++) 
 			{
@@ -633,9 +625,9 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 					{
 						IProblem problem = problems[i];
 			
-						problemBuffer.append(i + 1);
-						problemBuffer.append(". ");
-						problemBuffer.append(problem.getMessage());
+						problemBuilder.append(i + 1);
+						problemBuilder.append(". ");
+						problemBuilder.append(problem.getMessage());
 			
 						if (
 							problem.getSourceStart() >= 0
@@ -649,42 +641,42 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 								problemEndIndex = sourceCode.length();
 							}
 							
-							problemBuffer.append("\n");
-							problemBuffer.append(
+							problemBuilder.append("\n");
+							problemBuilder.append(
 								sourceCode.substring(
 									problemStartIndex,
 									problemEndIndex
 									)
 								);
-							problemBuffer.append("\n");
+							problemBuilder.append("\n");
 							for(int j = problemStartIndex; j < problem.getSourceStart(); j++)
 							{
-								problemBuffer.append(" ");
+								problemBuilder.append(" ");
 							}
 							if (problem.getSourceStart() == problem.getSourceEnd())
 							{
-								problemBuffer.append("^");
+								problemBuilder.append("^");
 							}
 							else
 							{
-								problemBuffer.append("<");
+								problemBuilder.append("<");
 								for(int j = problem.getSourceStart() + 1; j < problem.getSourceEnd(); j++)
 								{
-									problemBuffer.append("-");
+									problemBuilder.append("-");
 								}
-								problemBuffer.append(">");
+								problemBuilder.append(">");
 							}
 			
-							problemBuffer.append("\n");
+							problemBuilder.append("\n");
 						}
 					}
 					
-					problemBuffer.append(problems.length);
-					problemBuffer.append(" errors\n");
+					problemBuilder.append(problems.length);
+					problemBuilder.append(" errors\n");
 				}
 			}
 			
-			return problemBuffer.length() > 0 ? problemBuffer.toString() : null;
+			return problemBuilder.length() > 0 ? problemBuilder.toString() : null;
 		}
 
 		/**
@@ -748,16 +740,13 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 			try {
 				Method getErrorsMethod = result.getClass().getMethod("getErrors", (Class[])null);
 				return (IProblem[]) getErrorsMethod.invoke(result, (Object[])null);
-			} catch (SecurityException e) {
-				throw new JRRuntimeException("Error resolving JDT methods", e);
-			} catch (NoSuchMethodException e) {
-				throw new JRRuntimeException("Error resolving JDT methods", e);
-			} catch (IllegalArgumentException e) {
-				throw new JRRuntimeException("Error invoking JDT methods", e);
-			} catch (IllegalAccessException e) {
-				throw new JRRuntimeException("Error invoking JDT methods", e);
-			} catch (InvocationTargetException e) {
-				throw new JRRuntimeException("Error invoking JDT methods", e);
+			} catch (SecurityException | NoSuchMethodException | IllegalArgumentException 
+					| IllegalAccessException | InvocationTargetException e) {
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_METHOD_INVOKING_ERROR,
+						(Object[])null,
+						e);
 			}
 		}
 	}
@@ -777,24 +766,34 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 			this.className = className;
 		}
 
+		@Override
 		public char[] getFileName() 
 		{
 			return className.toCharArray();
 		}
 
+		@Override
 		public char[] getContents() 
 		{
 			return srcCode.toCharArray();
 		}
 
+		@Override
 		public char[] getMainTypeName() 
 		{
 			return className.toCharArray();
 		}
 
+		@Override
 		public char[][] getPackageName() 
 		{
 			return new char[0][0];
+		}
+
+		@Override
+		public boolean ignoreOptionalProblems() 
+		{
+			return false;
 		}
 	}
 
@@ -824,7 +823,7 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 			{
 				if (missingMethods == null)
 				{
-					missingMethods = new HashSet<Method>();
+					missingMethods = new HashSet<>();
 				}
 				
 				missingMethods.add(missingMethod);
@@ -847,7 +846,7 @@ public class JRJdtCompiler extends JRAbstractJavaCompiler
 			{
 				if (resolvedMethods == null)
 				{
-					resolvedMethods = new HashSet<Method>();
+					resolvedMethods = new HashSet<>();
 				}
 				resolvedMethods.addAll(missingMethods);
 			}

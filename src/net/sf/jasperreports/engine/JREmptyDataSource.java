@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ package net.sf.jasperreports.engine;
  * 
  * @see net.sf.jasperreports.engine.JRDataSource
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JREmptyDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JREmptyDataSource implements JRRewindableDataSource
 {
@@ -66,27 +65,21 @@ public class JREmptyDataSource implements JRRewindableDataSource
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean next()
 	{
 		return (index++ < count);
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(JRField field)
 	{
 		return null;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void moveFirst()
 	{
 		this.index = 0;

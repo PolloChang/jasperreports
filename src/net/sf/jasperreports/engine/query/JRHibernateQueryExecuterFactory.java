@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,11 +25,15 @@ package net.sf.jasperreports.engine.query;
 
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.Designated;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Query executer factory for HQL queries that uses Hibernate 3.
@@ -38,10 +42,11 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * query executers. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRHibernateQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRHibernateQueryExecuterFactory extends AbstractQueryExecuterFactory
+public class JRHibernateQueryExecuterFactory extends AbstractQueryExecuterFactory implements Designated
 {
+	
+	public static final String QUERY_EXECUTER_NAME = "net.sf.jasperreports.query.executer:HQL";
 
 	/**
 	 * HQL query language.
@@ -78,6 +83,13 @@ public class JRHibernateQueryExecuterFactory extends AbstractQueryExecuterFactor
 	 * 	<li><em>scroll</em> - the query will be run by calling <code>org.hibernate.Query.scroll()</code></li>
 	 * </ul>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			defaultValue = "list",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {JRHibernateQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_1_2_0
+			)
 	public static final String PROPERTY_HIBERNATE_QUERY_RUN_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "hql.query.run.type";
 	
 	/**
@@ -87,6 +99,14 @@ public class JRHibernateQueryExecuterFactory extends AbstractQueryExecuterFactor
 	 * <p/>
 	 * By default, all the rows are retrieved (no result pagination is performed).
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			defaultValue = "0",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {JRHibernateQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_1_2_0,
+			valueType = Integer.class
+			)
 	public static final String PROPERTY_HIBERNATE_QUERY_LIST_PAGE_SIZE = JRPropertiesUtil.PROPERTY_PREFIX + "hql.query.list.page.size";
 	
 	/**
@@ -96,12 +116,28 @@ public class JRHibernateQueryExecuterFactory extends AbstractQueryExecuterFactor
 	 * <p/>
 	 * @see net.sf.jasperreports.engine.query.JRHibernateQueryExecuterFactory#PROPERTY_HIBERNATE_QUERY_LIST_PAGE_SIZE
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {JRHibernateQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_1_3_1,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_HIBERNATE_CLEAR_CACHE = JRPropertiesUtil.PROPERTY_PREFIX + "hql.clear.cache";
 	
 	/**
 	 * Property specifying whether field descriptions should be used to determine the mapping between the fields
 	 * and the query return values.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {JRHibernateQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_1_2_0,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_HIBERNATE_FIELD_MAPPING_DESCRIPTIONS = JRPropertiesUtil.PROPERTY_PREFIX + "hql.field.mapping.descriptions";
 	
 	/**
@@ -127,11 +163,13 @@ public class JRHibernateQueryExecuterFactory extends AbstractQueryExecuterFactor
 	 * Returns an array containing the {@link #PARAMETER_HIBERNATE_SESSION PARAMETER_HIBERNATE_SESSION} and
 	 * {@link #PARAMETER_HIBERNATE_FILTER_COLLECTION PARAMETER_HIBERNATE_FILTER_COLLECTION} parameters.
 	 */
+	@Override
 	public Object[] getBuiltinParameters()
 	{
 		return HIBERNATE_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext, 
 		JRDataset dataset, 
@@ -144,8 +182,15 @@ public class JRHibernateQueryExecuterFactory extends AbstractQueryExecuterFactor
 	/**
 	 * Returns <code>true</code> for all parameter types.
 	 */
+	@Override
 	public boolean supportsQueryParameterType(String className)
 	{
 		return true;
+	}
+
+	@Override
+	public String getDesignation()
+	{
+		return QUERY_EXECUTER_NAME;
 	}
 }

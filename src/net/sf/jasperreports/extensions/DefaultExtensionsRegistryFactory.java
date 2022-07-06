@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,6 +41,7 @@ import net.sf.jasperreports.components.iconlabel.IconLabelElementPptxHandler;
 import net.sf.jasperreports.components.iconlabel.IconLabelElementRtfHandler;
 import net.sf.jasperreports.components.iconlabel.IconLabelElementXlsHandler;
 import net.sf.jasperreports.components.iconlabel.IconLabelElementXlsxHandler;
+import net.sf.jasperreports.components.map.MapComponent;
 import net.sf.jasperreports.components.map.MapElementDocxHandler;
 import net.sf.jasperreports.components.map.MapElementGraphics2DHandler;
 import net.sf.jasperreports.components.map.MapElementHtmlHandler;
@@ -52,14 +53,11 @@ import net.sf.jasperreports.components.map.MapElementPptxHandler;
 import net.sf.jasperreports.components.map.MapElementRtfHandler;
 import net.sf.jasperreports.components.map.MapElementXlsHandler;
 import net.sf.jasperreports.components.map.MapElementXlsxHandler;
-import net.sf.jasperreports.components.map.MapPrintElement;
 import net.sf.jasperreports.components.sort.SortElement;
 import net.sf.jasperreports.components.sort.SortElementHtmlHandler;
 import net.sf.jasperreports.components.sort.SortElementJsonHandler;
 import net.sf.jasperreports.crosstabs.interactive.CrosstabInteractiveJsonHandler;
 import net.sf.jasperreports.engine.JRPropertiesMap;
-import net.sf.jasperreports.engine.export.FlashHtmlHandler;
-import net.sf.jasperreports.engine.export.FlashPrintElement;
 import net.sf.jasperreports.engine.export.GenericElementHandler;
 import net.sf.jasperreports.engine.export.GenericElementHandlerBundle;
 import net.sf.jasperreports.engine.export.HtmlExporter;
@@ -87,42 +85,37 @@ import net.sf.jasperreports.engine.xml.JRXmlConstants;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
 	private static final GenericElementHandlerBundle HANDLER_BUNDLE = 
 		new GenericElementHandlerBundle()
 		{
+			@Override
 			public String getNamespace()
 			{
 				return JRXmlConstants.JASPERREPORTS_NAMESPACE;
 			}
 			
+			@SuppressWarnings("deprecation")
+			@Override
 			public GenericElementHandler getHandler(String elementName,
 					String exporterKey)
 			{
-				@SuppressWarnings("deprecation")
-				String depXhtmlKey = net.sf.jasperreports.engine.export.JRXhtmlExporter.XHTML_EXPORTER_KEY;
-				@SuppressWarnings("deprecation")
-				String depJExcelApiKey = net.sf.jasperreports.engine.export.JExcelApiExporter.JXL_EXPORTER_KEY;
 				if (
-					FlashPrintElement.FLASH_ELEMENT_NAME.equals(elementName) 
+					net.sf.jasperreports.engine.export.FlashPrintElement.FLASH_ELEMENT_NAME.equals(elementName) 
 					&& HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey)
 					)
 				{
-					return FlashHtmlHandler.getInstance();
+					return net.sf.jasperreports.engine.export.FlashHtmlHandler.getInstance();
 				}
-				if (MapPrintElement.MAP_ELEMENT_NAME.equals(elementName))
+				if (MapComponent.MAP_ELEMENT_NAME.equals(elementName))
 				{
-					if(JRGraphics2DExporter.GRAPHICS2D_EXPORTER_KEY.equals(exporterKey))
+					if (JRGraphics2DExporter.GRAPHICS2D_EXPORTER_KEY.equals(exporterKey))
 					{
 						return MapElementGraphics2DHandler.getInstance();
 					}
-					if(
-						HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey) 
-						|| depXhtmlKey.equals(exporterKey)
-						)
+					if (HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey))
 					{
 						return MapElementHtmlHandler.getInstance();
 					}
@@ -138,17 +131,6 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 					{
 						return MapElementXlsHandler.getInstance();
 					}
-					else if(depJExcelApiKey.equals(exporterKey))
-					{
-						@SuppressWarnings("deprecation")
-						net.sf.jasperreports.components.map.MapElementJExcelApiHandler depHandler = 
-							net.sf.jasperreports.components.map.MapElementJExcelApiHandler.getInstance();
-						return depHandler;
-					}
-//					else if(JExcelApiMetadataExporter.JXL_METADATA_EXPORTER_KEY.equals(exporterKey))
-//					{
-//						return MapElementJExcelApiMetadataHandler.getInstance();
-//					}
 					else if(JRXlsxExporter.XLSX_EXPORTER_KEY.equals(exporterKey))
 					{
 						return MapElementXlsxHandler.getInstance();
@@ -198,23 +180,13 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 					{
 						return new IconLabelElementGraphics2DHandler();
 					}		
-					else if (
-						HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey) 
-						|| depXhtmlKey.equals(exporterKey)
-						)
+					else if (HtmlExporter.HTML_EXPORTER_KEY.equals(exporterKey))
 					{
 						return IconLabelElementHtmlHandler.getInstance();
 					}		
 					else if (JRCsvExporter.CSV_EXPORTER_KEY.equals(exporterKey))
 					{
 						return IconLabelElementCsvHandler.getInstance();
-					}		
-					else if (depJExcelApiKey.equals(exporterKey))
-					{
-						@SuppressWarnings("deprecation")
-						net.sf.jasperreports.components.iconlabel.IconLabelElementJExcelApiHandler depHandler =
-							net.sf.jasperreports.components.iconlabel.IconLabelElementJExcelApiHandler.getInstance();
-						return depHandler;
 					}		
 					else if (JRXlsExporter.XLS_EXPORTER_KEY.equals(exporterKey))
 					{
@@ -265,6 +237,7 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 	private static final ExtensionsRegistry defaultExtensionsRegistry = 
 		new ExtensionsRegistry()
 		{
+			@Override
 			public <T> List<T> getExtensions(Class<T> extensionType) 
 			{
 				if (JRQueryExecuterFactoryBundle.class.equals(extensionType))
@@ -291,6 +264,7 @@ public class DefaultExtensionsRegistryFactory implements ExtensionsRegistryFacto
 			}
 		};
 	
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties) 
 	{
 		return defaultExtensionsRegistry;

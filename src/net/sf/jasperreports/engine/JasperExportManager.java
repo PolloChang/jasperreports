@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleHtmlExporterOutput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
-import net.sf.jasperreports.export.SimpleWriterExporterOutput;
 import net.sf.jasperreports.export.SimpleXmlExporterOutput;
 
 
@@ -57,7 +56,6 @@ import net.sf.jasperreports.export.SimpleXmlExporterOutput;
  * @see net.sf.jasperreports.engine.export.JRXlsExporter
  * @see net.sf.jasperreports.engine.export.JRCsvExporter
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperExportManager.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JasperExportManager
 {
@@ -110,7 +108,7 @@ public final class JasperExportManager
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".pdf");
 		String destFileName = destFile.toString();
 		
-		exportReportToPdfFile(jasperPrint, destFileName);
+		exportToPdfFile(jasperPrint, destFileName);
 		
 		return destFileName;
 	}
@@ -131,7 +129,7 @@ public final class JasperExportManager
 	{
 		JasperPrint jasperPrint = (JasperPrint)JRLoader.loadObjectFromFile(sourceFileName);
 
-		exportReportToPdfFile(jasperPrint, destFileName);
+		exportToPdfFile(jasperPrint, destFileName);
 	}
 
 	
@@ -173,7 +171,7 @@ public final class JasperExportManager
 	{
 		JasperPrint jasperPrint = (JasperPrint)JRLoader.loadObject(inputStream);
 
-		exportReportToPdfStream(jasperPrint, outputStream);
+		exportToPdfStream(jasperPrint, outputStream);
 	}
 
 	
@@ -251,7 +249,7 @@ public final class JasperExportManager
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".jrpxml");
 		String destFileName = destFile.toString();
 		
-		exportReportToXmlFile(
+		exportToXmlFile(
 			jasperPrint, 
 			destFileName,
 			isEmbeddingImages
@@ -283,7 +281,7 @@ public final class JasperExportManager
 	{
 		JasperPrint jasperPrint = (JasperPrint)JRLoader.loadObjectFromFile(sourceFileName);
 
-		exportReportToXmlFile(
+		exportToXmlFile(
 			jasperPrint, 
 			destFileName,
 			isEmbeddingImages
@@ -340,7 +338,7 @@ public final class JasperExportManager
 	{
 		JasperPrint jasperPrint = (JasperPrint)JRLoader.loadObject(inputStream);
 
-		exportReportToXmlStream(jasperPrint, outputStream);
+		exportToXmlStream(jasperPrint, outputStream);
 	}
 
 	
@@ -361,7 +359,7 @@ public final class JasperExportManager
 		JRXmlExporter exporter = new JRXmlExporter(jasperReportsContext);
 		
 		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
-		exporter.setExporterOutput(new SimpleWriterExporterOutput(outputStream));
+		exporter.setExporterOutput(new SimpleXmlExporterOutput(outputStream));
 		
 		exporter.exportReport();
 	}
@@ -378,16 +376,16 @@ public final class JasperExportManager
 	 */
 	public String exportToXml(JasperPrint jasperPrint) throws JRException
 	{
-		StringBuffer sbuffer = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 
 		JRXmlExporter exporter = new JRXmlExporter(jasperReportsContext);
 		
 		exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
-		exporter.setExporterOutput(new SimpleWriterExporterOutput(sbuffer));
+		exporter.setExporterOutput(new SimpleXmlExporterOutput(sb));
 		
 		exporter.exportReport();
 		
-		return sbuffer.toString();
+		return sb.toString();
 	}
 
 
@@ -414,7 +412,7 @@ public final class JasperExportManager
 		File destFile = new File(sourceFile.getParent(), jasperPrint.getName() + ".html");
 		String destFileName = destFile.toString();
 		
-		exportReportToHtmlFile(
+		exportToHtmlFile(
 			jasperPrint, 
 			destFileName
 			);
@@ -441,7 +439,7 @@ public final class JasperExportManager
 	{
 		JasperPrint jasperPrint = (JasperPrint)JRLoader.loadObjectFromFile(sourceFileName);
 
-		exportReportToHtmlFile(
+		exportToHtmlFile(
 			jasperPrint, 
 			destFileName
 			);

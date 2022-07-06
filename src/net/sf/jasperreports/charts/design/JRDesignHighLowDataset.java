@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRDesignHighLowDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHighLowDataset //FIXMECHART why is this different?
 {
@@ -81,6 +80,7 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 	}
 
 
+	@Override
 	public JRExpression getSeriesExpression()
 	{
 		return seriesExpression;
@@ -94,6 +94,7 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 		getEventSupport().firePropertyChange(PROPERTY_SERIES_EXPRESSION, old, this.seriesExpression);
 	}
 
+	@Override
 	public JRExpression getDateExpression()
 	{
 		return dateExpression;
@@ -108,6 +109,7 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 	}
 
 
+	@Override
 	public JRExpression getHighExpression()
 	{
 		return highExpression;
@@ -122,6 +124,7 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 	}
 
 
+	@Override
 	public JRExpression getLowExpression()
 	{
 		return lowExpression;
@@ -136,6 +139,7 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 	}
 
 
+	@Override
 	public JRExpression getOpenExpression()
 	{
 		return openExpression;
@@ -150,6 +154,7 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 	}
 
 
+	@Override
 	public JRExpression getCloseExpression()
 	{
 		return closeExpression;
@@ -164,6 +169,7 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 	}
 
 
+	@Override
 	public JRExpression getVolumeExpression()
 	{
 		return volumeExpression;
@@ -177,23 +183,20 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 		getEventSupport().firePropertyChange(PROPERTY_VOLUME_EXPRESSION, old, this.volumeExpression);
 	}
 
-	/** 
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.HIGHLOW_DATASET;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 	
+	@Override
 	public JRHyperlink getItemHyperlink()
 	{
 		return itemHyperlink;
@@ -214,15 +217,14 @@ public class JRDesignHighLowDataset extends JRDesignChartDataset implements JRHi
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignHighLowDataset clone = (JRDesignHighLowDataset)super.clone();

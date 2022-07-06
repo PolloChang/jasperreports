@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.engine;
 
 import java.util.Map;
 
+import net.sf.jasperreports.engine.fill.JRFillDataset;
 import net.sf.jasperreports.engine.fill.JRFillField;
 import net.sf.jasperreports.engine.fill.JRFillGroup;
 import net.sf.jasperreports.engine.fill.JRFillParameter;
@@ -36,15 +37,18 @@ import net.sf.jasperreports.engine.fill.JRFillVariable;
  * in certain moments of the report filling process, such as report, column or group initialization. Scriptlets must implement
  * the abstract methods that define the behavior at the specified moments.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractScriptlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractScriptlet
 {
-
+	public static final String EXCEPTION_MESSAGE_KEY_FIELD_NOT_FOUND = "scriptlets.field.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND = "scriptlets.parameter.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_VARIABLE_NOT_FOUND = "scriptlets.variable.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_VARIABLE_VALUE_INCOMPATIBLE = "scriptlets.variable.value.incompatible";
 
 	/**
 	 *
 	 */
+	protected JRFillDataset dataset;
 	protected Map<String,JRFillParameter> parametersMap;
 	protected Map<String,JRFillField> fieldsMap;
 	protected Map<String,JRFillVariable> variablesMap;
@@ -61,6 +65,22 @@ public abstract class JRAbstractScriptlet
 
 	/**
 	 *
+	 */
+	public void setData(JRFillDataset dataset)
+	{
+		this.dataset = dataset;
+		
+		setData( // keep this deprecated method call here just in case it was overridden in scriptlet implementations
+			dataset.getParametersMap(),
+			dataset.getFieldsMap(),
+			dataset.getVariablesMap(),
+			(JRFillGroup[])dataset.getGroups()
+			);
+	}
+
+
+	/**
+	 * @deprecated Replaced by {@link #setData(JRFillDataset)}.
 	 */
 	public void setData(
 		Map<String,JRFillParameter> parsm,
@@ -95,7 +115,10 @@ public abstract class JRAbstractScriptlet
 		{
 			if (mustBeDeclared)
 			{
-				throw new JRScriptletException("Parameter not found : " + parameterName);
+				throw 
+					new JRScriptletException(
+						EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND,
+						new Object[]{parameterName});
 			}
 			return ((Map<String,?>)this.parametersMap.get(JRParameter.REPORT_PARAMETERS_MAP).getValue()).get(parameterName);
 		}
@@ -108,10 +131,13 @@ public abstract class JRAbstractScriptlet
 	 */
 	public Object getFieldValue(String fieldName) throws JRScriptletException
 	{
-		JRFillField field = this.fieldsMap.get(fieldName);
+		JRFillField field = fieldsMap == null ? null : fieldsMap.get(fieldName);
 		if (field == null)
 		{
-			throw new JRScriptletException("Field not found : " + fieldName);
+			throw 
+				new JRScriptletException(
+					EXCEPTION_MESSAGE_KEY_FIELD_NOT_FOUND,
+					new Object[]{fieldName});
 		}
 		return field.getValue();
 	}
@@ -125,7 +151,10 @@ public abstract class JRAbstractScriptlet
 		JRFillVariable variable = this.variablesMap.get(variableName);
 		if (variable == null)
 		{
-			throw new JRScriptletException("Variable not found : " + variableName);
+			throw 
+				new JRScriptletException(
+					EXCEPTION_MESSAGE_KEY_VARIABLE_NOT_FOUND,
+					new Object[]{variableName});
 		}
 		return variable.getValue();
 	}
@@ -139,12 +168,18 @@ public abstract class JRAbstractScriptlet
 		JRFillVariable variable = this.variablesMap.get(variableName);
 		if (variable == null)
 		{
-			throw new JRScriptletException("Variable not found : " + variableName);
+			throw 
+				new JRScriptletException(
+					EXCEPTION_MESSAGE_KEY_VARIABLE_NOT_FOUND,
+					new Object[]{variableName});
 		}
 		
 		if (value != null && !variable.getValueClass().isInstance(value) )
 		{
-			throw new JRScriptletException("Incompatible value assigned to variable " + variableName + ". Expected " + variable.getValueClassName() + ".");
+			throw 
+				new JRScriptletException(
+					EXCEPTION_MESSAGE_KEY_VARIABLE_VALUE_INCOMPATIBLE,
+					new Object[]{variableName, variable.getValueClassName()});
 		}
 		
 		variable.setValue(value);

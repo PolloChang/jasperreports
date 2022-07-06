@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: StandardBarbecueComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class StandardBarbecueComponent implements BarbecueComponent, Serializable, JRChangeEventsSupport
 {
@@ -100,16 +99,19 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 		this.context = new BaseComponentContext(barcode.getContext(), objectFactory);
 	}
 	
+	@Override
 	public void setContext(ComponentContext context)
 	{
 		this.context = context;
 	}
 
+	@Override
 	public ComponentContext getContext()
 	{
 		return context;
 	}
 
+	@Override
 	public JRExpression getCodeExpression()
 	{
 		return codeExpression;
@@ -123,6 +125,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.codeExpression);
 	}
 
+	@Override
 	public String getType()
 	{
 		return type;
@@ -136,6 +139,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.type);
 	}
 
+	@Override
 	public JRExpression getApplicationIdentifierExpression()
 	{
 		return applicationIdentifierExpression;
@@ -150,6 +154,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.applicationIdentifierExpression);
 	}
 
+	@Override
 	public Integer getBarWidth()
 	{
 		return barWidth;
@@ -163,6 +168,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.barWidth);
 	}
 
+	@Override
 	public Integer getBarHeight()
 	{
 		return barHeight;
@@ -176,10 +182,12 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.barHeight);
 	}
 	
+	@Override
 	public RotationEnum getRotation(){
 		return BarbecueStyleResolver.getRotationValue(getContext().getComponentElement());
 	}
 	
+	@Override
 	public RotationEnum getOwnRotation(){
 		return rotation;
 	}
@@ -191,6 +199,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.rotation);
 	}
 
+	@Override
 	public boolean isChecksumRequired()
 	{
 		return checksumRequired;
@@ -204,6 +213,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.checksumRequired);
 	}
 
+	@Override
 	public boolean isDrawText()
 	{
 		return drawText;
@@ -217,6 +227,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.drawText);
 	}
 	
+	@Override
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
 		return evaluationTimeValue;
@@ -230,6 +241,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.evaluationTimeValue);
 	}
 
+	@Override
 	public String getEvaluationGroup()
 	{
 		return evaluationGroup;
@@ -243,6 +255,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 				old, this.evaluationGroup);
 	}
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -256,6 +269,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 		return eventSupport;
 	}
 	
+	@Override
 	public Object clone()
 	{
 		StandardBarbecueComponent clone = null;
@@ -285,6 +299,7 @@ public class StandardBarbecueComponent implements BarbecueComponent, Serializabl
 	 */
 	private byte evaluationTime;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

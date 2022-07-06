@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,19 +31,13 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
  * Utility class that manages built-in hyperlink types.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRHyperlinkHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRHyperlinkHelper
 {
-
-	
-	/**
-	 * @deprecated Replaced by {@link #getHyperlinkTypeValue(JRHyperlink)}.
-	 */
-	public static byte getHyperlinkType(JRHyperlink hyperlink)
-	{
-		return getHyperlinkTypeValue(hyperlink.getLinkType()).getValue();
-	}
+	public static final String EXCEPTION_MESSAGE_KEY_TARGET_BYTE_CONSTANT_USED = "engine.hyperlink.target.byte.constant.used";
+	public static final String EXCEPTION_MESSAGE_KEY_TYPE_BYTE_CONSTANT_USED = "engine.hyperlink.type.byte.constant.used";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_HYPERLINK_TARGET = "engine.hyperlink.unknown.hyperlink.target";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_HYPERLINK_TYPE = "engine.hyperlink.unknown.hyperlink.type";
 	
 
 	/**
@@ -56,15 +50,6 @@ public final class JRHyperlinkHelper
 	public static HyperlinkTypeEnum getHyperlinkTypeValue(JRHyperlink hyperlink)
 	{
 		return getHyperlinkTypeValue(hyperlink.getLinkType());
-	}
-	
-
-	/**
-	 * @deprecated Replaced by {@link #getHyperlinkTypeValue(String)}.
-	 */
-	public static byte getHyperlinkType(String linkType)
-	{
-		return getHyperlinkTypeValue(linkType).getValue();
 	}
 	
 	
@@ -107,19 +92,10 @@ public final class JRHyperlinkHelper
 	 */
 	public static byte getHyperlinkTarget(JRHyperlink hyperlink)
 	{
-		return getHyperlinkTarget(hyperlink.getLinkTarget());
+		return getHyperlinkTargetValue(hyperlink.getLinkTarget()).getValue();
 	}
 	
 
-	/**
-	 * @deprecated Replaced by {@link #getHyperlinkTargetValue(String)}.
-	 */
-	public static byte getHyperlinkTarget(String linkTarget)
-	{
-		return getHyperlinkTargetValue(linkTarget).getValue();
-	}
-	
-	
 	/**
 	 * Returns the built-in hyperlink target, or {@link HyperlinkTargetEnum#CUSTOM HyperlinkTargetEnum.CUSTOM}
 	 * if the target name is not a built-in one.
@@ -151,15 +127,6 @@ public final class JRHyperlinkHelper
 	
 	
 	/**
-	 * @deprecated Replaced by {@link #getLinkType(HyperlinkTypeEnum)}.
-	 */
-	public static String getLinkType(byte hyperlinkType)
-	{
-		return getLinkType(HyperlinkTypeEnum.getByValue(hyperlinkType));
-	}
-
-	
-	/**
 	 * Returns the link type associated with a built-in type.
 	 * 
 	 * @param hyperlinkType the built-in type
@@ -182,20 +149,17 @@ public final class JRHyperlinkHelper
 				type = hyperlinkType.getName();
 				break;
 			case CUSTOM:
-				throw new JRRuntimeException("Custom hyperlink types cannot be specified using the byte constant");
+				throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_TYPE_BYTE_CONSTANT_USED,
+					(Object[])null);
 			default:
-				throw new JRRuntimeException("Unknown hyperlink type " + hyperlinkType);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_HYPERLINK_TYPE,
+						new Object[]{hyperlinkType});
 		}
 		return type;
-	}
-
-	
-	/**
-	 * @deprecated Replaced by {@link #getLinkTarget(HyperlinkTargetEnum)}.
-	 */
-	public static String getLinkTarget(byte hyperlinkTarget)
-	{
-		return getLinkTarget(HyperlinkTargetEnum.getByValue(hyperlinkTarget));
 	}
 
 	
@@ -224,9 +188,15 @@ public final class JRHyperlinkHelper
 				target = HyperlinkTargetEnum.TOP.getName();
 				break;
 			case CUSTOM:
-				throw new JRRuntimeException("Custom hyperlink targets cannot be specified using the byte constant");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_TARGET_BYTE_CONSTANT_USED,
+						(Object[])null);
 			default:
-				throw new JRRuntimeException("Unknown hyperlink target " + hyperlinkTarget);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_HYPERLINK_TARGET,
+						new Object[]{hyperlinkTarget});
 		}
 		return target;
 	}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Crosstab column group implementation to be used for report designing. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstabColumnGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implements JRCrosstabColumnGroup
 {
@@ -61,6 +60,7 @@ public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implement
 		super();
 	}
 
+	@Override
 	public CrosstabColumnPositionEnum getPositionValue()
 	{
 		return positionValue;
@@ -80,6 +80,7 @@ public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implement
 		getEventSupport().firePropertyChange(PROPERTY_POSITION, old, this.positionValue);
 	}
 
+	@Override
 	public int getHeight()
 	{
 		return height;
@@ -99,6 +100,7 @@ public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implement
 		getEventSupport().firePropertyChange(PROPERTY_HEIGHT, old, this.height);
 	}
 
+	@Override
 	public void setHeader(JRDesignCellContents header)
 	{
 		super.setHeader(header);
@@ -108,6 +110,7 @@ public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implement
 						null, getName()));
 	}
 
+	@Override
 	public void setTotalHeader(JRDesignCellContents totalHeader)
 	{
 		super.setTotalHeader(totalHeader);
@@ -117,6 +120,7 @@ public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implement
 						null, getName()));
 	}
 
+	@Override
 	void setParent(JRDesignCrosstab parent)
 	{
 		super.setParent(parent);
@@ -174,6 +178,7 @@ public class JRDesignCrosstabColumnGroup extends JRDesignCrosstabGroup implement
 	 */
 	private byte position;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();

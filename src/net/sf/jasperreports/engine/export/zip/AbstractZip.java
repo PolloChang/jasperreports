@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,15 +25,14 @@ package net.sf.jasperreports.engine.export.zip;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractZip.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractZip
 {
@@ -41,7 +40,7 @@ public abstract class AbstractZip
 	/**
 	 * 
 	 */
-	protected List<ExportZipEntry> exportZipEntries = new ArrayList<ExportZipEntry>();
+	protected Map<String, ExportZipEntry> exportZipEntries = new HashMap<>();
 
 	/**
 	 *
@@ -53,7 +52,8 @@ public abstract class AbstractZip
 	 */
 	public void addEntry(ExportZipEntry entry)
 	{
-		exportZipEntries.add(entry);
+		// if several entries with the same name are added, the last one will be considered 
+		exportZipEntries.put(entry.getName(), entry);
 	}
 	
 	/**
@@ -64,9 +64,8 @@ public abstract class AbstractZip
 		ZipOutputStream zipos = new ZipOutputStream(os);
 		zipos.setMethod(ZipOutputStream.DEFLATED);
 		
-		for (int i = 0; i < exportZipEntries.size(); i++) 
+		for (ExportZipEntry exportZipEntry : exportZipEntries.values()) 
 		{
-			ExportZipEntry exportZipEntry = exportZipEntries.get(i);
 			ZipEntry zipEntry = new ZipEntry(exportZipEntry.getName());
 			zipos.putNextEntry(zipEntry);
 			exportZipEntry.writeData(zipos);
@@ -81,9 +80,8 @@ public abstract class AbstractZip
 	 */
 	public void dispose()
 	{
-		for (int i = 0; i < exportZipEntries.size(); i++) 
+		for (ExportZipEntry exportZipEntry : exportZipEntries.values()) 
 		{
-			ExportZipEntry exportZipEntry = exportZipEntries.get(i);
 			exportZipEntry.dispose();
 		}
 	}

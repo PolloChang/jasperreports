@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,21 +25,22 @@ package net.sf.jasperreports.engine.util.xml;
 
 import javax.xml.transform.TransformerException;
 
-import net.sf.jasperreports.engine.JRException;
-
 import org.apache.xpath.CachedXPathAPI;
 import org.apache.xpath.objects.XObject;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import net.sf.jasperreports.engine.JRException;
 
 
 /**
  * XPath executer implementation that uses <a href="http://xml.apache.org/xalan-j/" target="_blank">Apache Xalan</a>.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: XalanXPathExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XalanXPathExecuter implements JRXPathExecuter {
+
+	public static final String EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE = "util.xml.xalan.xpath.selection.failure";
 
 	// XPath API facade
 	private CachedXPathAPI xpathAPI = new CachedXPathAPI();
@@ -50,16 +51,21 @@ public class XalanXPathExecuter implements JRXPathExecuter {
 	public XalanXPathExecuter() {
 	}
 	
+	@Override
 	public NodeList selectNodeList(Node contextNode, String expression) throws JRException
 	{
 		try {
 			return xpathAPI.selectNodeList(contextNode, expression);
 		} catch (TransformerException e) {
-			throw new JRException("XPath selection failed. Expression: "
-					+ expression, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE,
+					new Object[]{expression},
+					e);
 		}
 	}
 
+	@Override
 	public Object selectObject(Node contextNode, String expression) throws JRException {
 		try {
 			Object value;
@@ -69,10 +75,10 @@ public class XalanXPathExecuter implements JRXPathExecuter {
 					value = object.nodeset().nextNode();
 					break;
 				case XObject.CLASS_BOOLEAN:
-					value = object.bool() ? Boolean.TRUE : Boolean.FALSE;
+					value = object.bool();
 					break;
 				case XObject.CLASS_NUMBER:
-					value = new Double(object.num());
+					value = object.num();
 					break;
 				default:
 					value = object.str();
@@ -80,8 +86,11 @@ public class XalanXPathExecuter implements JRXPathExecuter {
 			}
 			return value;
 		} catch (TransformerException e) {
-			throw new JRException("XPath selection failed. Expression: "
-					+ expression, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE,
+					new Object[]{expression},
+					e);
 		}
 	}
 	

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,9 @@ package net.sf.jasperreports.engine.export.ooxml;
 
 import java.io.Writer;
 
+import net.sf.jasperreports.engine.JRPrintElementIndex;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.PrintPageFormat;
 import net.sf.jasperreports.engine.export.CutsInfo;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
 import net.sf.jasperreports.engine.export.LengthUtil;
@@ -33,7 +35,6 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxTableHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxTableHelper extends BaseHelper
 {
@@ -43,7 +44,9 @@ public class DocxTableHelper extends BaseHelper
 	private CutsInfo xCuts;
 	private DocxCellHelper cellHelper;
 	private DocxParagraphHelper paragraphHelper;
-
+	private PrintPageFormat pageFormat;
+	private JRPrintElementIndex frameIndex;
+	private int rowMaxTopPadding;
 
 	/**
 	 * 
@@ -52,7 +55,9 @@ public class DocxTableHelper extends BaseHelper
 		JasperReportsContext jasperReportsContext,
 		Writer writer,
 		CutsInfo xCuts,
-		boolean pageBreak
+		boolean pageBreak,
+		PrintPageFormat pageFormat,
+		JRPrintElementIndex frameIndex
 		) 
 	{
 		super(jasperReportsContext, writer);
@@ -60,6 +65,8 @@ public class DocxTableHelper extends BaseHelper
 		this.xCuts = xCuts;
 		this.cellHelper = new DocxCellHelper(jasperReportsContext, writer);
 		this.paragraphHelper = new DocxParagraphHelper(jasperReportsContext, writer, pageBreak);
+		this.pageFormat = pageFormat;
+		this.frameIndex = frameIndex;
 	}
 
 
@@ -91,33 +98,39 @@ public class DocxTableHelper extends BaseHelper
 		write("    <w:tblLayout w:type=\"fixed\"/>\n");
 		write("   </w:tblPr>\n");
 		write("   <w:tblGrid>\n");
-		for(int col = 1; col < xCuts.size(); col++)
+		int leftColumnWidth = xCuts.getCutOffset(1) - xCuts.getCutOffset(0);
+		if(frameIndex == null)
+		{
+			leftColumnWidth -= Math.min(leftColumnWidth, pageFormat.getLeftMargin());
+			write("    <w:gridCol w:w=\"" + (leftColumnWidth == 0 ? 1 : LengthUtil.twip(leftColumnWidth)) + "\"/>\n");
+		}
+		else
+		{
+			write("    <w:gridCol w:w=\"" + LengthUtil.twip(leftColumnWidth) + "\"/>\n");
+		}
+		for(int col = 2; col < xCuts.size() - 1; col++)
 		{
 			write("    <w:gridCol w:w=\"" + LengthUtil.twip(xCuts.getCutOffset(col) - xCuts.getCutOffset(col - 1)) + "\"/>\n");
+		}
+		if(xCuts.size() > 1)
+		{
+			int rightColumnWidth = xCuts.getCutOffset(xCuts.size() - 1) - xCuts.getCutOffset(xCuts.size() - 2);
+			if(frameIndex == null)
+			{
+				rightColumnWidth -= Math.min(rightColumnWidth, pageFormat.getRightMargin());
+				write("    <w:gridCol w:w=\"" + (rightColumnWidth == 0 ? 1 : LengthUtil.twip(rightColumnWidth)) + "\"/>\n");
+			}
+			else
+			{
+				write("    <w:gridCol w:w=\"" + LengthUtil.twip(rightColumnWidth) + "\"/>\n");
+			}
 		}
 		write("   </w:tblGrid>\n");
 	}
 	
-	public void exportFooter(boolean lastPage, int pageWidth, int pageHeight) 
+	public void exportFooter() 
 	{
 		write("  </w:tbl>\n");
-		exportSection(lastPage, pageWidth, pageHeight);
-	}
-	
-	public void exportSection(boolean lastPage, int pageWidth, int pageHeight) 
-	{
-		if (lastPage)
-		{
-			write("    <w:p>\n");
-			write("    <w:pPr>\n");
-			write("  <w:sectPr>\n");
-			write("   <w:pgSz w:w=\"" + LengthUtil.twip(pageWidth) + "\" w:h=\"" + LengthUtil.twip(pageHeight) + "\" />\n");
-			write("   <w:pgMar w:top=\"0\" w:right=\"0\" w:bottom=\"0\" w:left=\"0\" w:header=\"0\" w:footer=\"0\" w:gutter=\"0\" />\n");
-			write("   <w:docGrid w:linePitch=\"360\" />\n");
-			write("  </w:sectPr>\n");
-			write("    </w:pPr>\n");
-			write("    </w:p>\n");
-		}
 	}
 	
 	public void exportRowHeader(int rowHeight, boolean allowRowResize) 
@@ -182,5 +195,14 @@ public class DocxTableHelper extends BaseHelper
 
 		cellHelper.exportFooter();
 	}
-
+	
+	public int getRowMaxTopPadding()
+	{
+		return rowMaxTopPadding;
+	}
+	
+	public void setRowMaxTopPadding(int rowMaxTopPadding)
+	{
+		this.rowMaxTopPadding = rowMaxTopPadding;
+	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.util.ObjectUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleTextFormat.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleTextFormat implements TextFormat, Serializable
 {
@@ -87,9 +86,7 @@ public class SimpleTextFormat implements TextFormat, Serializable
 				+ timeZoneId + "}";
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getValueClassName()
 	{
 		return valueClassName;
@@ -103,9 +100,7 @@ public class SimpleTextFormat implements TextFormat, Serializable
 		this.valueClassName = valueClassName;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getPattern()
 	{
 		return pattern;
@@ -119,9 +114,7 @@ public class SimpleTextFormat implements TextFormat, Serializable
 		this.pattern = pattern;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getFormatFactoryClass()
 	{
 		return formatFactoryClass;
@@ -135,9 +128,7 @@ public class SimpleTextFormat implements TextFormat, Serializable
 		this.formatFactoryClass = formatFactoryClass;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getLocaleCode()
 	{
 		return localeCode;
@@ -151,9 +142,7 @@ public class SimpleTextFormat implements TextFormat, Serializable
 		this.localeCode = localeCode;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getTimeZoneId()
 	{
 		return timeZoneId;

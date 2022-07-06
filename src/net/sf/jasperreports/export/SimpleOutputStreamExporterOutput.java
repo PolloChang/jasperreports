@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.export;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,7 +34,6 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleOutputStreamExporterOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleOutputStreamExporterOutput implements OutputStreamExporterOutput
 {
@@ -64,7 +64,7 @@ public class SimpleOutputStreamExporterOutput implements OutputStreamExporterOut
 		{
 			try
 			{
-				outputStream = new FileOutputStream(file);
+				outputStream = new BufferedOutputStream(new FileOutputStream(file));
 			}
 			catch (IOException e)
 			{
@@ -85,17 +85,13 @@ public class SimpleOutputStreamExporterOutput implements OutputStreamExporterOut
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public OutputStream getOutputStream()
 	{
 		return outputStream;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void close()
 	{
 		if (toClose)

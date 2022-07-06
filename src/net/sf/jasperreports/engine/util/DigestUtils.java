@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,15 +26,16 @@ package net.sf.jasperreports.engine.util;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DigestUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class DigestUtils
 {
+	public static final String EXCEPTION_MESSAGE_KEY_MD5_NOT_AVAILABLE = "util.digest.md5.not.available";
 
 	private static final DigestUtils INSTANCE = new DigestUtils();
 	
@@ -73,13 +74,36 @@ public final class DigestUtils
 		}
 		catch (NoSuchAlgorithmException e)
 		{
-			throw new JRRuntimeException("MD5 digest not available", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_MD5_NOT_AVAILABLE,
+					(Object[])null,
+					e);
 		}
 		catch (UnsupportedEncodingException e)
 		{
 			// should not happen
 			throw new JRRuntimeException(e);
 		}
+	}
+	
+	public UUID deriveUUID(UUID base, String text)
+	{
+		MD5Digest textMD5 = md5(text);
+		long md5Low = textMD5.getLow();
+		long md5High = textMD5.getHigh();
+		return deriveUUID(base, md5Low, md5High);
+	}
+	
+	public UUID deriveUUID(UUID base, long maskLow, long maskHigh)
+	{
+		long baseMostSig = base.getMostSignificantBits();
+		long baseLeastSig = base.getLeastSignificantBits();
+		
+		return new UUID(
+				baseMostSig ^ (maskLow & 0xffffffffffff0fffl),//preserve version 
+				baseLeastSig ^ (maskHigh & 0x3fffffffffffffffl)//preserve variant
+				);
 	}
 	
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,7 +44,6 @@ import net.sf.jasperreports.engine.virtualization.VirtualizationSerializable;
  * Virtual data type used by report pages to virtualize elements.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: VirtualElementsData.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class VirtualElementsData implements Serializable, VirtualizationSerializable
 {
@@ -65,10 +65,10 @@ public class VirtualElementsData implements Serializable, VirtualizationSerializ
 	{
 		if (elementEvaluations == null)
 		{
-			elementEvaluations = new HashMap<Pair<Integer, JREvaluationTime>, Map<JRPrintElement,Integer>>();
+			elementEvaluations = new HashMap<>();
 		}
 		
-		elementEvaluations.put(new Pair<Integer, JREvaluationTime>(fillerId, evaluationTime), evaluations);
+		elementEvaluations.put(new Pair<>(fillerId, evaluationTime), evaluations);
 	}
 
 	public Map<JRPrintElement, Integer> getElementEvaluations(int fillerId, JREvaluationTime evaluationTime)
@@ -142,7 +142,7 @@ public class VirtualElementsData implements Serializable, VirtualizationSerializ
 		boolean hasEvaluations = evaluationsCount > 0;
 		if (hasEvaluations)
 		{
-			elementEvaluations = new HashMap<Pair<Integer, JREvaluationTime>, Map<JRPrintElement,Integer>>(
+			elementEvaluations = new HashMap<>(
 					evaluationsCount * 4 / 3 + 1, .75f);
 			
 			for (int i = 0; i < evaluationsCount; i++)
@@ -158,7 +158,7 @@ public class VirtualElementsData implements Serializable, VirtualizationSerializ
 				}
 				else
 				{
-					evaluations = new HashMap<JRPrintElement, Integer>(count * 4 / 3 + 1, .75f);
+					evaluations = new HashMap<>(count * 4 / 3 + 1, .75f);//FIXME use LinkedHashMap?
 					for (int j = 0; j < count; j++)
 					{
 						// these elements are references in the elements list, storing references
@@ -168,16 +168,34 @@ public class VirtualElementsData implements Serializable, VirtualizationSerializ
 					}
 				}
 				
-				elementEvaluations.put(new Pair<Integer, JREvaluationTime>(fillerId, evalTime), evaluations);
+				elementEvaluations.put(new Pair<>(fillerId, evalTime), evaluations);
 			}
 		}
 		
 		int size = in.readIntCompressed();
-		elements = new ArrayList<JRPrintElement>(size);
+		elements = new ArrayList<>(size);
 		for (int i = 0; i < size; i++)
 		{
 			JRPrintElement element = (JRPrintElement) in.readJRObject();
 			elements.add(element);
 		}
+	}
+	
+	public VirtualElementsData copy()
+	{
+		ArrayList<JRPrintElement> elementsCopy = new ArrayList<>(elements);
+		VirtualElementsData copy = new VirtualElementsData(elementsCopy);
+		
+		if (elementEvaluations != null)
+		{
+			for (Entry<Pair<Integer, JREvaluationTime>, Map<JRPrintElement, Integer>> entry : elementEvaluations.entrySet())
+			{
+				Pair<Integer, JREvaluationTime> key = entry.getKey();
+				Map<JRPrintElement, Integer> evals = entry.getValue();
+				LinkedHashMap<JRPrintElement, Integer> evalsClone = new LinkedHashMap<>(evals);
+				copy.setElementEvaluations(key.first(), key.second(), evalsClone);
+			}
+		}
+		return copy;
 	}
 }

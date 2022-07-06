@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabRowGroupFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCrosstabRowGroupFactory extends JRCrosstabGroupFactory
 {
@@ -41,6 +40,7 @@ public class JRCrosstabRowGroupFactory extends JRCrosstabGroupFactory
 	public static final String ATTRIBUTE_width = "width";
 	public static final String ATTRIBUTE_headerPosition = "headerPosition";
 
+	@Override
 	public Object createObject(Attributes attributes)
 	{
 		JRDesignCrosstabRowGroup group = new JRDesignCrosstabRowGroup();

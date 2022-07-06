@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -41,7 +41,6 @@ import net.sf.jasperreports.engine.util.ElementsVisitorUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseElementGroup.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseElementGroup implements JRElementGroup, Serializable
 {
@@ -55,7 +54,7 @@ public class JRBaseElementGroup implements JRElementGroup, Serializable
 	/**
 	 *
 	 */
-	protected List<JRChild> children = new ArrayList<JRChild>();
+	protected List<JRChild> children = new ArrayList<>();
 	protected JRElementGroup elementGroup;
 
 
@@ -90,18 +89,14 @@ public class JRBaseElementGroup implements JRElementGroup, Serializable
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public List<JRChild> getChildren()
 	{
 		return this.children;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRElementGroup getElementGroup()
 	{
 		return this.elementGroup;
@@ -117,7 +112,7 @@ public class JRBaseElementGroup implements JRElementGroup, Serializable
 		
 		if (children != null)
 		{
-			List<JRElement> allElements = new ArrayList<JRElement>();
+			List<JRElement> allElements = new ArrayList<>();
 			Object child = null;
 			JRElement[] childElementArray = null;
 			for(int i = 0; i < children.size(); i++)
@@ -145,6 +140,7 @@ public class JRBaseElementGroup implements JRElementGroup, Serializable
 	}
 
 	
+	@Override
 	public JRElement[] getElements()
 	{
 		return getElements(children);
@@ -187,15 +183,14 @@ public class JRBaseElementGroup implements JRElementGroup, Serializable
 	}
 
 	
+	@Override
 	public JRElement getElementByKey(String key)
 	{
 		return getElementByKey(getElements(), key);
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitElementGroup(this);
@@ -207,9 +202,7 @@ public class JRBaseElementGroup implements JRElementGroup, Serializable
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseElementGroup clone = null;
@@ -225,7 +218,7 @@ public class JRBaseElementGroup implements JRElementGroup, Serializable
 
 		if (children != null)
 		{
-			clone.children = new ArrayList<JRChild>(children.size());
+			clone.children = new ArrayList<>(children.size());
 			for(int i = 0; i < children.size(); i++)
 			{
 				clone.children.add((JRChild)(children.get(i).clone(clone)));
@@ -235,9 +228,7 @@ public class JRBaseElementGroup implements JRElementGroup, Serializable
 		return clone;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone(JRElementGroup parentGroup) 
 	{
 		JRBaseElementGroup clone = (JRBaseElementGroup)this.clone();

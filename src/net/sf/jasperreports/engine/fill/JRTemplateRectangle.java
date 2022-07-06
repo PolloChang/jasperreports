@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.JRRectangle;
 import net.sf.jasperreports.engine.JRSubreport;
 import net.sf.jasperreports.engine.base.JRBasePen;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 import net.sf.jasperreports.engine.util.ObjectUtils;
 
 
@@ -39,7 +38,6 @@ import net.sf.jasperreports.engine.util.ObjectUtils;
  * Rectangle information shared by multiple print rectangle objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateRectangle.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRTemplatePrintRectangle
  */
 public class JRTemplateRectangle extends JRTemplateGraphicElement implements JRCommonRectangle
@@ -101,7 +99,7 @@ public class JRTemplateRectangle extends JRTemplateGraphicElement implements JRC
 	{
 		super.setGraphicElement(rectangle);
 
-		setRadius(rectangle.getRadius());
+		setRadius(rectangle.getOwnRadius());
 	}
 
 
@@ -122,39 +120,26 @@ public class JRTemplateRectangle extends JRTemplateGraphicElement implements JRC
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public int getRadius()
 	{
-		return JRStyleResolver.getRadius(this);
+		return getStyleResolver().getRadius(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Integer getOwnRadius()
 	{
 		return radius;
 	}
 
-	/**
-	 *
-	 */
-	public void setRadius(int radius)
-	{
-		this.radius = Integer.valueOf(radius);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public void setRadius(Integer radius)
 	{
 		this.radius = radius;
 	}
 
 
+	@Override
 	public int getHashCode()
 	{
 		ObjectUtils.HashCode hash = ObjectUtils.hash();
@@ -164,6 +149,7 @@ public class JRTemplateRectangle extends JRTemplateGraphicElement implements JRC
 	}
 
 
+	@Override
 	public boolean isIdentical(Object object)
 	{
 		if (this == object)

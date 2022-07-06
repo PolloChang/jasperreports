@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,8 +33,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @deprecated Replaced by {@link StandardItemProperty}.
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: StandardMarkerProperty.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class StandardMarkerProperty implements MarkerProperty, JRChangeEventsSupport, Serializable
 {
@@ -62,6 +61,7 @@ public class StandardMarkerProperty implements MarkerProperty, JRChangeEventsSup
 		this.value = value;
 	}
 	
+	@Override
 	public String getName()
 	{
 		return name;
@@ -74,6 +74,7 @@ public class StandardMarkerProperty implements MarkerProperty, JRChangeEventsSup
 		getEventSupport().firePropertyChange(PROPERTY_NAME, old, this.name);
 	}
 
+	@Override
 	public String getValue()
 	{
 		return value;
@@ -86,6 +87,7 @@ public class StandardMarkerProperty implements MarkerProperty, JRChangeEventsSup
 		getEventSupport().firePropertyChange(PROPERTY_VALUE, old, this.value);
 	}
 	
+	@Override
 	public JRExpression getValueExpression()
 	{
 		return valueExpression;
@@ -98,6 +100,7 @@ public class StandardMarkerProperty implements MarkerProperty, JRChangeEventsSup
 		getEventSupport().firePropertyChange(PROPERTY_VALUE_EXPRESSION, old, this.valueExpression);
 	}
 
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -111,6 +114,7 @@ public class StandardMarkerProperty implements MarkerProperty, JRChangeEventsSup
 		return eventSupport;
 	}
 
+	@Override
 	public Object clone()
 	{
 		try

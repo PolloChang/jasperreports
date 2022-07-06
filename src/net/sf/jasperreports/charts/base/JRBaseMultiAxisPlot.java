@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
  * An immutable representation of the layout options of a multiple axis chart.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRBaseMultiAxisPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisPlot
 {
@@ -55,9 +54,9 @@ public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisP
 	 * All the axes contained in this plot.  Each entry indicates a chart containing
 	 * the dataset and layout of that entry and where to draw that chart's range
 	 * axis.  All entries in the list are of the type
-	 * <code>{@link JRChartAxis}</code>
+	 * {@link net.sf.jasperreports.charts.JRChartAxis JRChartAxis}
 	 */
-	protected List<JRChartAxis> axes = new ArrayList<JRChartAxis>();
+	protected List<JRChartAxis> axes = new ArrayList<>();
 
 
 
@@ -99,9 +98,7 @@ public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisP
 
 
 
-	/**
-	 *
-	 */
+	@Override
 	public List<JRChartAxis> getAxes()
 	{
 		return axes;
@@ -114,6 +111,7 @@ public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisP
 	 *
 	 * @param collector the expression collector to use
 	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		Iterator<JRChartAxis> iter = axes.iterator();
@@ -124,9 +122,7 @@ public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisP
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object clone(JRChart parentChart) 
 	{
 		JRBaseMultiAxisPlot clone = (JRBaseMultiAxisPlot)super.clone(parentChart);
@@ -137,10 +133,10 @@ public class JRBaseMultiAxisPlot extends JRBaseChartPlot implements JRMultiAxisP
 		}
 		else
 		{
-			cloneAxes = new ArrayList<JRChartAxis>(axes.size());
+			cloneAxes = new ArrayList<>(axes.size());
 			for (JRChartAxis axis : axes)
 			{
-				JRChartAxis axisClone = axis == null ? null : axis.clone(axis.getChart());
+				JRChartAxis axisClone = axis == null ? null : axis.clone(parentChart);
 				cloneAxes.add(axisClone);
 			}
 		}

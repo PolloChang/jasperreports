@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabDatasetFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCrosstabDatasetFactory extends JRBaseFactory
 {
@@ -39,6 +38,7 @@ public class JRCrosstabDatasetFactory extends JRBaseFactory
 
 	public static final String ATTRIBUTE_isDataPreSorted = "isDataPreSorted";
 
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JRDesignCrosstab crosstab = (JRDesignCrosstab) digester.peek();
@@ -47,7 +47,7 @@ public class JRCrosstabDatasetFactory extends JRBaseFactory
 		String sortedAttr = atts.getValue(ATTRIBUTE_isDataPreSorted);
 		if (sortedAttr != null && sortedAttr.length() > 0)
 		{
-			dataset.setDataPreSorted(Boolean.valueOf(sortedAttr).booleanValue());
+			dataset.setDataPreSorted(Boolean.valueOf(sortedAttr));
 		}
 		
 		return dataset;

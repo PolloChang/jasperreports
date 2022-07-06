@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * Builtin expression that evaluates to a constant value.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ConstantBuiltinExpression.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ConstantBuiltinExpression implements BuiltinExpressionEvaluator
 {
@@ -54,6 +53,7 @@ public class ConstantBuiltinExpression implements BuiltinExpressionEvaluator
 		this.value = value;
 	}
 	
+	@Override
 	public void init(Map<String, JRFillParameter> parametersMap,
 			Map<String, JRFillField> fieldsMap, 
 			Map<String, JRFillVariable> variablesMap,
@@ -62,16 +62,19 @@ public class ConstantBuiltinExpression implements BuiltinExpressionEvaluator
 		// NOP
 	}
 
+	@Override
 	public Object evaluate(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 	{
 		return value;
 	}
 
+	@Override
 	public Object evaluateOld(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 	{
 		return value;
 	}
 
+	@Override
 	public Object evaluateEstimated(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 	{
 		return value;

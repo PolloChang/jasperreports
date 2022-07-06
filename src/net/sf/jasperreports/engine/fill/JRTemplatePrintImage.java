@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,16 +32,17 @@ import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintHyperlinkParameters;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.PrintElementVisitor;
-import net.sf.jasperreports.engine.Renderable;
-import net.sf.jasperreports.engine.RenderableUtil;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
 import net.sf.jasperreports.engine.virtualization.VirtualizationInput;
 import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
+import net.sf.jasperreports.renderers.Renderable;
+import net.sf.jasperreports.renderers.ResourceRenderer;
 
 
 /**
@@ -50,7 +51,6 @@ import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintImage.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implements JRPrintImage
 {
@@ -64,12 +64,14 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	private static final int SERIALIZATION_FLAG_CACHED_RENDERER = 1;
 	private static final int SERIALIZATION_FLAG_ANCHOR = 1 << 1;
 	private static final int SERIALIZATION_FLAG_HYPERLINK = 1 << 2;
+	private static final int SERIALIZATION_FLAG_HYPERLINK_OMITTED = 1 << 3;
 
 	/**
 	 *
 	 */
 	private Renderable renderable;
 	private String anchorName;
+	private boolean hyperlinkOmitted;
 	private String hyperlinkReference;
 	private String hyperlinkAnchor;
 	private Integer hyperlinkPage;
@@ -91,29 +93,6 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	 * Creates a print image element.
 	 * 
 	 * @param image the template image that the element will use
-	 * @deprecated provide a source Id via {@link #JRTemplatePrintImage(JRTemplateImage, int)}
-	 */
-	public JRTemplatePrintImage(JRTemplateImage image)
-	{
-		super(image);
-	}
-
-	/**
-	 * Creates a print image element.
-	 * 
-	 * @param image the template image that the element will use
-	 * @param sourceElementId the Id of the source element
-	 * @deprecated replaced by {@link #JRTemplatePrintImage(JRTemplateImage, PrintElementOriginator)}
-	 */
-	public JRTemplatePrintImage(JRTemplateImage image, int sourceElementId)
-	{
-		super(image, sourceElementId);
-	}
-
-	/**
-	 * Creates a print image element.
-	 * 
-	 * @param image the template image that the element will use
 	 * @param originator
 	 */
 	public JRTemplatePrintImage(JRTemplateImage image, PrintElementOriginator originator)
@@ -122,309 +101,283 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 	}
 	
 	/**
-	 *
+	 * @deprecated Replaced by {@link #getRenderer()}.
 	 */
-	public Renderable getRenderable()
+	@Override
+	public net.sf.jasperreports.engine.Renderable getRenderable()
 	{
-		return renderable;
+		return net.sf.jasperreports.engine.RenderableUtil.getWrappingRenderable(renderable);
 	}
 		
 	/**
-	 *
+	 * @deprecated Replaced by {@link #setRenderer(net.sf.jasperreports.renderers.Renderable)}.
 	 */
-	public void setRenderable(Renderable renderable)
+	@Override
+	public void setRenderable(net.sf.jasperreports.engine.Renderable renderable)
 	{
 		this.renderable = renderable;
 	}
 		
-	/**
-	 * @deprecated Replaced by {@link #getRenderable()}.
-	 */
-	public net.sf.jasperreports.engine.JRRenderable getRenderer()
+	@Override
+	public Renderable getRenderer()
 	{
-		return getRenderable();
+		return renderable;
 	}
 		
-	/**
-	 * @deprecated Replaced by {@link #setRenderable(Renderable)}.
-	 */
-	public void setRenderer(net.sf.jasperreports.engine.JRRenderable renderer)
+	@Override
+	public void setRenderer(Renderable renderable)
 	{
-		setRenderable(RenderableUtil.getWrappingRenderable(renderer));
+		this.renderable = renderable;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public ScaleImageEnum getScaleImageValue()
 	{
 		return ((JRTemplateImage)this.template).getScaleImageValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ScaleImageEnum getOwnScaleImageValue()
 	{
 		return ((JRTemplateImage)this.template).getOwnScaleImageValue();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setScaleImage(ScaleImageEnum scaleImage)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public RotationEnum getRotation()
+	{
+		return ((JRTemplateImage)this.template).getRotation();
+	}
+		
+	@Override
+	public RotationEnum getOwnRotation()
+	{
+		return ((JRTemplateImage)this.template).getOwnRotation();
+	}
+		
+	@Override
+	public void setRotation(RotationEnum rotation)
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public boolean isUsingCache()
 	{
 		return ((JRTemplateImage)this.template).isUsingCache();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setUsingCache(boolean isUsingCache)
 	{
 	}
 
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getHorizontalAlignmentValue()
+	@Override
+	public HorizontalImageAlignEnum getHorizontalImageAlign()
 	{
-		return ((JRTemplateImage)this.template).getHorizontalAlignmentValue();
+		return ((JRTemplateImage)this.template).getHorizontalImageAlign();
 	}
 		
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue()
+	@Override
+	public HorizontalImageAlignEnum getOwnHorizontalImageAlign()
 	{
-		return ((JRTemplateImage)this.template).getOwnHorizontalAlignmentValue();
+		return ((JRTemplateImage)this.template).getOwnHorizontalImageAlign();
 	}
 		
-	/**
-	 *
-	 */
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlignment)
+	@Override
+	public void setHorizontalImageAlign(HorizontalImageAlignEnum horizontalAlignment)
+	{
+		throw new UnsupportedOperationException();
+	}
+		
+	@Override
+	public VerticalImageAlignEnum getVerticalImageAlign()
+	{
+		return ((JRTemplateImage)this.template).getVerticalImageAlign();
+	}
+		
+	@Override
+	public VerticalImageAlignEnum getOwnVerticalImageAlign()
+	{
+		return ((JRTemplateImage)this.template).getOwnVerticalImageAlign();
+	}
+		
+	@Override
+	public void setVerticalImageAlign(VerticalImageAlignEnum verticalAlignment)
 	{
 		throw new UnsupportedOperationException();
 	}
 		
 	/**
-	 *
+	 * @deprecated Replaced by {@link ResourceRenderer}.
 	 */
-	public VerticalAlignEnum getVerticalAlignmentValue()
-	{
-		return ((JRTemplateImage)this.template).getVerticalAlignmentValue();
-	}
-		
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getOwnVerticalAlignmentValue()
-	{
-		return ((JRTemplateImage)this.template).getOwnVerticalAlignmentValue();
-	}
-		
-	/**
-	 *
-	 */
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlignment)
-	{
-		throw new UnsupportedOperationException();
-	}
-		
-	/**
-	 *
-	 */
+	@Override
 	public boolean isLazy()
 	{
 		return ((JRTemplateImage)this.template).isLazy();
 	}
 
 	/**
-	 *
+	 * @deprecated Replaced by {@link ResourceRenderer}.
 	 */
+	@Override
 	public void setLazy(boolean isLazy)
 	{
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public OnErrorTypeEnum getOnErrorTypeValue()
 	{
 		return ((JRTemplateImage)this.template).getOnErrorTypeValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setOnErrorType(OnErrorTypeEnum onErrorType)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return ((JRTemplateImage)template).getLineBox();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getAnchorName()
 	{
 		return this.anchorName;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setAnchorName(String anchorName)
 	{
 		this.anchorName = anchorName;
 	}
-		
-	/**
-	 *
-	 */
-	public HyperlinkTypeEnum getHyperlinkTypeValue()
+	
+	public void setHyperlinkOmitted(boolean hyperlinkOmitted)
 	{
-		return ((JRTemplateImage)this.template).getHyperlinkTypeValue();
+		this.hyperlinkOmitted = hyperlinkOmitted;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
+	public HyperlinkTypeEnum getHyperlinkTypeValue()
+	{
+		return hyperlinkOmitted ? HyperlinkTypeEnum.NONE : ((JRTemplateImage)this.template).getHyperlinkTypeValue();
+	}
+		
+	@Override
 	public void setHyperlinkType(HyperlinkTypeEnum hyperlinkType)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTargetEnum getHyperlinkTargetValue()
 	{
 		return ((JRTemplateImage)this.template).getHyperlinkTargetValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkTarget(HyperlinkTargetEnum hyperlinkTarget)
 	{
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getHyperlinkReference()
 	{
 		return this.hyperlinkReference;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkReference(String hyperlinkReference)
 	{
 		this.hyperlinkReference = hyperlinkReference;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getHyperlinkAnchor()
 	{
 		return this.hyperlinkAnchor;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkAnchor(String hyperlinkAnchor)
 	{
 		this.hyperlinkAnchor = hyperlinkAnchor;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public Integer getHyperlinkPage()
 	{
 		return this.hyperlinkPage;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkPage(Integer hyperlinkPage)
 	{
 		this.hyperlinkPage = hyperlinkPage;
 	}
 
-
+	@Override
 	public int getBookmarkLevel()
 	{
 		return bookmarkLevel;
 	}
 
-
+	@Override
 	public void setBookmarkLevel(int bookmarkLevel)
 	{
 		this.bookmarkLevel = bookmarkLevel;
 	}
 
-	
+	@Override
 	public JRPrintHyperlinkParameters getHyperlinkParameters()
 	{
 		return hyperlinkParameters;
 	}
 
-	
+	@Override
 	public void setHyperlinkParameters(JRPrintHyperlinkParameters parameters)
 	{
 		this.hyperlinkParameters = parameters;
 	}
 
-	
+	@Override
 	public String getLinkType()
 	{
-		return ((JRTemplateImage) this.template).getLinkType();
+		return hyperlinkOmitted ? null : ((JRTemplateImage) this.template).getLinkType();
 	}
 
+	@Override
 	public void setLinkType(String type)
 	{
 	}
 
+	@Override
 	public String getLinkTarget()
 	{
 		return ((JRTemplateImage) this.template).getLinkTarget();
 	}
 
+	@Override
 	public void setLinkTarget(String target)
 	{
 	}
 
-	
+	@Override
 	public String getHyperlinkTooltip()
 	{
 		return hyperlinkTooltip;
 	}
 
-	
+	@Override
 	public void setHyperlinkTooltip(String hyperlinkTooltip)
 	{
 		this.hyperlinkTooltip = hyperlinkTooltip;
@@ -452,12 +405,13 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 			}
 			else
 			{
-				renderable = RenderableUtil.getWrappingRenderable(renderer);
+				renderable = net.sf.jasperreports.engine.RenderableUtil.getWrappingRenderable(renderer);
 			}
 		}
 	}
 
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);
@@ -487,6 +441,10 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 		if (hasHyperlink)
 		{
 			flags |= SERIALIZATION_FLAG_HYPERLINK;
+		}
+		if (hyperlinkOmitted)
+		{
+			flags |= SERIALIZATION_FLAG_HYPERLINK_OMITTED;
 		}
 		
 		out.writeByte(flags);
@@ -546,6 +504,11 @@ public class JRTemplatePrintImage extends JRTemplatePrintGraphicElement implemen
 		else
 		{
 			bookmarkLevel = JRAnchor.NO_BOOKMARK;
+		}
+		
+		if ((flags & SERIALIZATION_FLAG_HYPERLINK_OMITTED) != 0)
+		{
+			hyperlinkOmitted = true;
 		}
 
 		if ((flags & SERIALIZATION_FLAG_HYPERLINK) != 0)

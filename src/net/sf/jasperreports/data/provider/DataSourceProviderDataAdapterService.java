@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,20 +23,21 @@
  */
 package net.sf.jasperreports.data.provider;
 
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Map;
 
 import net.sf.jasperreports.data.AbstractClasspathAwareDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataSourceProvider;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JasperReport;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DataSourceProviderDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DataSourceProviderDataAdapterService extends AbstractClasspathAwareDataAdapterService 
 {
@@ -46,23 +47,26 @@ public class DataSourceProviderDataAdapterService extends AbstractClasspathAware
 	 * 
 	 */
 	public DataSourceProviderDataAdapterService(
-		JasperReportsContext jasperReportsContext,
+		ParameterContributorContext paramContribContext,
 		DataSourceProviderDataAdapter dsDataAdapter
 		) 
 	{
-		super(jasperReportsContext, dsDataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #DataSourceProviderDataAdapterService(JasperReportsContext, DataSourceProviderDataAdapter)}.
-	 */
-	public DataSourceProviderDataAdapterService(DataSourceProviderDataAdapter dsDataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), dsDataAdapter);
+		super(paramContribContext, dsDataAdapter);
 	}
 
 	public DataSourceProviderDataAdapter getDataSourceProviderDataAdapter() {
 		return (DataSourceProviderDataAdapter) getDataAdapter();
+	}
+	
+	@Override
+	protected ClassLoader getClassLoader(ClassLoader cloader) {
+		Object obj = getJasperReportsContext().getValue(CURRENT_CLASS_LOADER);
+		if (obj != null && obj instanceof ClassLoader)
+			cloader = (ClassLoader) obj;
+		URL[] localURLs = getPathClassloader();
+		if (localURLs == null || localURLs.length == 0)
+			return cloader;
+		return new URLClassLoader(localURLs, cloader);
 	}
 	
 	public JRDataSourceProvider getProvider() throws JRException
@@ -86,13 +90,12 @@ public class DataSourceProviderDataAdapterService extends AbstractClasspathAware
 					Thread.currentThread().setContextClassLoader(getClassLoader(oldThreadClassLoader));
 
 					Class<?> clazz = JRClassLoader.loadClassForRealName(dsDataAdapter.getProviderClass());
-					provider = (JRDataSourceProvider) clazz.newInstance();
+					provider = (JRDataSourceProvider) clazz.getDeclaredConstructor().newInstance();
 					// FIXME: I don't have a report, why I need a report??!
-				} catch (ClassNotFoundException e) {
-					throw new JRException(e);
-				} catch (IllegalAccessException e) {
-					throw new JRException(e);
-				} catch (InstantiationException e) {
+				}
+				catch (ClassNotFoundException | IllegalAccessException | InstantiationException 
+					| NoSuchMethodException | InvocationTargetException e) 
+				{
 					throw new JRException(e);
 				}
 				finally

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,15 +23,20 @@
  */
 package net.sf.jasperreports.web.commands;
 
+import java.io.Serializable;
 import java.util.LinkedList;
+
+import net.sf.jasperreports.engine.JRConstants;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: CommandStack.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class CommandStack {
-	private LinkedList<Command> commandStack = new LinkedList<Command>();
-	private LinkedList<Command> redoStack = new LinkedList<Command>();
+public class CommandStack implements Serializable {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	private LinkedList<Command> commandStack = new LinkedList<>();
+	private LinkedList<Command> redoStack = new LinkedList<>();
 
 	public void execute(Command command) throws CommandException{
 		try {

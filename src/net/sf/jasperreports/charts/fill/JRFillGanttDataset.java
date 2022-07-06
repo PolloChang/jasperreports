@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -49,7 +49,6 @@ import org.jfree.data.time.SimpleTimePeriod;
 
 /**
  * @author Peter Risko (peter@risko.hu)
- * @version $Id: JRFillGanttDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDataset {
 
@@ -88,18 +87,14 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRGanttSeries[] getSeries()
 	{
 		return ganttSeries;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customInitialize()
 	{
 		seriesNames = null;
@@ -109,9 +104,7 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customEvaluate(JRCalculator calculator) throws JRExpressionEvalException
 	{
 		if (ganttSeries != null && ganttSeries.length > 0)
@@ -124,19 +117,17 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customIncrement()
 	{
 		if (ganttSeries != null && ganttSeries.length > 0)
 		{
 			if (seriesNames == null)
 			{
-				seriesNames = new ArrayList<Comparable<?>>();
-				seriesMap = new HashMap<Comparable<?>, TaskSeries>();
-				labelsMap = new HashMap<Comparable<?>, Map<Comparable<?>, String>>();
-				itemHyperlinks = new HashMap<Comparable<?>, Map<Pair, JRPrintHyperlink>>();
+				seriesNames = new ArrayList<>();
+				seriesMap = new HashMap<>();
+				labelsMap = new HashMap<>();
+				itemHyperlinks = new HashMap<>();
 			}
 
 			for(int i = 0; i < ganttSeries.length; i++)
@@ -188,7 +179,7 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 					Map<Comparable<?>, String> seriesLabels = labelsMap.get(seriesName);
 					if (seriesLabels == null)
 					{
-						seriesLabels = new HashMap<Comparable<?>, String>();
+						seriesLabels = new HashMap<>();
 						labelsMap.put(seriesName, seriesLabels);
 					}
 
@@ -202,13 +193,13 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 					Map<Pair, JRPrintHyperlink> seriesLinks = itemHyperlinks.get(seriesName);
 					if (seriesLinks == null)
 					{
-						seriesLinks = new HashMap<Pair, JRPrintHyperlink>();
+						seriesLinks = new HashMap<>();
 						itemHyperlinks.put(seriesName, seriesLinks);
 					}
 					// TODO: ?? not sure how to do
 					//Pair xyKey = new Pair(crtXySeries.getXValue(), crtXySeries.getYValue());
 					//seriesLinks.put(xyKey, crtXySeries.getPrintItemHyperlink());
-					Pair<String,String> taskSubtaskKey = new Pair<String,String>(crtGanttSeries.getTask(), crtGanttSeries.getSubtask());
+					Pair<String,String> taskSubtaskKey = new Pair<>(crtGanttSeries.getTask(), crtGanttSeries.getSubtask());
 					seriesLinks.put(taskSubtaskKey, crtGanttSeries.getPrintItemHyperlink());
 				}
 			}
@@ -216,9 +207,7 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Dataset getCustomDataset()
 	{
 		TaskSeriesCollection dataset = new TaskSeriesCollection();
@@ -234,25 +223,19 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.GANTT_DATASET;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getLabelGenerator(){
-		return new CategoryLabelGenerator(labelsMap);
+		return new CategoryLabelGenerator(labelsMap, getLocale());
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
@@ -280,6 +263,7 @@ public class JRFillGanttDataset extends JRFillChartDataset implements JRGanttDat
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.components.barcode4j;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectInputStream.GetField;
 import java.io.Serializable;
 
 import net.sf.jasperreports.engine.JRCloneable;
@@ -36,50 +37,31 @@ import net.sf.jasperreports.engine.component.Component;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
+import net.sf.jasperreports.engine.util.Designated;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-
-import org.krysalis.barcode4j.HumanReadablePlacement;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public abstract class BarcodeComponent implements Component, Serializable, JRCloneable, JRChangeEventsSupport
+public abstract class BarcodeComponent implements Component, Serializable, JRCloneable, JRChangeEventsSupport, Designated
 {
-
+	// used as prefix for specific barcode component properties
 	public static final String PROPERTY_PREFIX = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "components.barcode4j.";
 
-	public static final int ORIENTATION_UP = 0;
-	public static final int ORIENTATION_LEFT = 90;
-	public static final int ORIENTATION_DOWN = 180;
-	public static final int ORIENTATION_RIGHT = 270;
-	
 	public static final String PROPERTY_EVALUATION_TIME = "evaluationTime";
 	public static final String PROPERTY_EVALUATION_GROUP = "evaluationGroup";
-	public static final String PROPERTY_ORIENTATION = "orientation";
 	public static final String PROPERTY_CODE_EXPRESSION = "codeExpression";
-	public static final String PROPERTY_PATTERN_EXPRESSION = "patternExpression";
-	public static final String PROPERTY_MODULE_WIDTH = "moduleWidth";
-	public static final String PROPERTY_TEXT_POSITION = "textPosition";
-	public static final String PROPERTY_QUIET_ZONE = "quietZone";
-	public static final String PROPERTY_VERTICAL_QUIET_ZONE = "verticalQuietZone";
 	
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
-	private EvaluationTimeEnum evaluationTimeValue = EvaluationTimeEnum.NOW;
+	private EvaluationTimeEnum evaluationTimeValue;
 	private String evaluationGroup;
 	
-	private int orientation;
 	private JRExpression codeExpression;
-	private JRExpression patternExpression;
-	private Double moduleWidth;
-	private String textPosition;
-	private Double quietZone;
-	private Double verticalQuietZone;
 
 	public BarcodeComponent()
 	{
@@ -87,7 +69,7 @@ public abstract class BarcodeComponent implements Component, Serializable, JRClo
 	
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
-		return evaluationTimeValue;
+		return evaluationTimeValue == null ? EvaluationTimeEnum.NOW : evaluationTimeValue;
 	}
 
 	public void setEvaluationTimeValue(EvaluationTimeEnum evaluationTimeValue)
@@ -111,19 +93,6 @@ public abstract class BarcodeComponent implements Component, Serializable, JRClo
 				old, this.evaluationGroup);
 	}
 
-	public int getOrientation()
-	{
-		return orientation;
-	}
-
-	public void setOrientation(int orientation)
-	{
-		int old = this.orientation;
-		this.orientation = orientation;
-		getEventSupport().firePropertyChange(PROPERTY_ORIENTATION, 
-				old, this.orientation);
-	}
-
 	public JRExpression getCodeExpression()
 	{
 		return codeExpression;
@@ -137,50 +106,7 @@ public abstract class BarcodeComponent implements Component, Serializable, JRClo
 				old, this.codeExpression);
 	}
 
-	public JRExpression getPatternExpression()
-	{
-		return patternExpression;
-	}
-
-	public void setPatternExpression(JRExpression patternExpression)
-	{
-		Object old = this.patternExpression;
-		this.patternExpression = patternExpression;
-		getEventSupport().firePropertyChange(PROPERTY_PATTERN_EXPRESSION, 
-				old, this.patternExpression);
-	}
-
-	public Double getModuleWidth()
-	{
-		return moduleWidth;
-	}
-
-	public void setModuleWidth(Double moduleWidth)
-	{
-		Object old = this.moduleWidth;
-		this.moduleWidth = moduleWidth;
-		getEventSupport().firePropertyChange(PROPERTY_MODULE_WIDTH, 
-				old, this.moduleWidth);
-	}
-
-	public String getTextPosition()
-	{
-		return textPosition;
-	}
-
-	public void setTextPosition(String textPosition)
-	{
-		Object old = this.textPosition;
-		this.textPosition = textPosition;
-		getEventSupport().firePropertyChange(PROPERTY_TEXT_POSITION, 
-				old, this.textPosition);
-	}
-
-	public void setTextPosition(HumanReadablePlacement textPosition)
-	{
-		setTextPosition(textPosition == null ? null : textPosition.getName());
-	}
-
+	@Override
 	public Object clone()
 	{
 		BarcodeComponent clone = null;
@@ -194,7 +120,6 @@ public abstract class BarcodeComponent implements Component, Serializable, JRClo
 			throw new JRRuntimeException(e);
 		}
 		clone.codeExpression = JRCloneUtils.nullSafeClone(codeExpression);
-		clone.patternExpression = JRCloneUtils.nullSafeClone(patternExpression);
 		clone.eventSupport = null;
 		return clone;
 	}
@@ -217,6 +142,7 @@ public abstract class BarcodeComponent implements Component, Serializable, JRClo
 	
 	public abstract void receive(BarcodeVisitor visitor);
 
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -230,48 +156,35 @@ public abstract class BarcodeComponent implements Component, Serializable, JRClo
 		return eventSupport;
 	}
 
-	public Double getQuietZone()
-	{
-		return quietZone;
-	}
-
-	public void setQuietZone(Double quietZone)
-	{
-		Object old = this.quietZone;
-		this.quietZone = quietZone;
-		getEventSupport().firePropertyChange(PROPERTY_QUIET_ZONE, 
-				old, this.quietZone);
-	}
-
-	public Double getVerticalQuietZone()
-	{
-		return verticalQuietZone;
-	}
-
-	public void setVerticalQuietZone(Double verticalQuietZone)
-	{
-		Object old = this.verticalQuietZone;
-		this.verticalQuietZone = verticalQuietZone;
-		getEventSupport().firePropertyChange(PROPERTY_VERTICAL_QUIET_ZONE, 
-				old, this.verticalQuietZone);
-	}
-
 	/*
 	 * These fields are only for serialization backward compatibility.
 	 */
 	private int PSEUDO_SERIAL_VERSION_UID = JRConstants.PSEUDO_SERIAL_VERSION_UID; //NOPMD
-	/**
-	 * @deprecated
-	 */
-	private byte evaluationTime;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
-		in.defaultReadObject();
-
+		GetField fields = in.readFields();
+		this.PSEUDO_SERIAL_VERSION_UID = fields.get("PSEUDO_SERIAL_VERSION_UID", 0);
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
-			evaluationTimeValue = EvaluationTimeEnum.getByValue(evaluationTime);
+			byte evaluationTime = fields.get("evaluationTime", (byte) 0);
+			this.evaluationTimeValue = EvaluationTimeEnum.getByValue(evaluationTime);
+		}
+		else
+		{
+			this.evaluationTimeValue = (EvaluationTimeEnum) fields.get("evaluationTimeValue", null);
+		}
+		this.evaluationGroup = (String) fields.get("evaluationGroup", null);
+		this.codeExpression = (JRExpression) fields.get("codeExpression", null);
+		
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_6_0_2
+				&& this instanceof Barcode4jComponent)
+		{
+			//up to 6.0.0 this class had several fields that were moved to Barcode4jComponent in 6.0.2.
+			//copying the values to the Barcode4jComponent fields.
+			Barcode4jComponent barcode4jComponent = (Barcode4jComponent) this;
+			barcode4jComponent.copyBarcodeComponentFields(fields);
 		}
 	}
 }

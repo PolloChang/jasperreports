@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,6 +33,8 @@ package net.sf.jasperreports.engine.convert;
 
 import java.awt.geom.Rectangle2D;
 
+import org.jfree.chart.JFreeChart;
+
 import net.sf.jasperreports.charts.ChartContext;
 import net.sf.jasperreports.charts.ChartTheme;
 import net.sf.jasperreports.charts.util.ChartUtil;
@@ -42,18 +44,16 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.base.JRBasePrintImage;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
-
-import org.jfree.chart.JFreeChart;
+import net.sf.jasperreports.renderers.Renderable;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ChartConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class ChartConverter extends ElementConverter
 {
@@ -78,9 +78,7 @@ public final class ChartConverter extends ElementConverter
 		return INSTANCE;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRPrintElement convert(ReportConverter reportConverter, JRElement element)
 	{
 		JRBasePrintImage printImage = new JRBasePrintImage(reportConverter.getDefaultStyleProvider());
@@ -94,8 +92,9 @@ public final class ChartConverter extends ElementConverter
 		printImage.setBookmarkLevel(chart.getBookmarkLevel());
 		printImage.setLinkType(chart.getLinkType());
 		printImage.setOnErrorType(OnErrorTypeEnum.ICON);
-		printImage.setRenderable(getRenderer(reportConverter, chart));
+		printImage.setRenderer(getRenderer(reportConverter, chart));
 		printImage.setScaleImage(ScaleImageEnum.CLIP);
+		printImage.setRotation(RotationEnum.NONE);
 		
 		return printImage;
 	}
@@ -119,7 +118,7 @@ public final class ChartConverter extends ElementConverter
 		
 		ChartTheme theme = ChartUtil.getInstance(reportConverter.getJasperReportsContext()).getTheme(themeName);
 		
-		ChartContext chartContext = new ConvertChartContext(chart);
+		ChartContext chartContext = new ConvertChartContext(reportConverter, chart);
 		
 		JFreeChart jfreeChart = null;
 		try

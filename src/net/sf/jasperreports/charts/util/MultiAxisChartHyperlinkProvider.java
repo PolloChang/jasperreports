@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,14 +43,13 @@ import org.jfree.data.general.Dataset;
  * chart entity and delegates the hyperlink retrieval to it.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: MultiAxisChartHyperlinkProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MultiAxisChartHyperlinkProvider implements ChartHyperlinkProvider
 {
 	
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
-	private Map<Dataset, ChartHyperlinkProvider> datasetProviders = new HashMap<Dataset, ChartHyperlinkProvider>();
+	private Map<Dataset, ChartHyperlinkProvider> datasetProviders = new HashMap<>();
 	
 	/**
 	 * Creates a multiple axis chart hyperlink provider.
@@ -75,6 +74,7 @@ public class MultiAxisChartHyperlinkProvider implements ChartHyperlinkProvider
 	/**
 	 * Returns <code>true</code> if any of the registered providers has hyperlinks.
 	 */
+	@Override
 	public boolean hasHyperlinks()
 	{
 		boolean hasHyperlinks = false;
@@ -97,6 +97,7 @@ public class MultiAxisChartHyperlinkProvider implements ChartHyperlinkProvider
 	 * Determines the provider for the chart entity based on its dataset,
 	 * and delegates the call to it.
 	 */
+	@Override
 	public JRPrintHyperlink getEntityHyperlink(ChartEntity entity)
 	{
 		JRPrintHyperlink hyperlink = null;

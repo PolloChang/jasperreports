@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,14 +33,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRAbstractExporter;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.export.Exporter;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: MatcherExporterFilter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MatcherExporterFilter implements ExporterFilter
 {
@@ -48,11 +50,17 @@ public class MatcherExporterFilter implements ExporterFilter
 	/**
 	 *
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_5_5_0
+			)
 	public static final String PROPERTY_MATCHER_EXPORT_FILTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "export.matcher.filter.key";
 
 	private Set<String> includes;
 	private Set<String> excludes;
 
+	@Override
 	public boolean isToExport(JRPrintElement element)
 	{
 		if (element.hasProperties() && element.getPropertiesMap().containsProperty(PROPERTY_MATCHER_EXPORT_FILTER_KEY))
@@ -105,8 +113,8 @@ public class MatcherExporterFilter implements ExporterFilter
 			String exporterKey = typedExporter.getExporterKey();
 			if (exporterKey != null)
 			{
-				Set<String> includes = new HashSet<String>();
-				Set<String> excludes = new HashSet<String>();
+				Set<String> includes = new HashSet<>();
+				Set<String> excludes = new HashSet<>();
 				List<MatcherExportFilterMapping> mappings = exporterContext.getJasperReportsContext().getExtensions(MatcherExportFilterMapping.class);
 				for (MatcherExportFilterMapping mapping : mappings)
 				{

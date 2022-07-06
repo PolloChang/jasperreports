@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,13 +38,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.export.AwtTextRenderer;
 import net.sf.jasperreports.engine.export.ExporterFilter;
 import net.sf.jasperreports.engine.export.GenericElementGraphics2DHandler;
 import net.sf.jasperreports.engine.export.GenericElementHandlerEnviroment;
@@ -55,7 +53,6 @@ import net.sf.jasperreports.engine.type.ModeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FrameDrawer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FrameDrawer extends ElementDrawer<JRPrintFrame>
 {
@@ -69,7 +66,7 @@ public class FrameDrawer extends ElementDrawer<JRPrintFrame>
 	 */
 	private ExporterFilter filter;
 	private Graphics2D grx;
-	private LinkedList<Offset> elementOffsetStack = new LinkedList<Offset>();
+	private LinkedList<Offset> elementOffsetStack = new LinkedList<>();
 	private Offset elementOffset;
 	private boolean isClip;
 	
@@ -81,32 +78,18 @@ public class FrameDrawer extends ElementDrawer<JRPrintFrame>
 	private JRGraphics2DExporterContext exporterContext;
 	
 	/**
-	 * @deprecated Replaced by {@link #FrameDrawer(JasperReportsContext, ExporterFilter, AwtTextRenderer)}.
-	 */
-	public FrameDrawer(
-		ExporterFilter filter,
-		AwtTextRenderer textRenderer
-		)
-	{
-		this(DefaultJasperReportsContext.getInstance(), filter, textRenderer);
-	}
-		
-	/**
 	 *
 	 */
 	public FrameDrawer(
 		JasperReportsContext jasperReportsContext,
 		ExporterFilter filter,
-		AwtTextRenderer textRenderer
+		PrintDrawVisitor drawVisitor
 		)
 	{
 		super(jasperReportsContext);
 
 		this.filter = filter;
-		
-		drawVisitor = new PrintDrawVisitor(jasperReportsContext);
-		drawVisitor.setTextDrawer(new TextDrawer(jasperReportsContext, textRenderer));
-		drawVisitor.setFrameDrawer(this);
+		this.drawVisitor = drawVisitor;
 	}
 		
 	/**
@@ -115,10 +98,10 @@ public class FrameDrawer extends ElementDrawer<JRPrintFrame>
 	public FrameDrawer(
 		JRGraphics2DExporterContext exporterContext, 
 		ExporterFilter filter,
-		AwtTextRenderer textRenderer
+		PrintDrawVisitor drawVisitor
 		)
 	{
-		this(exporterContext.getJasperReportsContext(), filter, textRenderer);
+		this(exporterContext.getJasperReportsContext(), filter, drawVisitor);
 
 		this.exporterContext = exporterContext;
 	}
@@ -133,9 +116,7 @@ public class FrameDrawer extends ElementDrawer<JRPrintFrame>
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public void draw(Graphics2D grx, JRPrintFrame frame, int offsetX, int offsetY) throws JRException
 	{
 		setGraphics(grx);
@@ -261,8 +242,8 @@ public class FrameDrawer extends ElementDrawer<JRPrintFrame>
 	private void setFrameElementsOffset(JRPrintFrame frame, int offsetX, int offsetY)
 	{	
 		setElementOffsets(
-			offsetX + frame.getX() + frame.getLineBox().getLeftPadding().intValue(), 
-			offsetY + frame.getY() + frame.getLineBox().getTopPadding().intValue()
+			offsetX + frame.getX() + frame.getLineBox().getLeftPadding(), 
+			offsetY + frame.getY() + frame.getLineBox().getTopPadding()
 			);
 	}
 	

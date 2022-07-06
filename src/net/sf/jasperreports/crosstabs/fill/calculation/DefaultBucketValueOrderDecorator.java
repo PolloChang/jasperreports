@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,6 @@ package net.sf.jasperreports.crosstabs.fill.calculation;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DefaultBucketValueOrderDecorator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultBucketValueOrderDecorator<T extends Comparable<T>> 
 		implements BucketValueOrderDecorator<Comparable<T>>, Comparable<DefaultBucketValueOrderDecorator<T>>
@@ -34,7 +33,7 @@ public class DefaultBucketValueOrderDecorator<T extends Comparable<T>>
 	public static final <T extends Comparable<T>> DefaultBucketValueOrderDecorator<T> wrap(T value, OrderPosition position)
 	{
 		// null values are left untouched
-		return value == null ? null : new DefaultBucketValueOrderDecorator<T>(value, 
+		return value == null ? null : new DefaultBucketValueOrderDecorator<>(value, 
 				position == null ? OrderPosition.NORMAL : position);
 	}
 	

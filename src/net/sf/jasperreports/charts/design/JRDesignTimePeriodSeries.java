@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRDesignTimePeriodSeries.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignTimePeriodSeries extends JRBaseTimePeriodSeries implements JRChangeEventsSupport {
 
@@ -111,9 +110,7 @@ public class JRDesignTimePeriodSeries extends JRBaseTimePeriodSeries implements 
 		getEventSupport().firePropertyChange(PROPERTY_ITEM_HYPERLINK, old, this.itemHyperlink);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignTimePeriodSeries clone = (JRDesignTimePeriodSeries)super.clone();
@@ -123,6 +120,7 @@ public class JRDesignTimePeriodSeries extends JRBaseTimePeriodSeries implements 
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

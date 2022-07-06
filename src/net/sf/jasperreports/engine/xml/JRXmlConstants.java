@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,6 @@ package net.sf.jasperreports.engine.xml;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlConstants.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRXmlConstants
 {
@@ -103,6 +102,30 @@ public final class JRXmlConstants
 	 * DTD location for template XMLs.
 	 */
 	public static final String JASPERTEMPLATE_DTD = "net/sf/jasperreports/engine/dtds/jaspertemplate.dtd";
+	
+	/**
+	 * The namespace used by the template schema.
+	 */
+	public static final String JASPERTEMPLATE_NAMESPACE = 
+		"http://jasperreports.sourceforge.net/jasperreports/template";
+	
+	/**
+	 * The system location of the template schema.
+	 */
+	public static final String JASPERTEMPLATE_XSD_SYSTEM_ID = 
+		"http://jasperreports.sourceforge.net/xsd/jaspertemplate.xsd";
+	
+	/**
+	 * The internal location/resource name of the template schema.
+	 */
+	public static final String JASPERTEMPLATE_XSD_RESOURCE = 
+		"net/sf/jasperreports/engine/dtds/jaspertemplate.xsd";
+	
+	/**
+	 * The internal location/resource name of the DTD compatibility template schema.
+	 */
+	public static final String JASPERTEMPLATE_XSD_DTD_COMPAT_RESOURCE = 
+		"net/sf/jasperreports/engine/dtds/jaspertemplate-dtd-compat.xsd";
 
 	/**
 	 *	JasperDesignFactory associated constants
@@ -117,6 +140,7 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_pageHeight = "pageHeight";
 	public static final String ATTRIBUTE_orientation = "orientation";
 	public static final String ATTRIBUTE_whenNoDataType = "whenNoDataType";
+	public static final String ATTRIBUTE_sectionType = "sectionType";
 	public static final String ATTRIBUTE_columnWidth = "columnWidth";
 	public static final String ATTRIBUTE_columnSpacing = "columnSpacing";
 	public static final String ATTRIBUTE_leftMargin = "leftMargin";
@@ -179,6 +203,12 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_height = "height";
 	public static final String ATTRIBUTE_isSplitAllowed = "isSplitAllowed";
 	public static final String ATTRIBUTE_splitType = "splitType";
+
+	/**
+	 * JRPartFactory associated constants
+	 */
+	public static final String ELEMENT_part = "part";
+	public static final String ELEMENT_partNameExpression = "partNameExpression";
 
 	/**
 	 * JRPenFactory associated constants
@@ -275,6 +305,9 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_customizerClass = "customizerClass";
 	public static final String ATTRIBUTE_renderType = "renderType";
 	public static final String ATTRIBUTE_theme = "theme";
+	
+	public static final String ELEMENT_bookmarkLevelExpression = "bookmarkLevelExpression";
+
 
 	/**
 	 * JRChartAxisFormatFactory associated constants
@@ -539,6 +572,7 @@ public final class JRXmlConstants
 	 * JRFrameFactory associated constants
 	 */
 	public static final String ELEMENT_frame = "frame";
+	public static final String ATTRIBUTE_borderSplitType = "borderSplitType";
 
 	/**
 	 * JRGraphicElementFactory associated constants
@@ -560,9 +594,12 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_isStartNewPage = "isStartNewPage";
 	public static final String ATTRIBUTE_isResetPageNumber = "isResetPageNumber";
 	public static final String ATTRIBUTE_isReprintHeaderOnEachPage = "isReprintHeaderOnEachPage";
+	public static final String ATTRIBUTE_isReprintHeaderOnEachColumn = "isReprintHeaderOnEachColumn";
 	public static final String ATTRIBUTE_minHeightToStartNewPage = "minHeightToStartNewPage";
+	public static final String ATTRIBUTE_minDetailsToStartFromTop = "minDetailsToStartFromTop";
 	public static final String ATTRIBUTE_footerPosition = "footerPosition";
 	public static final String ATTRIBUTE_keepTogether = "keepTogether";
+	public static final String ATTRIBUTE_preventOrphanFooter = "preventOrphanFooter";
 
 	/**
 	 * JRHyperlinkFactory associated constants
@@ -599,7 +636,11 @@ public final class JRXmlConstants
 
 	public static final String ATTRIBUTE_scaleImage = "scaleImage";
 	public static final String ATTRIBUTE_hAlign = "hAlign";
+	public static final String ATTRIBUTE_hTextAlign = "hTextAlign";
+	public static final String ATTRIBUTE_hImageAlign = "hImageAlign";
 	public static final String ATTRIBUTE_vAlign = "vAlign";
+	public static final String ATTRIBUTE_vTextAlign = "vTextAlign";
+	public static final String ATTRIBUTE_vImageAlign = "vImageAlign";
 	public static final String ATTRIBUTE_isUsingCache = "isUsingCache";
 	public static final String ATTRIBUTE_isLazy = "isLazy";
 	public static final String ATTRIBUTE_onErrorType = "onErrorType";
@@ -713,6 +754,7 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_subreportVariable = "subreportVariable";
 	public static final String ATTRIBUTE_toVariable = "toVariable";
 	public static final String ATTRIBUTE_fromVariable = "fromVariable";
+	public static final String ELEMENT_expression = "expression";
 
 	/**
 	 * JRTextElementFactory associated constants
@@ -731,11 +773,13 @@ public final class JRXmlConstants
 	public static final String ELEMENT_textField = "textField";
 
 	public static final String ATTRIBUTE_isStretchWithOverflow = "isStretchWithOverflow";
+	public static final String ATTRIBUTE_textAdjust = "textAdjust";
 
 	/**
 	 * JRVariableFactory  associated constants
 	 */
 	public static final String ELEMENT_variable = "variable";
+	public static final String ELEMENT_variableDescription = "variableDescription";
 	public static final String ELEMENT_variableExpression = "variableExpression";
 	public static final String ELEMENT_initialValueExpression = "initialValueExpression";
 
@@ -778,6 +822,7 @@ public final class JRXmlConstants
 	public static final String ATTRIBUTE_axis = "axis";
 	public static final String ELEMENT_axisLevel = "axisLevel";
 	public static final String ELEMENT_axisLevelBucket = "axisLevelBucket";
+	public static final String ELEMENT_MULTI_AXIS_BUCKET_LABEL_EXPRESSION = "labelExpression";
 	public static final String ELEMENT_bucketProperty = "bucketProperty";
 	public static final String ELEMENT_multiAxisMeasure = "multiAxisMeasure";
 	

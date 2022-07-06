@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRCrosstabFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCrosstabFactory extends JRBaseFactory
 {
@@ -51,6 +50,7 @@ public class JRCrosstabFactory extends JRBaseFactory
 	public static final String ATTRIBUTE_isRepeatRowHeaders = "isRepeatRowHeaders";
 	public static final String ATTRIBUTE_ignoreWidth = "ignoreWidth";
 	
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JasperDesign jasperDesign = (JasperDesign)digester.peek(digester.getCount() - 2);
@@ -66,13 +66,13 @@ public class JRCrosstabFactory extends JRBaseFactory
 		String repeatColHeadersAttr = atts.getValue(ATTRIBUTE_isRepeatColumnHeaders);
 		if (repeatColHeadersAttr != null && repeatColHeadersAttr.length() > 0)
 		{
-			crosstab.setRepeatColumnHeaders(Boolean.valueOf(repeatColHeadersAttr).booleanValue());
+			crosstab.setRepeatColumnHeaders(Boolean.valueOf(repeatColHeadersAttr));
 		}
 		
 		String repeatRowHeadersAttr = atts.getValue(ATTRIBUTE_isRepeatRowHeaders);
 		if (repeatRowHeadersAttr != null && repeatColHeadersAttr.length() > 0)
 		{
-			crosstab.setRepeatRowHeaders(Boolean.valueOf(repeatRowHeadersAttr).booleanValue());
+			crosstab.setRepeatRowHeaders(Boolean.valueOf(repeatRowHeadersAttr));
 		}
 		
 		String runDirectionAttr = atts.getValue(JRXmlConstants.ATTRIBUTE_runDirection);

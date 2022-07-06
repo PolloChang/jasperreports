@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,26 +28,13 @@ import java.util.List;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintPage.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRPrintPage
+public interface JRPrintPage extends JRPrintElementListContainer
 {
 	
-
-	/**
-	 *
-	 */
-	public List<JRPrintElement> getElements();
-		
 	/**
 	 *
 	 */
 	public void setElements(List<JRPrintElement> elements);
-		
-	/**
-	 *
-	 */
-	public void addElement(JRPrintElement element);
-		
 
 }

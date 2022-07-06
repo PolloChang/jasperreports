@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRBaseTimePeriodDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseTimePeriodDataset extends JRBaseChartDataset implements JRTimePeriodDataset {
 	
@@ -63,34 +62,30 @@ public class JRBaseTimePeriodDataset extends JRBaseChartDataset implements JRTim
 		}
 	}
 	
+	@Override
 	public JRTimePeriodSeries[] getSeries(){
 		return timePeriodSeries;
 	}
 
-	/** 
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.TIMEPERIOD_DATASET;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseTimePeriodDataset clone = (JRBaseTimePeriodDataset)super.clone();

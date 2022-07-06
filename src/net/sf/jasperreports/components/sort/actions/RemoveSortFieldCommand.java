@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,7 @@
  */
 package net.sf.jasperreports.components.sort.actions;
 
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRSortField;
@@ -31,10 +32,11 @@ import net.sf.jasperreports.web.commands.Command;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RemoveSortFieldCommand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RemoveSortFieldCommand implements Command
 {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	private JRDesignDataset dataset;
 	private JRSortField sortField;
@@ -49,9 +51,7 @@ public class RemoveSortFieldCommand implements Command
 		this.sortField = sortField;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void execute() 
 	{
 		removeIndex = dataset.getSortFieldsList().indexOf(sortField);
@@ -61,9 +61,7 @@ public class RemoveSortFieldCommand implements Command
 		}
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public void undo() 
 	{
 		if (removeIndex >= 0)
@@ -79,9 +77,7 @@ public class RemoveSortFieldCommand implements Command
 		}
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void redo() 
 	{
 		execute();

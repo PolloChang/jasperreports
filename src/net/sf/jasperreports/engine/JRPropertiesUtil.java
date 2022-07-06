@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,8 +29,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.ResourceBundle.Control;
 import java.util.Set;
 
 import net.sf.jasperreports.engine.util.JRLoader;
@@ -50,7 +52,6 @@ import net.sf.jasperreports.engine.util.JRLoader;
  * </p> 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRPropertiesUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRPropertiesUtil
 {
@@ -58,6 +59,8 @@ public final class JRPropertiesUtil
 	 * The prefix used by all properties.
 	 */
 	public static final String PROPERTY_PREFIX = "net.sf.jasperreports.";
+	public static final String EXCEPTION_MESSAGE_KEY_LOAD_PROPERTIES_FILE_FAILURE = "engine.load.properties.file.failure";
+	public static final String EXCEPTION_MESSAGE_KEY_LOAD_PROPERTIES_FAILURE = "engine.load.properties.failure";
 
 	private JasperReportsContext jasperReportsContext;
 
@@ -115,7 +118,11 @@ public final class JRPropertiesUtil
 			}
 			catch (IOException e)
 			{
-				throw new JRException("Failed to load properties file \"" + name + "\"", e);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_LOAD_PROPERTIES_FILE_FAILURE, 
+						new Object[]{name}, 
+						e);
 			}
 			finally
 			{
@@ -212,12 +219,12 @@ public final class JRPropertiesUtil
 	 */
 	public static boolean asBoolean(String value)
 	{
-		return Boolean.valueOf(value == null ? value : value.trim()).booleanValue();
+		return Boolean.valueOf(value == null ? value : value.trim());
 	}
 
 	public static boolean asBoolean(String value, boolean defaultValue)
 	{
-		return value == null ? defaultValue : Boolean.valueOf(value.trim()).booleanValue();
+		return value == null ? defaultValue : Boolean.valueOf(value.trim());
 	}
 
 	/**
@@ -240,6 +247,17 @@ public final class JRPropertiesUtil
 	public static float asFloat(String value)
 	{
 		return Float.parseFloat(value == null ? value : value.trim());
+	}
+	
+	/**
+	 * Converts a <code>String</code> value into a <code>double</code>.
+	 * 
+	 * @param value the value
+	 * @return the value as a <code>double</code>
+	 */
+	public static double asDouble(String value)
+	{
+		return Double.parseDouble(value == null ? value : value.trim());
 	}
 	
 	/**
@@ -287,7 +305,7 @@ public final class JRPropertiesUtil
 		Map<String, String> properties = jasperReportsContext.getProperties();
 		
 		int prefixLength = prefix.length();
-		List<PropertySuffix> values = new ArrayList<PropertySuffix>();
+		List<PropertySuffix> values = new ArrayList<>();
 		for (Map.Entry<String, String> entry : properties.entrySet())
 		{
 			String name = entry.getKey();
@@ -345,7 +363,7 @@ public final class JRPropertiesUtil
 	public static List<PropertySuffix> getProperties(JRPropertiesMap propertiesMap, String prefix)
 	{
 		int prefixLength = prefix.length();
-		List<PropertySuffix> values = new ArrayList<PropertySuffix>();
+		List<PropertySuffix> values = new ArrayList<>();
 		if (propertiesMap != null)
 		{
 			String[] propertyNames = propertiesMap.getPropertyNames();
@@ -385,7 +403,7 @@ public final class JRPropertiesUtil
 		{
 			if (!global.isEmpty())
 			{
-				Set<String> ownSuffixes = new HashSet<String>();
+				Set<String> ownSuffixes = new HashSet<>();
 				for (Iterator<PropertySuffix> it = own.iterator(); it.hasNext();)
 				{
 					PropertySuffix prop = it.next();
@@ -432,6 +450,25 @@ public final class JRPropertiesUtil
 			value = getProperty(key);
 		}
 		
+		return value;
+	}
+
+	/**
+	 * Returns the value of a property, looking first in the supplied properties holder
+	 * and then in the system properties, using a default value if the property is not found.
+	 * 
+	 * @param propertiesHolder the properties holder
+	 * @param key the key
+	 * @param defaultValue the value to return if no property is found
+	 * @return the property value
+	 */
+	public String getProperty(JRPropertiesHolder propertiesHolder, String key, String defaultValue)
+	{
+		String value = getProperty(propertiesHolder, key);
+		if (value == null)
+		{
+			value = defaultValue;
+		}
 		return value;
 	}
 
@@ -559,6 +596,36 @@ public final class JRPropertiesUtil
 	}
 
 	/**
+	 * Returns the value of a property as a Boolean, looking first in the supplied properties holder
+	 * and then in the system properties.
+	 * 
+	 * @param propertiesHolder the properties holder
+	 * @param key the key
+	 * @return the property value
+	 */
+	public Boolean getBooleanProperty(JRPropertiesHolder propertiesHolder, String key)
+	{
+		String value = getProperty(propertiesHolder, key);
+		
+		return value == null ? null : asBoolean(value);
+	}
+	
+	/**
+	 * Returns the value of a property as an Integer, looking first in the supplied properties map
+	 * and then in the system properties.
+	 * 
+	 * @param propertiesMap the properties map
+	 * @param key the key
+	 * @return the property value
+	 */
+	public Integer getIntegerProperty(JRPropertiesMap propertiesMap, String key)
+	{
+		String value = getProperty(propertiesMap, key);
+		
+		return value == null || value.trim().length() == 0 ? null : asInteger(value);
+	}
+
+	/**
 	 * Returns the value of a property as an Integer, looking first in the supplied properties holder
 	 * and then in the system properties.
 	 * 
@@ -570,7 +637,7 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(propertiesHolder, key);
 		
-		return value == null ? null : asInteger(value);
+		return value == null || value.trim().length() == 0 ? null : asInteger(value);
 	}
 	
 	/**
@@ -586,7 +653,7 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(propertiesHolder, key);
 		
-		return value == null ? defaultValue : asInteger(value);
+		return value == null || value.trim().length() == 0 ? defaultValue : asInteger(value);
 	}
 	
 	/**
@@ -602,7 +669,7 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(propertiesMap, key);
 		
-		return value == null ? defaultValue : asInteger(value);
+		return value == null || value.trim().length() == 0 ? defaultValue : asInteger(value);
 	}
 
 	/**
@@ -616,7 +683,7 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(key);
 		
-		return value == null ? defaultValue : asInteger(value);
+		return value == null || value.trim().length() == 0 ? defaultValue : asInteger(value);
 	}
 
 	/**
@@ -631,7 +698,7 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(propertiesHolder, key);
 		
-		return value == null ? null : asFloat(value);
+		return value == null || value.trim().length() == 0 ? null : asFloat(value);
 	}
 	
 	/**
@@ -647,9 +714,25 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(propertiesHolder, key);
 		
-		return value == null ? defaultValue : asFloat(value);
+		return value == null || value.trim().length() == 0 ? defaultValue : asFloat(value);
 	}
 	
+	/**
+	 * Returns the value of a property as a float, looking first in several properties holders
+	 * and then in the system properties.
+	 * 
+	 * @param key the key
+	 * @param defaultValue the default value used if the property is not found
+	 * @param propertiesHolders the properties holders
+	 * @return the property value
+	 */
+	public float getFloatProperty(String key, float defaultValue, JRPropertiesHolder ... propertiesHolders)
+	{
+		String value = getProperty(key, propertiesHolders);
+		
+		return value == null || value.trim().length() == 0 ? defaultValue : asFloat(value);
+	}
+
 	/**
 	 * Returns the value of a property as a float, looking first in the supplied properties map
 	 * and then in the system properties.
@@ -663,7 +746,7 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(propertiesMap, key);
 		
-		return value == null ? defaultValue : asFloat(value);
+		return value == null || value.trim().length() == 0 ? defaultValue : asFloat(value);
 	}
 
 	/**
@@ -677,7 +760,7 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(key);
 		
-		return value == null ? defaultValue : asFloat(value);
+		return value == null || value.trim().length() == 0 ? defaultValue : asFloat(value);
 	}
 
 	/**
@@ -701,21 +784,18 @@ public final class JRPropertiesUtil
 	{
 		return asLong(getProperty(key));
 	}
-
-	/**
-	 * @deprecated Replaced by {@link #getLongProperty(JRPropertiesMap, String, long)}.
-	 */
-	public long getLongProperty(JRPropertiesMap propertiesMap, String key, int defaultValue)
-	{
-		return getLongProperty(propertiesMap, key, (long)defaultValue);
-	}
 	
 	/**
-	 * @deprecated Replaced by {@link #getLongProperty(JRPropertiesHolder, String, long)}.
+	 * Returns a property as a long value.
+	 * 
+	 * @param key the key
+	 * @param defaultValue the default value
+	 * @return the property value as a long
 	 */
-	public long getLongProperty(JRPropertiesHolder propertiesHolder, String key, int defaultValue)
+	public long getLongProperty(String key, long defaultValue)
 	{
-		return getLongProperty(propertiesHolder, key, (long)defaultValue);
+		String property = getProperty(key);
+		return property == null || property.trim().isEmpty() ? defaultValue : asLong(property);
 	}
 
 	/**
@@ -731,7 +811,7 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(propertiesMap, key);
 		
-		return value == null ? defaultValue : asLong(value);
+		return value == null || value.trim().length() == 0 ? defaultValue : asLong(value);
 	}
 	
 	/**
@@ -747,9 +827,24 @@ public final class JRPropertiesUtil
 	{
 		String value = getProperty(propertiesHolder, key);
 		
-		return value == null ? defaultValue : asLong(value);
+		return value == null || value.trim().length() == 0 ? defaultValue : asLong(value);
 	}
 
+	/**
+	 * Returns the value of a property as a Double, looking first in the supplied properties holder
+	 * and then in the system properties.
+	 * 
+	 * @param propertiesHolder the properties holder
+	 * @param key the key
+	 * @return the property value
+	 */
+	public Double getDoubleProperty(JRPropertiesHolder propertiesHolder, String key)
+	{
+		String value = getProperty(propertiesHolder, key);
+		
+		return value == null || value.trim().length() == 0 ? null : asDouble(value);
+	}
+	
 	protected static JRPropertiesMap getOwnProperties(JRPropertiesHolder propertiesHolder)
 	{
 		return propertiesHolder.hasProperties() ? propertiesHolder.getPropertiesMap() : null;
@@ -894,7 +989,7 @@ public final class JRPropertiesUtil
 	public static Character asCharacter(String value)
 	{
 		return value == null || value.length() == 0 ? null 
-				: new Character(value.charAt(0));
+				: value.charAt(0);
 	}
 
 	public static String getOwnProperty(JRPropertiesHolder propertiesHolder, String key)
@@ -903,6 +998,28 @@ public final class JRPropertiesUtil
 		if (propertiesHolder.hasProperties())
 		{
 			value = propertiesHolder.getPropertiesMap().getProperty(key);
+		}
+		return value;
+	}
+
+
+	public String getLocalizedProperty(String property, Locale locale)
+	{
+		Control control = Control.getControl(Control.FORMAT_PROPERTIES);
+		String value = null;
+		
+		// we're not looking at the fallback locale to be consistent with JRResourcesUtil.loadResourceBundle
+		List<Locale> locales = control.getCandidateLocales(property, locale);
+		for (Locale candidate : locales)
+		{
+			String candidateString = candidate.toString();
+			String candidateProperty = candidateString.isEmpty() ? property : (property + "_" + candidateString);
+			String candidateValue = getProperty(candidateProperty);
+			if (candidateValue != null)// test for empty?
+			{
+				value = candidateValue;
+				break;
+			}
 		}
 		return value;
 	}

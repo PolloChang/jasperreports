@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,18 +31,21 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.design.JRCompiler;
 import net.sf.jasperreports.engine.xml.JRReportSaxParserFactory;
 import net.sf.jasperreports.engine.xml.PrintSaxParserFactory;
 import net.sf.jasperreports.extensions.ExtensionsEnvironment;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DefaultJasperReportsContext.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DefaultJasperReportsContext implements JasperReportsContext
 {
+	
 	/**
 	 * The default properties file.
 	 */
@@ -51,6 +54,12 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 	/**
 	 * The name of the system property that specifies the properties file name.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_OTHER,
+			defaultValue = "jasperreports.properties",
+			scopes = {PropertyScope.SYSTEM},
+			sinceVersion = PropertyConstants.VERSION_1_0_0
+			)
 	public static final String PROPERTIES_FILE = JRPropertiesUtil.PROPERTY_PREFIX + "properties";
 
 	/**
@@ -58,7 +67,12 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 	 */
 	private static final DefaultJasperReportsContext INSTANCE = new DefaultJasperReportsContext();
 	
-	private Map<String, Object> values = new ConcurrentHashMap<String, Object>(16, .75f, 1);// assume low update concurrency
+	public static final String EXCEPTION_MESSAGE_KEY_LOAD_DEFAULT_PROPERTIES_FAILURE = "engine.context.load.default.properties.failure";
+	public static final String EXCEPTION_MESSAGE_KEY_LOAD_PROPERTIES_FAILURE = "engine.context.load.properties.failure";
+	public static final String EXCEPTION_MESSAGE_KEY_LOAD_PROPERTIES_FILE_FAILURE = "engine.context.load.properties.file.failure";
+	public static final String EXCEPTION_MESSAGE_KEY_DEFAULT_PROPERTIES_FILE_NOT_FOUND = "engine.context.default.properties.file.not.found";
+	
+	private Map<String, Object> values = new ConcurrentHashMap<>(16, .75f, 1);// assume low update concurrency
 
 	// FIXME remove volatile after we get rid of restoreProperties()
 	protected volatile ConcurrentHashMap<String, String> properties;
@@ -102,12 +116,15 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 				loadedProps = JRPropertiesUtil.loadProperties(propFile, defaults);
 				if (loadedProps == null)
 				{
-					throw new JRRuntimeException("Could not load properties file \"" + propFile + "\"");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_LOAD_PROPERTIES_FILE_FAILURE,
+							new Object[]{propFile});
 				}
 			}
 
 			//FIXME configurable concurrency level?
-			properties = new ConcurrentHashMap<String, String>();
+			properties = new ConcurrentHashMap<>();
 			for (Enumeration<?> names = loadedProps.propertyNames(); names.hasMoreElements();)
 			{
 				String name = (String) names.nextElement();
@@ -119,7 +136,11 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 		}
 		catch (JRException e)
 		{
-			throw new JRRuntimeException("Error loading the properties", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_LOAD_PROPERTIES_FAILURE,
+					(Object[])null,
+					e);
 		}
 	}
 	
@@ -150,7 +171,10 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 		
 		if (is == null)
 		{
-			throw new JRException("Default properties file not found.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DEFAULT_PROPERTIES_FILE_NOT_FOUND,
+					(Object[])null);
 		}
 
 		try
@@ -159,7 +183,11 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Failed to load default properties.", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_LOAD_DEFAULT_PROPERTIES_FAILURE, 
+					null, 
+					e);
 		}
 		finally
 		{
@@ -218,17 +246,19 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getValue(String key)
 	{
 		return values.get(key);
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public Object getOwnValue(String key)
+	{
+		return values.get(key);
+	}
+
+	@Override
 	public void setValue(String key, Object value)
 	{
 		values.put(key, value);
@@ -241,6 +271,7 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 	 * @param <T> generic extension type
 	 * @return a list of extension objects
 	 */
+	@Override
 	public <T> List<T> getExtensions(Class<T> extensionType)
 	{
 		return ExtensionsEnvironment.getExtensionsRegistry().getExtensions(extensionType);
@@ -252,30 +283,31 @@ public class DefaultJasperReportsContext implements JasperReportsContext
 	 * @param key the key
 	 * @return the property value
 	 */
+	@Override
 	public String getProperty(String key)
 	{
 		return properties.get(key);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
+	public String getOwnProperty(String key)
+	{
+		return properties.get(key);
+	}
+	
+	@Override
 	public void setProperty(String key, String value)
 	{
 		properties.put(key, value);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public void removeProperty(String key)
 	{
 		properties.remove(key);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Map<String, String> getProperties()
 	{
 		return properties;

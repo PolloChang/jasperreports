@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,13 +26,13 @@ package net.sf.jasperreports.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleGraphics2DReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleGraphics2DReportConfiguration extends SimpleReportExportConfiguration implements Graphics2DReportConfiguration
 {
 	private Float zoomRatio;
 	private Boolean isMinimizePrinterJobSize;
 	private Boolean isIgnoreMissingFont;
+	private Boolean isWhitePageBackground;
 
 	/**
 	 * 
@@ -41,9 +41,7 @@ public class SimpleGraphics2DReportConfiguration extends SimpleReportExportConfi
 	{
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Float getZoomRatio()
 	{
 		return zoomRatio;
@@ -57,9 +55,7 @@ public class SimpleGraphics2DReportConfiguration extends SimpleReportExportConfi
 		this.zoomRatio = zoomRatio;
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isMinimizePrinterJobSize()
 	{
 		return isMinimizePrinterJobSize;
@@ -73,9 +69,7 @@ public class SimpleGraphics2DReportConfiguration extends SimpleReportExportConfi
 		this.isMinimizePrinterJobSize = isMinimizePrinterJobSize;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isIgnoreMissingFont()
 	{
 		return isIgnoreMissingFont;
@@ -87,5 +81,23 @@ public class SimpleGraphics2DReportConfiguration extends SimpleReportExportConfi
 	public void setIgnoreMissingFont(Boolean isIgnoreMissingFont)
 	{
 		this.isIgnoreMissingFont = isIgnoreMissingFont;
+	}
+
+	@Override
+	public Boolean isWhitePageBackground()
+	{
+		return isWhitePageBackground;
+	}
+
+	/**
+	 * Sets the flag that determines whether to draw white page backgrounds.
+	 * 
+	 * @param isWhitePageBackground whether to draw white page backgrounds
+	 * @see Graphics2DReportConfiguration#PROPERTY_WHITE_PAGE_BACKGROUND
+	 * @since 6.5.0
+	 */
+	public void setWhitePageBackground(Boolean isWhitePageBackground)
+	{
+		this.isWhitePageBackground = isWhitePageBackground;
 	}
 }

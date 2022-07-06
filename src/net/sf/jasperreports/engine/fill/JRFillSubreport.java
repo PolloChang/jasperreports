@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.javaflow.api.continuable;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.data.cache.DataCacheHandler;
+import net.sf.jasperreports.engine.CommonReturnValue;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDatasetParameter;
 import net.sf.jasperreports.engine.JRException;
@@ -49,6 +56,7 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRewindableDataSource;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRScriptlet;
+import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JRSubreport;
 import net.sf.jasperreports.engine.JRSubreportParameter;
 import net.sf.jasperreports.engine.JRSubreportReturnValue;
@@ -57,32 +65,54 @@ import net.sf.jasperreports.engine.JRVisitor;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.ReportContext;
+import net.sf.jasperreports.engine.VariableReturnValue;
 import net.sf.jasperreports.engine.base.JRVirtualPrintPage;
 import net.sf.jasperreports.engine.design.JRValidationException;
 import net.sf.jasperreports.engine.design.JRValidationFault;
 import net.sf.jasperreports.engine.design.JRVerifier;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OverflowType;
+import net.sf.jasperreports.engine.type.SectionTypeEnum;
 import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.util.JRSingletonCache;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.repo.RepositoryResourceContext;
 import net.sf.jasperreports.repo.RepositoryUtil;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.repo.ResourceInfo;
+import net.sf.jasperreports.repo.ResourcePathKey;
+import net.sf.jasperreports.repo.SimpleRepositoryResourceContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillSubreport.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillSubreport extends JRFillElement implements JRSubreport
 {
 
 	private static final Log log = LogFactory.getLog(JRFillSubreport.class);
 	
+	public static final String EXCEPTION_MESSAGE_KEY_PROPERTY_NOT_SET = "fill.subreport.property.not.set";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_REWINDABLE_DATA_SOURCE = "fill.subreport.no.rewindable.data.source";
+	public static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_SECTION_TYPE = "fill.subreport.unsupported.section.type";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_SOURCE_CLASS = "fill.subreport.unknown.source.class";
+			
+	/**
+	 * Property used to specify when rectangle elements should be generated  for subreports during the report filling. 
+	 * If the property value is <code>always</code>, rectangle elements will be always generated, otherwise they will 
+	 * be created only if the subreport element is not transparent or it has properties
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET, PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_0_3
+			)
+	public static final String PROPERTY_SUBREPORT_GENERATE_RECTANGLE = 
+			JRPropertiesUtil.PROPERTY_PREFIX + "subreport.generate.rectangle";
+	
+	public static final String SUBREPORT_GENERATE_RECTANGLE_ALWAYS = "always";
+	
 	private static final JRSingletonCache<JRSubreportRunnerFactory> runnerFactoryCache = 
-			new JRSingletonCache<JRSubreportRunnerFactory>(JRSubreportRunnerFactory.class);
+			new JRSingletonCache<>(JRSubreportRunnerFactory.class);
 
 	/**
 	 *
@@ -93,7 +123,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	private boolean cacheIncluded;
 	private Connection connection;
 	private JRDataSource dataSource;
-	private JasperReport jasperReport;
+	private JasperReportSource jasperReportSource;
 	private Object source;
 
 	private Map<JasperReport,JREvaluator> loadedEvaluators;
@@ -103,18 +133,21 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	 */
 	private FillReturnValues returnValues;
 
-	private FillReturnValues.SourceContext returnValuesContext = new FillReturnValues.SourceContext()
+	private FillReturnValues.SourceContext returnValuesContext = new AbstractVariableReturnValueSourceContext() 
 	{
 		@Override
-		public JRVariable getVariable(String name)
-		{
-			return subreportFiller.getVariable(name);
+		public Object getValue(CommonReturnValue returnValue) {
+			return subreportFiller.getVariableValue(((VariableReturnValue)returnValue).getFromVariable());
 		}
 
 		@Override
-		public Object getVariableValue(String name)
-		{
-			return subreportFiller.getVariableValue(name);
+		public JRFillVariable getToVariable(String name) {
+			return expressionEvaluator.getFillDataset().getVariable(name);
+		}
+
+		@Override
+		public JRVariable getFromVariable(String name) {
+			return subreportFiller.getVariable(name);
 		}
 	};
 	
@@ -122,7 +155,9 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	 *
 	 */
 	protected JRBaseFiller subreportFiller;
-	private JRPrintPage printPage;
+	protected FillerSubreportParent subFillerParent;
+	protected JRPrintPage printPage;
+	private int printPageContentsWidth;
 
 	private JRSubreportRunner runner;
 	
@@ -130,6 +165,9 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	 * Set of checked reports.
 	 */
 	private Set<JasperReport> checkedReports;
+
+	private final String defaultGenerateRectangle;
+	private final boolean dynamicGenerateRectangle;
 
 
 	/**
@@ -146,8 +184,28 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		parameters = subreport.getParameters();
 		returnValues = new FillReturnValues(subreport.getReturnValues(), factory, filler);
 		
-		loadedEvaluators = new HashMap<JasperReport,JREvaluator>();
-		checkedReports = new HashSet<JasperReport>();
+		loadedEvaluators = new HashMap<>();
+		checkedReports = new HashSet<>();
+		
+		this.defaultGenerateRectangle = filler.getPropertiesUtil().getProperty( 
+			PROPERTY_SUBREPORT_GENERATE_RECTANGLE, subreport, filler.getJasperReport()); // property expression does not work, 
+			// but even if we would call filler.getMainDataset(), it would be too early as it is null here for subreport elements placed in group bands
+		this.dynamicGenerateRectangle = hasDynamicProperty(PROPERTY_SUBREPORT_GENERATE_RECTANGLE);
+	}
+
+	protected JRFillSubreport(JRFillSubreport subreport, JRFillCloneFactory factory)
+	{
+		super(subreport, factory);
+		
+		parameters = subreport.parameters;
+		returnValues = new FillReturnValues(subreport.returnValues, factory);
+		returnValuesContext = subreport.returnValuesContext;//FIXMERETURN this was missing; really need it?
+		
+		loadedEvaluators = new HashMap<>();// not sharing evaluators between clones
+		checkedReports = subreport.checkedReports;
+		
+		defaultGenerateRectangle = subreport.defaultGenerateRectangle;
+		dynamicGenerateRectangle = subreport.dynamicGenerateRectangle;
 	}
 
 	@Override
@@ -159,22 +217,12 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public boolean isUsingCache()
-	{
-		return ((JRSubreport)parent).isUsingCache();
-	}
-		
 	/**
 	 *
 	 */
@@ -185,14 +233,16 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		{
 			return source instanceof String;
 		}
-		return isUsingCache.booleanValue();
+		return isUsingCache;
 	}
 		
+	@Override
 	public Boolean isRunToBottom()
 	{
 		return ((JRSubreport) parent).isRunToBottom();
 	}
 
+	@Override
 	public void setRunToBottom(Boolean runToBottom)
 	{
 		throw new UnsupportedOperationException();
@@ -210,41 +260,31 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		throw new UnsupportedOperationException();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getParametersMapExpression()
 	{
 		return ((JRSubreport)parent).getParametersMapExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRSubreportParameter[] getParameters()
 	{
 		return parameters;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getConnectionExpression()
 	{
 		return ((JRSubreport)parent).getConnectionExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getDataSourceExpression()
 	{
 		return ((JRSubreport)parent).getDataSourceExpression();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getExpression()
 	{
 		return ((JRSubreport)parent).getExpression();
@@ -259,6 +299,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	}
 
 
+	@Override
 	protected JRTemplateElement createElementTemplate()
 	{
 		return new JRTemplateRectangle(getElementOrigin(), 
@@ -282,18 +323,27 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		return printElements;
 	}
 
+	protected int getPrintContentsWidth()
+	{
+		return printPageContentsWidth;
+	}
+	
 	public void subreportPageFilled()
 	{
 		if (printPage != null)
 		{
+			if (subreportFiller.delayedActions.hasMasterDelayedActions(printPage))
+			{
+				// if there are master delayed evaluations, the evaluator needs to keep the current variables and cannot be reused
+				evictReportEvaluator();
+			}
+
 			subreportFiller.subreportPageFilled(printPage);
 		}
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void evaluate(
 		byte evaluation
 		) throws JRException
@@ -308,64 +358,138 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		}
 	}
 
-	protected JasperReport evaluateReport(byte evaluation) throws JRException
+	protected JasperReportSource evaluateReportSource(byte evaluation) throws JRException
 	{
-		JasperReport report = null;
-		
 		JRExpression expression = getExpression();
 		source = evaluateExpression(expression, evaluation);
+		return getReportSource(source, getUsingCache(), filler);
+	}
+	
+	public static JasperReportSource getReportSource(Object source, Boolean isUsingCache,
+			BaseReportFiller filler) throws JRException
+	{
+		JasperReportSource report = null;
 		if (source != null) // FIXME put some default broken image like in browsers
 		{
-			Boolean isUsingCache = getUsingCache();
 			if (isUsingCache == null)
 			{
 				isUsingCache = source instanceof String;
 			}
 			
-			if (isUsingCache && filler.fillContext.hasLoadedSubreport(source))
+			Object cacheKey = source;
+			if (source instanceof String)
 			{
-				report = filler.fillContext.getLoadedSubreport(source);
+				cacheKey = ResourcePathKey.inContext(filler.getRepositoryContext(), (String) source);
+			}
+			
+			if (isUsingCache && filler.fillContext.hasLoadedSubreport(cacheKey))
+			{
+				report = filler.fillContext.getLoadedSubreport(cacheKey);
 			}
 			else
 			{
-				if (source instanceof net.sf.jasperreports.engine.JasperReport)
+				if (source instanceof String)
 				{
-					report = (JasperReport)source;
+					RepositoryUtil repository = RepositoryUtil.getInstance(filler.getRepositoryContext());
+					ResourceInfo resourceInfo = repository.getResourceInfo((String) source);
+					if (resourceInfo == null)
+					{
+						report = loadReportSource(source, null, filler);
+					}
+					else
+					{
+						String reportLocation = resourceInfo.getRepositoryResourceLocation();
+						String contextLocation = resourceInfo.getRepositoryContextLocation();
+						if (log.isDebugEnabled())
+						{
+							log.debug("subreport source " + source + " resolved to " + reportLocation
+									+ ", context " + contextLocation);
+						}
+						
+						ResourcePathKey absolutePathKey = ResourcePathKey.absolute(reportLocation);
+						if (isUsingCache && filler.fillContext.hasLoadedSubreport(absolutePathKey))
+						{
+							report = filler.fillContext.getLoadedSubreport(absolutePathKey);
+						}
+						else
+						{
+							report = loadReportSource(reportLocation, contextLocation, filler);
+							if (isUsingCache)
+							{
+								filler.fillContext.registerLoadedSubreport(absolutePathKey, report);
+							}
+						}
+					}					
 				}
-				else if (source instanceof java.io.InputStream)
+				else
 				{
-					report = (JasperReport)JRLoader.loadObject((InputStream)source);
+					report = loadReportSource(source, null, filler);
 				}
-				else if (source instanceof java.net.URL)
+				
+				if (isUsingCache)
 				{
-					report = (JasperReport)JRLoader.loadObject((URL)source);
+					filler.fillContext.registerLoadedSubreport(cacheKey, report);
 				}
-				else if (source instanceof java.io.File)
-				{
-					report = (JasperReport)JRLoader.loadObject((File)source);
-				}
-				else if (source instanceof java.lang.String)
-				{
-					report = RepositoryUtil.getInstance(filler.getJasperReportsContext()).getReport(filler.getFillContext().getReportContext(), (String)source);
+			}
+		}
+		
+		return report;
+	}
+	
+	protected static JasperReportSource loadReportSource(Object reportSource, String contextLocation, 
+			BaseReportFiller filler) throws JRException
+	{
+		JasperReport jasperReport = loadReport(reportSource, filler);
+		JasperReportSource report = null;
+		if (jasperReport != null)
+		{
+			RepositoryResourceContext currentContext = filler.getRepositoryContext().getResourceContext();
+			RepositoryResourceContext reportContext = SimpleRepositoryResourceContext.of(contextLocation,
+					currentContext == null ? null : currentContext.getDerivedContextFallback());
+			report = SimpleJasperReportSource.from(jasperReport, 
+					reportSource instanceof String ? (String) reportSource : null, 
+					reportContext);
+		}
+		return report;
+	}
+
+	public static JasperReport loadReport(Object source, BaseReportFiller filler) throws JRException
+	{
+		JasperReport report;
+		if (source instanceof net.sf.jasperreports.engine.JasperReport)
+		{
+			report = (JasperReport)source;
+		}
+		else if (source instanceof java.io.InputStream)
+		{
+			report = (JasperReport)JRLoader.loadObject((InputStream)source);
+		}
+		else if (source instanceof java.net.URL)
+		{
+			report = (JasperReport)JRLoader.loadObject((URL)source);
+		}
+		else if (source instanceof java.io.File)
+		{
+			report = (JasperReport)JRLoader.loadObject((File)source);
+		}
+		else if (source instanceof java.lang.String)
+		{
+			report = RepositoryUtil.getInstance(filler.getRepositoryContext()).getReport(filler.getFillContext().getReportContext(), (String)source);
 //						(JasperReport)JRLoader.loadObjectFromLocation(
 //							(String)source, 
 //							filler.reportClassLoader,
 //							filler.urlHandlerFactory,
 //							filler.fileResolver
 //							);
-				}
-				else
-				{
-					throw new JRRuntimeException("Unknown subreport source class " + source.getClass().getName());
-				}
-				
-				if (isUsingCache)
-				{
-					filler.fillContext.registerLoadedSubreport(source, report);
-				}
-			}
 		}
-		
+		else
+		{
+			throw 
+			new JRRuntimeException(
+				EXCEPTION_MESSAGE_KEY_UNSUPPORTED_SECTION_TYPE,  
+				new Object[]{source.getClass().getName()} 
+				);
+		}
 		return report;
 	}
 
@@ -379,9 +503,9 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		evaluateProperties(evaluation);
 		evaluateStyle(evaluation);
 
-		jasperReport = evaluateReport(evaluation);
+		jasperReportSource = evaluateReportSource(evaluation);
 		
-		if (jasperReport != null)
+		if (jasperReportSource != null)
 		{
 			JRFillDataset parentDataset = expressionEvaluator.getFillDataset();
 			datasetPosition = new FillDatasetPosition(parentDataset.fillPosition);
@@ -424,8 +548,14 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		}
 	}
 
+	protected JasperReport getReport()
+	{
+		return jasperReportSource == null ? null : jasperReportSource.getReport();
+	}
+
 	protected Map<String, Object> evaluateParameterValues(byte evaluation) throws JRException
 	{
+		JasperReport jasperReport = getReport();
 		return getParameterValues(
 			filler, 
 			expressionEvaluator,
@@ -440,6 +570,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 
 	protected DatasetExpressionEvaluator loadReportEvaluator() throws JRException
 	{
+		JasperReport jasperReport = getReport();
 		DatasetExpressionEvaluator evaluator = null;
 		boolean usingCache = usingCache();
 		if (usingCache)
@@ -456,46 +587,75 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		}
 		return evaluator;
 	}
+	
+	protected void evictReportEvaluator()
+	{
+		loadedEvaluators.remove(getReport());
+	}
 
 
 	protected DatasetExpressionEvaluator createEvaluator() throws JRException
 	{
-		return JasperCompileManager.getInstance(filler.getJasperReportsContext()).getEvaluator(jasperReport);
+		return JasperCompileManager.getInstance(filler.getJasperReportsContext()).getEvaluator(
+				getReport());
 	}
 
 
+	protected boolean isReorderBandElements()
+	{
+		return false;
+	}
+
+	
 	protected void initSubreportFiller(DatasetExpressionEvaluator evaluator) throws JRException
 	{
+		JasperReport jasperReport = getReport();
 		if (log.isDebugEnabled())
 		{
-			log.debug("Fill " + filler.fillerId + ": creating subreport filler");
+			log.debug("Fill " + filler.fillerId + ": creating subreport filler for " + jasperReport.getName());
 		}
 		
+		SectionTypeEnum subreportSectionType = jasperReport.getSectionType();
+		if (subreportSectionType != null && subreportSectionType != SectionTypeEnum.BAND)
+		{
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNSUPPORTED_SECTION_TYPE,  
+					new Object[]{subreportSectionType} 
+					);
+		}
+		
+		subFillerParent = createFillerParent(evaluator);
+
 		switch (jasperReport.getPrintOrderValue())
 		{
 			case HORIZONTAL :
 			{
-				subreportFiller = new JRHorizontalFiller(filler.getJasperReportsContext(), jasperReport, evaluator, this);
+				subreportFiller = new JRHorizontalFiller(filler.getJasperReportsContext(), jasperReportSource, subFillerParent);
 				break;
 			}
 			case VERTICAL :
-			{
-				subreportFiller = new JRVerticalFiller(filler.getJasperReportsContext(), jasperReport, evaluator, this);
-				break;
-			}
 			default :
 			{
-				throw new JRRuntimeException("Unkown print order " + jasperReport.getPrintOrderValue().getValue() + ".");
+				subreportFiller = new JRVerticalFiller(filler.getJasperReportsContext(), jasperReportSource, subFillerParent);
+				break;
 			}
 		}
 		
+		subreportFiller.setReorderBandElements(isReorderBandElements());
+
 		runner = getRunnerFactory().createSubreportRunner(this, subreportFiller);
-		subreportFiller.setSubreportRunner(runner);
+		subFillerParent.setSubreportRunner(runner);
 		
 		subreportFiller.mainDataset.setFillPosition(datasetPosition);
 		subreportFiller.mainDataset.setCacheSkipped(!cacheIncluded);
 	}
 
+	protected FillerSubreportParent createFillerParent(DatasetExpressionEvaluator evaluator) throws JRException
+	{
+		return new FillerSubreportParent(this, evaluator);
+	}
+	
 	/**
 	 * Utility method used for constructing a parameter values map for subreports, sub datasets and crosstabs.
 	 * 
@@ -510,7 +670,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	 * @throws JRException
 	 */
 	public static Map<String, Object> getParameterValues(
-			JRBaseFiller filler, 
+			BaseReportFiller filler, 
 			JRExpression parametersMapExpression, 
 			JRDatasetParameter[] subreportParameters, 
 			byte evaluation, 
@@ -540,7 +700,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	 */
 	public static Map<String, Object> getParameterValues(
 			//TODO using the filler or current dataset?
-			JRBaseFiller filler, 
+			BaseReportFiller filler, 
 			JRFillExpressionEvaluator expressionEvaluator,
 			JRExpression parametersMapExpression, 
 			JRDatasetParameter[] subreportParameters, 
@@ -562,7 +722,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			if (parameterValues == filler.getParameterValuesMap())
 			{
 				//create a clone of the map so that the master map is not altered
-				parameterValues = new HashMap<String, Object>(parameterValues);
+				parameterValues = new HashMap<>(parameterValues);
 			}
 			
 			//parameterValues.remove(JRParameter.REPORT_LOCALE);
@@ -602,7 +762,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		
 		if (parameterValues == null)
 		{
-			parameterValues = new HashMap<String, Object>();
+			parameterValues = new HashMap<>();
 		}
 		
 		/*   */
@@ -658,6 +818,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		return parameterValues;
 	}
 
+	@continuable
 	protected void fillSubreport() throws JRException
 	{
 		if (getConnectionExpression() != null)
@@ -675,9 +836,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	protected boolean prepare(
 		int availableHeight,
 		boolean isOverflow
@@ -747,7 +906,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		
 		int pageHeight;
 		OverflowType overflowType = getOverflowType();
-		if (overflowType == OverflowType.NO_STRETCH && !filler.getFillContext().isIgnorePagination())
+		if (overflowType == OverflowType.NO_STRETCH && !filler.isIgnorePagination())
 		{
 			// not allowed to stretch beyond the element height
 			// note that we always have elementHeight <= availableHeight - getRelativeY(), it's tested above
@@ -786,7 +945,8 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			else
 			{
 				printPage = null;
-				setStretchHeight(getHeight());
+				printPageContentsWidth = 0;
+				setPrepareHeight(getHeight());
 				setToPrint(false);
 
 				return willOverflow;
@@ -827,7 +987,8 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			}
 
 			printPage = subreportFiller.getCurrentPage();
-			setStretchHeight(result.hasFinished() ? subreportFiller.getCurrentPageStretchHeight() : pageHeight);
+			printPageContentsWidth = subreportFiller.getCurrentPageContentsWidth();
+			setPrepareHeight(result.hasFinished() ? subFillerParent.getCurrentPageStretchHeight() : pageHeight);
 
 			//if the subreport fill thread has not finished, 
 			// it means that the subreport will overflow on the next page
@@ -853,9 +1014,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void rewind() throws JRException
 	{
 		if (subreportFiller == null)
@@ -877,7 +1036,11 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 			{
 //				if (log.isWarnEnabled())
 //					log.warn("The subreport is placed on a non-splitting band, but it does not have a rewindable data source.");
-				throw new JRException("The subreport is placed on a non-splitting band, but it does not have a rewindable data source.");
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_NO_REWINDABLE_DATA_SOURCE,  
+						(Object[])null 
+						);
 			}
 		}
 	}
@@ -904,14 +1067,27 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected JRPrintElement fill()
 	{
 		//FIXME lucianc create a frame instead to avoid HTML layers
 		JRPrintRectangle printRectangle = new JRTemplatePrintRectangle(getJRTemplateRectangle(), printElementOriginator);
 
+		if (printRectangle.getModeValue() == ModeEnum.TRANSPARENT && !printRectangle.hasProperties())
+		{
+			String generateRectangle = generateRectangleOption();
+			if (log.isDebugEnabled())
+			{
+				log.debug("empty rectangle, generate option: " + generateRectangle);
+			}
+			
+			if (generateRectangle == null || !generateRectangle.equals(SUBREPORT_GENERATE_RECTANGLE_ALWAYS))
+			{
+				// skipping empty rectangle
+				return null;
+			}
+		}
+		
 		printRectangle.setUUID(getUUID());
 		printRectangle.setX(getX());
 		printRectangle.setY(getRelativeY());
@@ -920,25 +1096,36 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		
 		return printRectangle;
 	}
+	
+	protected String generateRectangleOption()
+	{
+		String generateRectangle = defaultGenerateRectangle;
+		if (dynamicGenerateRectangle)
+		{
+			String generateRectangleProp = getDynamicProperties().getProperty(PROPERTY_SUBREPORT_GENERATE_RECTANGLE);
+			if (generateRectangleProp != null)
+			{
+				generateRectangle = generateRectangleProp;
+			}
+		}
+		return generateRectangle;
+	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitSubreport(this);
 	}
 	
 
+	@Override
 	public JRSubreportReturnValue[] getReturnValues()
 	{
 		return ((JRSubreport) parent).getReturnValues();
@@ -946,6 +1133,7 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 
 	protected void validateReport() throws JRException
 	{
+		JasperReport jasperReport = getReport();
 		if (!checkedReports.contains(jasperReport))
 		{
 			verifyBandHeights();
@@ -960,8 +1148,10 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	
 	protected void verifyBandHeights() throws JRException
 	{
-		if (!filler.fillContext.isIgnorePagination())
+		if (!filler.isIgnorePagination())
 		{
+			JasperReport jasperReport = getReport();
+			
 			int pageHeight;
 			int topMargin = jasperReport.getTopMargin();
 			int bottomMargin = jasperReport.getBottomMargin();
@@ -976,11 +1166,14 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 				topMargin += parentFiller.jasperReport.getTopMargin();
 				bottomMargin += parentFiller.jasperReport.getBottomMargin();
 				
-				parentFiller = parentFiller.parentFiller;
+				parentFiller = 
+					parentFiller.parent != null && parentFiller.parent.getFiller() instanceof JRBaseFiller 
+						? (JRBaseFiller) parentFiller.parent.getFiller() 
+						: null;//FIXMEBOOK
 			}
 			while (parentFiller != null);
 			
-			List<JRValidationFault> brokenRules = new ArrayList<JRValidationFault>();
+			List<JRValidationFault> brokenRules = new ArrayList<>();
 			JRVerifier.verifyBandHeights(brokenRules, 
 					jasperReport, pageHeight, topMargin, bottomMargin);
 			
@@ -1003,36 +1196,30 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 	}
 	
 	
+	@Override
 	protected void resolveElement (JRPrintElement element, byte evaluation)
 	{
 		// nothing
 	}
 
 
-	/**
-	 * @deprecated Replaced by {@link #getUsingCache()}.
-	 */
-	public Boolean isOwnUsingCache()
-	{
-		return ((JRSubreport)parent).isOwnUsingCache();
-	}
-
-
+	@Override
 	public Boolean getUsingCache()
 	{
 		return ((JRSubreport)parent).getUsingCache();
 	}
 
 
+	@Override
 	public void setUsingCache(Boolean isUsingCache)
 	{
 	}
 
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
-		//not needed
-		return null;
+		return new JRFillSubreport(this, factory);
 	}
 	
 	protected JRSubreportRunnerFactory getRunnerFactory() throws JRException
@@ -1040,13 +1227,37 @@ public class JRFillSubreport extends JRFillElement implements JRSubreport
 		String factoryClassName = filler.getPropertiesUtil().getProperty(JRSubreportRunnerFactory.SUBREPORT_RUNNER_FACTORY);
 		if (factoryClassName == null)
 		{
-			throw new JRException("Property \"" + JRSubreportRunnerFactory.SUBREPORT_RUNNER_FACTORY + "\" must be set");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_PROPERTY_NOT_SET,  
+					new Object[]{JRSubreportRunnerFactory.SUBREPORT_RUNNER_FACTORY} 
+					);
 		}
 		return runnerFactoryCache.getCachedInstance(factoryClassName);
 	}
 
 	protected int getContentsStretchHeight()
 	{
-		return subreportFiller.getCurrentPageStretchHeight();
+		return subFillerParent.getCurrentPageStretchHeight();
+	}
+
+	protected String getReportLocation()
+	{
+		return jasperReportSource == null ? null : jasperReportSource.getReportLocation();
+	}
+
+	protected void registerReportStyles(List<JRStyle> styles)
+	{
+		//NOP
+	}
+	
+	protected String getReportName()
+	{
+		return getReport().getName();
+	}
+
+	protected boolean isSplitTypePreventInhibited(boolean isTopLevelCall)
+	{
+		return fillContainerContext.isSplitTypePreventInhibited(isTopLevelCall);
 	}
 }

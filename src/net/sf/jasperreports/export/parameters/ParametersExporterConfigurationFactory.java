@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,14 +28,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.jasperreports.engine.JRAbstractExporter;
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
 import net.sf.jasperreports.export.CommonExportConfiguration;
 import net.sf.jasperreports.export.PropertiesExporterConfigurationFactory;
 import net.sf.jasperreports.export.annotations.ExporterParameter;
@@ -45,7 +45,6 @@ import net.sf.jasperreports.export.annotations.ExporterProperty;
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParametersExporterConfigurationFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParametersExporterConfigurationFactory<C extends CommonExportConfiguration>
 {
@@ -53,7 +52,7 @@ public class ParametersExporterConfigurationFactory<C extends CommonExportConfig
 	 * 
 	 */
 	private final JasperReportsContext jasperReportsContext;
-	private final Map<JRExporterParameter, Object> parameters;
+	private final Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters;
 	private final JasperPrint jasperPrint;
 	private final ParameterResolver parameterResolver;
 	
@@ -62,7 +61,7 @@ public class ParametersExporterConfigurationFactory<C extends CommonExportConfig
 	 */
 	public ParametersExporterConfigurationFactory(
 		JasperReportsContext jasperReportsContext,
-		Map<JRExporterParameter, Object> parameters,
+		Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters,
 		JasperPrint jasperPrint
 		)
 	{
@@ -72,14 +71,14 @@ public class ParametersExporterConfigurationFactory<C extends CommonExportConfig
 		
 		boolean isParametersOverrideHints = true;
 		
-		Boolean param = (Boolean) parameters.get(JRExporterParameter.PARAMETERS_OVERRIDE_REPORT_HINTS);
+		Boolean param = (Boolean) parameters.get(net.sf.jasperreports.engine.JRExporterParameter.PARAMETERS_OVERRIDE_REPORT_HINTS);
 		if (param == null)
 		{
 			isParametersOverrideHints = 
 				JRPropertiesUtil.getInstance(
 					jasperReportsContext
 					).getBooleanProperty(
-						JRExporterParameter.PROPERTY_EXPORT_PARAMETERS_OVERRIDE_REPORT_HINTS
+						net.sf.jasperreports.engine.JRExporterParameter.PROPERTY_EXPORT_PARAMETERS_OVERRIDE_REPORT_HINTS
 						);
 		}
 		else
@@ -137,32 +136,47 @@ public class ParametersExporterConfigurationFactory<C extends CommonExportConfig
 		return proxy;
 	}
 
+	private static final Object NULL_VALUE_PLACEHOLDER = new Object();
 
 	/**
 	 * 
 	 */
 	class ParametersInvocationHandler implements InvocationHandler
 	{
+		
+		private final Map<Method, Object> values;
+		
 		/**
 		 * 
 		 */
 		public ParametersInvocationHandler()
 		{
+			//concurrency might not be involved, but let's be safe
+			values = new ConcurrentHashMap<>(16, 0.75f, 1);
 		}
 		
-		/**
-		 * 
-		 */
+		@Override
 		public Object invoke(
 			Object proxy, 
 			Method method, 
 			Object[] args
 			) throws Throwable 
 		{
-			return getPropertyValue(method);
+			Object cachedValue = values.get(method);
+			if (cachedValue == null)
+			{
+				Object value = getPropertyValue(method);
+				
+				//caching the result as getPropertyValue is not that cheap.
+				//the result is not expected to change from one invocation to another.
+				//(in theory someone might change context properties during an export, but that's not a supported scenario)
+				cachedValue = value == null ? NULL_VALUE_PLACEHOLDER : value;
+				values.put(method, cachedValue);
+			}
+			
+			return cachedValue == NULL_VALUE_PLACEHOLDER ? null : cachedValue;
 		}
 	}
-	
 	
 	/**
 	 * 
@@ -171,19 +185,18 @@ public class ParametersExporterConfigurationFactory<C extends CommonExportConfig
 	{
 		Object value = null;
 
-		JRExporterParameter parameter = null;
+		net.sf.jasperreports.engine.JRExporterParameter parameter = null;
 		ExporterParameter exporterParameter = method.getAnnotation(ExporterParameter.class);
 		if (exporterParameter != null)
 		{
 			try
 			{
-				parameter = (JRExporterParameter)exporterParameter.type().getField(exporterParameter.name()).get(null);
+				parameter = 
+					(net.sf.jasperreports.engine.JRExporterParameter)exporterParameter.type().getField(
+						exporterParameter.name()
+						).get(null);
 			}
-			catch (NoSuchFieldException e)
-			{
-				throw new JRRuntimeException(e);
-			}
-			catch (IllegalAccessException e)
+			catch (NoSuchFieldException | IllegalAccessException e)
 			{
 				throw new JRRuntimeException(e);
 			}
@@ -251,7 +264,11 @@ public class ParametersExporterConfigurationFactory<C extends CommonExportConfig
 				{
 					value = parameterResolver.getBooleanParameter(parameter, propertyName, exporterProperty.booleanDefault());
 				}
-				else if (JREnum.class.isAssignableFrom(type))
+				else if (Map.class.isAssignableFrom(type))
+				{
+					value = parameterResolver.getMapParameter(parameter, propertyName);
+				}
+				else if (NamedEnum.class.isAssignableFrom(type))
 				{
 					if (exporterParameter.acceptNull())
 					{
@@ -267,26 +284,22 @@ public class ParametersExporterConfigurationFactory<C extends CommonExportConfig
 						Method byNameMethod = type.getMethod("getByName", new Class<?>[]{String.class});
 						value = byNameMethod.invoke(null, value);
 					}
-					catch (NoSuchMethodException e)
-					{
-						throw new JRRuntimeException(e);
-					}
-					catch (InvocationTargetException e)
-					{
-						throw new JRRuntimeException(e);
-					}
-					catch (IllegalAccessException e)
+					catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
 					{
 						throw new JRRuntimeException(e);
 					}
 				}
 				else
 				{
-					throw new JRRuntimeException("Export property type " + type + " not supported.");
+					throw 
+					new JRRuntimeException(
+						PropertiesExporterConfigurationFactory.EXCEPTION_MESSAGE_KEY_EXPORT_PROPERTIES_TYPE_NOT_SUPPORTED, 
+						new Object[]{type});
 				}
 			}
 		}
 		
 		return value;
 	}
+	
 }

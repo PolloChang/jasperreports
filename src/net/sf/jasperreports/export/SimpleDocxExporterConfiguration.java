@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,8 +26,97 @@ package net.sf.jasperreports.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleDocxExporterConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleDocxExporterConfiguration extends SimpleExporterConfiguration implements DocxExporterConfiguration
 {
+	private String metadataTitle;
+	private String metadataAuthor;
+	private String metadataSubject;
+	private String metadataKeywords;
+	private String metadataApplication;
+	private Boolean embedFonts;
+	
+	@Override
+	public String getMetadataTitle()
+	{
+		return metadataTitle;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setMetadataTitle(String metadataTitle)
+	{
+		this.metadataTitle = metadataTitle;
+	}
+	
+	@Override
+	public String getMetadataAuthor()
+	{
+		return metadataAuthor;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setMetadataAuthor(String metadataAuthor)
+	{
+		this.metadataAuthor = metadataAuthor;
+	}
+	
+	@Override
+	public String getMetadataSubject()
+	{
+		return metadataSubject;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setMetadataSubject(String metadataSubject)
+	{
+		this.metadataSubject = metadataSubject;
+	}
+	
+	@Override
+	public String getMetadataKeywords()
+	{
+		return metadataKeywords;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setMetadataKeywords(String metadataKeywords)
+	{
+		this.metadataKeywords = metadataKeywords;
+	}
+	
+	@Override
+	public String getMetadataApplication()
+	{
+		return metadataApplication;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setMetadataApplication(String metadataApplication)
+	{
+		this.metadataApplication = metadataApplication;
+	}
+	
+	@Override
+	public Boolean isEmbedFonts()
+	{
+		return embedFonts;
+	}
+	
+	/**
+	 * 
+	 */
+	public void setEmbedFonts(Boolean embedFonts)
+	{
+		this.embedFonts = embedFonts;
+	}
 }

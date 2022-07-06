@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -52,7 +52,6 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * A {@link JRComponentElement} which is used during report fill.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillComponentElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillComponentElement extends JRFillElement implements JRComponentElement, FillContext
 {
@@ -100,6 +99,7 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		}
 	}
 
+	@Override
 	protected void evaluate(byte evaluation) throws JRException
 	{
 		reset();
@@ -113,6 +113,7 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		filling = false;
 	}
 	
+	@Override
 	protected boolean prepare(int availableHeight, boolean isOverflow)
 			throws JRException
 	{
@@ -152,7 +153,7 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 			
 			isToPrint = result.isToPrint();
 			willOverflow = result.willOverflow();
-			setStretchHeight(result.getStretchHeight());
+			setPrepareHeight(result.getStretchHeight());
 			
 			// if the component will overflow, set the filling flag to true
 			// to know next time that the component is continuing
@@ -165,6 +166,7 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		return willOverflow;
 	}
 
+	@Override
 	protected void setStretchHeight(int stretchHeight)
 	{
 		super.setStretchHeight(stretchHeight);
@@ -177,6 +179,7 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		}
 	}
 
+	@Override
 	public void setConditionalStylesContainer(JRFillElementContainer conditionalStylesContainer)
 	{
 		super.setConditionalStylesContainer(conditionalStylesContainer);
@@ -189,40 +192,47 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		}
 	}
 
+	@Override
 	protected JRPrintElement fill() throws JRException
 	{
 		return fillComponent.fill();
 	}
 
+	@Override
 	protected JRTemplateElement createElementTemplate()
 	{
 		// not called
 		return null;
 	}
 
+	@Override
 	protected void resolveElement (JRPrintElement element, byte evaluation, 
 			JREvaluationTime evaluationTime) throws JRException
 	{
 		performDelayedEvaluation(element, evaluation);
 	}
 	
+	@Override
 	protected void resolveElement(JRPrintElement element, byte evaluation)
 			throws JRException
 	{
 		fillComponent.evaluateDelayedElement(element, evaluation);
 	}
 
+	@Override
 	protected void rewind() throws JRException
 	{
 		fillComponent.rewind();
 		filling = false;
 	}
 
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitComponentElement(this);
@@ -234,42 +244,50 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		}
 	}
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillComponentElement(this, factory);
 	}
 
+	@Override
 	public JRComponentElement getParent()
 	{
 		return (JRComponentElement) parent;
 	}
 
+	@Override
 	public Component getComponent()
 	{
 		return ((JRComponentElement) parent).getComponent();
 	}
 
+	@Override
 	public ComponentKey getComponentKey()
 	{
 		return ((JRComponentElement) parent).getComponentKey();
 	}
 	
+	@Override
 	public Object evaluate(JRExpression expression, byte evaluation)
 			throws JRException
 	{
 		return super.evaluateExpression(expression, evaluation);
 	}
 
+	@Override
 	public JRFillDataset getFillDataset()
 	{
 		return expressionEvaluator.getFillDataset();
 	}
 
+	@Override
 	public JRComponentElement getComponentElement()
 	{
 		return this;
 	}
 
+	@Override
 	public int getElementSourceId()
 	{
 		return printElementOriginator.getSourceElementId();
@@ -281,21 +299,25 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 		return printElementOriginator;
 	}
 
+	@Override
 	public JROrigin getElementOrigin()
 	{
 		return super.getElementOrigin();
 	}
 
+	@Override
 	public int getElementPrintY()
 	{
 		return getRelativeY();
 	}
 
+	@Override
 	public JRStyle getElementStyle()
 	{
 		return getStyle();
 	}
 
+	@Override
 	public void registerDelayedEvaluation(JRPrintElement printElement, 
 			EvaluationTimeEnum evaluationTime, String evaluationGroup)
 	{
@@ -303,21 +325,25 @@ public class JRFillComponentElement extends JRFillElement implements JRComponent
 				evaluationTime, evaluationGroup, band);
 	}
 
+	@Override
 	public Locale getReportLocale()
 	{
 		return filler.getLocale();
 	}
 
+	@Override
 	public ResourceBundle getReportResourceBundle()
 	{
 		return filler.getResourceBundle();
 	}
 
+	@Override
 	public TimeZone getReportTimezone()
 	{
 		return filler.getTimeZone();
 	}
 
+	@Override
 	public JRBaseFiller getFiller()
 	{
 		return filler;

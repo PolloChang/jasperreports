@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,21 +23,19 @@
  */
 package net.sf.jasperreports.components.barcode4j;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.krysalis.barcode4j.ChecksumMode;
+import org.krysalis.barcode4j.impl.code128.EAN128Bean;
+
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.Renderable;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
-
-import org.krysalis.barcode4j.ChecksumMode;
-import org.krysalis.barcode4j.impl.code128.EAN128Bean;
+import net.sf.jasperreports.renderers.Renderable;
 
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeDesignEvaluator.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 {
@@ -51,27 +49,11 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 		super(jasperReportsContext, componentElement, defaultStyleProvider);
 	}
 	
-	/**
-	 * @deprecated Replaced by {@link #BarcodeDesignEvaluator(JasperReportsContext, JRComponentElement, JRDefaultStyleProvider)}.
-	 */
-	public BarcodeDesignEvaluator(JRComponentElement componentElement,
-			JRDefaultStyleProvider defaultStyleProvider)
-	{
-		this(DefaultJasperReportsContext.getInstance(), componentElement, defaultStyleProvider);
-	}
-	
 	public Renderable evaluateImage()
 	{
 		evaluateBarcode();
-		
-		BarcodeImageProducer imageProducer = 
-			BarcodeUtils.getInstance(jasperReportsContext).getProducer(
-				componentElement);
-		Renderable barcodeImage = imageProducer.createImage(
-				jasperReportsContext,
-				componentElement, 
-				barcode, message, barcodeComponent.getOrientation());
-		return barcodeImage;
+
+		return renderable;
 	}
 	
 	protected void evaluateBaseBarcode(BarcodeComponent barcodeComponent, 
@@ -79,12 +61,18 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 	{
 		message = evaluateStringExpression(barcodeComponent.getCodeExpression(), 
 				defaultMessage);
+	}
+
+	protected void evaluateBaseBarcode(Barcode4jComponent barcodeComponent, 
+			String defaultMessage)
+	{
+		evaluateBaseBarcode((BarcodeComponent)barcodeComponent, defaultMessage);
 		
 		String pattern = evaluateStringExpression(
 				barcodeComponent.getPatternExpression(), null);
 		if (pattern != null) 
 		{
-			barcode.setPattern(pattern);
+			barcodeBean.setPattern(pattern);
 		}
 	}
 
@@ -98,21 +86,25 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 		return value;
 	}
 	
+	@Override
 	protected void evaluateCodabar(CodabarComponent codabar)
 	{
 		evaluateBaseBarcode(codabar, "0123456789");
 	}
 
+	@Override
 	protected void evaluateCode128(Code128Component code128)
 	{
 		evaluateBaseBarcode(code128, "0123456789");
 	}
 
+	@Override
 	protected void evaluateDataMatrix(DataMatrixComponent dataMatrix)
 	{
 		evaluateBaseBarcode(dataMatrix, "0123456789");
 	}
 
+	@Override
 	protected void evaluateEANCode128(EAN128Component ean128)
 	{
 		evaluateBaseBarcode(ean128, "0101234567890128");
@@ -120,15 +112,17 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 				ean128.getTemplateExpression(), null);
 		if (template != null) 
 		{
-			((EAN128Bean)barcode).setTemplate(template);
+			((EAN128Bean)barcodeBean).setTemplate(template);
 		}
 	}
 
+	@Override
 	protected void evaluateCode39(Code39Component code39)
 	{
 		evaluateBaseBarcode(code39, "01234567892");
 	}
 
+	@Override
 	protected void evaluateUPCA(UPCAComponent upcA)
 	{
 		String defaultMessage;
@@ -146,6 +140,7 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 		evaluateBaseBarcode(upcA, defaultMessage);
 	}
 
+	@Override
 	protected void evaluateUPCE(UPCEComponent upcE)
 	{
 		String defaultMessage;
@@ -163,6 +158,7 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 		evaluateBaseBarcode(upcE, defaultMessage);
 	}
 
+	@Override
 	protected void evaluateEAN13(EAN13Component ean13)
 	{
 		String defaultMessage;
@@ -180,6 +176,7 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 		evaluateBaseBarcode(ean13, defaultMessage);
 	}
 
+	@Override
 	protected void evaluateEAN8(EAN8Component ean8)
 	{
 		String defaultMessage;
@@ -197,11 +194,13 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 		evaluateBaseBarcode(ean8, defaultMessage);
 	}
 
+	@Override
 	protected void evaluateInterleaved2Of5(Interleaved2Of5Component interleaved2Of5)
 	{
 		evaluateBaseBarcode(interleaved2Of5, "0123456784");
 	}
 
+	@Override
 	protected void evaluateRoyalMailCustomer(
 			RoyalMailCustomerComponent royalMailCustomer)
 	{
@@ -220,6 +219,7 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 		evaluateBaseBarcode(royalMailCustomer, defaultMessage);
 	}
 
+	@Override
 	protected void evaluateUSPSIntelligentMail(
 			USPSIntelligentMailComponent intelligentMail)
 	{
@@ -227,14 +227,21 @@ public class BarcodeDesignEvaluator extends AbstractBarcodeEvaluator
 				"00040123456200800001987654321");
 	}
 
+	@Override
 	protected void evaluatePOSTNET(POSTNETComponent intelligentMail)
 	{
 		evaluateBaseBarcode(intelligentMail, "01234");
 	}
 
+	@Override
 	protected void evaluatePDF417(PDF417Component pdf417)
 	{
 		evaluateBaseBarcode(pdf417, "01234");
 	}
-
+	
+	@Override
+	protected void evaluateQRCode(QRCodeComponent qrCode)
+	{
+		evaluateBaseBarcode(qrCode, "0123456789");
+	}
 }

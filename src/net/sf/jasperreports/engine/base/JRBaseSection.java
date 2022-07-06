@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,6 +27,7 @@ import java.io.Serializable;
 
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JRPart;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRSection;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
@@ -40,7 +41,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Report sections consist of one or more bands.
  * @see JRBaseBand
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseSection.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseSection implements JRSection, JRChangeEventsSupport, Serializable
 {
@@ -52,6 +52,7 @@ public class JRBaseSection implements JRSection, JRChangeEventsSupport, Serializ
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	protected JRBand[] bands;
+	protected JRPart[] parts;
 
 
 	/**
@@ -88,19 +89,32 @@ public class JRBaseSection implements JRSection, JRChangeEventsSupport, Serializ
 				bands[i] = factory.getBand(jrBands[i]);
 			}
 		}
+		
+		/*   */
+		JRPart[] jrParts = section.getParts();
+		if (jrParts != null && jrParts.length > 0)
+		{
+			parts = new JRPart[jrParts.length];
+			for(int i = 0; i < jrParts.length; i++)
+			{
+				parts[i] = factory.getPart(jrParts[i]);
+			}
+		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRBand[] getBands() 
 	{
 		return bands;
 	}	
 
-	/**
-	 *
-	 */
+	@Override
+	public JRPart[] getParts() 
+	{
+		return parts;
+	}	
+
+	@Override
 	public Object clone() 
 	{
 		JRBaseSection clone = null;
@@ -115,6 +129,7 @@ public class JRBaseSection implements JRSection, JRChangeEventsSupport, Serializ
 		}
 
 		clone.bands = JRCloneUtils.cloneArray(bands);
+		clone.parts = JRCloneUtils.cloneArray(parts);
 		clone.eventSupport = null;
 
 		return clone;
@@ -122,6 +137,7 @@ public class JRBaseSection implements JRSection, JRChangeEventsSupport, Serializ
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

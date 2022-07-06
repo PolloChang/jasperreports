@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,8 +33,7 @@ import net.sf.jasperreports.engine.export.draw.ImageDrawer;
 import net.sf.jasperreports.engine.export.draw.Offset;
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: MapElementGraphics2DHandler.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class MapElementGraphics2DHandler implements GenericElementGraphics2DHandler
 {
@@ -46,6 +45,7 @@ public class MapElementGraphics2DHandler implements GenericElementGraphics2DHand
 	}
 	
 
+	@Override
 	public void exportElement(
 			JRGraphics2DExporterContext exporterContext, 
 			JRGenericPrintElement element, 
@@ -55,7 +55,7 @@ public class MapElementGraphics2DHandler implements GenericElementGraphics2DHand
 		try
 		{
 			JRGraphics2DExporter exporter = (JRGraphics2DExporter)exporterContext.getExporterRef();
-			ImageDrawer imageDrawer = exporter.getFrameDrawer().getDrawVisitor().getImageDrawer();
+			ImageDrawer imageDrawer = exporter.getDrawVisitor().getImageDrawer();
 			
 			imageDrawer.draw(
 					grx,
@@ -70,6 +70,7 @@ public class MapElementGraphics2DHandler implements GenericElementGraphics2DHand
 		}
 	}
 
+	@Override
 	public boolean toExport(JRGenericPrintElement element) {
 		return true;
 	}

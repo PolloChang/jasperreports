@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,6 +23,8 @@
  */
 package net.sf.jasperreports.engine.xml;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.List;
 
@@ -30,15 +32,20 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRRuntimeException;
-import net.sf.jasperreports.engine.util.ClassUtils;
-import net.sf.jasperreports.engine.util.JRLoader;
-
-import org.apache.commons.collections.map.ReferenceMap;
+import org.apache.commons.collections4.map.ReferenceMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.xml.sax.SAXException;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.util.ClassUtils;
+import net.sf.jasperreports.engine.util.JRClassLoader;
+import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Base SAX parser factory.
@@ -52,12 +59,15 @@ import org.xml.sax.SAXException;
  * SAX parser.  See {@link #PROPERTY_CACHE_SCHEMAS}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseSaxParserFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 {
 	
 	private static final Log log = LogFactory.getLog(BaseSaxParserFactory.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_INCOMPATIBLE_CLASS = "xml.sax.parser.factory.incompatible.class";
+	public static final String EXCEPTION_MESSAGE_KEY_PARSER_CREATION_ERROR = "xml.sax.parser.factory.parser.creation.error";
+	public static final String EXCEPTION_MESSAGE_KEY_RESOURCE_NOT_FOUND = "xml.sax.parser.factory.resource.not.found";
 	
 	/**
 	 * A property that determines whether XML schemas/grammars are to be cached
@@ -70,6 +80,13 @@ public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 	 */
 	// the property was initially created for JRXMLs, but now it's used for XML exports as well.
 	// if required at some point, we can create a separate property. 
+	@Property(
+			category = PropertyConstants.CATEGORY_COMPILE,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_3_1_0,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_CACHE_SCHEMAS = JRPropertiesUtil.PROPERTY_PREFIX
 		+ "compiler.xml.parser.cache.schemas";
 
@@ -83,8 +100,15 @@ public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 		"http://apache.org/xml/properties/internal/grammar-pool";
 	
 	private final static Object GRAMMAR_POOL_CACHE_NULL_KEY = "Null context classloader";
-	private final static ThreadLocal<ReferenceMap> GRAMMAR_POOL_CACHE = new ThreadLocal<ReferenceMap>();
 	
+	protected final JasperReportsContext jasperReportsContext;
+	
+	public BaseSaxParserFactory(JasperReportsContext jasperReportsContext)
+	{
+		this.jasperReportsContext = jasperReportsContext;
+	}
+	
+	@Override
 	public SAXParser createParser()
 	{
 		try
@@ -94,13 +118,13 @@ public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 			configureParser(parser);
 			return parser;
 		}
-		catch (SAXException e)
+		catch (SAXException | ParserConfigurationException e)
 		{
-			throw new JRRuntimeException("Error creating SAX parser", e);
-		}
-		catch (ParserConfigurationException e)
-		{
-			throw new JRRuntimeException("Error creating SAX parser", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_PARSER_CREATION_ERROR,
+					(Object[])null,
+					e);
 		}
 	}
 
@@ -134,8 +158,7 @@ public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 		parser.setProperty("http://java.sun.com/xml/jaxp/properties/schemaSource",
 			schemaLocations.toArray(new String[schemaLocations.size()]));
 		
-		@SuppressWarnings("deprecation")
-		boolean cache = net.sf.jasperreports.engine.util.JRProperties.getBooleanProperty(PROPERTY_CACHE_SCHEMAS);
+		boolean cache = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(PROPERTY_CACHE_SCHEMAS);
 		if (cache)
 		{
 			enableSchemaCaching(parser);
@@ -149,7 +172,10 @@ public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 		URL location = JRLoader.getResource(resource);
 		if (location == null)
 		{
-			throw new JRRuntimeException("Could not find resource " + resource);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_RESOURCE_NOT_FOUND,
+					new Object[]{resource});
 		}
 		return location.toExternalForm();
 	}
@@ -174,6 +200,8 @@ public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 		}
 	}
 	
+	protected abstract ThreadLocal<ReferenceMap<Object, Object>> getGrammarPoolCache();
+	
 	protected void setGrammarPoolProperty(SAXParser parser, String poolClassName)
 	{
 		try
@@ -181,11 +209,12 @@ public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 			Object cacheKey = getGrammarPoolCacheKey();
 			
 			// we're using thread local caches to avoid thread safety problems
-			ReferenceMap cacheMap = GRAMMAR_POOL_CACHE.get();
+			ThreadLocal<ReferenceMap<Object, Object>> grammarPoolCache = getGrammarPoolCache();
+			ReferenceMap<Object, Object> cacheMap = grammarPoolCache.get();
 			if (cacheMap == null)
 			{
-				cacheMap = new ReferenceMap(ReferenceMap.WEAK, ReferenceMap.SOFT);
-				GRAMMAR_POOL_CACHE.set(cacheMap);
+				cacheMap = new ReferenceMap<>(ReferenceMap.ReferenceStrength.WEAK, ReferenceMap.ReferenceStrength.SOFT);
+				grammarPoolCache.set(cacheMap);
 			}
 			
 			Object grammarPool = cacheMap.get(cacheKey);
@@ -222,4 +251,45 @@ public abstract class BaseSaxParserFactory implements JRSaxParserFactory
 		return key;
 	}
 
+	/**
+	 * 
+	 */
+	public static JRSaxParserFactory getFactory(JasperReportsContext jasperReportsContext, String className)
+	{
+		JRSaxParserFactory factory = null;
+		try
+		{
+			@SuppressWarnings("unchecked")
+			Class<? extends JRSaxParserFactory> clazz = (Class<? extends JRSaxParserFactory>) JRClassLoader.loadClassForName(className);
+			if (!JRSaxParserFactory.class.isAssignableFrom(clazz))
+			{
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_INCOMPATIBLE_CLASS,
+						new Object[]{className, JRSaxParserFactory.class.getName()});
+			}
+
+			try
+			{
+				Constructor<? extends JRSaxParserFactory> constr = clazz.getConstructor(new Class[]{JasperReportsContext.class});
+				factory = constr.newInstance(jasperReportsContext);
+			}
+			catch (NoSuchMethodException | InvocationTargetException e)
+			{
+				//ignore
+			}
+			
+			if (factory == null)
+			{
+				factory = clazz.getDeclaredConstructor().newInstance();
+			}
+		}
+		catch (ClassNotFoundException | InstantiationException | IllegalAccessException 
+			| NoSuchMethodException | InvocationTargetException e)
+		{
+			throw new JRRuntimeException(e);
+		}
+
+		return factory;
+	}
 }

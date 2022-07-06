@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,7 @@ import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionCollector;
 import net.sf.jasperreports.engine.design.JRDesignChartDataset;
 import net.sf.jasperreports.engine.design.JRVerifier;
-import net.sf.jasperreports.engine.type.ResetTypeEnum;
+import net.sf.jasperreports.engine.type.DatasetResetTypeEnum;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * a potential range, such as meter chart or a thermometer chart.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRDesignValueDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignValueDataset extends JRDesignChartDataset implements JRValueDataset
 {
@@ -74,13 +73,11 @@ public class JRDesignValueDataset extends JRDesignChartDataset implements JRValu
 			// than None doesn't make sense
 			// setting None as default reset type so that it doesn't need to be
 			// explicitly set in order for the dataset to work as expected
-			this.resetTypeValue = ResetTypeEnum.NONE;
+			this.datasetResetType = DatasetResetTypeEnum.NONE;
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getValueExpression()
 	{
 		return valueExpression;
@@ -106,8 +103,9 @@ public class JRDesignValueDataset extends JRDesignChartDataset implements JRValu
 	 * Returns the type of this dataset.
 	 *
 	 * @return the type of this dataset - always
-	 *    <code>JRChartDataset.VALUE_DATASET</code>
+	 *    {@link net.sf.jasperreports.engine.JRChartDataset#VALUE_DATASET VALUE_DATASET}
 	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.VALUE_DATASET;
 	}
@@ -119,20 +117,20 @@ public class JRDesignValueDataset extends JRDesignChartDataset implements JRValu
 	 *
 	 * @param collector the expression collector to use
 	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignValueDataset clone = (JRDesignValueDataset)super.clone();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,14 +27,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRJavacCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRJavacCompiler extends JRAbstractMultiClassCompiler
 {
@@ -47,17 +45,7 @@ public class JRJavacCompiler extends JRAbstractMultiClassCompiler
 		super(jasperReportsContext);
 	}
 	
-	/**
-	 * @deprecated Replaced by {@link #JRJavacCompiler(JasperReportsContext)}.
-	 */
-	public JRJavacCompiler()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public String compileClasses(File[] sourceFiles, String classpath) throws JRException 
 	{
 		String[] source = new String[sourceFiles.length + 3];
@@ -97,13 +85,17 @@ public class JRJavacCompiler extends JRAbstractMultiClassCompiler
 		}
 		catch (Exception e) 
 		{
-			StringBuffer files = new StringBuffer();
+			StringBuilder files = new StringBuilder();
 			for (int i = 0; i < sourceFiles.length; ++i)
 			{
 				files.append(sourceFiles[i].getPath());
 				files.append(' ');
 			}
-			throw new JRException("Error compiling report java source files : " + files, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_JAVA_SOURCE_COMPILE_ERROR,
+					new Object[]{files}, 
+					e);
 		}
 	}
 

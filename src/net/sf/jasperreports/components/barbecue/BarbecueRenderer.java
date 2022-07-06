@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,11 +29,11 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRAbstractSvgRenderer;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.RotationEnum;
+import net.sf.jasperreports.renderers.DimensionRenderable;
+import net.sf.jasperreports.renderers.Graphics2DRenderable;
 import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.output.OutputException;
 
@@ -41,9 +41,9 @@ import net.sourceforge.barbecue.output.OutputException;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarbecueRenderer.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link BarbecueRendererImpl}.
  */
-public class BarbecueRenderer extends JRAbstractSvgRenderer
+public class BarbecueRenderer extends net.sf.jasperreports.engine.JRAbstractSvgRenderer implements Graphics2DRenderable, DimensionRenderable
 {
 
 	private static final long serialVersionUID = 1L;
@@ -57,9 +57,10 @@ public class BarbecueRenderer extends JRAbstractSvgRenderer
 		this.barcode = barcode;
 	}
 	
+	@Override
 	public Dimension2D getDimension(JasperReportsContext jasperReportsContext)
 	{
-		if(rotation != null) 
+		if (rotation != null) 
 		{
 			switch(rotation)
 			{
@@ -75,22 +76,7 @@ public class BarbecueRenderer extends JRAbstractSvgRenderer
 		}
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #getDimension(JasperReportsContext)}.
-	 */
-	public Dimension2D getDimension()
-	{
-		return getDimension(DefaultJasperReportsContext.getInstance());
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
-	 */
-	public void render(Graphics2D grx, Rectangle2D rectangle) 
-	{
-		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);
-	}
-	
+	@Override
 	public void render(JasperReportsContext jasperReportsContext, Graphics2D grx, Rectangle2D rectangle) 
 	{
 		AffineTransform origTransform = grx.getTransform();
@@ -100,7 +86,7 @@ public class BarbecueRenderer extends JRAbstractSvgRenderer
 
 			if (rotation != null)
 			{
-				switch(rotation)
+				switch (rotation)
 				{
 					case LEFT:
 						grx.translate(rectangle.getX(), rectangle.getY() + rectangle.getHeight());

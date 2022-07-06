@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,14 +30,12 @@ import net.sf.jasperreports.engine.analytics.dataset.BucketOrder;
 import net.sf.jasperreports.engine.design.JRDesignExpression;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
-import net.sf.jasperreports.engine.type.SortOrderEnum;
 
 /**
  * Implementation of {@link net.sf.jasperreports.crosstabs.JRCrosstabBucket crosstab group bucket}
  * to be used for report designing.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignCrosstabBucket.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignCrosstabBucket extends JRBaseCrosstabBucket implements JRChangeEventsSupport
 {
@@ -112,25 +110,6 @@ public class JRDesignCrosstabBucket extends JRBaseCrosstabBucket implements JRCh
 	/**
 	 * Sets the sorting type.
 	 * 
-	 * @param orderValue one of
-	 * <ul>
-	 * 	<li>{@link SortOrderEnum#ASCENDING SortOrderEnum.ASCENDING}</li>
-	 * 	<li>{@link SortOrderEnum#DESCENDING SortOrderEnum.DESCENDING}</li>
-	 * </ul>
-	 * @see net.sf.jasperreports.crosstabs.JRCrosstabBucket#getOrderValue()
-	 * 
-	 * @deprecated replaced by {@link #setOrder(BucketOrder)}
-	 */
-	@Deprecated
-	public void setOrder(SortOrderEnum orderValue)
-	{
-		BucketOrder order = BucketOrder.fromSortOrderEnum(orderValue);
-		setOrder(order);
-	}
-	
-	/**
-	 * Sets the sorting type.
-	 * 
 	 * @param bucketOrder one of
 	 * <ul>
 	 * 	<li>{@link BucketOrder#ASCENDING BucketOrder.ASCENDING}</li>
@@ -165,9 +144,7 @@ public class JRDesignCrosstabBucket extends JRBaseCrosstabBucket implements JRCh
 				this.valueClassName);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignCrosstabBucket clone = (JRDesignCrosstabBucket)super.clone();
@@ -177,6 +154,7 @@ public class JRDesignCrosstabBucket extends JRBaseCrosstabBucket implements JRCh
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

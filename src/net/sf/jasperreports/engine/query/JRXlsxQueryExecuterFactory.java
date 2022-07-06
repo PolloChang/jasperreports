@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,8 +37,7 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * The factory creates {@link net.sf.jasperreports.engine.query.JRXlsxQueryExecuter JRXlsxQueryExecuter}
  * query executers.
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRXlsxQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class JRXlsxQueryExecuterFactory extends AbstractXlsQueryExecuterFactory 
 {
@@ -191,26 +190,44 @@ public class JRXlsxQueryExecuterFactory extends AbstractXlsQueryExecuterFactory
 			XLS_NUMBER_PATTERN, "java.lang.String",
 			XLSX_USE_FIRST_ROW_AS_HEADER, "java.lang.Boolean",
 			XLS_USE_FIRST_ROW_AS_HEADER, "java.lang.Boolean",
+			XLSX_LOCALE, "java.util.Locale",
+			XLS_LOCALE, "java.util.Locale",
 			XLSX_LOCALE_CODE, "java.lang.String",
 			XLS_LOCALE_CODE, "java.lang.String",
+			XLSX_TIMEZONE, "java.util.TimeZone",
+			XLS_TIMEZONE, "java.util.TimeZone",
 			XLSX_TIMEZONE_ID, "java.lang.String",
 			XLS_TIMEZONE_ID, "java.lang.String",
 			XLS_SHEET_SELECTION, "java.lang.String"
 			};
 	
+	@Override
 	public Object[] getBuiltinParameters() {
 		return XLSX_BUILTIN_PARAMETERS;
 	}
 
+	@Override
 	public JRQueryExecuter createQueryExecuter(
 		JasperReportsContext jasperReportsContext,
 		JRDataset dataset, 
 		Map<String,? extends JRValueParameter> parameters
 		) throws JRException 
 	{
-		return new JRXlsxQueryExecuter(jasperReportsContext, dataset, parameters);
+		return createQueryExecuter(SimpleQueryExecutionContext.of(jasperReportsContext), 
+				dataset, parameters);
 	}
 
+	@Override
+	public JRQueryExecuter createQueryExecuter(
+		QueryExecutionContext context,
+		JRDataset dataset, 
+		Map<String,? extends JRValueParameter> parameters
+		) throws JRException 
+	{
+		return new JRXlsxQueryExecuter(context, dataset, parameters);
+	}
+
+	@Override
 	public boolean supportsQueryParameterType(String className) {
 		return true;
 	}

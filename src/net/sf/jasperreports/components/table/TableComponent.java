@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,23 +25,58 @@ package net.sf.jasperreports.components.table;
 
 import java.util.List;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.DatasetRunHolder;
 import net.sf.jasperreports.engine.JRCloneable;
 import net.sf.jasperreports.engine.JRDatasetRun;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRVisitable;
 import net.sf.jasperreports.engine.component.Component;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableComponent.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface TableComponent extends Component, JRCloneable, JRVisitable
+public interface TableComponent extends Component, JRCloneable, JRVisitable, DatasetRunHolder
 {
+	/**
+	 * Property that specifies a default value for the <code>whenNoDataType</code> attribute of table components.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_TABLE,
+			defaultValue = "Blank",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_6_0_0,
+			valueType = WhenNoDataTypeTableEnum.class
+			)
+	public static final String CONFIG_PROPERTY_WHEN_NO_DATA_TYPE = JRPropertiesUtil.PROPERTY_PREFIX + "components.table.when.no.data.type";
 
+	@Override
 	JRDatasetRun getDatasetRun();
 
 	List<BaseColumn> getColumns();
 	
 	WhenNoDataTypeTableEnum getWhenNoDataType();
 	
+	Row getTableHeader();
+	
+	Row getTableFooter();
+	
+	List<GroupRow> getGroupHeaders();
+	
+	Row getGroupHeader(String groupName);
+	
+	List<GroupRow> getGroupFooters();
+	
+	Row getGroupFooter(String groupName);
+	
+	Row getColumnHeader();
+	
+	Row getColumnFooter();
+	
+	Row getDetail();
+	
+	BaseCell getNoData();
 }

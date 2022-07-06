@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintElement;
@@ -37,15 +36,9 @@ import net.sf.jasperreports.engine.base.JRBasePrintFrame;
 import net.sf.jasperreports.engine.export.GenericElementHtmlHandler;
 import net.sf.jasperreports.engine.export.HtmlExporter;
 import net.sf.jasperreports.engine.export.JRHtmlExporterContext;
-import net.sf.jasperreports.export.Exporter;
-import net.sf.jasperreports.export.ExporterInput;
-import net.sf.jasperreports.export.HtmlExporterConfiguration;
-import net.sf.jasperreports.export.HtmlReportConfiguration;
-import net.sf.jasperreports.export.HtmlExporterOutput;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id:ChartThemesUtilities.java 2595 2009-02-10 17:56:51Z teodord $
  */
 public class IconLabelElementHtmlHandler implements GenericElementHtmlHandler
 {
@@ -56,6 +49,7 @@ public class IconLabelElementHtmlHandler implements GenericElementHtmlHandler
 		return INSTANCE;
 	}
 
+	@Override
 	public String getHtmlFragment(JRHtmlExporterContext context, JRGenericPrintElement element)
 	{
 		JRPrintText labelPrintText = (JRPrintText)element.getParameterValue(IconLabelElement.PARAMETER_LABEL_TEXT_ELEMENT);
@@ -87,59 +81,25 @@ public class IconLabelElementHtmlHandler implements GenericElementHtmlHandler
 			frame.addElement(iconPrintText);
 		}
 
-		Exporter<ExporterInput, ? extends HtmlReportConfiguration, ? extends HtmlExporterConfiguration, HtmlExporterOutput> exporter = context.getExporterRef();
-		HtmlExporter htmlExporter = exporter instanceof HtmlExporter ? (HtmlExporter)exporter : null;
-		if (htmlExporter == null)
-		{
-			xhtmlExport(exporter, frame);
-		}
-		else
-		{
-			List<JRPrintElement> elements = new ArrayList<JRPrintElement>();
-			elements.add(frame);
+		HtmlExporter htmlExporter = (HtmlExporter)context.getExporterRef();
+		List<JRPrintElement> elements = new ArrayList<>();
+		elements.add(frame);
 
-			try
-			{
-				htmlExporter.exportElements(elements);
-			}
-			catch (IOException e)
-			{
-				throw new JRRuntimeException(e);
-			}
+		try
+		{
+			htmlExporter.exportElements(elements);
+		}
+		catch (IOException e)
+		{
+			throw new JRRuntimeException(e);
 		}
 		
 		return "";
 	}
 
+	@Override
 	public boolean toExport(JRGenericPrintElement element) 
 	{
 		return true;
-	}
-	
-	@SuppressWarnings("deprecation")
-	private void xhtmlExport(
-		Exporter<ExporterInput, ? extends HtmlReportConfiguration, ? extends HtmlExporterConfiguration, HtmlExporterOutput> exporter,
-		JRBasePrintFrame frame
-		) 
-	{
-		net.sf.jasperreports.engine.export.JRXhtmlExporter xhtmlExporter = 
-			exporter instanceof net.sf.jasperreports.engine.export.JRXhtmlExporter 
-			? (net.sf.jasperreports.engine.export.JRXhtmlExporter)exporter 
-			: null;
-		if (xhtmlExporter != null)
-		{
-			try
-			{
-				xhtmlExporter.exportFrame(frame);
-			}
-			catch (JRException e)
-			{
-				throw new JRRuntimeException(e);
-			}
-			catch (IOException e)
-			{
-				throw new JRRuntimeException(e);
-			}
-		}
 	}
 }

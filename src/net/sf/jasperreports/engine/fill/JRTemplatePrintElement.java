@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -51,16 +51,15 @@ import net.sf.jasperreports.engine.virtualization.VirtualizationSerializable;
  * store common attributes. 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplatePrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplatePrintElement implements JRPrintElement, Serializable, VirtualizationSerializable
 {
-
-
 	/**
 	 *
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
+	public static final String EXCEPTION_MESSAGE_KEY_TEMPLATE_NOT_FOUND = "fill.virtualizer.template.not.found";
 	
 	private static final int SERIALIZATION_FLAG_CACHED_TEMPLATE = 1;
 	private static final int SERIALIZATION_FLAG_HAS_UUID = 1 << 1;
@@ -87,28 +86,6 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 	public JRTemplatePrintElement()
 	{
 		// used internally
-	}
-	
-	/**
-	 *
-	 * @deprecated provide a source Id via {@link #JRTemplatePrintElement(JRTemplateElement, int)}
-	 */
-	protected JRTemplatePrintElement(JRTemplateElement element)
-	{
-		this(element, UNSET_SOURCE_ELEMENT_ID);
-	}
-	
-	/**
-	 * 
-	 * @param element
-	 * @param sourceElementId the Id of the source element
-	 * @deprecated replaced by {@link #JRTemplatePrintElement(JRTemplateElement, PrintElementOriginator)}
-	 */
-	protected JRTemplatePrintElement(JRTemplateElement element, int sourceElementId)
-	{
-		template = element;
-		this.sourceElementId = sourceElementId;
-		this.printElementId = UNSET_PRINT_ELEMENT_ID;
 	}
 	
 	/**
@@ -141,182 +118,136 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 		this.template = elementTemplate;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider()
 	{
 		return template.getDefaultStyleProvider();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public UUID getUUID()
 	{
 		return uuid;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setUUID(UUID uuid)
 	{
 		this.uuid = uuid;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JROrigin getOrigin()
 	{
 		return template.getOrigin();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRStyle getStyle()
 	{
 		return template.getStyle();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setStyle(JRStyle style)
 	{
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
 		return template.getModeValue();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getOwnModeValue()
 	{
 		return template.getOwnModeValue();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setMode(ModeEnum modeValue)
 	{
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public int getX()
 	{
 		return x;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setX(int x)
 	{
 		this.x = x;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public int getY()
 	{
 		return y;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setY(int y)
 	{
 		this.y = y;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public int getWidth()
 	{
 		return width;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setWidth(int width)
 	{
 		this.width = width;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public int getHeight()
 	{
 		return height;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setHeight(int height)
 	{
 		this.height = height;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getForecolor()
 	{
 		return template.getForecolor();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnForecolor()
 	{
 		return template.getOwnForecolor();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setForecolor(Color color)
 	{
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getBackcolor()
 	{
 		return template.getBackcolor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnBackcolor()
 	{
 		return template.getOwnBackcolor();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setBackcolor(Color color)
 	{
 	}
@@ -344,6 +275,7 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 		}
 	}
 
+	@Override
 	public String getKey()
 	{
 		return template.getKey();
@@ -352,6 +284,7 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 	/**
 	 * Returns null as external style references are not allowed for print objects.
 	 */
+	@Override
 	public String getStyleNameReference()
 	{
 		return null;
@@ -366,12 +299,14 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 	}
 
 	//FIXME lucianc optimize by making unsynchronized 
+	@Override
 	public synchronized boolean hasProperties()
 	{
 		return properties != null && properties.hasProperties()
 				|| template.hasProperties();
 	}
 
+	@Override
 	public synchronized JRPropertiesMap getPropertiesMap()
 	{
 		if (properties == null)
@@ -388,6 +323,7 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 		return properties;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
@@ -404,11 +340,13 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 	}
 
 	// we need to implement this method because the class is not abstract
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public int getSourceElementId()
 	{
 		return sourceElementId;
@@ -450,6 +388,7 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 		// UNSET_PRINT_ELEMENT_ID is 0, so it will be assigned automatically when missing
 	}
 	
+	@Override
 	public void writeVirtualized(VirtualizationOutput out) throws IOException
 	{
 		JRVirtualizationContext virtualizationContext = out.getVirtualizationContext();
@@ -554,7 +493,10 @@ public class JRTemplatePrintElement implements JRPrintElement, Serializable, Vir
 			template = virtualizationContext.getCachedTemplate(templateId);
 			if (template == null)
 			{
-				throw new JRRuntimeException("Did not find template with id " + templateId);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_TEMPLATE_NOT_FOUND,
+						new Object[]{templateId});
 			}
 		}
 		else

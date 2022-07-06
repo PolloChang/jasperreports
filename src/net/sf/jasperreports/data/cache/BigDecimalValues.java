@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.JRConstants;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BigDecimalValues.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BigDecimalValues implements ColumnValues, Serializable
 {
@@ -66,11 +65,13 @@ public class BigDecimalValues implements ColumnValues, Serializable
 		this.scaleValues = (ColumnValues) in.readUnshared();
 	}
 
+	@Override
 	public int size()
 	{
 		return unscaledValues.size();
 	}
 
+	@Override
 	public ColumnValuesIterator iterator()
 	{
 		ColumnValuesIterator unscaledIterator = unscaledValues.iterator();
@@ -93,17 +94,20 @@ class BigDecimalValuesIterator implements ColumnValuesIterator
 		this.scaleIterator = scaleIterator;
 	}
 
+	@Override
 	public void moveFirst()
 	{
 		unscaledIterator.moveFirst();
 		scaleIterator.moveFirst();
 	}
 
+	@Override
 	public boolean next()
 	{
 		return unscaledIterator.next() && scaleIterator.next();
 	}
 
+	@Override
 	public Object get()
 	{
 		BigInteger unscaled = (BigInteger) unscaledIterator.get();

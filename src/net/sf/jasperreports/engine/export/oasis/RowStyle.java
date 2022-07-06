@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,8 +29,7 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: RowStyle.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class RowStyle extends Style
 {
@@ -48,18 +47,12 @@ public class RowStyle extends Style
 		this.rowHeight = rowHeight;
 	}
 	
-	/**
-	 *
-	 */
 	@Override
 	public String getId()
 	{
 		return "" + rowHeight;
 	}
 
-	/**
-	 *
-	 */
 	@Override
 	public void write(String rowStyleName) throws IOException
 	{
@@ -73,7 +66,7 @@ public class RowStyle extends Style
 		else
 		{
 			styleWriter.write(" style:use-optimal-row-height=\"false\"");
-			styleWriter.write(" style:row-height=\"" + LengthUtil.inch(rowHeight) + "in\"");
+			styleWriter.write(" style:row-height=\"" + LengthUtil.inchFloor4Dec(rowHeight) + "in\"");
 		}
 		styleWriter.write("/>\n");
 		styleWriter.write(" </style:style>\n");

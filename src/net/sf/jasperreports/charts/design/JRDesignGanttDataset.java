@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.design.JRVerifier;
 
 /**
  * @author Peter Risko (peter@risko.hu)
- * @version $Id: JRDesignGanttDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignGanttDataset  extends JRDesignChartDataset implements JRGanttDataset {
 
@@ -47,7 +46,7 @@ public class JRDesignGanttDataset  extends JRDesignChartDataset implements JRGan
 	
 	public static final String PROPERTY_GANTT_SERIES = "ganttSeries";
 
-	private List<JRGanttSeries> ganttSeriesList = new ArrayList<JRGanttSeries>();
+	private List<JRGanttSeries> ganttSeriesList = new ArrayList<>();
 
 
 	/**
@@ -59,9 +58,7 @@ public class JRDesignGanttDataset  extends JRDesignChartDataset implements JRGan
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRGanttSeries[] getSeries()
 	{
 		JRGanttSeries[] ganttSeriesArray = new JRGanttSeries[ganttSeriesList.size()];
@@ -119,23 +116,20 @@ public class JRDesignGanttDataset  extends JRDesignChartDataset implements JRGan
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.GANTT_DATASET;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

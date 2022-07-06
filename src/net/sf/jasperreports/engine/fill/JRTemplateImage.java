@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,11 +23,9 @@
  */
 package net.sf.jasperreports.engine.fill;
 
-import java.awt.Color;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-import net.sf.jasperreports.engine.JRAlignment;
 import net.sf.jasperreports.engine.JRChart;
 import net.sf.jasperreports.engine.JRCommonImage;
 import net.sf.jasperreports.engine.JRConstants;
@@ -40,15 +38,14 @@ import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.base.JRBaseLineBox;
 import net.sf.jasperreports.engine.base.JRBasePen;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OnErrorTypeEnum;
+import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
 import net.sf.jasperreports.engine.util.ObjectUtils;
 
 
@@ -56,10 +53,9 @@ import net.sf.jasperreports.engine.util.ObjectUtils;
  * Image information shared by multiple print image objects.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTemplateImage.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRTemplatePrintImage
  */
-public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlignment, JRCommonImage
+public class JRTemplateImage extends JRTemplateGraphicElement implements JRCommonImage
 {
 
 
@@ -72,9 +68,10 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 	 *
 	 */
 	private ScaleImageEnum scaleImageValue;
+	private RotationEnum rotation;
 	private Boolean isUsingCache = Boolean.TRUE;
-	private HorizontalAlignEnum horizontalAlignmentValue;
-	private VerticalAlignEnum verticalAlignmentValue;
+	private HorizontalImageAlignEnum horizontalImageAlign;
+	private VerticalImageAlignEnum verticalImageAlign;
 	protected boolean isLazy;
 	protected OnErrorTypeEnum onErrorTypeValue = OnErrorTypeEnum.ERROR;
 	private String linkType;
@@ -131,10 +128,11 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 		
 		lineBox = image.getLineBox().clone(this);
 
-		setScaleImage(image.getScaleImageValue());
+		setScaleImage(image.getOwnScaleImageValue());
+		setRotation(image.getOwnRotation());
 		setUsingCache(image.getUsingCache());
-		setHorizontalAlignment(image.getHorizontalAlignmentValue());
-		setVerticalAlignment(image.getVerticalAlignmentValue());
+		setHorizontalImageAlign(image.getOwnHorizontalImageAlign());
+		setVerticalImageAlign(image.getOwnVerticalImageAlign());
 		setLazy(image.isLazy());
 		setOnErrorType(image.getOnErrorTypeValue());
 		setLinkType(image.getLinkType());
@@ -170,44 +168,52 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 		this.lineBox = box.clone(this);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 		
-	/**
-	 * 
-	 */
+	@Override
 	public ScaleImageEnum getScaleImageValue()
 	{
-		return JRStyleResolver.getScaleImageValue(this);
+		return getStyleResolver().getScaleImageValue(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public ScaleImageEnum getOwnScaleImageValue()
 	{
 		return this.scaleImageValue;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void setScaleImage(ScaleImageEnum scaleImageValue)
 	{
 		this.scaleImageValue = scaleImageValue;
+	}
+
+	@Override
+	public RotationEnum getRotation()
+	{
+		return getStyleResolver().getRotation(this);
+	}
+
+	@Override
+	public RotationEnum getOwnRotation()
+	{
+		return this.rotation;
+	}
+
+	@Override
+	public void setRotation(RotationEnum rotation)
+	{
+		this.rotation = rotation;
 	}
 
 	/**
@@ -215,7 +221,7 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 	 */
 	public boolean isUsingCache()
 	{
-		return isUsingCache == null ? true : isUsingCache.booleanValue();
+		return isUsingCache == null ? true : isUsingCache;
 	}
 
 	/**
@@ -223,7 +229,7 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 	 */
 	public void setUsingCache(boolean isUsingCache)
 	{
-		this.isUsingCache = (isUsingCache ? Boolean.TRUE : Boolean.FALSE);
+		this.isUsingCache = isUsingCache;
 	}
 
 	/**
@@ -234,52 +240,40 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 		this.isUsingCache = isUsingCache;
 	}
 
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getHorizontalAlignmentValue()
+	@Override
+	public HorizontalImageAlignEnum getHorizontalImageAlign()
 	{
-		return JRStyleResolver.getHorizontalAlignmentValue(this);
+		return getStyleResolver().getHorizontalImageAlign(this);
 	}
 		
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue()
+	@Override
+	public HorizontalImageAlignEnum getOwnHorizontalImageAlign()
 	{
-		return horizontalAlignmentValue;
+		return horizontalImageAlign;
 	}
 		
-	/**
-	 *
-	 */
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlignmentValue)
+	@Override
+	public void setHorizontalImageAlign(HorizontalImageAlignEnum horizontalImageAlign)
 	{
-		this.horizontalAlignmentValue = horizontalAlignmentValue;
+		this.horizontalImageAlign = horizontalImageAlign;
+	}
+
+	@Override
+	public VerticalImageAlignEnum getVerticalImageAlign()
+	{
+		return getStyleResolver().getVerticalImageAlign(this);
 	}
 		
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getVerticalAlignmentValue()
+	@Override
+	public VerticalImageAlignEnum getOwnVerticalImageAlign()
 	{
-		return JRStyleResolver.getVerticalAlignmentValue(this);
+		return verticalImageAlign;
 	}
 		
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getOwnVerticalAlignmentValue()
+	@Override
+	public void setVerticalImageAlign(VerticalImageAlignEnum verticalImageAlign)
 	{
-		return verticalAlignmentValue;
-	}
-		
-	/**
-	 *
-	 */
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlignmentValue)
-	{
-		this.verticalAlignmentValue = verticalAlignmentValue;
+		this.verticalImageAlign = verticalImageAlign;
 	}
 		
 	/**
@@ -419,9 +413,7 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 	}
 	
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Float getDefaultLineWidth() 
 	{
 		return JRPen.LINE_WIDTH_0;
@@ -443,63 +435,11 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 	/**
 	 * @deprecated
 	 */
-	private Byte border;
+	private net.sf.jasperreports.engine.type.HorizontalAlignEnum horizontalAlignmentValue;
 	/**
 	 * @deprecated
 	 */
-	private Byte topBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte leftBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte bottomBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte rightBorder;
-	/**
-	 * @deprecated
-	 */
-	private Color borderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color topBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color leftBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color bottomBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color rightBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Integer padding;
-	/**
-	 * @deprecated
-	 */
-	private Integer topPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer leftPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer bottomPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer rightPadding;
+	private net.sf.jasperreports.engine.type.VerticalAlignEnum verticalAlignmentValue;
 	/**
 	 * @deprecated
 	 */
@@ -518,58 +458,21 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 	private byte onErrorType;
 
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
 
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
-			horizontalAlignmentValue = HorizontalAlignEnum.getByValue(horizontalAlignment);
-			verticalAlignmentValue = VerticalAlignEnum.getByValue(verticalAlignment);
+			horizontalAlignmentValue = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getByValue(horizontalAlignment);
+			verticalAlignmentValue = net.sf.jasperreports.engine.type.VerticalAlignEnum.getByValue(verticalAlignment);
 			scaleImageValue = ScaleImageEnum.getByValue(scaleImage);
 			onErrorTypeValue = OnErrorTypeEnum.getByValue(onErrorType);
 
 			horizontalAlignment = null;
 			verticalAlignment = null;
 			scaleImage = null;
-		}
-		
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setToBox(
-				border,
-				topBorder,
-				leftBorder,
-				bottomBorder,
-				rightBorder,
-				borderColor,
-				topBorderColor,
-				leftBorderColor,
-				bottomBorderColor,
-				rightBorderColor,
-				padding,
-				topPadding,
-				leftPadding,
-				bottomPadding,
-				rightPadding,
-				lineBox
-				);
-			border = null;
-			topBorder = null;
-			leftBorder = null;
-			bottomBorder = null;
-			rightBorder = null;
-			borderColor = null;
-			topBorderColor = null;
-			leftBorderColor = null;
-			bottomBorderColor = null;
-			rightBorderColor = null;
-			padding = null;
-			topPadding = null;
-			leftPadding = null;
-			bottomPadding = null;
-			rightPadding = null;
 		}
 
 		if (linkType == null)
@@ -581,16 +484,27 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 		{
 			 linkTarget = JRHyperlinkHelper.getLinkTarget(HyperlinkTargetEnum.getByValue(hyperlinkTarget));
 		}
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_6_0_2)
+		{
+			horizontalImageAlign = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getHorizontalImageAlignEnum(horizontalAlignmentValue);
+			verticalImageAlign = net.sf.jasperreports.engine.type.VerticalAlignEnum.getVerticalImageAlignEnum(verticalAlignmentValue);
+
+			horizontalAlignmentValue = null;
+			verticalAlignmentValue = null;
+		}
 	}
 
+	@Override
 	public int getHashCode()
 	{
 		ObjectUtils.HashCode hash = ObjectUtils.hash();
 		addGraphicHash(hash);
 		hash.add(scaleImageValue);
+		hash.add(rotation);
 		hash.add(isUsingCache);
-		hash.add(horizontalAlignmentValue);
-		hash.add(verticalAlignmentValue);
+		hash.add(horizontalImageAlign);
+		hash.add(verticalImageAlign);
 		hash.add(isLazy);
 		hash.add(onErrorTypeValue);
 		hash.add(linkType);
@@ -599,6 +513,7 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 		return hash.getHashCode();
 	}
 
+	@Override
 	public boolean isIdentical(Object object)
 	{
 		if (this == object)
@@ -614,9 +529,10 @@ public class JRTemplateImage extends JRTemplateGraphicElement implements JRAlign
 		JRTemplateImage template = (JRTemplateImage) object;
 		return graphicIdentical(template)
 				&& ObjectUtils.equals(scaleImageValue, template.scaleImageValue)
+				&& ObjectUtils.equals(rotation, template.rotation)
 				&& ObjectUtils.equals(isUsingCache, template.isUsingCache)
-				&& ObjectUtils.equals(horizontalAlignmentValue, template.horizontalAlignmentValue)
-				&& ObjectUtils.equals(verticalAlignmentValue, template.verticalAlignmentValue)
+				&& ObjectUtils.equals(horizontalImageAlign, template.horizontalImageAlign)
+				&& ObjectUtils.equals(verticalImageAlign, template.verticalImageAlign)
 				&& ObjectUtils.equals(isLazy, template.isLazy)
 				&& ObjectUtils.equals(onErrorTypeValue, template.onErrorTypeValue)
 				&& ObjectUtils.equals(linkType, template.linkType)

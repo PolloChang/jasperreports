@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import net.sf.jasperreports.extensions.ListExtensionRegistry;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: RequirejsModuleMappingExtensionsRegistryFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class RequirejsModuleMappingExtensionsRegistryFactory implements ExtensionsRegistryFactory
 {
@@ -50,13 +49,11 @@ public class RequirejsModuleMappingExtensionsRegistryFactory implements Extensio
 
 	public static final String URL_SUFFIX = "$url";
 	
-	/**
-	 * 
-	 */
+	@Override
 	public ExtensionsRegistry createRegistry(String registryId, JRPropertiesMap properties)
 	{
 		List<PropertySuffix> requirejsModuleProperties = JRPropertiesUtil.getProperties(properties, REQUIREJS_MAPPING_PROPERTY_PREFIX);
-		List<RequirejsModuleMapping> requirejsModules = new ArrayList<RequirejsModuleMapping>();
+		List<RequirejsModuleMapping> requirejsModules = new ArrayList<>();
 		for (Iterator<PropertySuffix> it = requirejsModuleProperties.iterator(); it.hasNext();)
 		{
 			PropertySuffix requirejsModuleProp = it.next();

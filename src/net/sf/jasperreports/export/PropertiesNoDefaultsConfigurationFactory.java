@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,15 @@
  */
 package net.sf.jasperreports.export;
 
+import java.awt.Color;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
@@ -36,15 +39,14 @@ import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
+import net.sf.jasperreports.engine.util.ClassUtils;
+import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
-
-import org.apache.commons.lang.ClassUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PropertiesNoDefaultsConfigurationFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PropertiesNoDefaultsConfigurationFactory<C extends CommonExportConfiguration>
 {
@@ -76,7 +78,7 @@ public class PropertiesNoDefaultsConfigurationFactory<C extends CommonExportConf
 	 */
 	private final C getProxy(Class<?> clazz, InvocationHandler handler)
 	{
-		List<Class<?>> allInterfaces = new ArrayList<Class<?>>();
+		List<Class<?>> allInterfaces = new ArrayList<>();
 
 		if (clazz.isInterface())
 		{
@@ -84,8 +86,7 @@ public class PropertiesNoDefaultsConfigurationFactory<C extends CommonExportConf
 		}
 		else
 		{
-			@SuppressWarnings("unchecked")
-			List<Class<?>> lcInterfaces = ClassUtils.getAllInterfaces(clazz);
+			List<Class<?>> lcInterfaces = ClassUtils.getInterfaces(clazz);
 			allInterfaces.addAll(lcInterfaces);
 		}
 
@@ -116,9 +117,7 @@ public class PropertiesNoDefaultsConfigurationFactory<C extends CommonExportConf
 			this.propertiesHolder = propertiesHolder;
 		}
 		
-		/**
-		 * 
-		 */
+		@Override
 		public Object invoke(
 			Object proxy, 
 			Method method, 
@@ -173,6 +172,27 @@ public class PropertiesNoDefaultsConfigurationFactory<C extends CommonExportConf
 				value = values;
 			}
 		}
+		else if (PropertySuffix[].class.equals(type))
+		{
+			List<PropertySuffix> properties = JRPropertiesUtil.getProperties(propertiesHolder, propertyName);
+			if (properties != null && !properties.isEmpty())
+			{
+				value = properties.toArray(new PropertySuffix[properties.size()]);
+			}
+		}
+		else if (Map.class.equals(type))
+		{
+			List<PropertySuffix> properties = JRPropertiesUtil.getProperties(propertiesHolder, propertyName);
+			if (properties != null && !properties.isEmpty())
+			{
+				Map<String,String> values = new HashMap<>();
+				for (PropertySuffix propertySuffix : properties)
+				{
+					values.put(propertySuffix.getSuffix(), propertySuffix.getValue());
+				}
+				value = values;
+			}
+		}
 		else
 		{
 			String strValue = null;
@@ -209,29 +229,28 @@ public class PropertiesNoDefaultsConfigurationFactory<C extends CommonExportConf
 				{
 					value = JRPropertiesUtil.asBoolean(strValue);
 				}
-				else if (JREnum.class.isAssignableFrom(type))
+				else if (Color.class.equals(type))
+				{
+					value = strValue == null ? null : JRColorUtil.getColor(strValue, null);
+				}
+				else if (NamedEnum.class.isAssignableFrom(type))
 				{
 					try
 					{
 						Method byNameMethod = type.getMethod("getByName", new Class<?>[]{String.class});
 						value = byNameMethod.invoke(null, strValue);
 					}
-					catch (NoSuchMethodException e)
-					{
-						throw new JRRuntimeException(e);
-					}
-					catch (InvocationTargetException e)
-					{
-						throw new JRRuntimeException(e);
-					}
-					catch (IllegalAccessException e)
+					catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
 					{
 						throw new JRRuntimeException(e);
 					}
 				}
 				else
 				{
-					throw new JRRuntimeException("Export property type " + type + " not supported.");
+					throw 
+					new JRRuntimeException(
+						PropertiesExporterConfigurationFactory.EXCEPTION_MESSAGE_KEY_EXPORT_PROPERTIES_TYPE_NOT_SUPPORTED, 
+						new Object[]{type});
 				}
 			}
 		}

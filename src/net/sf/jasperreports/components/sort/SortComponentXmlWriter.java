@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.components.sort;
 import java.io.IOException;
 
 import net.sf.jasperreports.components.AbstractComponentXmlWriter;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JasperReportsContext;
@@ -35,13 +34,11 @@ import net.sf.jasperreports.engine.component.ComponentKey;
 import net.sf.jasperreports.engine.component.ComponentsEnvironment;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.util.JRXmlWriteHelper;
-import net.sf.jasperreports.engine.util.VersionComparator;
 import net.sf.jasperreports.engine.util.XmlNamespace;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortComponentXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortComponentXmlWriter extends AbstractComponentXmlWriter 
 {
@@ -49,37 +46,22 @@ public class SortComponentXmlWriter extends AbstractComponentXmlWriter
 	public static final String PROPERTY_HANDLER_FONT_SIZE = "handlerFontSize";
 	
 	/**
-	 * @deprecated Replaced by {@link #SortComponentXmlWriter(JasperReportsContext)}.
-	 */
-	public SortComponentXmlWriter()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
-	/**
 	 * 
 	 */
 	public SortComponentXmlWriter(JasperReportsContext jasperReportsContext)
 	{
-		this(jasperReportsContext, null, new VersionComparator());
-	}
-	
-	
-	/**
-	 * @deprecated Replaced by {@link #SortComponentXmlWriter(JasperReportsContext)}.
-	 */
-	public SortComponentXmlWriter(JasperReportsContext jasperReportsContext, String version, VersionComparator versionComparator)
-	{
 		super(jasperReportsContext);
 	}
-
-
+	
+	
+	@Override
 	public boolean isToWrite(JRComponentElement componentElement, JRXmlWriter reportWriter) 
 	{
 		return isNewerVersionOrEqual(componentElement, reportWriter, JRConstants.VERSION_4_1_1);
 	}
 	
 	
+	@Override
 	public void writeToXml(JRComponentElement componentElement, JRXmlWriter reportWriter) throws IOException 
 	{
 		Component component = componentElement.getComponent();
@@ -113,8 +95,8 @@ public class SortComponentXmlWriter extends AbstractComponentXmlWriter
 			writer.addAttribute(SortComponent.PROPERTY_COLUMN_TYPE, sortComponent.getSortFieldType());
 			writer.addAttribute(SortComponent.PROPERTY_HANDLER_COLOR, sortComponent.getHandlerColor());
 			writer.addAttribute(PROPERTY_HANDLER_FONT_SIZE, sortComponent.getSymbolFont().getFontsize());
-			writer.addAttribute(SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalAlign());
-			writer.addAttribute(SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalAlign());
+			writer.addAttribute(SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalImageAlign());
+			writer.addAttribute(SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalImageAlign());
 		}
 		if (sortComponent.getEvaluationTime() != EvaluationTimeEnum.NOW) {
 			writer.addAttribute(SortComponent.PROPERTY_EVALUATION_TIME, sortComponent.getEvaluationTime());
@@ -131,8 +113,8 @@ public class SortComponentXmlWriter extends AbstractComponentXmlWriter
 			}
 			writer.addAttribute(SortComponent.PROPERTY_COLUMN_TYPE, sortComponent.getSortFieldType());
 			writer.addAttribute(SortComponent.PROPERTY_COLUMN_NAME, sortComponent.getSortFieldName());
-			writer.addAttribute(SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalAlign());
-			writer.addAttribute(SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalAlign());
+			writer.addAttribute(SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN, sortComponent.getHandlerHorizontalImageAlign());
+			writer.addAttribute(SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN, sortComponent.getHandlerVerticalImageAlign());
 			reportWriter.writeFont(sortComponent.getSymbolFont());
 			writer.closeElement();
 		}

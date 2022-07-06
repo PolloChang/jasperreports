@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.JRConstants;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: XYZElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XYZElement implements Serializable {
 
@@ -44,9 +43,9 @@ public class XYZElement implements Serializable {
 	private List<Number> zElements;
 	
 	public XYZElement(){
-		xElements = new ArrayList<Number>();
-		yElements = new ArrayList<Number>();
-		zElements = new ArrayList<Number>();
+		xElements = new ArrayList<>();
+		yElements = new ArrayList<>();
+		zElements = new ArrayList<>();
 	}
 
 	public void setSeries( Comparable<?> series ){

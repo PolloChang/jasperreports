@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,64 +23,41 @@
  */
 package net.sf.jasperreports.export.type;
 
-import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.type.EnumUtil;
-import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PdfaConformanceEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public enum PdfaConformanceEnum implements JREnum
+public enum PdfaConformanceEnum implements NamedEnum
 {
 	/**
 	 * 
 	 */
-	NONE((byte)1, "none"),
+	NONE("none"),
 
 	/**
 	 * 
 	 */
-	PDFA_1A((byte)2, "pdfa1a"),
+	PDFA_1A("pdfa1a"),
 
 	/**
 	 * 
 	 */
-	PDFA_1B((byte)3, "pdfa1b");
+	PDFA_1B("pdfa1b");
 	
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-	private final transient byte value;
 	private final transient String name;
 
-	private PdfaConformanceEnum(byte value, String name)
+	private PdfaConformanceEnum(String name)
 	{
-		this.value = value;
 		this.name = name;
 	}
-
-	/**
-	 *
-	 */
-	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
 	
-	/**
-	 *
-	 */
-	public final byte getValue()
-	{
-		return value;
-	}
-	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -91,23 +68,6 @@ public enum PdfaConformanceEnum implements JREnum
 	 */
 	public static PdfaConformanceEnum getByName(String name)
 	{
-		return (PdfaConformanceEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
-	
-	/**
-	 *
-	 */
-	public static PdfaConformanceEnum getByValue(Byte value)
-	{
-		return (PdfaConformanceEnum)EnumUtil.getByValue(values(), value);
-	}
-	
-	/**
-	 *
-	 */
-	public static PdfaConformanceEnum getByValue(byte value)
-	{
-		return getByValue(new Byte(value));
-	}
-
 }

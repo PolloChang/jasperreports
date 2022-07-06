@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,6 @@ import net.sf.jasperreports.engine.util.MaxFontSizeFinder;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ComplexTextLineWrapper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ComplexTextLineWrapper implements TextLineWrapper
 {
@@ -143,15 +142,6 @@ public class ComplexTextLineWrapper implements TextLineWrapper
 		return maxFontSizeFinder.findMaxFontSize(
 				new AttributedString(paragraph, start, end).getIterator(),
 				context.getElement().getFontsize());
-	}
-	
-	/**
-	 * @deprecated Replaced by {@link #maxFontsize(int, int)}.
-	 */
-	@Override
-	public int maxFontSize(int start, int end)
-	{
-		return (int)maxFontsize(start, end);
 	}
 	
 	@Override

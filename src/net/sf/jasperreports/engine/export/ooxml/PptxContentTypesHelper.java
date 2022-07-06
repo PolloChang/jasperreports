@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,7 +30,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PptxContentTypesHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PptxContentTypesHelper extends BaseHelper
 {
@@ -51,14 +50,20 @@ public class PptxContentTypesHelper extends BaseHelper
 		write("<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">\n");
 		write("  <Default Extension=\"gif\" ContentType=\"image/gif\"/>\n");
 		write("  <Default Extension=\"jpeg\" ContentType=\"image/jpeg\"/>\n");
+		write("  <Default Extension=\"jpg\" ContentType=\"image/jpeg\"/>\n");
 		write("  <Default Extension=\"png\" ContentType=\"image/png\"/>\n");
 		write("  <Default Extension=\"tiff\" ContentType=\"image/tiff\"/>\n");
 		write("  <Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>\n");
 		write("  <Default Extension=\"xml\" ContentType=\"application/xml\"/>\n");
+		write("  <Default Extension=\"ttf\" ContentType=\"application/x-font-ttf\"/>\n");
+		write("  <Default Extension=\"otf\" ContentType=\"application/x-font-ttf\"/>\n");
+		write("  <Default Extension=\"eot\" ContentType=\"application/x-fontdata\"/>\n");
 		write("  <Override PartName=\"/ppt/theme/theme1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.theme+xml\"/>\n");
 		write("  <Override PartName=\"/ppt/slideMasters/slideMaster1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml\"/>\n");
 		write("  <Override PartName=\"/ppt/slideLayouts/slideLayout1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml\"/>\n");
 		write("  <Override PartName=\"/ppt/presentation.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml\"/>\n");
+		write("  <Override PartName=\"/docProps/app.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.extended-properties+xml\"/>\n");
+		write("  <Override PartName=\"/docProps/core.xml\" ContentType=\"application/vnd.openxmlformats-package.core-properties+xml\"/>\n");
 	}
 	
 

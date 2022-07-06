@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -45,11 +45,12 @@ import org.jfree.data.general.Dataset;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFillCategoryDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillCategoryDataset extends JRFillChartDataset implements JRCategoryDataset
 {
 
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME = "charts.category.dataset.series.null.name";
+	
 	/**
 	 *
 	 */
@@ -84,18 +85,14 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRCategorySeries[] getSeries()
 	{
 		return categorySeries;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customInitialize()
 	{
 		dataset = null;
@@ -103,9 +100,7 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 		itemHyperlinks = null;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customEvaluate(JRCalculator calculator) throws JRExpressionEvalException
 	{
 		if (categorySeries != null && categorySeries.length > 0)
@@ -117,9 +112,7 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	protected void customIncrement()
 	{
 		if (categorySeries != null && categorySeries.length > 0)
@@ -127,8 +120,8 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 			if (dataset == null)
 			{
 				dataset = new DefaultCategoryDataset();
-				labelsMap = new HashMap<Comparable<?>, Map<Comparable<?>, String>>();
-				itemHyperlinks = new HashMap<Comparable<?>, Map<Comparable<?>, JRPrintHyperlink>>();
+				labelsMap = new HashMap<>();
+				itemHyperlinks = new HashMap<>();
 			}
 			
 			for(int i = 0; i < categorySeries.length; i++)
@@ -138,7 +131,11 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 				Comparable<?> seriesName = crtCategorySeries.getSeries();
 				if (seriesName == null)
 				{
-					throw new JRRuntimeException("Category series name is null.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME,  
+							(Object[])null 
+							);
 				}
 
 				dataset.addValue(
@@ -152,7 +149,7 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 					Map<Comparable<?>, String> seriesLabels = labelsMap.get(seriesName);
 					if (seriesLabels == null)
 					{
-						seriesLabels = new HashMap<Comparable<?>, String>();
+						seriesLabels = new HashMap<>();
 						labelsMap.put(seriesName, seriesLabels);
 					}
 					
@@ -164,7 +161,7 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 					Map<Comparable<?>, JRPrintHyperlink> seriesLinks = itemHyperlinks.get(seriesName);
 					if (seriesLinks == null)
 					{
-						seriesLinks = new HashMap<Comparable<?>, JRPrintHyperlink>();
+						seriesLinks = new HashMap<>();
 						itemHyperlinks.put(seriesName, seriesLinks);
 					}
 					seriesLinks.put(crtCategorySeries.getCategory(), crtCategorySeries.getPrintItemHyperlink());
@@ -173,35 +170,27 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Dataset getCustomDataset()
 	{
 		return dataset;
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.CATEGORY_DATASET;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object getLabelGenerator()
 	{
-		return new CategoryLabelGenerator(labelsMap);
+		return new CategoryLabelGenerator(labelsMap, getLocale());
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
@@ -229,6 +218,7 @@ public class JRFillCategoryDataset extends JRFillChartDataset implements JRCateg
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

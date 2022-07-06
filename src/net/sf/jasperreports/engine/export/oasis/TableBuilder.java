@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,12 +27,14 @@
  * 
  * Contributors:
  * Majid Ali Khan - majidkk@users.sourceforge.net
- * Frank Sch�nheit - Frank.Schoenheit@Sun.COM
+ * Frank Schönheit - Frank.Schoenheit@Sun.COM
  */
 package net.sf.jasperreports.engine.export.oasis;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.text.AttributedCharacterIterator;
+import java.text.AttributedCharacterIterator.Attribute;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -42,7 +44,6 @@ import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JRPrintEllipse;
 import net.sf.jasperreports.engine.JRPrintGraphicElement;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
-import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.JRPrintLine;
 import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
@@ -56,13 +57,14 @@ import net.sf.jasperreports.engine.export.LengthUtil;
 import net.sf.jasperreports.engine.type.LineDirectionEnum;
 import net.sf.jasperreports.engine.util.JRStringUtil;
 import net.sf.jasperreports.engine.util.JRStyledText;
+import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 import net.sf.jasperreports.engine.util.JRTextAttribute;
+import net.sf.jasperreports.engine.util.StyledTextWriteContext;
 import net.sf.jasperreports.export.OdtReportConfiguration;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: TableBuilder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableBuilder 
 {
@@ -72,7 +74,7 @@ public class TableBuilder
 	private final DocumentBuilder documentBuilder;
 	protected String tableName;
 	private final JasperPrint jasperPrint;
-	private int reportIndex;
+	private int pageFormatIndex;
 	private final WriterHelper bodyWriter;
 	private final WriterHelper styleWriter;
 	private final StyleCache styleCache;
@@ -81,6 +83,8 @@ public class TableBuilder
 	private String tableStyleName;
 	private Map<Integer, String> rowStyles;
 	private Map<Integer, String> columnStyles;
+	private Color tabColor;
+	private boolean rowTagOpen;
 	
 
 	protected TableBuilder(
@@ -91,7 +95,8 @@ public class TableBuilder
 		WriterHelper styleWriter,
 		StyleCache styleCache,
 		Map<Integer, String> rowStyles,
-		Map<Integer, String> columnStyles
+		Map<Integer, String> columnStyles,
+		Color tabColor
 		) 
 	{
 		this.documentBuilder = documentBuilder;
@@ -105,43 +110,79 @@ public class TableBuilder
 		this.styleCache = styleCache;
 
 		this.tableName = "TBL_" + name;
-		this.rowStyles = rowStyles == null ? new HashMap<Integer, String>() : rowStyles;
-		this.columnStyles = columnStyles == null ? new HashMap<Integer, String>() : columnStyles;
+		this.rowStyles = rowStyles == null ? new HashMap<>() : rowStyles;
+		this.columnStyles = columnStyles == null ? new HashMap<>() : columnStyles;
+		this.tabColor = tabColor;
 	}
+	
+	protected TableBuilder(
+			DocumentBuilder documentBuilder,
+			JasperPrint jasperPrint,
+			String name, 
+			WriterHelper bodyWriter,
+			WriterHelper styleWriter,
+			StyleCache styleCache,
+			Map<Integer, String> rowStyles,
+			Map<Integer, String> columnStyles
+			) 
+		{
+			//used in ODT exporter only
+			this(documentBuilder, jasperPrint, name, bodyWriter, styleWriter, styleCache, rowStyles, columnStyles, null);
+		}
+	
 
 	protected TableBuilder(
 		DocumentBuilder documentBuilder,
 		JasperPrint jasperPrint,
-		int reportIndex,
+		int pageFormatIndex,
 		int pageIndex,
 		WriterHelper bodyWriter,
 		WriterHelper styleWriter,
 		StyleCache styleCache,
 		Map<Integer, String> rowStyles,
-		Map<Integer, String> columnStyles
+		Map<Integer, String> columnStyles,
+		Color tabColor
 		) 
 	{
 		this.documentBuilder = documentBuilder;
 		this.jasperPrint = jasperPrint;
 
 		isFrame = false;
-		isPageBreak = (reportIndex != 0 || pageIndex != 0);
+		isPageBreak = (pageFormatIndex != 0 || pageIndex != 0);
 		
-		this.reportIndex = reportIndex;
+		this.pageFormatIndex = pageFormatIndex;
 		this.bodyWriter = bodyWriter;
 		this.styleWriter = styleWriter;
 		this.styleCache = styleCache;
 
-		this.tableName = "TBL_" + reportIndex + "_" + pageIndex;
-		this.rowStyles = rowStyles == null ? new HashMap<Integer, String>() : rowStyles;
-		this.columnStyles = columnStyles == null ? new HashMap<Integer, String>() : columnStyles;
+		this.tableName = "TBL_" + pageFormatIndex + "_" + pageIndex;
+		this.rowStyles = rowStyles == null ? new HashMap<>() : rowStyles;
+		this.columnStyles = columnStyles == null ? new HashMap<>() : columnStyles;
+		this.tabColor = tabColor;
 	}
+
+
+	protected TableBuilder(
+			DocumentBuilder documentBuilder,
+			JasperPrint jasperPrint,
+			int pageFormatIndex,
+			int pageIndex,
+			WriterHelper bodyWriter,
+			WriterHelper styleWriter,
+			StyleCache styleCache,
+			Map<Integer, String> rowStyles,
+			Map<Integer, String> columnStyles
+			) 
+		{
+			//used in ODT exporter only
+			this(documentBuilder, jasperPrint, pageFormatIndex, pageIndex, bodyWriter, styleWriter, styleCache, rowStyles, columnStyles, null);
+		}
 
 
 	public void buildTableStyle(int width) 
 	{
 		try {
-			  this.tableStyleName = styleCache.getTableStyle(width, reportIndex, isFrame, isPageBreak);
+			  this.tableStyleName = styleCache.getTableStyle(width, pageFormatIndex, isFrame, isPageBreak, tabColor);
 		} catch (IOException e) {
 			throw new JRRuntimeException(e);
 		}
@@ -182,11 +223,16 @@ public class TableBuilder
 		bodyWriter.write("<table:table-row");
 		bodyWriter.write(" table:style-name=\"" + rowStyles.get(rowHeight) + "\"");
 		bodyWriter.write(">\n");
+		rowTagOpen = true;
 	}
 	
 	public void buildRowFooter() 
 	{
-		bodyWriter.write("</table:table-row>\n");
+		if(rowTagOpen)
+		{
+			bodyWriter.write("</table:table-row>\n");
+			rowTagOpen = false;
+		}
 	}
 	
 	public void buildRow(int rowIndex, int rowHeight) 
@@ -274,17 +320,17 @@ public class TableBuilder
 
 		if (line.getDirectionValue() == LineDirectionEnum.TOP_DOWN)
 		{
-			x1 = LengthUtil.inch(0);
-			y1 = LengthUtil.inch(0);
-			x2 = LengthUtil.inch(line.getWidth() - 1);
-			y2 = LengthUtil.inch(line.getHeight() - 1);
+			x1 = 0;
+			y1 = 0;
+			x2 = line.getWidth() - 1;
+			y2 = line.getHeight() - 1;
 		}
 		else
 		{
-			x1 = LengthUtil.inch(0);
-			y1 = LengthUtil.inch(line.getHeight() - 1);
-			x2 = LengthUtil.inch(line.getWidth() - 1);
-			y2 = LengthUtil.inch(0);
+			x1 = 0;
+			y1 = line.getHeight() - 1;
+			x2 = line.getWidth() - 1;
+			y2 = 0;
 		}
 
 		bodyWriter.write("<text:p>");
@@ -292,10 +338,10 @@ public class TableBuilder
 		bodyWriter.write(
 				"<draw:line text:anchor-type=\"paragraph\" "
 				+ "draw:style-name=\"" + styleCache.getGraphicStyle(line) + "\" "
-				+ "svg:x1=\"" + x1 + "in\" "
-				+ "svg:y1=\"" + y1 + "in\" "
-				+ "svg:x2=\"" + x2 + "in\" "
-				+ "svg:y2=\"" + y2 + "in\">"
+				+ "svg:x1=\"" + LengthUtil.inchFloor4Dec(x1) + "in\" "
+				+ "svg:y1=\"" + LengthUtil.inchFloor4Dec(y1) + "in\" "
+				+ "svg:x2=\"" + LengthUtil.inchFloor4Dec(x2) + "in\" "
+				+ "svg:y2=\"" + LengthUtil.inchFloor4Dec(y2) + "in\">"
 				//+ "</draw:line>"
 				+ "<text:p/></draw:line>"
 				+ "</text:p>"
@@ -315,8 +361,8 @@ public class TableBuilder
 		bodyWriter.write(
 			"<draw:ellipse text:anchor-type=\"paragraph\" "
 			+ "draw:style-name=\"" + styleCache.getGraphicStyle(ellipse) + "\" "
-			+ "svg:width=\"" + LengthUtil.inch(ellipse.getWidth()) + "in\" "
-			+ "svg:height=\"" + LengthUtil.inch(ellipse.getHeight()) + "in\" "
+			+ "svg:width=\"" + LengthUtil.inchFloor4Dec(ellipse.getWidth()) + "in\" "
+			+ "svg:height=\"" + LengthUtil.inchFloor4Dec(ellipse.getHeight()) + "in\" "
 			+ "svg:x=\"0in\" "
 			+ "svg:y=\"0in\">"
 			+ "<text:p/></draw:ellipse></text:p>"
@@ -328,12 +374,12 @@ public class TableBuilder
 	/**
 	 *
 	 */
-	public void exportText(JRPrintText text, JRExporterGridCell gridCell)
+	public void exportText(JRPrintText text, JRExporterGridCell gridCell, boolean shrinkToFit, boolean wrapText, boolean isIgnoreTextFormatting)
 	{
-		buildCellHeader(styleCache.getCellStyle(gridCell), gridCell.getColSpan(), gridCell.getRowSpan());
-
+		buildCellHeader((isIgnoreTextFormatting ? null : styleCache.getCellStyle(gridCell, shrinkToFit, wrapText)), gridCell.getColSpan(), gridCell.getRowSpan());
+		
 		bodyWriter.write("<text:p text:style-name=\"");
-		bodyWriter.write(styleCache.getParagraphStyle(text));
+		bodyWriter.write(styleCache.getParagraphStyle(text, isIgnoreTextFormatting));
 		bodyWriter.write("\">");
 		documentBuilder.insertPageAnchor(this);
 		if (text.getAnchorName() != null)
@@ -356,7 +402,7 @@ public class TableBuilder
 	{
 		boolean startedHyperlink = startHyperlink(text, true);
 
-		exportStyledText(text, startedHyperlink);
+		exportStyledText(text, startedHyperlink, false);
 
 		if (startedHyperlink)
 		{
@@ -368,12 +414,12 @@ public class TableBuilder
 	/**
 	 *
 	 */
-	protected void exportStyledText(JRPrintText text, boolean startedHyperlink)
+	protected void exportStyledText(JRPrintText text, boolean startedHyperlink, boolean isIgnoreTextFormatting)
 	{
 		JRStyledText styledText = documentBuilder.getStyledText(text);
 		if (styledText != null && styledText.length() > 0)
 		{
-			exportStyledText(styledText, documentBuilder.getTextLocale(text), startedHyperlink);
+			exportStyledText(styledText, documentBuilder.getTextLocale(text), startedHyperlink, isIgnoreTextFormatting);
 		}
 	}
 
@@ -381,8 +427,10 @@ public class TableBuilder
 	/**
 	 *
 	 */
-	protected void exportStyledText(JRStyledText styledText, Locale locale, boolean startedHyperlink)
+	protected void exportStyledText(JRStyledText styledText, Locale locale, boolean startedHyperlink, boolean isIgnoreTextFormatting)
 	{
+		StyledTextWriteContext context = new StyledTextWriteContext();
+		
 		String text = styledText.getText();
 
 		int runLimit = 0;
@@ -391,12 +439,29 @@ public class TableBuilder
 
 		while(runLimit < styledText.length() && (runLimit = iterator.getRunLimit()) <= styledText.length())
 		{
-			exportStyledTextRun(
-				iterator.getAttributes(), 
-				text.substring(iterator.getIndex(), runLimit),
-				locale,
-				startedHyperlink
-				);
+			Map<Attribute,Object> attributes = iterator.getAttributes();
+
+			String runText = text.substring(iterator.getIndex(), runLimit);
+
+			context.next(attributes, runText);
+
+			if (context.listItemStartsWithNewLine() && !context.isListItemStart() && (context.isListItemEnd() || context.isListStart() || context.isListEnd()))
+			{
+				runText = runText.substring(1);
+			}
+
+			if (runText.length() > 0)
+			{
+				String bulletText = JRStyledTextUtil.getIndentedBulletText(context);
+				
+				exportStyledTextRun(
+					attributes, 
+					(bulletText == null ? "" : bulletText) + runText,
+					locale,
+					startedHyperlink,
+					isIgnoreTextFormatting
+					);
+			}
 
 			iterator.setIndex(runLimit);
 		}
@@ -407,14 +472,14 @@ public class TableBuilder
 	 *
 	 */
 	protected void exportStyledTextRun(
-			Map<AttributedCharacterIterator.Attribute, 
-			Object> attributes, 
+			Map<AttributedCharacterIterator.Attribute, Object> attributes, 
 			String text, 
 			Locale locale, 
-			boolean startedHyperlink
+			boolean startedHyperlink,
+			boolean isIgnoreTextFormatting
 			)
 	{
-		startTextSpan(attributes, text, locale);
+		startTextSpan(attributes, text, locale, isIgnoreTextFormatting);
 
 		boolean localHyperlink = false;
 
@@ -441,12 +506,14 @@ public class TableBuilder
 	/**
 	 *
 	 */
-	protected void startTextSpan(Map<AttributedCharacterIterator.Attribute, Object> attributes, String text, Locale locale)
+	protected void startTextSpan(Map<AttributedCharacterIterator.Attribute, Object> attributes, String text, Locale locale, boolean isIgnoreTextFormatting)
 	{
-		String textSpanStyleName = styleCache.getTextSpanStyle(attributes, text, locale);
-
 		bodyWriter.write("<text:span");
-		bodyWriter.write(" text:style-name=\"" + textSpanStyleName + "\"");
+		if(attributes != null)
+		{
+			String textSpanStyleName = styleCache.getTextSpanStyle(attributes, text, locale, isIgnoreTextFormatting);
+			bodyWriter.write(" text:style-name=\"" + textSpanStyleName + "\"");
+		}
 		bodyWriter.write(">");
 	}
 
@@ -557,6 +624,16 @@ public class TableBuilder
 				bodyWriter.write(" xlink:show=\"new\"");
 			}
 		}
+/*
+ * tooltips are unavailable for the moment
+ *
+		if (link.getHyperlinkTooltip() != null)
+		{
+			bodyWriter.write(" xlink:title=\"");
+			bodyWriter.write(JRStringUtil.xmlEncode(link.getHyperlinkTooltip()));
+			bodyWriter.write("\"");
+		}
+*/
 		bodyWriter.write(">");
 	}
 
@@ -601,64 +678,6 @@ public class TableBuilder
 	}
 
 	
-	/**
-	 *
-	 */
-	protected float getXAlignFactor(JRPrintImage image)
-	{
-		float xalignFactor = 0f;
-		switch (image.getHorizontalAlignmentValue())
-		{
-			case RIGHT :
-			{
-				xalignFactor = 1f;
-				break;
-			}
-			case CENTER :
-			{
-				xalignFactor = 0.5f;
-				break;
-			}
-			case LEFT :
-			default :
-			{
-				xalignFactor = 0f;
-				break;
-			}
-		}
-		return xalignFactor;
-	}
-
-
-	/**
-	 *
-	 */
-	protected float getYAlignFactor(JRPrintImage image)
-	{
-		float yalignFactor = 0f;
-		switch (image.getVerticalAlignmentValue())
-		{
-			case BOTTOM :
-			{
-				yalignFactor = 1f;
-				break;
-			}
-			case MIDDLE :
-			{
-				yalignFactor = 0.5f;
-				break;
-			}
-			case TOP :
-			default :
-			{
-				yalignFactor = 0f;
-				break;
-			}
-		}
-		return yalignFactor;
-	}
-
-
 	/**
 	 *
 	 */

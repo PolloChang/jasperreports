@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,20 +23,43 @@
  */
 package net.sf.jasperreports.engine;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.fill.TextFormat;
-import net.sf.jasperreports.engine.type.LineSpacingEnum;
-import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRStyledTextUtil;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPrintText.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor, JRPrintHyperlink, JRFont, JRCommonText, TextFormat
+public interface JRPrintText extends JRPrintElement, JRTextAlignment, JRPrintAnchor, JRPrintHyperlink, JRFont, JRCommonText, TextFormat
 {
+	/**
+	 * Specifies if the first line in a paragraph should be indented.
+	 */
+	@Property(
+		valueType = Boolean.class,
+		defaultValue = PropertyConstants.BOOLEAN_TRUE,
+		scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.TEXT_ELEMENT},
+		sinceVersion = PropertyConstants.VERSION_6_12_0
+		)
+	public static final String PROPERTY_AWT_INDENT_FIRST_LINE = JRPropertiesUtil.PROPERTY_PREFIX + "awt.indent.first.line";
+	
+
+	/**
+	 * Specifies if the last line in a paragraph should be justified.
+	 */
+	@Property(
+		valueType = Boolean.class,
+		defaultValue = PropertyConstants.BOOLEAN_FALSE,
+		scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.TEXT_ELEMENT},
+		sinceVersion = PropertyConstants.VERSION_6_12_0
+		)
+	public static final String PROPERTY_AWT_JUSTIFY_LAST_LINE = JRPropertiesUtil.PROPERTY_PREFIX + "awt.justify.last.line";
+	
 
 	/**
 	 * Zero-length line break offset array used for {@link #getLineBreakOffsets()}
@@ -45,16 +68,6 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	public static final short[] ZERO_LINE_BREAK_OFFSETS = new short[0];
 
 	
-	/**
-	 * Returns the possibly truncated (when {@link #getTextTruncateIndex()} is not null) text of this object.
-	 * 
-	 * @return the text of this object
-	 * @see #getFullText()
-	 * @see #getTextTruncateSuffix()
-	 * @deprecated Replaced by {@link JRStyledTextUtil#getTruncatedText(JRPrintText)}.
-	 */
-	public String getText();
-		
 	/**
 	 * Set the text for this object.
 	 * 
@@ -88,7 +101,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	/**
 	 * Sets the index to which this object's text is to be truncated.
 	 * 
-	 * The test is truncated when {@link JRStyledTextUtil#getTruncatedText(JRPrintText)} or {@link #getStyledText(JRStyledTextAttributeSelector)}
+	 * The text is truncated when {@link JRStyledTextUtil#getTruncatedText(JRPrintText)} or {@link #getFullStyledText(JRStyledTextAttributeSelector)}
 	 * are called.
 	 * 
 	 * @param index the index to which this object's text is to be truncated
@@ -129,17 +142,6 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	public String getOriginalText();
 	
 	/**
-	 * Returns the styled text for this object.
-	 * 
-	 * The text is truncated according to {@link JRStyledTextUtil#getTruncatedText(JRPrintText)}.
-	 * 
-	 * @param attributeSelector the styled text attribute selector
-	 * @return the possibly truncated styled text for this object
-	 * @deprecated Replaced by {@link JRStyledTextUtil#getStyledText(JRPrintText, JRStyledTextAttributeSelector)}.
-	 */
-	public JRStyledText getStyledText(JRStyledTextAttributeSelector attributeSelector);
-	
-	/**
 	 * Returns the full styled text of this object.
 	 * 
 	 * @param attributeSelector the styled text attribute selector
@@ -174,18 +176,6 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	public void setLeadingOffset(float leadingOffset);
 
 	/**
-	 * Gets the text own rotation.
-	 * @return a value representing one of the text rotation constants in {@link RotationEnum}
-	 */
-	public RotationEnum getOwnRotationValue();
-	
-	/**
-	 * Sets the text rotation.
-	 * @param rotationEnum a value representing one of the text rotation constants in {@link RotationEnum}
-	 */
-	public void setRotation(RotationEnum rotationEnum);
-	
-	/**
 	 * Gets the text run direction.
 	 * @return a value representing one of the run direction constants in {@link RunDirectionEnum}
 	 */
@@ -208,36 +198,6 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	public void setTextHeight(float textHeight);
 		
 	/**
-	 * @deprecated Replaced by {@link JRParagraph#getOwnLineSpacing()}.
-	 */
-	public LineSpacingEnum getOwnLineSpacingValue();
-		
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#setLineSpacing(LineSpacingEnum)}.
-	 */
-	public void setLineSpacing(LineSpacingEnum lineSpacing);
-		
-	/**
-	 *
-	 */
-	public String getOwnMarkup();
-		
-	/**
-	 *
-	 */
-	public void setMarkup(String markup);
-		
-	/**
-	 * @deprecated
-	 */
-	public JRFont getFont();
-
-	/**
-	 * @deprecated
-	 */
-	public void setFont(JRFont font);
-	
-	/**
 	 * Returns the type of the value which was used to generate this text.
 	 * <p>
 	 * {@link JRTextField Text fields} that have a non-<code>String</code> expression
@@ -247,6 +207,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	 * 
 	 * @return the type of the original value used to generate the text
 	 */
+	@Override
 	public String getValueClassName();
 	
 	/**
@@ -258,6 +219,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	 * @return the pattern used to format this text's source value
 	 * @see #getValueClassName()
 	 */
+	@Override
 	public String getPattern();
 	
 
@@ -265,6 +227,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	 * Returns the name of the class implementing the {@link net.sf.jasperreports.engine.util.FormatFactory FormatFactory}
 	 * interface to use with this text element, in case it is not the same as the one for the overall document.
 	 */
+	@Override
 	public String getFormatFactoryClass();
 	
 	
@@ -284,6 +247,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	 * 
 	 * @return the code of the <code>java.util.Locale</code> used when formatting this text's source value
 	 */
+	@Override
 	public String getLocaleCode();
 	
 	
@@ -298,6 +262,7 @@ public interface JRPrintText extends JRPrintElement, JRAlignment, JRPrintAnchor,
 	 * @return the {@link java.util.TimeZone#getID() ID} of the <code>java.util.TimeZone</code>
 	 * used to format this text's date source value
 	 */
+	@Override
 	public String getTimeZoneId();
 
 	

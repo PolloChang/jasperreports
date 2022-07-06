@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,25 +24,33 @@
 package net.sf.jasperreports.engine.fill;
 
 import java.sql.Connection;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.type.SectionTypeEnum;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRFiller.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRFiller
 {
 
+	public static final String EXCEPTION_MESSAGE_KEY_THREAD_INTERRUPTED = "fill.common.filler.thread.interrupted";
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_REPORT_SECTION_TYPE = "fill.common.filler.unknown.report.section.type";
+	
 	/**
 	 * The default locale used to fill reports.
 	 * 
@@ -53,6 +61,13 @@ public final class JRFiller
 	 * 
 	 * @see JRParameter#REPORT_LOCALE
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			valueType = Locale.class,
+			defaultValue = "system locale",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_5_2_0
+			)
 	public static final String PROPERTY_DEFAULT_LOCALE = JRPropertiesUtil.PROPERTY_PREFIX + "default.locale";
 	
 
@@ -66,6 +81,13 @@ public final class JRFiller
 	 * 
 	 * @see JRParameter#REPORT_TIME_ZONE
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_FILL,
+			valueType = TimeZone.class,
+			defaultValue = "system time zone",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_5_2_0
+			)
 	public static final String PROPERTY_DEFAULT_TIMEZONE = JRPropertiesUtil.PROPERTY_PREFIX + "default.timezone";
 
 	/**
@@ -78,7 +100,18 @@ public final class JRFiller
 		Connection conn
 		) throws JRException
 	{
-		JRBaseFiller filler = createFiller(jasperReportsContext, jasperReport);
+		return fill(jasperReportsContext, SimpleJasperReportSource.from(jasperReport),
+				parameters, conn);
+	}
+
+	public static JasperPrint fill(
+		JasperReportsContext jasperReportsContext,
+		JasperReportSource reportSource,
+		Map<String,Object> parameters,
+		Connection conn
+		) throws JRException
+	{
+		ReportFiller filler = createReportFiller(jasperReportsContext, reportSource);
 		
 		JasperPrint jasperPrint = null;
 		
@@ -88,7 +121,11 @@ public final class JRFiller
 		}
 		catch(JRFillInterruptedException e)
 		{
-			throw new JRException("The report filling thread was interrupted.", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_THREAD_INTERRUPTED,
+					null,
+					e);
 		}
 		
 		return jasperPrint;
@@ -105,7 +142,18 @@ public final class JRFiller
 		JRDataSource dataSource
 		) throws JRException
 	{
-		JRBaseFiller filler = createFiller(jasperReportsContext, jasperReport);
+		return fill(jasperReportsContext, SimpleJasperReportSource.from(jasperReport),
+				parameters, dataSource);
+	}
+	
+	public static JasperPrint fill(
+		JasperReportsContext jasperReportsContext,
+		JasperReportSource reportSource,
+		Map<String,Object> parameters,
+		JRDataSource dataSource
+		) throws JRException
+	{
+		ReportFiller filler = createReportFiller(jasperReportsContext, reportSource);
 		
 		JasperPrint jasperPrint = null;
 		
@@ -115,7 +163,11 @@ public final class JRFiller
 		}
 		catch(JRFillInterruptedException e)
 		{
-			throw new JRException("The report filling thread was interrupted.", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_THREAD_INTERRUPTED,
+					null,
+					e);
 		}
 		
 		return jasperPrint;
@@ -145,7 +197,17 @@ public final class JRFiller
 		Map<String,Object> parameters
 		) throws JRException
 	{
-		JRBaseFiller filler = createFiller(jasperReportsContext, jasperReport);
+		return fill(jasperReportsContext, SimpleJasperReportSource.from(jasperReport),
+				parameters);
+	}
+	
+	public static JasperPrint fill(
+			JasperReportsContext jasperReportsContext,
+			JasperReportSource reportSource, 
+			Map<String,Object> parameters
+			) throws JRException
+	{
+		ReportFiller filler = createReportFiller(jasperReportsContext, reportSource);
 
 		try
 		{
@@ -155,7 +217,11 @@ public final class JRFiller
 		}
 		catch (JRFillInterruptedException e)
 		{
-			throw new JRException("The report filling thread was interrupted.", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_THREAD_INTERRUPTED,
+					null,
+					e);
 		}
 	}
 
@@ -163,68 +229,61 @@ public final class JRFiller
 	/**
 	 *
 	 */
+	//FIXMEBOOK deprecate?
 	public static JRBaseFiller createFiller(JasperReportsContext jasperReportsContext, JasperReport jasperReport) throws JRException
+	{
+		return createBandReportFiller(jasperReportsContext, SimpleJasperReportSource.from(jasperReport));
+	}
+
+	protected static JRBaseFiller createBandReportFiller(JasperReportsContext jasperReportsContext, JasperReportSource reportSource) throws JRException
 	{
 		JRBaseFiller filler = null;
 
-		switch (jasperReport.getPrintOrderValue())
+		switch (reportSource.getReport().getPrintOrderValue())
 		{
 			case HORIZONTAL :
 			{
-				filler = new JRHorizontalFiller(jasperReportsContext, jasperReport);
+				filler = new JRHorizontalFiller(jasperReportsContext, reportSource, null);
 				break;
 			}
 			case VERTICAL :
 			{
-				filler = new JRVerticalFiller(jasperReportsContext, jasperReport);
+				filler = new JRVerticalFiller(jasperReportsContext, reportSource, null);
 				break;
 			}
 		}
 		return filler;
 	}
 	
-	
-	/**
-	 * @deprecated Replaced by {@link #fill(JasperReportsContext, JasperReport, Map, Connection)}.
-	 */
-	public static JasperPrint fillReport(
-		JasperReport jasperReport,
-		Map<String,Object> parameters,
-		Connection conn
-		) throws JRException
+	public static ReportFiller createReportFiller(JasperReportsContext jasperReportsContext, JasperReport jasperReport) throws JRException
 	{
-		return fill(DefaultJasperReportsContext.getInstance(), jasperReport, parameters, conn);
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link #fill(JasperReportsContext, JasperReport, Map, JRDataSource)}.
-	 */
-	public static JasperPrint fillReport(
-		JasperReport jasperReport,
-		Map<String,Object> parameters,
-		JRDataSource dataSource
-		) throws JRException
-	{
-		return fill(DefaultJasperReportsContext.getInstance(), jasperReport, parameters, dataSource);
+		return createReportFiller(jasperReportsContext, SimpleJasperReportSource.from(jasperReport));
 	}
 	
-
-	/**
-	 * @deprecated Replaced by {@link #fill(JasperReportsContext, JasperReport, Map)}.
-	 */
-	public static JasperPrint fillReport(JasperReport jasperReport, Map<String,Object> parameters) throws JRException
+	public static ReportFiller createReportFiller(JasperReportsContext jasperReportsContext, 
+			JasperReportSource reportSource) throws JRException
 	{
-		return fill(DefaultJasperReportsContext.getInstance(), jasperReport, parameters);
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link #createFiller(JasperReportsContext, JasperReport)}.
-	 */
-	public static JRBaseFiller createFiller(JasperReport jasperReport) throws JRException
-	{
-		return createFiller(DefaultJasperReportsContext.getInstance(), jasperReport);
+		ReportFiller filler;
+		SectionTypeEnum sectionType = reportSource.getReport().getSectionType();
+		sectionType = sectionType == null ? SectionTypeEnum.BAND : sectionType;
+		switch (sectionType)
+		{
+		case BAND:
+			filler = createBandReportFiller(jasperReportsContext, reportSource);
+			break;
+		case PART:
+		{
+			filler = new PartReportFiller(jasperReportsContext, reportSource, null);
+			break;
+		}
+		default:
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_UNKNOWN_REPORT_SECTION_TYPE,  
+					new Object[]{reportSource.getReport().getSectionType()} 
+					);
+		}
+		return filler;
 	}
 	
 	

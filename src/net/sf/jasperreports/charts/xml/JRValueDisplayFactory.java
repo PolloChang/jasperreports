@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,16 +33,13 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRValueDisplayFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRValueDisplayFactory extends JRBaseFactory
 {
 	private static final String ATTRIBUTE_color = "color";
 	private static final String ATTRIBUTE_mask = "mask";
 
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JRDesignValueDisplay valueDisplay = new JRDesignValueDisplay(null, ((JRChartPlot)digester.peek()).getChart());

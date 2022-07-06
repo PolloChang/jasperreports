@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,13 +28,13 @@ import java.util.List;
 
 import net.sf.jasperreports.engine.JRConditionalStyle;
 import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.base.JRBaseStyle;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRDesignStyle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignStyle extends JRBaseStyle
 {
@@ -54,7 +54,7 @@ public class JRDesignStyle extends JRBaseStyle
 	
 	public static final String PROPERTY_CONDITIONAL_STYLES = "conditionalStyles";
 
-	private List<JRConditionalStyle> conditionalStylesList = new ArrayList<JRConditionalStyle>();
+	private List<JRConditionalStyle> conditionalStylesList = new ArrayList<>();
 
 
 	/**
@@ -63,6 +63,14 @@ public class JRDesignStyle extends JRBaseStyle
 	public JRDesignStyle()
 	{
 		super();
+	}
+
+	/**
+	 *
+	 */
+	public JRDesignStyle(JRDefaultStyleProvider defaultStyleProvider)
+	{
+		super(defaultStyleProvider);
 	}
 
 	/**
@@ -85,9 +93,7 @@ public class JRDesignStyle extends JRBaseStyle
 		getEventSupport().firePropertyChange(PROPERTY_DEFAULT, old, this.isDefault);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setParentStyle(JRStyle parentStyle)
 	{
 		Object old = getStyle();
@@ -129,9 +135,7 @@ public class JRDesignStyle extends JRBaseStyle
 		return false;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRConditionalStyle[] getConditionalStyles()
 	{
 		return conditionalStylesList.toArray(new JRDesignConditionalStyle[conditionalStylesList.size()]);
@@ -162,6 +166,7 @@ public class JRDesignStyle extends JRBaseStyle
 		getEventSupport().firePropertyChange(PROPERTY_PARENT_STYLE_NAME_REFERENCE, old, this.parentStyleNameReference);
 	}
 
+	@Override
 	public Object clone()
 	{
 		JRDesignStyle clone = (JRDesignStyle) super.clone();

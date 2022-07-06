@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,22 +23,22 @@
  */
 package net.sf.jasperreports.engine.base;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectInputStream.GetField;
+import java.io.ObjectStreamClass;
 
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.ReturnValue;
-import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 
 /**
- * Base implementation of {@link net.sf.jasperreports.engine.ReturnValue JRReturnValue}.
+ * Base implementation of {@link net.sf.jasperreports.engine.ReturnValue ReturnValue}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseReturnValue.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class BaseReturnValue implements ReturnValue, Serializable
+public class BaseReturnValue extends BaseCommonReturnValue implements ReturnValue
 {
-
 	/**
 	 * 
 	 */
@@ -49,21 +49,6 @@ public class BaseReturnValue implements ReturnValue, Serializable
 	 */
 	protected String fromVariable;
 
-	/**
-	 * The name of the variable where the value should be copied.
-	 */
-	protected String toVariable;
-	
-	/**
-	 * The calculation type.
-	 */
-	protected CalculationEnum calculation = CalculationEnum.NOTHING;
-	
-	/**
-	 * The incrementer factory class name.
-	 */
-	protected String incrementerFactoryClassName;
-
 	
 	protected BaseReturnValue()
 	{
@@ -72,12 +57,9 @@ public class BaseReturnValue implements ReturnValue, Serializable
 	
 	protected BaseReturnValue(ReturnValue returnValue, JRBaseObjectFactory factory)
 	{
-		factory.put(returnValue, this);
+		super(returnValue, factory);
 
 		fromVariable = returnValue.getFromVariable();
-		toVariable = returnValue.getToVariable();
-		calculation = returnValue.getCalculation();
-		incrementerFactoryClassName = returnValue.getIncrementerFactoryClassName();
 	}
 
 	/**
@@ -85,56 +67,37 @@ public class BaseReturnValue implements ReturnValue, Serializable
 	 * 
 	 * @return the name of the variable whose value should be copied.
 	 */
+	@Override
 	public String getFromVariable()
 	{
 		return this.fromVariable;
 	}
 
-	/**
-	 * Returns the name of the report variable where the value should be copied.
-	 * 
-	 * @return the name of the report variable where the value should be copied.
-	 */
-	public String getToVariable()
-	{
-		return this.toVariable;
-	}
-
-	/**
-	 * Returns the calculation type.
-	 * <p>
-	 * When copying the returned value, a formula can be applied such that sum,
-	 * maximum, average and so on can be computed.
-	 * 
-	 * @return the calculation type.
-	 */
-	public CalculationEnum getCalculation()
-	{
-		return calculation;
-	}
-
-	/**
-	 * Returns the incrementer factory class name.
-	 * <p>
-	 * The factory will be used to increment the value of the report variable
-	 * with the returned value.
-	 * 
-	 * @return the incrementer factory class name.
-	 */
-	public String getIncrementerFactoryClassName()
-	{
-		return incrementerFactoryClassName;
-	}
-
+	@Override
 	public Object clone() 
 	{
-		try
+		return super.clone();
+	}
+	
+	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException
+	{
+		GetField fields = stream.readFields();
+		fromVariable = (String) fields.get("fromVariable", null);
+		
+		// the fields of BaseCommonReturnValue were originally in this class.
+		// if deserializing an old object, we need to manually copy the values into the parent class.
+		ObjectStreamClass streamClass = fields.getObjectStreamClass();
+		if (streamClass.getField("toVariable") != null)
 		{
-			return super.clone();
+			this.toVariable = (String) fields.get("toVariable", null);
 		}
-		catch (CloneNotSupportedException e)
+		if (streamClass.getField("calculation") != null)
 		{
-			throw new JRRuntimeException(e);
+			this.calculation = (CalculationEnum) fields.get("calculation", null);
+		}
+		if (streamClass.getField("incrementerFactoryClassName") != null)
+		{
+			this.incrementerFactoryClassName = (String) fields.get("incrementerFactoryClassName", null);
 		}
 	}
 }

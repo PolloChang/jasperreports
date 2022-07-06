@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -39,7 +39,6 @@ import net.sf.jasperreports.engine.JRException;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: AbstractSampleApp.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class AbstractSampleApp
 {
@@ -56,13 +55,13 @@ public abstract class AbstractSampleApp
 	 */
 	public String usage()
 	{
-		StringBuffer sbuffer = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		
 		String appName = this.getClass().getName(); 
 		
-		sbuffer.append(appName + " usage:" + "\n\tjava " + appName + " task" + "\n\tTasks : ");
+		sb.append(appName + " usage:" + "\n\tjava " + appName + " task" + "\n\tTasks : ");
 		
-		TreeSet<String> tasks = new TreeSet<String>();
+		TreeSet<String> tasks = new TreeSet<>();
 		Method[] methods = getClass().getMethods();
 		for (Method method:methods)
 		{
@@ -76,10 +75,10 @@ public abstract class AbstractSampleApp
 		}
 		for (String task:tasks)
 		{
-			sbuffer.append(task).append(" | ");
+			sb.append(task).append(" | ");
 		}
 		
-		return sbuffer.toString().substring(0, sbuffer.length() - 3);
+		return sb.toString().substring(0, sb.length() - 3);
 	}
 
 	
@@ -97,11 +96,7 @@ public abstract class AbstractSampleApp
 		{
 			System.out.println(usage());
 		}
-		catch (IllegalAccessException e)
-		{
-			e.getCause().printStackTrace();
-		}
-		catch (InvocationTargetException e)
+		catch (IllegalAccessException | InvocationTargetException e)
 		{
 			e.getCause().printStackTrace();
 		}
@@ -113,7 +108,7 @@ public abstract class AbstractSampleApp
 	 */
 	protected File[] getFiles(File parentFile, String extension)
 	{
-		List<File> fileList = new ArrayList<File>();
+		List<File> fileList = new ArrayList<>();
 		String[] files = parentFile.list();
 		if (files != null)
 		{
@@ -149,11 +144,7 @@ public abstract class AbstractSampleApp
 			Class.forName(driver);
 			conn = DriverManager.getConnection(connectString, user, password);
 		}
-		catch (ClassNotFoundException e)
-		{
-			throw new JRException(e);
-		}
-		catch (SQLException e)
+		catch (ClassNotFoundException | SQLException e)
 		{
 			throw new JRException(e);
 			

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,6 @@ package net.sf.jasperreports.engine.design;
 
 import java.io.File;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRReport;
 import net.sf.jasperreports.engine.JasperReportsContext;
@@ -34,12 +33,9 @@ import net.sf.jasperreports.engine.util.JRLoader;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractClassCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractClassCompiler extends JRAbstractJavaCompiler implements JRMultiClassCompiler
 {
-
-
 	/**
 	 * 
 	 */
@@ -49,15 +45,7 @@ public abstract class JRAbstractClassCompiler extends JRAbstractJavaCompiler imp
 	}
 
 
-	/**
-	 * @deprecated Replaced by {@link #JRAbstractClassCompiler(JasperReportsContext)}.
-	 */
-	protected JRAbstractClassCompiler()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
-
+	@Override
 	protected String compileUnits(JRCompilationUnit[] units, String classpath, File tempDirFile) throws JRException
 	{
 		File[] sources = new File[units.length];
@@ -100,26 +88,27 @@ public abstract class JRAbstractClassCompiler extends JRAbstractJavaCompiler imp
 	}
 
 
+	@Override
 	protected void checkLanguage(String language) throws JRException
 	{		
 		if (!JRReport.LANGUAGE_JAVA.equals(language))
 		{
 			throw 
 				new JRException(
-					"Language \"" + language 
-					+ "\" not supported by this report compiler.\n"
-					+ "Expecting \"java\" instead."
-					);
+					EXCEPTION_MESSAGE_KEY_EXPECTED_JAVA_LANGUAGE,
+					new Object[]{language, JRReport.LANGUAGE_JAVA});
 		}
 	}
 
 	
+	@Override
 	protected JRCompilationSourceCode generateSourceCode(JRSourceCompileTask sourceTask) throws JRException
 	{
 		return JRClassGenerator.generateClass(sourceTask);
 	}
 
 
+	@Override
 	protected String getSourceFileName(String unitName)
 	{
 		return unitName + ".java";

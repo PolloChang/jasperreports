@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
  * Implementation of {@link net.sf.jasperreports.engine.JRDatasetParameter JRDatasetParameter} used at design time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignDatasetParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignDatasetParameter extends JRBaseDatasetParameter implements JRChangeEventsSupport
 {
@@ -69,9 +68,7 @@ public class JRDesignDatasetParameter extends JRBaseDatasetParameter implements 
 		getEventSupport().firePropertyChange(PROPERTY_EXPRESSION, old, this.expression);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignDatasetParameter clone = (JRDesignDatasetParameter)super.clone();
@@ -81,6 +78,7 @@ public class JRDesignDatasetParameter extends JRBaseDatasetParameter implements 
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

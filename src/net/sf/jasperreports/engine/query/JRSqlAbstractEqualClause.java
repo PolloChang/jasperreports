@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,11 +37,12 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * </ul>
  * </p>
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: JRSqlAbstractEqualClause.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public abstract class JRSqlAbstractEqualClause implements JRClauseFunction
 {
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_EQUAL_CLAUSE_DB_COLUMN_TOKEN_MISSING = "query.equal.clause.db.column.token.missing";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_EQUAL_CLAUSE_PARAMETER_TOKEN_MISSING = "query.equal.clause.parameter.token.missing";
 	
 	public static final int POSITION_DB_COLUMN = 1;
 	public static final int POSITION_PARAMETER = 2;
@@ -65,10 +66,11 @@ public abstract class JRSqlAbstractEqualClause implements JRClauseFunction
 	 * <code>column IS NULL</code> clause, depending on the parameter's value.
 	 * </p>
 	 * <p>
-	 * The NOTEQUAL function constructs either a <code>column <> ?</code> or an 
+	 * The NOTEQUAL function constructs either a <code>column &lt;&gt; ?</code> or an 
 	 * <code>column IS NOT NULL</code> clause, depending on the parameter's value.
 	 * </p>
 	 */
+	@Override
 	public void apply(JRClauseTokens clauseTokens, JRQueryClauseContext queryContext)
 	{
 		String col = clauseTokens.getToken(POSITION_DB_COLUMN);
@@ -76,12 +78,18 @@ public abstract class JRSqlAbstractEqualClause implements JRClauseFunction
 		
 		if (col == null)
 		{
-			throw new JRRuntimeException("SQL EQUAL clause missing DB column token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_EQUAL_CLAUSE_DB_COLUMN_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		if (param == null)
 		{
-			throw new JRRuntimeException("SQL EQUAL clause missing parameter token");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_EQUAL_CLAUSE_PARAMETER_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		StringBuffer sbuffer = queryContext.queryBuffer();

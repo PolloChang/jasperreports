@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,6 +26,7 @@ package net.sf.jasperreports.charts.base;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import net.sf.jasperreports.charts.ChartCopyObjectFactory;
 import net.sf.jasperreports.charts.JRItemLabel;
 import net.sf.jasperreports.charts.JRPie3DPlot;
 import net.sf.jasperreports.engine.JRChart;
@@ -38,7 +39,6 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePie3DPlot.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 {
@@ -71,17 +71,22 @@ public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 	 */
 	public JRBasePie3DPlot(JRChartPlot chartPlot, JRChart chart)
 	{
+		this(chartPlot, chart, ChartCopyBaseObjectFactory.instance());
+	}
+
+	protected JRBasePie3DPlot(JRChartPlot chartPlot, JRChart chart, ChartCopyObjectFactory copyObjectFactory)
+	{
 		super(chartPlot, chart);
 		
 		JRPie3DPlot pie3DPlot = chartPlot instanceof JRPie3DPlot ? (JRPie3DPlot)chartPlot : null;
 		
 		if (pie3DPlot == null)
 		{
-			itemLabel = new JRBaseItemLabel(null, chart);
+			itemLabel = copyObjectFactory.copyItemLabel(null, chart);
 		}
 		else
 		{
-			itemLabel = new JRBaseItemLabel(pie3DPlot.getItemLabel(), chart);
+			itemLabel = copyObjectFactory.copyItemLabel(pie3DPlot.getItemLabel(), chart);
 		}
 	}
 
@@ -102,17 +107,13 @@ public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Double getDepthFactorDouble()
 	{
 		return depthFactorDouble;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRItemLabel getItemLabel()
 	{
 		return itemLabel;
@@ -128,17 +129,13 @@ public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 		getEventSupport().firePropertyChange(PROPERTY_DEPTH_FACTOR, old, this.depthFactorDouble);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean getCircular() {
 		return circular;
 	}
@@ -155,6 +152,7 @@ public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 	/**
 	 * @return the labelFormat
 	 */
+	@Override
 	public String getLabelFormat() {
 		return labelFormat;
 	}
@@ -173,6 +171,7 @@ public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 	/**
 	 * @return the legendLabelFormat
 	 */
+	@Override
 	public String getLegendLabelFormat() {
 		return legendLabelFormat;
 	}
@@ -196,9 +195,7 @@ public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 		getEventSupport().firePropertyChange(PROPERTY_ITEM_LABEL, old, this.itemLabel);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean getShowLabels(){
 		return showLabels;
 	}
@@ -212,6 +209,7 @@ public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 		getEventSupport().firePropertyChange(PROPERTY_SHOW_LABELS, old, this.showLabels);
 	}
 	
+	@Override
 	public Object clone(JRChart parentChart) 
 	{
 		JRBasePie3DPlot clone = (JRBasePie3DPlot) super.clone(parentChart);
@@ -238,8 +236,8 @@ public class JRBasePie3DPlot extends JRBaseChartPlot implements JRPie3DPlot
 		
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_1_3)
 		{
-			depthFactorDouble = new Double(depthFactor);
-			circular = Boolean.valueOf(isCircular);
+			depthFactorDouble = depthFactor;
+			circular = isCircular;
 		}
 	}
 	

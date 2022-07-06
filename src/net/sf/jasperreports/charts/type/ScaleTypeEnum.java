@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,67 +23,52 @@
  */
 package net.sf.jasperreports.charts.type;
 
-import net.sf.jasperreports.engine.JRConstants;
-import net.sf.jasperreports.engine.type.EnumUtil;
-import net.sf.jasperreports.engine.type.JREnum;
-
 import org.jfree.chart.renderer.xy.XYBubbleRenderer;
+
+import net.sf.jasperreports.engine.type.EnumUtil;
+import net.sf.jasperreports.engine.type.NamedValueEnum;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ScaleTypeEnum.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
-public enum ScaleTypeEnum implements JREnum
+public enum ScaleTypeEnum implements NamedValueEnum<Integer>
 {
 	/**
 	 *
 	 */
-	ON_BOTH_AXES((byte)XYBubbleRenderer.SCALE_ON_BOTH_AXES, "BothAxes"),
+	ON_BOTH_AXES(XYBubbleRenderer.SCALE_ON_BOTH_AXES, "BothAxes"),
 
 	/**
 	 *
 	 */
-	ON_DOMAIN_AXIS((byte)XYBubbleRenderer.SCALE_ON_DOMAIN_AXIS, "DomainAxis"),
+	ON_DOMAIN_AXIS(XYBubbleRenderer.SCALE_ON_DOMAIN_AXIS, "DomainAxis"),
 
 	/**
 	 *
 	 */
-	ON_RANGE_AXIS((byte)XYBubbleRenderer.SCALE_ON_RANGE_AXIS, "RangeAxis");
+	ON_RANGE_AXIS(XYBubbleRenderer.SCALE_ON_RANGE_AXIS, "RangeAxis");
 
 
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-	private final transient byte value;
+	private final transient int value;
 	private final transient String name;
 
-	private ScaleTypeEnum(byte value, String name)
+	private ScaleTypeEnum(int value, String name)
 	{
 		this.value = value;
 		this.name = name;
 	}
 
-	/**
-	 *
-	 */
-	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
+	@Override
+	public final Integer getValue()
 	{
 		return value;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -94,31 +79,14 @@ public enum ScaleTypeEnum implements JREnum
 	 */
 	public static ScaleTypeEnum getByName(String name)
 	{
-		return (ScaleTypeEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static ScaleTypeEnum getByValue(Integer value)
 	{
-		return (ScaleTypeEnum)EnumUtil.getByValue(values(), value);
+		return EnumUtil.getByValue(values(), value);
 	}
-
-	/**
-	 *
-	 */
-	public static ScaleTypeEnum getByValue(Byte value)
-	{
-		return (ScaleTypeEnum)EnumUtil.getByValue(values(), value);
-	}
-	
-	/**
-	 *
-	 */
-	public static ScaleTypeEnum getByValue(byte value)
-	{
-		return getByValue(new Byte(value));
-	}
-
 }

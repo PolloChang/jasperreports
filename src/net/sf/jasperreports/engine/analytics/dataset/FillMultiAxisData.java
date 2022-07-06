@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,11 +25,11 @@ package net.sf.jasperreports.engine.analytics.dataset;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.analytics.data.MultiAxisDataSource;
+import net.sf.jasperreports.engine.fill.JRFillCloneFactory;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillMultiAxisData.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillMultiAxisData
 {
@@ -41,6 +41,11 @@ public class FillMultiAxisData
 		factory.put(data, this);
 		
 		this.fillDataset = new FillMultiAxisDataset(data, factory);
+	}
+
+	public FillMultiAxisData(FillMultiAxisData data, JRFillCloneFactory factory)
+	{
+		this.fillDataset = new FillMultiAxisDataset(data.fillDataset, factory);
 	}
 	
 	public void evaluate(byte evaluationType) throws JRException

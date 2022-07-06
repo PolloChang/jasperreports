@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,12 +25,12 @@ package net.sf.jasperreports.components.iconlabel;
 
 import java.awt.Color;
 
-import net.sf.jasperreports.engine.JRAlignment;
 import net.sf.jasperreports.engine.JRBoxContainer;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRGenericPrintElement;
+import net.sf.jasperreports.engine.JRImageAlignment;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPrintElement;
 import net.sf.jasperreports.engine.JRPrintFrame;
@@ -38,6 +38,7 @@ import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.base.JRBasePrintText;
 import net.sf.jasperreports.engine.component.BaseFillComponent;
 import net.sf.jasperreports.engine.component.ConditionalStyleAwareFillComponent;
 import net.sf.jasperreports.engine.component.FillPrepareResult;
@@ -49,17 +50,17 @@ import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 import net.sf.jasperreports.engine.fill.JRFillTextField;
 import net.sf.jasperreports.engine.fill.JRTemplateFrame;
 import net.sf.jasperreports.engine.fill.JRTemplatePrintFrame;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
+import net.sf.jasperreports.engine.type.TextAdjustEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
 import net.sf.jasperreports.engine.util.JRBoxUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.util.StyleResolver;
 
 /**
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: IconLabelComponentFill.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class IconLabelComponentFill extends BaseFillComponent implements StretchableFillComponent, ConditionalStyleAwareFillComponent, JRBoxContainer, JRAlignment
+public class IconLabelComponentFill extends BaseFillComponent implements StretchableFillComponent, ConditionalStyleAwareFillComponent, JRBoxContainer, JRImageAlignment
 {
 	private final IconLabelComponent iconLabelComponent;
 
@@ -101,12 +102,14 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 		return iconLabelComponent;
 	}
 	
+	@Override
 	public void evaluate(byte evaluation) throws JRException
 	{
 		labelTextField.evaluate(evaluation);
 		iconTextField.evaluate(evaluation);
 	}
 	
+	@Override
 	public JRPrintElement fill()
 	{
 		JRComponentElement element = fillContext.getComponentElement();
@@ -167,13 +170,25 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 	
 	public void fillHorizontal()
 	{
-		try
+		if (labelTextField.isToPrint())
 		{
-			labelPrintText = (JRPrintText)labelTextField.fill();
+			try
+			{
+				labelPrintText = (JRPrintText)labelTextField.fill();
+			}
+			catch (JRException e)
+			{
+				throw new JRRuntimeException(e);
+			}
 		}
-		catch (JRException e)
+		else
 		{
-			throw new JRRuntimeException(e);
+			// create dummy print text to keep position and size calculations below simple
+			labelPrintText = new JRBasePrintText(getDefaultStyleProvider());
+			labelPrintText.setX(labelTextField.getX());
+			labelPrintText.setY(labelTextField.getX());
+			labelPrintText.setWidth(labelTextField.getWidth());
+			labelPrintText.setHeight(labelTextField.getHeight());
 		}
 		
 		if (
@@ -204,29 +219,42 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 				);
 		}
 
-		try
+		if (iconTextField.isToPrint())
 		{
-			iconPrintText = (JRPrintText)iconTextField.fill();
+			try
+			{
+				iconPrintText = (JRPrintText)iconTextField.fill();
+			}
+			catch (JRException e)
+			{
+				throw new JRRuntimeException(e);
+			}
 		}
-		catch (JRException e)
+		else
 		{
-			throw new JRRuntimeException(e);
+			// create dummy print text to keep position and size calculations below simple
+			iconPrintText = new JRBasePrintText(getDefaultStyleProvider());
+			iconPrintText.setX(iconTextField.getX());
+			iconPrintText.setY(iconTextField.getX());
+			iconPrintText.setWidth(iconTextField.getWidth());
+			iconPrintText.setHeight(iconTextField.getHeight());
 		}
-
+		
 		iconPrintText.setWidth(
-			(int)iconTextField.getTextWidth()
-			+ iconTextField.getLineBox().getLeftPadding() 
-			+ iconTextField.getLineBox().getRightPadding() 
+			(int)Math.ceil(
+				iconTextField.getTextWidth()
+				+ iconTextField.getLineBox().getLeftPadding() 
+				+ iconTextField.getLineBox().getRightPadding() 
+				)
 			);
 		
 		int commonHeight = Math.max(labelPrintText.getHeight(), iconPrintText.getHeight());
 		labelPrintText.setHeight(commonHeight);
 		iconPrintText.setHeight(commonHeight);
 		
-		switch (getHorizontalAlignmentValue())
+		switch (getHorizontalImageAlign())
 		{
 			case LEFT :
-			case JUSTIFIED :
 			{
 				if (iconLabelComponent.getIconPosition() == IconPositionEnum.START)
 				{
@@ -298,10 +326,9 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 			}
 		}
 
-		switch (getVerticalAlignmentValue())
+		switch (getVerticalImageAlign())
 		{
 			case TOP :
-			case JUSTIFIED :
 			{
 				labelPrintText.setY(0);
 				iconPrintText.setY(0);
@@ -405,10 +432,9 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 //		labelPrintText.setHeight(commonHeight);
 //		iconPrintText.setHeight(commonHeight);
 		
-		switch (getHorizontalAlignmentValue())
+		switch (getHorizontalImageAlign())
 		{
 			case LEFT :
-			case JUSTIFIED :
 			{
 				labelPrintText.setX(0);
 				iconPrintText.setX(0);
@@ -452,10 +478,9 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 			}
 		}
 		
-		switch (getVerticalAlignmentValue())
+		switch (getVerticalImageAlign())
 		{
 			case TOP :
-			case JUSTIFIED :
 			{
 				if (iconLabelComponent.getIconPosition() == IconPositionEnum.START)
 				{
@@ -528,17 +553,20 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 		}
 	}
 
+	@Override
 	public void setStretchHeight(int stretchHeight)
 	{
 		this.stretchHeight = stretchHeight;
 	}
 	
+	@Override
 	public void setConditionalStylesContainer(JRFillElementContainer conditionalStylesContainer)
 	{
 		labelTextField.setConditionalStylesContainer(conditionalStylesContainer);
 		iconTextField.setConditionalStylesContainer(conditionalStylesContainer);
 	}
 
+	@Override
 	public FillPrepareResult prepare(int availableHeight)
 	{
 		float paddingDiff = 
@@ -553,11 +581,11 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 
 			int leftPadding = getLineBox().getLeftPadding() + (int)Math.floor(paddingDiff);
 			leftPadding = leftPadding < 0 ? 0 : leftPadding;
-			getLineBox().setLeftPadding(leftPadding);
+			getLineBox().setLeftPadding((Integer)leftPadding);
 			
 			int rightPadding = getLineBox().getRightPadding() + (int)Math.ceil(paddingDiff);
 			rightPadding = rightPadding < 0 ? 0 : rightPadding;
-			getLineBox().setRightPadding(rightPadding);
+			getLineBox().setRightPadding((Integer)rightPadding);
 		}
 
 		int availableWidth = 
@@ -596,9 +624,13 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 		
 		iconTextField.setWidth(availableWidth);
 		
+		boolean overflow = false;
+		
 		try
 		{
-			iconTextField.prepare(textAvailableHeight, fillContext.getFillContainerContext().isCurrentOverflow());
+			// in the absence of the real overflow flag, passing true is best,
+			// because on the first prepare attempt, all text is still remaining to be rendered
+			overflow = iconTextField.prepare(textAvailableHeight, true);
 		}
 		catch (JRException e)
 		{
@@ -637,7 +669,9 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 
 		try
 		{
-			labelTextField.prepare(textAvailableHeight, fillContext.getFillContainerContext().isCurrentOverflow());
+			// in the absence of the real overflow flag, passing true is best,
+			// because on the first prepare attempt, all text is still remaining to be rendered
+			overflow = labelTextField.prepare(textAvailableHeight, true) || overflow;
 		}
 		catch (JRException e)
 		{
@@ -653,7 +687,7 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 			middlePadding = (int)(iconTextField.getFontsize() / 2);
 //			labelTextField.setWidth(availableWidth);
 			int iconAvailableHeight =
-				(labelTextField.isStretchWithOverflow()
+				(labelTextField.getTextAdjust() == TextAdjustEnum.STRETCH_HEIGHT
 				? textAvailableHeight - labelTextField.getStretchHeight() 
 				: iconLabelComponent.getContext().getComponentElement().getHeight() - labelTextField.getStretchHeight())
 				 - middlePadding;
@@ -667,11 +701,9 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 					iconTextField.rewind();
 					iconTextField.reset();
 					iconTextField.setWidth(labelAvailableWidth);
-					iconTextField.prepare(
-						iconAvailableHeight, 
-						fillContext.getFillContainerContext().isCurrentOverflow()
-						);
-					iconsVisible = iconTextField.getPrintElementHeight() <= iconAvailableHeight;
+					overflow = iconTextField.prepare(iconAvailableHeight, true) || overflow; // overflow true is the next best thing, when not having the real thing
+					iconsVisible = iconTextField.getStretchHeight() <= iconAvailableHeight;
+					//iconsVisible = iconTextField.getPrintElementHeight() <= iconAvailableHeight;
 				}
 				catch (JRException e)
 				{
@@ -687,7 +719,7 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 			+ getLineBox().getTopPadding()
 			+ getLineBox().getBottomPadding();
 
-		return FillPrepareResult.printStretch(stretchHeight, false);
+		return FillPrepareResult.printStretch(stretchHeight, overflow);
 	}
 	
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
@@ -695,6 +727,7 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public void evaluateDelayedElement(JRPrintElement element, byte evaluation) throws JRException
 	{
 		evaluate(evaluation);
@@ -713,8 +746,14 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 		//printElement.iconLabelComponent.getLineBox().clone(printElement);
 //		if (contentVisible)
 //		{
-			printElement.addElement(labelPrintText);
-			if (iconsVisible)
+			labelTextField.setAlreadyPrinted(labelTextField.isToPrint() || labelTextField.isAlreadyPrinted());
+			iconTextField.setAlreadyPrinted(iconTextField.isToPrint() || iconTextField.isAlreadyPrinted());
+
+			if (labelTextField.isToPrint())
+			{
+				printElement.addElement(labelPrintText);
+			}
+			if (iconTextField.isToPrint() && iconsVisible)
 			{
 				printElement.addElement(iconPrintText);
 			}
@@ -730,6 +769,10 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 	@Override
 	public JRDefaultStyleProvider getDefaultStyleProvider() {
 		return fillContext.getComponentElement().getDefaultStyleProvider();
+	}
+
+	protected StyleResolver getStyleResolver() {
+		return getDefaultStyleProvider().getStyleResolver();
 	}
 
 	@Override
@@ -748,32 +791,38 @@ public class IconLabelComponentFill extends BaseFillComponent implements Stretch
 	}
 
 	@Override
-	public HorizontalAlignEnum getHorizontalAlignmentValue() {
-		return JRStyleResolver.getHorizontalAlignmentValue(this);
+	public HorizontalImageAlignEnum getHorizontalImageAlign()
+	{
+		return getStyleResolver().getHorizontalImageAlign(this);
+	}
+		
+	@Override
+	public HorizontalImageAlignEnum getOwnHorizontalImageAlign()
+	{
+		return iconLabelComponent.getOwnHorizontalImageAlign();
 	}
 
 	@Override
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue() {
-		return iconLabelComponent.getOwnHorizontalAlignmentValue();
-	}
-
-	@Override
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlignment) {
+	public void setHorizontalImageAlign(HorizontalImageAlignEnum horizontalAlignment)
+	{
 		throw new UnsupportedOperationException();
 	}
-
+		
 	@Override
-	public VerticalAlignEnum getVerticalAlignmentValue() {
-		return JRStyleResolver.getVerticalAlignmentValue(this);
+	public VerticalImageAlignEnum getVerticalImageAlign()
+	{
+		return getStyleResolver().getVerticalImageAlign(this);
+	}
+		
+	@Override
+	public VerticalImageAlignEnum getOwnVerticalImageAlign()
+	{
+		return iconLabelComponent.getOwnVerticalImageAlign();
 	}
 
 	@Override
-	public VerticalAlignEnum getOwnVerticalAlignmentValue() {
-		return iconLabelComponent.getOwnVerticalAlignmentValue();
-	}
-
-	@Override
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlignment) {
+	public void setVerticalImageAlign(VerticalImageAlignEnum verticalAlignment)
+	{
 		throw new UnsupportedOperationException();
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.components.barcode4j;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
@@ -34,12 +33,14 @@ import net.sf.jasperreports.engine.util.JRSingletonCache;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BarcodeUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class BarcodeUtils
 {
 	protected static JRSingletonCache<BarcodeImageProducer> imageProducerCache = 
-		new JRSingletonCache<BarcodeImageProducer>(BarcodeImageProducer.class);
+		new JRSingletonCache<>(BarcodeImageProducer.class);
+
+	protected static JRSingletonCache<QRCodeImageProducer> qrCodeProducerCache = 
+			new JRSingletonCache<>(QRCodeImageProducer.class);
 
 	private JasperReportsContext jasperReportsContext;
 
@@ -56,21 +57,15 @@ public final class BarcodeUtils
 	/**
 	 *
 	 */
-	private static BarcodeUtils getDefaultInstance()
-	{
-		return new BarcodeUtils(DefaultJasperReportsContext.getInstance());
-	}
-	
-	
-	/**
-	 *
-	 */
 	public static BarcodeUtils getInstance(JasperReportsContext jasperReportsContext)
 	{
 		return new BarcodeUtils(jasperReportsContext);
 	}
 	
 	
+	/**
+	 * 
+	 */
 	public BarcodeImageProducer getProducer(JRPropertiesHolder propertiesHolder)
 	{
 		String producerProperty = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(propertiesHolder, 
@@ -93,18 +88,37 @@ public final class BarcodeUtils
 		}
 	}
 
+	
 	/**
-	 * @deprecated Replaced by {@link #getProducer(JRPropertiesHolder)}.
+	 * 
 	 */
-	public static BarcodeImageProducer getImageProducer(JRPropertiesHolder propertiesHolder)
+	public QRCodeImageProducer getQRCodeProducer(JRPropertiesHolder propertiesHolder)
 	{
-		return getDefaultInstance().getProducer(propertiesHolder);
+		String producerProperty = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(propertiesHolder, 
+				BarcodeImageProducer.PROPERTY_IMAGE_PRODUCER);
+		
+		String producerClass = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(propertiesHolder, 
+				QRCodeImageProducer.PROPERTY_PREFIX_QRCODE_PRODUCER + producerProperty);
+		if (producerClass == null)
+		{
+			producerClass = producerProperty;
+		}
+		
+		try
+		{
+			return qrCodeProducerCache.getCachedInstance(producerClass);
+		}
+		catch (JRException e)
+		{
+			throw new JRRuntimeException(e);
+		}
 	}
 
-	public static boolean isVertical(BarcodeComponent barcode)
+	
+	public static boolean isVertical(Barcode4jComponent barcode)
 	{
-		int orientation = barcode.getOrientation();
-		return orientation == BarcodeComponent.ORIENTATION_LEFT
-				|| orientation == BarcodeComponent.ORIENTATION_RIGHT;
+		OrientationEnum orientation = barcode.getOrientationValue();
+		return orientation == OrientationEnum.LEFT
+				|| orientation == OrientationEnum.RIGHT;
 	}
 }

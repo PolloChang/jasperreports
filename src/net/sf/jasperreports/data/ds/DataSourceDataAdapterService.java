@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,43 +26,48 @@ package net.sf.jasperreports.data.ds;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Map;
 
 import net.sf.jasperreports.data.AbstractClasspathAwareDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DataSourceDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DataSourceDataAdapterService extends
 		AbstractClasspathAwareDataAdapterService {
 
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_OBJECT_RETURNED = "data.ds.invalid.object.returned";
+	
 	/**
 	 * 
 	 */
-	public DataSourceDataAdapterService(JasperReportsContext jasperReportsContext, DataSourceDataAdapter dsDataAdapter) 
+	public DataSourceDataAdapterService(ParameterContributorContext paramContribContext, DataSourceDataAdapter dsDataAdapter) 
 	{
-		super(jasperReportsContext, dsDataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #DataSourceDataAdapterService(JasperReportsContext, DataSourceDataAdapter)}.
-	 */
-	public DataSourceDataAdapterService(DataSourceDataAdapter dsDataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), dsDataAdapter);
+		super(paramContribContext, dsDataAdapter);
 	}
 
 	public DataSourceDataAdapter getDataSourceDataAdapter() {
 		return (DataSourceDataAdapter) getDataAdapter();
 	}
 
+	@Override
+	protected ClassLoader getClassLoader(ClassLoader cloader) {
+		Object obj = getJasperReportsContext().getValue(CURRENT_CLASS_LOADER);
+		if (obj != null && obj instanceof ClassLoader)
+			cloader = (ClassLoader) obj;
+		URL[] localURLs = getPathClassloader();
+		if (localURLs == null || localURLs.length == 0)
+			return cloader;
+		return new URLClassLoader(localURLs, cloader);
+	}
+	
 	@Override
 	public void contributeParameters(Map<String, Object> parameters) throws JRException 
 	{
@@ -80,29 +85,23 @@ public class DataSourceDataAdapterService extends
 				Class<?> clazz = JRClassLoader.loadClassForRealName(dsDataAdapter.getFactoryClass());
 				Object obj = null;
 				Method method = clazz.getMethod( dsDataAdapter.getMethodToCall(), new Class[0]);
-				if(!Modifier.isStatic(method.getModifiers()))
-					obj = clazz.newInstance();
-				if(JRDataSource.class.isAssignableFrom(method.getReturnType()))
+				if (!Modifier.isStatic(method.getModifiers()))
+					obj = clazz.getDeclaredConstructor().newInstance();
+				if (JRDataSource.class.isAssignableFrom(method.getReturnType()))
+				{
 					ds = (JRDataSource) method.invoke(obj,new Object[0]);
+				}
 				else
-					throw new JRException("Method " + dsDataAdapter.getMethodToCall() + " in " + dsDataAdapter.getFactoryClass() + " class does not return a JRDataSource object.");
+				{
+					throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_INVALID_OBJECT_RETURNED,
+						new Object[]{dsDataAdapter.getMethodToCall(), dsDataAdapter.getFactoryClass()});
+				}
 			}
-			catch (ClassNotFoundException e)
+			catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException 
+				| IllegalAccessException | InstantiationException | NoClassDefFoundError e) 
 			{
-				throw new JRException(e);			
-			} 
-			catch (NoSuchMethodException e)
-			{
-				throw new JRException(e);			
-			} 
-			catch (InvocationTargetException e)
-			{
-				throw new JRException(e);			
-			} 
-			catch (IllegalAccessException e)
-			{
-				throw new JRException(e);			
-			} catch (InstantiationException e) {
 				throw new JRException(e);			
 			} 
 			finally

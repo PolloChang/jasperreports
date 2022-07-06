@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,7 @@
  */
 package net.sf.jasperreports.engine;
 
-import net.sf.jasperreports.engine.util.FileResolver;
+import net.sf.jasperreports.engine.type.ParameterEvaluationTimeEnum;
 
 
 /**
@@ -94,7 +94,6 @@ import net.sf.jasperreports.engine.util.FileResolver;
  * report parameters.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRParameter extends JRPropertiesHolder, JRCloneable
 {
@@ -250,22 +249,6 @@ public interface JRParameter extends JRPropertiesHolder, JRCloneable
 
 	
 	/**
-	 * A <tt>java.net.URLStreamHandlerFactory</tt> instance to be used during the report filling process to 
-	 * handle custom URL protocols for loading resources such as images, fonts and subreport templates.
-	 * @deprecated Replaced by {@link JasperReportsContext}.
-	 */
-	public static final String REPORT_URL_HANDLER_FACTORY = "REPORT_URL_HANDLER_FACTORY";
-
-
-	/**
-	 * A {@link FileResolver} instance to be used during the report filling process to 
-	 * handle locate files on disk using relative paths.
-	 * @deprecated Replaced by {@link JasperReportsContext}.
-	 */
-	public static final String REPORT_FILE_RESOLVER = "REPORT_FILE_RESOLVER";
-
-
-	/**
 	 * A {@link net.sf.jasperreports.engine.util.FormatFactory} instance to be used 
 	 * during the report filling process to create instances of <code>java.text.DateFormat</code> to format date text
 	 * fields and instances of <code>java.text.NumberFormat</code> to format numeric text fields.
@@ -295,6 +278,10 @@ public interface JRParameter extends JRPropertiesHolder, JRCloneable
 	 * property of the report template.
 	 */
 	public static final String IS_IGNORE_PAGINATION = "IS_IGNORE_PAGINATION";
+	
+	public static final String MAX_PAGE_HEIGHT = JRPropertiesUtil.PROPERTY_PREFIX + "max.page.height";
+	
+	public static final String MAX_PAGE_WIDTH = JRPropertiesUtil.PROPERTY_PREFIX + "max.page.width";
 
 	
 	/**
@@ -360,6 +347,11 @@ public interface JRParameter extends JRPropertiesHolder, JRCloneable
 	 *
 	 */
 	public boolean isForPrompting();
+
+	/**
+	 * Specifies when the default value expression of a parameter is evaluated.
+	 */
+	public ParameterEvaluationTimeEnum getEvaluationTime();
 
 	/**
 	 *

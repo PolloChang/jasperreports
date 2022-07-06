@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,8 +32,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import net.sf.jasperreports.engine.JRException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.w3c.dom.Document;
@@ -41,16 +39,25 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+
 /**
  * XML parsing utilities.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRXmlUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRXmlUtils
 {
 	private static final Log log = LogFactory.getLog(JRXmlUtils.class);
+	public static final String EXCEPTION_MESSAGE_KEY_DOCUMENT_BUILDER_FACTORY_CREATION_FAILURE = "util.xml.document.builder.factory.creation.failure";
+	public static final String EXCEPTION_MESSAGE_KEY_DOCUMENT_PARSING_FAILURE = "util.xml.document.parsing.failure";
 	
+	//FIXME doc
+	public static final String PROPERTY_ALLOW_DOCTYPE = JRPropertiesUtil.PROPERTY_PREFIX + "xml.allow.doctype";
+	
+	public static final String FEATURE_DISALLOW_DOCTYPE = "http://apache.org/xml/features/disallow-doctype-decl";
 	
 	public static Document parse(InputSource is) throws JRException
 	{
@@ -71,13 +78,13 @@ public final class JRXmlUtils
 		{
 			return createDocumentBuilder(isNamespaceAware).parse(is);
 		}
-		catch (SAXException e)
+		catch (SAXException | IOException e)
 		{
-			throw new JRException("Failed to parse the xml document", e);
-		}
-		catch (IOException e)
-		{
-			throw new JRException("Failed to parse the xml document", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DOCUMENT_PARSING_FAILURE,
+					null,
+					e);
 		}
 	}
 	
@@ -120,13 +127,13 @@ public final class JRXmlUtils
 		{
 			return createDocumentBuilder(isNamespaceAware).parse(file);
 		}
-		catch (SAXException e)
+		catch (SAXException | IOException e)
 		{
-			throw new JRException("Failed to parse the xml document", e);
-		}
-		catch (IOException e)
-		{
-			throw new JRException("Failed to parse the xml document", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DOCUMENT_PARSING_FAILURE,
+					null,
+					e);
 		}
 	}
 
@@ -171,13 +178,13 @@ public final class JRXmlUtils
 			is = url.openStream();
 			return createDocumentBuilder(isNamespaceAware).parse(is);
 		}
-		catch (SAXException e)
+		catch (SAXException | IOException e)
 		{
-			throw new JRException("Failed to parse the xmlf document", e);
-		}
-		catch (IOException e)
-		{
-			throw new JRException("Failed to parse the xml document", e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_DOCUMENT_PARSING_FAILURE,
+					null,
+					e);
 		}
 		finally
 		{
@@ -216,14 +223,29 @@ public final class JRXmlUtils
 		dbf.setNamespaceAware(isNamespaceAware);
 		try
 		{
+			if (!allowDoctype())
+			{
+				dbf.setFeature(FEATURE_DISALLOW_DOCTYPE, true);
+			}
+			
 			return dbf.newDocumentBuilder();
 		}
 		catch (ParserConfigurationException e)
 		{
-			throw new JRException("Failed to create a document builder factory", e);
+			throw 
+			new JRException(
+				EXCEPTION_MESSAGE_KEY_DOCUMENT_BUILDER_FACTORY_CREATION_FAILURE,
+				null,
+				e);
 		}
 	}
 
+	protected static boolean allowDoctype()
+	{
+		//FIXME use a context?
+		return JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(
+				PROPERTY_ALLOW_DOCTYPE, false);
+	}
 	
 	public static Document createDocument(Node sourceNode) throws JRException
 	{

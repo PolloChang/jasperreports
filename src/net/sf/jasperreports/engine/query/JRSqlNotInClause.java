@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ package net.sf.jasperreports.engine.query;
  * SQL "NOT IN" clause function.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSqlNotInClause.java 7199 2014-08-27 13:58:10Z teodord $
  * @see #apply(JRClauseTokens, JRQueryClauseContext)
  */
 public class JRSqlNotInClause extends JRSqlAbstractInClause
@@ -50,16 +49,19 @@ public class JRSqlNotInClause extends JRSqlAbstractInClause
 		return singleton;
 	}
 	
+	@Override
 	protected void appendInOperator(StringBuffer sBuffer)
 	{
 		sBuffer.append(OPERATOR_NOT_IN);
 	}
 
+	@Override
 	protected void appendNullOperator(StringBuffer sBuffer)
 	{
 		sBuffer.append(OPERATOR_NULL);
 	}
 
+	@Override
 	protected void appendAndOrOperator(StringBuffer sBuffer)
 	{
 		sBuffer.append(OPERATOR_AND_OR);

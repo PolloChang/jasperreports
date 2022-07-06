@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,10 +43,10 @@ import net.sf.jasperreports.engine.design.JRDesignField;
  * implementation for bean properties introspection.
  * 
  * @author Peter Severin (peter_s@sourceforge.net, contact@jasperassistant.com)
- * @version $Id: JRAbstractBeanDataSourceProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractBeanDataSourceProvider implements JRDataSourceProvider 
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NULL_BEAN_CLASS = "data.bean.constructor.argument.cannot.be.null";
 
 	/** The introspected bean class */
 	private Class<?> beanClass;
@@ -59,7 +59,10 @@ public abstract class JRAbstractBeanDataSourceProvider implements JRDataSourcePr
 	public JRAbstractBeanDataSourceProvider(Class<?> beanClass) {
 		if (beanClass == null)
 		{
-			throw new JRRuntimeException("beanClass must not be null");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NULL_BEAN_CLASS,
+					new Object[]{"beanClass"});
 		}
 
 		this.beanClass = beanClass;
@@ -68,6 +71,7 @@ public abstract class JRAbstractBeanDataSourceProvider implements JRDataSourcePr
 	/**
 	 * @see net.sf.jasperreports.engine.JRDataSourceProvider#supportsGetFieldsOperation()
 	 */
+	@Override
 	public boolean supportsGetFieldsOperation() {
 		return true;
 	}
@@ -75,6 +79,7 @@ public abstract class JRAbstractBeanDataSourceProvider implements JRDataSourcePr
 	/**
 	 * @see net.sf.jasperreports.engine.JRDataSourceProvider#getFields(net.sf.jasperreports.engine.JasperReport)
 	 */
+	@Override
 	public JRField[] getFields(JasperReport report) throws JRException {
 		BeanInfo beanInfo = null;
 
@@ -87,7 +92,7 @@ public abstract class JRAbstractBeanDataSourceProvider implements JRDataSourcePr
 		PropertyDescriptor[] descriptors = beanInfo.getPropertyDescriptors();
 		if(descriptors != null) 
 		{
-			ArrayList<JRField> fields = new ArrayList<JRField>(descriptors.length);
+			ArrayList<JRField> fields = new ArrayList<>(descriptors.length);
 			
 			for (int i = 0; i < descriptors.length; i++) {
 				PropertyDescriptor descriptor = descriptors[i];

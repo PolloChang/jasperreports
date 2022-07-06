@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.JasperPrint;
  * {@link FillListener} implementation that contains several other listeners.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CompositeFillListener.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CompositeFillListener implements FillListener
 {
@@ -61,8 +60,9 @@ public class CompositeFillListener implements FillListener
 		return newListener;
 	}
 	
-	private final List<FillListener> listeners = new ArrayList<FillListener>();
+	private final List<FillListener> listeners = new ArrayList<>();
 	
+	@Override
 	public void pageGenerated(JasperPrint jasperPrint, int pageIndex)
 	{
 		for (FillListener listener : listeners)
@@ -71,6 +71,7 @@ public class CompositeFillListener implements FillListener
 		}
 	}
 
+	@Override
 	public void pageUpdated(JasperPrint jasperPrint, int pageIndex)
 	{
 		for (FillListener listener : listeners)

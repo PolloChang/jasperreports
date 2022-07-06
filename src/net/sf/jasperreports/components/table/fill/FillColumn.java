@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.JRPropertiesMap;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillColumn.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillColumn implements JRPropertiesHolder
 {
@@ -41,6 +40,7 @@ public class FillColumn implements JRPropertiesHolder
 	private BaseColumn tableColumn;
 	private int width;
 	private List<FillColumn> subcolumns;
+	private Integer colSpan;
 
 	private JRPropertiesMap properties;
 	
@@ -70,6 +70,23 @@ public class FillColumn implements JRPropertiesHolder
 	public int getWidth()
 	{
 		return width;
+	}
+
+	public int getColSpan()
+	{
+		if (colSpan == null)
+		{
+			colSpan = 1;
+			if (subcolumns != null && subcolumns.size() > 0)
+			{
+				colSpan = 0;
+				for (FillColumn subcolumn : subcolumns)
+				{
+					colSpan += subcolumn.getColSpan();
+				}
+			}
+		}
+		return colSpan;
 	}
 
 	public List<FillColumn> getSubcolumns()
@@ -108,16 +125,19 @@ public class FillColumn implements JRPropertiesHolder
 		return hash;
 	}
 	
+	@Override
 	public boolean hasProperties()
 	{
 		return properties != null && properties.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return properties;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;

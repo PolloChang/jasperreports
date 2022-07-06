@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,10 +44,11 @@ import org.jfree.data.general.Dataset;
 
 /**
  * @author Flavius Sana (flavius_sana@users.sourceforge.net)
- * @version $Id: JRFillXyzDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillXyzDataset extends JRFillChartDataset implements JRXyzDataset {
 
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME = "charts.xyz.dataset.series.null.name";
+	
 	protected JRFillXyzSeries[] xyzSeries;
 
 	private DefaultXYZDataset dataset;
@@ -70,16 +71,19 @@ public class JRFillXyzDataset extends JRFillChartDataset implements JRXyzDataset
 		}
 	}
 	
+	@Override
 	public JRXyzSeries[] getSeries(){
 		return xyzSeries;
 	}
 	
+	@Override
 	protected void customInitialize()
 	{
 		dataset = new DefaultXYZDataset();
-		itemHyperlinks = new HashMap<Comparable<?>, Map<Pair, JRPrintHyperlink>>();
+		itemHyperlinks = new HashMap<>();
 	}
 	
+	@Override
 	protected void customEvaluate( JRCalculator calculator ) throws JRExpressionEvalException 
 	{
 		if (xyzSeries != null && xyzSeries.length > 0)
@@ -91,6 +95,7 @@ public class JRFillXyzDataset extends JRFillChartDataset implements JRXyzDataset
 		}
 	}
 	
+	@Override
 	protected void customIncrement()
 	{
 		if (xyzSeries != null && xyzSeries .length > 0)
@@ -102,7 +107,11 @@ public class JRFillXyzDataset extends JRFillChartDataset implements JRXyzDataset
 				Comparable<?> seriesName = crtXyzSeries.getSeries();
 				if (seriesName == null)
 				{
-					throw new JRRuntimeException("XYZ series name is null.");
+					throw 
+						new JRRuntimeException(
+							EXCEPTION_MESSAGE_KEY_SERIES_NULL_NAME,  
+							(Object[])null 
+							);
 				}
 
 				dataset.addValue(
@@ -117,39 +126,34 @@ public class JRFillXyzDataset extends JRFillChartDataset implements JRXyzDataset
 					Map<Pair, JRPrintHyperlink> seriesLinks = itemHyperlinks.get(crtXyzSeries.getSeries());
 					if (seriesLinks == null)
 					{
-						seriesLinks = new HashMap<Pair, JRPrintHyperlink>();
+						seriesLinks = new HashMap<>();
 						itemHyperlinks.put(crtXyzSeries.getSeries(), seriesLinks);
 					}
-					Pair<Number,Number> xyKey = new Pair<Number,Number>(crtXyzSeries.getXValue(), crtXyzSeries.getYValue());
+					Pair<Number,Number> xyKey = new Pair<>(crtXyzSeries.getXValue(), crtXyzSeries.getYValue());
 					seriesLinks.put(xyKey, crtXyzSeries.getPrintItemHyperlink());
 				}
 			}
 		}
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object getLabelGenerator()
 	{
 		return null;
 	}
 
+	@Override
 	public Dataset getCustomDataset() {
 		return dataset;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.XYZ_DATASET;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
@@ -177,6 +181,7 @@ public class JRFillXyzDataset extends JRFillChartDataset implements JRXyzDataset
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

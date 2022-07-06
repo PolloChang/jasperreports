@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base implementation of the {@link net.sf.jasperreports.engine.JRDatasetRun JRDatasetRun} interface.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseDatasetRun.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 {
@@ -97,7 +96,7 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 		List<ReturnValue> datesetReturnValues = datasetRun.getReturnValues();
 		if (datesetReturnValues != null && !datesetReturnValues.isEmpty())
 		{
-			this.returnValues = new ArrayList<ReturnValue>(datesetReturnValues.size());
+			this.returnValues = new ArrayList<>(datesetReturnValues.size());
 			for (ReturnValue datasetReturnValue : datesetReturnValues)
 			{
 				BaseReturnValue returnValue = factory.getReturnValue(datasetReturnValue);
@@ -106,6 +105,7 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 		}
 	}
 
+	@Override
 	public UUID getUUID()
 	{
 		if (uuid == null)
@@ -115,26 +115,31 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 		return uuid;
 	}
 
+	@Override
 	public String getDatasetName()
 	{
 		return datasetName;
 	}
 
+	@Override
 	public JRExpression getParametersMapExpression()
 	{
 		return parametersMapExpression;
 	}
 
+	@Override
 	public JRDatasetParameter[] getParameters()
 	{
 		return parameters;
 	}
 
+	@Override
 	public JRExpression getConnectionExpression()
 	{
 		return connectionExpression;
 	}
 
+	@Override
 	public JRExpression getDataSourceExpression()
 	{
 		return dataSourceExpression;
@@ -146,9 +151,7 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 		return returnValues == null ? null : Collections.unmodifiableList(returnValues);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseDatasetRun clone = null;
@@ -174,11 +177,13 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 		return clone;
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		if (propertiesMap == null)
@@ -188,6 +193,7 @@ public class JRBaseDatasetRun implements JRDatasetRun, Serializable
 		return propertiesMap;
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;

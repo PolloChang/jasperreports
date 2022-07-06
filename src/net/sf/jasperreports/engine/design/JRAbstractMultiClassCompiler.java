@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,6 @@ package net.sf.jasperreports.engine.design;
 
 import java.io.File;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 
@@ -33,10 +32,11 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * Base class for multiple class compilers.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRAbstractMultiClassCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractMultiClassCompiler extends JRAbstractClassCompiler
 {
+	public static final String EXCEPTION_MESSAGE_KEY_JAVA_SOURCE_COMPILE_ERROR = "compilers.java.source.compile.error";
+
 	/**
 	 * 
 	 */
@@ -45,14 +45,7 @@ public abstract class JRAbstractMultiClassCompiler extends JRAbstractClassCompil
 		super(jasperReportsContext);
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #JRAbstractMultiClassCompiler(JasperReportsContext)}.
-	 */
-	public JRAbstractMultiClassCompiler()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
+	@Override
 	public String compileClass(File sourceFile, String classpath) throws JRException
 	{
 		return compileClasses(new File[]{sourceFile}, classpath);

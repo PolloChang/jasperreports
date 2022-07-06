@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,19 +29,19 @@ import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.util.xml.JRXmlDocumentProducer;
-import net.sf.jasperreports.engine.util.xml.JaxenNsAwareXPathExecuter;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.util.xml.JRXmlDocumentProducer;
+import net.sf.jasperreports.engine.util.xml.JaxenNsAwareXPathExecuter;
+
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: JaxenXmlDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JaxenXmlDataSource extends AbstractXmlDataSource {
+public class JaxenXmlDataSource extends AbstractXmlDataSource<JaxenXmlDataSource> 
+{
 
 	// the xml document
 	private Document document;
@@ -182,18 +182,25 @@ public class JaxenXmlDataSource extends AbstractXmlDataSource {
 	 * 
 	 * @see net.sf.jasperreports.engine.JRRewindableDataSource#moveFirst()
 	 */
+	@Override
 	public void moveFirst() throws JRException {
 		if (document == null)
 		{
 			document = documentProducer.getDocument();
 			if (document == null)
 			{	
-				throw new JRException("document cannot be null");
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_NULL_DOCUMENT,
+						(Object[])null);
 			}
 		}
 		if (selectExpression == null)
 		{
-			throw new JRException("selectExpression cannot be null");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_NULL_SELECT_EXPRESSION,
+					(Object[])null);
 		}
 
 		currentNode = null;
@@ -204,18 +211,24 @@ public class JaxenXmlDataSource extends AbstractXmlDataSource {
 		nodeListLength = nodeList.getLength();
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see net.sf.jasperreports.engine.JRDataSource#next()
-	 */
-	public boolean next() throws JRException 
+	protected void checkMoveFirst() throws JRException
 	{
 		if(mustBeMovedFirst) 
 		{
 			moveFirst();
 			mustBeMovedFirst = false;
 		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see net.sf.jasperreports.engine.JRDataSource#next()
+	 */
+	@Override
+	public boolean next() throws JRException 
+	{
+		checkMoveFirst();
 		if(currentNodeIndex == nodeListLength - 1)
 		{
 			return false;
@@ -224,12 +237,43 @@ public class JaxenXmlDataSource extends AbstractXmlDataSource {
 		return true;
 	}
 
+	@Override
+	public int recordCount() throws JRException
+	{
+		checkMoveFirst();
+		return nodeListLength;
+	}
+
+	@Override
+	public int currentIndex()
+	{
+		return currentNodeIndex;
+	}
+
+	@Override
+	public void moveToRecord(int index) throws NoRecordAtIndexException
+	{
+		if (index >= 0 && index < nodeListLength)
+		{
+			currentNodeIndex = index;
+			currentNode = nodeList.item(index);
+		}
+		else
+		{
+			throw new NoRecordAtIndexException(index);
+		}
+	}
+
 	
+	@Override
 	public Document subDocument() throws JRException
 	{
 		if(currentNode == null)
 		{
-			throw new JRException("No node available. Iterate or rewind the data source.");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_NODE_NOT_AVAILABLE,
+					(Object[])null);
 		}
 		
 		// create a new document from the current node
@@ -266,7 +310,7 @@ public class JaxenXmlDataSource extends AbstractXmlDataSource {
 	}
 
 	@Override
-	public AbstractXmlDataSource subDataSource(String selectExpr)
+	public JaxenXmlDataSource subDataSource(String selectExpr)
 			throws JRException {
 		Document doc = subDocument();
 		JaxenXmlDataSource subDataSource = new JaxenXmlDataSource(doc, selectExpr);
@@ -280,7 +324,7 @@ public class JaxenXmlDataSource extends AbstractXmlDataSource {
 	}
 
 	@Override
-	public AbstractXmlDataSource dataSource(String selectExpr)
+	public JaxenXmlDataSource dataSource(String selectExpr)
 			throws JRException {
 		JaxenXmlDataSource subDataSource = new JaxenXmlDataSource(document, selectExpr);
 		subDataSource.setTextAttributes(this);

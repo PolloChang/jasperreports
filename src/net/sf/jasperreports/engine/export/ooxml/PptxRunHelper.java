@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,9 +36,6 @@ import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintText;
-import net.sf.jasperreports.engine.fonts.FontFamily;
-import net.sf.jasperreports.engine.fonts.FontInfo;
-import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.engine.util.JRStringUtil;
@@ -46,38 +43,38 @@ import net.sf.jasperreports.engine.util.JRStringUtil;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PptxRunHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PptxRunHelper extends BaseHelper
 {
 	/**
 	 *
 	 */
-	private String exporterKey;
-
-
-	/**
-	 *
-	 */
-	public PptxRunHelper(JasperReportsContext jasperReportsContext, Writer writer, String exporterKey)
-	{
-		super(jasperReportsContext, writer);
-		this.exporterKey = exporterKey;
-	}
-
-
-	/**
-	 *
-	 */
-	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale)
-	{
-		export(style, attributes, text, locale, null);
-	}
+	private final BaseFontHelper pptxFontHelper;
 	
 	/**
 	 *
 	 */
-	public void export(JRStyle style, Map<Attribute,Object> attributes, String text, Locale locale, String invalidCharReplacement)
+	public PptxRunHelper(
+		JasperReportsContext jasperReportsContext, 
+		Writer writer,
+		BaseFontHelper pptxFontHelper
+		)
+	{
+		super(jasperReportsContext, writer);
+		this.pptxFontHelper = pptxFontHelper;
+	}
+
+
+	/**
+	 *
+	 */
+	public void export(
+		JRStyle style, 
+		Map<Attribute,Object> attributes, 
+		String text, 
+		Locale locale, 
+		String invalidCharReplacement
+		)
 	{
 		if (text != null)
 		{
@@ -102,23 +99,39 @@ public class PptxRunHelper extends BaseHelper
 			}
 		}
 	}
-
+	
 	/**
 	 *
 	 */
-	public void exportProps(JRStyle style, Locale locale)
+	public void export(
+		JRStyle style, 
+		Map<Attribute,Object> attributes, 
+		String text, 
+		Locale locale, 
+		String invalidCharReplacement,
+		String fieldType,
+		String uuid
+		)
 	{
-		JRPrintText text = new JRBasePrintText(null);
-		text.setStyle(style);
-		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); //FIXMEPPTX is this map useless; check all run helpers
-		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(styledTextAttributes, text);
-		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
-		if (style.getModeValue() == null || style.getModeValue() == ModeEnum.OPAQUE)
+		if (text != null)
 		{
-			styledTextAttributes.put(TextAttribute.BACKGROUND, style.getBackcolor());
+			StringTokenizer tkzer = new StringTokenizer(text, "\n", true);
+			while(tkzer.hasMoreTokens())
+			{
+				String token = tkzer.nextToken();
+				if ("\n".equals(token))
+				{
+					write("<a:br/>");
+				}
+				else
+				{
+					write("      <a:fld id=\"{"+ uuid +"}\" type=\"" + fieldType + "\">\n");
+					exportProps("a:rPr", getAttributes(style), attributes, locale);
+					write("<a:t>#</a:t>\n");
+					write("      </a:fld>\n");
+				}
+			}
 		}
-
-		exportProps("a:rPr", getAttributes(style.getStyle()), getAttributes(style), locale);
 	}
 
 	/**
@@ -126,53 +139,63 @@ public class PptxRunHelper extends BaseHelper
 	 */
 	public void exportProps(JRPrintText text, Locale locale)
 	{
-		Map<Attribute,Object> textAttributes = new HashMap<Attribute,Object>(); 
-		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(textAttributes, text);
+		Map<Attribute,Object> textAttributes = new HashMap<>(); 
+		fontUtil.getAttributesWithoutAwtFont(textAttributes, text);
 		textAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
 		if (text.getModeValue() == null || text.getModeValue() == ModeEnum.OPAQUE)
 		{
 			textAttributes.put(TextAttribute.BACKGROUND, text.getBackcolor());
 		}
 
-		exportProps("a:defRPr", new HashMap<Attribute,Object>(), textAttributes, locale);
+		exportProps("a:defRPr", new HashMap<>(), textAttributes, locale);
 	}
 
 	/**
 	 *
 	 */
-	private void exportProps(String tag, Map<Attribute,Object> parentAttrs,  Map<Attribute,Object> attrs, Locale locale)
+	private void exportProps(
+		String tag, 
+		Map<Attribute,Object> parentAttrs,  
+		Map<Attribute,Object> attrs, 
+		Locale locale
+		)
 	{
 		write("       <" + tag + "\n");
+		
+		if(locale != null && "a:rPr".equals(tag))
+		{
+			write(" lang=\""+locale.getLanguage()+"\"\n");
+		}
 
 		Object value = attrs.get(TextAttribute.SIZE);
 		Object oldValue = parentAttrs.get(TextAttribute.SIZE);
 
 		if (value != null && !value.equals(oldValue))
 		{
-			float fontSize = ((Float)value).floatValue();
+			float fontSize = (Float)value;
 			fontSize = fontSize == 0 ? 0.5f : fontSize;// only the special EMPTY_CELL_STYLE would have font size zero
 			write(" sz=\"" + (int)(100 * fontSize) + "\"");
 		}
 		else //FIXMEPPTX deal with default values from a style, a theme or something
 		{
-			float fontSize = ((Float)oldValue).floatValue();
+			float fontSize = (Float)oldValue;
 			write(" sz=\"" + (int)(100 * fontSize) + "\"");
 		}
 		
-		value = attrs.get(TextAttribute.WEIGHT);
-		oldValue = parentAttrs.get(TextAttribute.WEIGHT);
+		Object valueWeight = attrs.get(TextAttribute.WEIGHT);
+		Object oldValueWeight = parentAttrs.get(TextAttribute.WEIGHT);
 
-		if (value != null && !value.equals(oldValue))
+		if (valueWeight != null && !valueWeight.equals(oldValueWeight))
 		{
-			write(" b=\"" + (value.equals(TextAttribute.WEIGHT_BOLD) ? 1 : 0) + "\"");
+			write(" b=\"" + (valueWeight.equals(TextAttribute.WEIGHT_BOLD) ? 1 : 0) + "\"");
 		}
 
-		value = attrs.get(TextAttribute.POSTURE);
-		oldValue = parentAttrs.get(TextAttribute.POSTURE);
+		Object valuePosture = attrs.get(TextAttribute.POSTURE);
+		Object oldValuePosture = parentAttrs.get(TextAttribute.POSTURE);
 
-		if (value != null && !value.equals(oldValue))
+		if (valuePosture != null && !valuePosture.equals(oldValuePosture))
 		{
-			write(" i=\"" + (value.equals(TextAttribute.POSTURE_OBLIQUE) ? 1 : 0) + "\"");
+			write(" i=\"" + (valuePosture.equals(TextAttribute.POSTURE_OBLIQUE) ? 1 : 0) + "\"");
 		}
 
 
@@ -200,14 +223,16 @@ public class PptxRunHelper extends BaseHelper
 
 		value = attrs.get(TextAttribute.SUPERSCRIPT);
 
-//		if (TextAttribute.SUPERSCRIPT_SUPER.equals(value))
-//		{
-//			write("        <a:vertAlign a:val=\"superscript\" />\n");
-//		}
-//		else if (TextAttribute.SUPERSCRIPT_SUB.equals(value))
-//		{
-//			write("        <a:vertAlign a:val=\"subscript\" />\n");
-//		}
+		if (TextAttribute.SUPERSCRIPT_SUPER.equals(value))
+		{
+			//default superscript position above baseline
+			write(" baseline=\"30000\"");
+		}
+		else if (TextAttribute.SUPERSCRIPT_SUB.equals(value))
+		{
+			//default subscript position below baseline
+			write(" baseline=\"-25000\"");
+		}
 
 		write(">\n");
 
@@ -227,28 +252,21 @@ public class PptxRunHelper extends BaseHelper
 //			write("<a:solidFill><a:srgbClr val=\"" + JRColorUtil.getColorHexa((Color)value) + "\"/></a:solidFill>\n");
 //		}
 
-		value = attrs.get(TextAttribute.FAMILY);
-		oldValue = parentAttrs.get(TextAttribute.FAMILY);
+//		Object valueFamily = attrs.get(TextAttribute.FAMILY);
+//		Object oldValueFamily = parentAttrs.get(TextAttribute.FAMILY);
 		
-		if (value != null && !value.equals(oldValue))//FIXMEDOCX the text locale might be different from the report locale, resulting in different export font
-		{
-			String fontFamilyAttr = (String)value;
-			String fontFamily = fontFamilyAttr;
-			FontInfo fontInfo = FontUtil.getInstance(jasperReportsContext).getFontInfo(fontFamilyAttr, locale);
-			if (fontInfo != null)
-			{
-				//fontName found in font extensions
-				FontFamily family = fontInfo.getFontFamily();
-				String exportFont = family.getExportFont(exporterKey);
-				if (exportFont != null)
-				{
-					fontFamily = exportFont;
-				}
-			}
-			write("        <a:latin typeface=\"" + fontFamily + "\"/>\n");
-			write("        <a:ea typeface=\"" + fontFamily + "\"/>\n");
-			write("        <a:cs typeface=\"" + fontFamily + "\"/>\n");
-		}
+//		if (
+//			pptxFontHelper.isEmbedFonts
+//			|| (valueFamily != null && !valueFamily.equals(oldValueFamily))
+//			|| (valueWeight != null && !valueWeight.equals(oldValueWeight))
+//			|| (valuePosture != null && !valuePosture.equals(oldValuePosture))
+//			)
+//		{
+			String fontName = pptxFontHelper.resolveFontFamily(attrs, locale);
+			write("        <a:latin typeface=\"" + fontName + "\"/>\n");
+			write("        <a:ea typeface=\"" + fontName + "\"/>\n");
+			write("        <a:cs typeface=\"" + fontName + "\"/>\n");
+//		}
 		
 		write("</" + tag + ">\n");
 	}
@@ -262,9 +280,9 @@ public class PptxRunHelper extends BaseHelper
 		JRPrintText text = new JRBasePrintText(null);
 		text.setStyle(style);
 		
-		Map<Attribute,Object> styledTextAttributes = new HashMap<Attribute,Object>(); 
+		Map<Attribute,Object> styledTextAttributes = new HashMap<>(); 
 		//JRFontUtil.getAttributes(styledTextAttributes, text, (Locale)null);//FIXMEDOCX getLocale());
-		FontUtil.getInstance(jasperReportsContext).getAttributesWithoutAwtFont(styledTextAttributes, text);
+		fontUtil.getAttributesWithoutAwtFont(styledTextAttributes, text);
 		styledTextAttributes.put(TextAttribute.FOREGROUND, text.getForecolor());
 		if (text.getModeValue() == ModeEnum.OPAQUE)
 		{

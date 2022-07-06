@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,22 +25,25 @@ package net.sf.jasperreports.crosstabs.interactive;
 
 import java.util.UUID;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import net.sf.jasperreports.crosstabs.design.JRDesignCrosstab;
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.web.actions.AbstractAction;
 import net.sf.jasperreports.web.actions.ActionException;
 import net.sf.jasperreports.web.commands.CommandException;
 import net.sf.jasperreports.web.commands.CommandTarget;
 import net.sf.jasperreports.web.commands.ResetInCacheCommand;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: SortRowGroupAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortRowGroupAction extends AbstractAction
 {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
+	
 	private static final Log log = LogFactory.getLog(SortRowGroupAction.class);
 
 	private SortRowGroupData sortData;
@@ -66,7 +69,7 @@ public class SortRowGroupAction extends AbstractAction
 					log.debug("error sorting crosstab", e);
 				}
 				
-				throw new ActionException(e.getMessage());
+				throw new ActionException(e);
 			}
 		}
 	}

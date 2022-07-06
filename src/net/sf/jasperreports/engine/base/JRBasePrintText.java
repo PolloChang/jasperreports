@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,6 @@ import java.awt.Color;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRCommonText;
 import net.sf.jasperreports.engine.JRConstants;
@@ -42,24 +41,20 @@ import net.sf.jasperreports.engine.JRPrintText;
 import net.sf.jasperreports.engine.JRStyledTextAttributeSelector;
 import net.sf.jasperreports.engine.PrintElementVisitor;
 import net.sf.jasperreports.engine.fill.TextFormat;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.LineSpacingEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRStyledTextParser;
-import net.sf.jasperreports.engine.util.JRStyledTextUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBasePrintText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 {
@@ -81,8 +76,8 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	protected Object value;
 	protected float lineSpacingFactor;
 	protected float leadingOffset;
-	protected HorizontalAlignEnum horizontalAlignmentValue;
-	protected VerticalAlignEnum verticalAlignmentValue;
+	protected HorizontalTextAlignEnum horizontalTextAlign;
+	protected VerticalTextAlignEnum verticalTextAlign;
 	protected RotationEnum rotationValue;
 	protected RunDirectionEnum runDirectionValue = RunDirectionEnum.LTR;
 	protected float textHeight;
@@ -137,63 +132,58 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 		
-	/**
-	 * @deprecated Replaced by {@link JRStyledTextUtil#getTruncatedText(JRPrintText)}.
-	 */
-	public String getText()
-	{
-		return JRStyledTextUtil.getInstance(DefaultJasperReportsContext.getInstance()).getTruncatedText(this);
-	}
-		
-	/**
-	 *
-	 */
+	@Override
 	public void setText(String text)
 	{
 		this.text = text;
 		//this.truncatedText = null;
 	}
 
+	@Override
 	public Integer getTextTruncateIndex()
 	{
 		return textTruncateIndex;
 	}
 
+	@Override
 	public void setTextTruncateIndex(Integer textTruncateIndex)
 	{
 		this.textTruncateIndex = textTruncateIndex;
 		//this.truncatedText = null;
 	}
 
+	@Override
 	public String getTextTruncateSuffix()
 	{
 		return textTruncateSuffix;
 	}
 
+	@Override
 	public void setTextTruncateSuffix(String textTruncateSuffix)
 	{
 		this.textTruncateSuffix = textTruncateSuffix;
 		//this.truncatedText = null;
 	}
 	
+	@Override
 	public short[] getLineBreakOffsets()
 	{
 		return lineBreakOffsets;
 	}
 
+	@Override
 	public void setLineBreakOffsets(short[] lineBreakOffsets)
 	{
 		this.lineBreakOffsets = lineBreakOffsets;
 	}
 
+	@Override
 	public String getFullText()
 	{
 		String fullText = this.text;
@@ -204,19 +194,13 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 		return fullText;
 	}
 
+	@Override
 	public String getOriginalText()
 	{
 		return text;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link JRStyledTextUtil#getStyledText(JRPrintText, JRStyledTextAttributeSelector)}.
-	 */
-	public JRStyledText getStyledText(JRStyledTextAttributeSelector attributeSelector)
-	{
-		return JRStyledTextUtil.getInstance(DefaultJasperReportsContext.getInstance()).getStyledText(this, attributeSelector);
-	}
-
+	@Override
 	public JRStyledText getFullStyledText(JRStyledTextAttributeSelector attributeSelector)
 	{
 		if (getFullText() == null)
@@ -233,204 +217,144 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 				);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getValue()
 	{
 		return value;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setValue(Object value)
 	{
 		this.value = value;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public float getLineSpacingFactor()
 	{
 		return lineSpacingFactor;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setLineSpacingFactor(float lineSpacingFactor)
 	{
 		this.lineSpacingFactor = lineSpacingFactor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public float getLeadingOffset()
 	{
 		return leadingOffset;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setLeadingOffset(float leadingOffset)
 	{
 		this.leadingOffset = leadingOffset;
 	}
 
-	/**
-	 *
-	 */
-	public HorizontalAlignEnum getHorizontalAlignmentValue()
+	@Override
+	public HorizontalTextAlignEnum getHorizontalTextAlign()
 	{
-		return JRStyleResolver.getHorizontalAlignmentValue(this);
+		return getStyleResolver().getHorizontalTextAlign(this);
 	}
 		
-	public HorizontalAlignEnum getOwnHorizontalAlignmentValue()
+	@Override
+	public HorizontalTextAlignEnum getOwnHorizontalTextAlign()
 	{
-		return horizontalAlignmentValue;
-	}
-
-	/**
-	 *
-	 */
-	public void setHorizontalAlignment(HorizontalAlignEnum horizontalAlignmentValue)
-	{
-		this. horizontalAlignmentValue =  horizontalAlignmentValue;
-	}
-
-	/**
-	 *
-	 */
-	public VerticalAlignEnum getVerticalAlignmentValue()
-	{
-		return JRStyleResolver.getVerticalAlignmentValue(this);
+		return horizontalTextAlign;
 	}
 		
-	public VerticalAlignEnum getOwnVerticalAlignmentValue()
+	@Override
+	public void setHorizontalTextAlign(HorizontalTextAlignEnum horizontalTextAlign)
 	{
-		return verticalAlignmentValue;
+		this.horizontalTextAlign = horizontalTextAlign;
 	}
 
-	/**
-	 *
-	 */
-	public void setVerticalAlignment(VerticalAlignEnum verticalAlignmentValue)
+	@Override
+	public VerticalTextAlignEnum getVerticalTextAlign()
 	{
-		this.verticalAlignmentValue = verticalAlignmentValue;
+		return getStyleResolver().getVerticalTextAlign(this);
+	}
+		
+	@Override
+	public VerticalTextAlignEnum getOwnVerticalTextAlign()
+	{
+		return verticalTextAlign;
+	}
+		
+	@Override
+	public void setVerticalTextAlign(VerticalTextAlignEnum verticalTextAlign)
+	{
+		this.verticalTextAlign = verticalTextAlign;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public RotationEnum getRotationValue()
 	{
-		return JRStyleResolver.getRotationValue(this);
+		return getStyleResolver().getRotationValue(this);
 	}
 		
+	@Override
 	public RotationEnum getOwnRotationValue()
 	{
 		return rotationValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRotation(RotationEnum rotationValue)
 	{
 		this.rotationValue = rotationValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public RunDirectionEnum getRunDirectionValue()
 	{
 		return this.runDirectionValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRunDirection(RunDirectionEnum runDirectionValue)
 	{
 		this.runDirectionValue = runDirectionValue;
 	}
-	/**
-	 *
-	 */
+	@Override
 	public float getTextHeight()
 	{
 		return textHeight;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setTextHeight(float textHeight)
 	{
 		this.textHeight = textHeight;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#getLineSpacing()}.
-	 */
-	public LineSpacingEnum getLineSpacingValue()
-	{
-		return getParagraph().getLineSpacing();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#getOwnLineSpacing()}.
-	 */
-	public LineSpacingEnum getOwnLineSpacingValue()
-	{
-		return getParagraph().getOwnLineSpacing();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link JRParagraph#setLineSpacing(LineSpacingEnum)}.
-	 */
-	public void setLineSpacing(LineSpacingEnum lineSpacing)
-	{
-		getParagraph().setLineSpacing(lineSpacing);
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public String getMarkup()
 	{
-		return JRStyleResolver.getMarkup(this);
+		return getStyleResolver().getMarkup(this);
 	}
 		
+	@Override
 	public String getOwnMarkup()
 	{
 		return markup;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setMarkup(String markup)
 	{
 		this.markup = markup;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRParagraph getParagraph()
 	{
 		return paragraph;
@@ -453,15 +377,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 	/**
-	 * @deprecated
-	 */
-	public JRFont getFont()
-	{
-		return this;
-	}
-
-	/**
-	 * @deprecated
+	 *
 	 */
 	public void setFont(JRFont font)
 	{
@@ -470,111 +386,85 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 		isItalic = font.isOwnItalic();
 		isUnderline = font.isOwnUnderline();
 		isStrikeThrough = font.isOwnStrikeThrough();
-		fontSize = font.getOwnFontSize();
+		fontsize = font.getOwnFontsize();
 		pdfFontName = font.getOwnPdfFontName();
 		pdfEncoding = font.getOwnPdfEncoding();
 		isPdfEmbedded = font.isOwnPdfEmbedded();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setTextFormat(TextFormat textFormat)
 	{
 		this.textFormat = textFormat;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getAnchorName()
 	{
 		return anchorName;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setAnchorName(String anchorName)
 	{
 		this.anchorName = anchorName;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTypeEnum getHyperlinkTypeValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTypeValue(getLinkType());
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkType(HyperlinkTypeEnum hyperlinkType)
 	{
 		setLinkType(JRHyperlinkHelper.getLinkType(hyperlinkType));
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTargetEnum getHyperlinkTargetValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTargetValue(getLinkTarget());
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkTarget(HyperlinkTargetEnum hyperlinkTarget)
 	{
 		setLinkTarget(JRHyperlinkHelper.getLinkTarget(hyperlinkTarget));
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getHyperlinkReference()
 	{
 		return hyperlinkReference;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkReference(String hyperlinkReference)
 	{
 		this.hyperlinkReference = hyperlinkReference;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getHyperlinkAnchor()
 	{
 		return hyperlinkAnchor;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkAnchor(String hyperlinkAnchor)
 	{
 		this.hyperlinkAnchor = hyperlinkAnchor;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public Integer getHyperlinkPage()
 	{
 		return hyperlinkPage;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setHyperlinkPage(Integer hyperlinkPage)
 	{
 		this.hyperlinkPage = hyperlinkPage;
@@ -589,186 +479,134 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 
+	@Override
 	public int getBookmarkLevel()
 	{
 		return bookmarkLevel;
 	}
 
 
+	@Override
 	public void setBookmarkLevel(int bookmarkLevel)
 	{
 		this.bookmarkLevel = bookmarkLevel;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getFontName()
 	{
-		return JRStyleResolver.getFontName(this);
+		return getStyleResolver().getFontName(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getOwnFontName()
 	{
 		return fontName;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setFontName(String fontName)
 	{
 		this.fontName = fontName;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isBold()
 	{
-		return JRStyleResolver.isBold(this);
+		return getStyleResolver().isBold(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isOwnBold()
 	{
 		return isBold;
 	}
 
 	/**
-	 *
-	 */
-	public void setBold(boolean isBold)
-	{
-		setBold(isBold ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
 	 * Alternative setBold method which allows also to reset
 	 * the "own" isBold property.
 	 */
+	@Override
 	public void setBold(Boolean isBold)
 	{
 		this.isBold = isBold;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isItalic()
 	{
-		return JRStyleResolver.isItalic(this);
+		return getStyleResolver().isItalic(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isOwnItalic()
 	{
 		return isItalic;
 	}
 
 	/**
-	 *
-	 */
-	public void setItalic(boolean isItalic)
-	{
-		setItalic(isItalic ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
 	 * Alternative setItalic method which allows also to reset
 	 * the "own" isItalic property.
 	 */
+	@Override
 	public void setItalic(Boolean isItalic)
 	{
 		this.isItalic = isItalic;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isUnderline()
 	{
-		return JRStyleResolver.isUnderline(this);
+		return getStyleResolver().isUnderline(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isOwnUnderline()
 	{
 		return isUnderline;
 	}
 
 	/**
-	 *
-	 */
-	public void setUnderline(boolean isUnderline)
-	{
-		setUnderline(isUnderline ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
 	 * Alternative setUnderline method which allows also to reset
 	 * the "own" isUnderline property.
 	 */
+	@Override
 	public void setUnderline(Boolean isUnderline)
 	{
 		this.isUnderline = isUnderline;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isStrikeThrough()
 	{
-		return JRStyleResolver.isStrikeThrough(this);
+		return getStyleResolver().isStrikeThrough(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isOwnStrikeThrough()
 	{
 		return isStrikeThrough;
 	}
 
 	/**
-	 *
-	 */
-	public void setStrikeThrough(boolean isStrikeThrough)
-	{
-		setStrikeThrough(isStrikeThrough ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
 	 * Alternative setStrikeThrough method which allows also to reset
 	 * the "own" isStrikeThrough property.
 	 */
+	@Override
 	public void setStrikeThrough(Boolean isStrikeThrough)
 	{
 		this.isStrikeThrough = isStrikeThrough;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public float getFontsize()
 	{
-		return JRStyleResolver.getFontsize(this);
+		return getStyleResolver().getFontsize(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Float getOwnFontsize()
 	{
 		return fontsize;
@@ -777,127 +615,74 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	/**
 	 * Method which allows also to reset the "own" size property.
 	 */
+	@Override
 	public void setFontSize(Float fontSize)
 	{
 		this.fontsize = fontSize;
 	}
 
-	/**
-	 * @deprecated Replaced by {@link #getFontsize()}.
-	 */
-	public int getFontSize()
-	{
-		return (int)getFontsize();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #getOwnFontsize()}.
-	 */
-	public Integer getOwnFontSize()
-	{
-		return fontsize == null ? null : fontsize.intValue();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #setFontSize(Float)}.
-	 */
-	public void setFontSize(int fontSize)
-	{
-		setFontSize((float)fontSize);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #setFontSize(Float)}.
-	 */
-	public void setFontSize(Integer fontSize)
-	{
-		setFontSize(fontSize == null ? null : fontSize.floatValue());
-	}
-
-	/**
-	 *
-	 */
+	@Override
 	public String getPdfFontName()
 	{
-		return JRStyleResolver.getPdfFontName(this);
+		return getStyleResolver().getPdfFontName(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getOwnPdfFontName()
 	{
 		return pdfFontName;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPdfFontName(String pdfFontName)
 	{
 		this.pdfFontName = pdfFontName;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public String getPdfEncoding()
 	{
-		return JRStyleResolver.getPdfEncoding(this);
+		return getStyleResolver().getPdfEncoding(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getOwnPdfEncoding()
 	{
 		return pdfEncoding;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setPdfEncoding(String pdfEncoding)
 	{
 		this.pdfEncoding = pdfEncoding;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean isPdfEmbedded()
 	{
-		return JRStyleResolver.isPdfEmbedded(this);
+		return getStyleResolver().isPdfEmbedded(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Boolean isOwnPdfEmbedded()
 	{
 		return isPdfEmbedded;
 	}
 
 	/**
-	 *
-	 */
-	public void setPdfEmbedded(boolean isPdfEmbedded)
-	{
-		setPdfEmbedded(isPdfEmbedded ? Boolean.TRUE : Boolean.FALSE);
-	}
-
-	/**
 	 * Alternative setPdfEmbedded method which allows also to reset
 	 * the "own" isPdfEmbedded property.
 	 */
+	@Override
 	public void setPdfEmbedded(Boolean isPdfEmbedded)
 	{
 		this.isPdfEmbedded = isPdfEmbedded;
 	}
 
 	
+	@Override
 	public String getPattern()
 	{
 		return pattern;
@@ -910,6 +695,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 	
+	@Override
 	public String getValueClassName()
 	{
 		return valueClassName;
@@ -922,6 +708,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 	
+	@Override
 	public String getFormatFactoryClass()
 	{
 		return formatFactoryClass;
@@ -934,6 +721,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 	
+	@Override
 	public String getLocaleCode()
 	{
 		return localeCode;
@@ -946,6 +734,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 	
+	@Override
 	public String getTimeZoneId()
 	{
 		return timeZoneId;
@@ -958,12 +747,14 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 
 	
+	@Override
 	public JRPrintHyperlinkParameters getHyperlinkParameters()
 	{
 		return hyperlinkParameters;
 	}
 
 	
+	@Override
 	public void setHyperlinkParameters(JRPrintHyperlinkParameters hyperlinkParameters)
 	{
 		this.hyperlinkParameters = hyperlinkParameters;
@@ -987,6 +778,7 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	}
 	
 	
+	@Override
 	public String getLinkType()
 	{
 		return linkType;
@@ -994,11 +786,13 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 
 
 	
+	@Override
 	public void setLinkType(String linkType)
 	{
 		this.linkType = linkType;
 	}
 	
+	@Override
 	public String getLinkTarget()
 	{
 		return linkTarget;
@@ -1006,12 +800,14 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 
 
 	
+	@Override
 	public void setLinkTarget(String linkTarget)
 	{
 		this.linkTarget = linkTarget;
 	}
 	
 	
+	@Override
 	public String getHyperlinkTooltip()
 	{
 		return hyperlinkTooltip;
@@ -1019,14 +815,13 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 
 
 	
+	@Override
 	public void setHyperlinkTooltip(String hyperlinkTooltip)
 	{
 		this.hyperlinkTooltip = hyperlinkTooltip;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return getForecolor();
@@ -1048,6 +843,14 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	/**
 	 * @deprecated
 	 */
+	private net.sf.jasperreports.engine.type.HorizontalAlignEnum horizontalAlignmentValue;
+	/**
+	 * @deprecated
+	 */
+	private net.sf.jasperreports.engine.type.VerticalAlignEnum verticalAlignmentValue;
+	/**
+	 * @deprecated
+	 */
 	private Byte rotation;
 	/**
 	 * @deprecated
@@ -1057,66 +860,6 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	 * @deprecated
 	 */
 	private LineSpacingEnum lineSpacingValue;
-	/**
-	 * @deprecated
-	 */
-	private Byte border;
-	/**
-	 * @deprecated
-	 */
-	private Byte topBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte leftBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte bottomBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte rightBorder;
-	/**
-	 * @deprecated
-	 */
-	private Color borderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color topBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color leftBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color bottomBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color rightBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Integer padding;
-	/**
-	 * @deprecated
-	 */
-	private Integer topPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer leftPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer bottomPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer rightPadding;
 	/**
 	 * @deprecated
 	 */
@@ -1138,14 +881,15 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 	 */
 	private Integer fontSize;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
 
 		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_3_7_2)
 		{
-			horizontalAlignmentValue = HorizontalAlignEnum.getByValue(horizontalAlignment);
-			verticalAlignmentValue = VerticalAlignEnum.getByValue(verticalAlignment);
+			horizontalAlignmentValue = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getByValue(horizontalAlignment);
+			verticalAlignmentValue = net.sf.jasperreports.engine.type.VerticalAlignEnum.getByValue(verticalAlignment);
 			rotationValue = RotationEnum.getByValue(rotation);
 			runDirectionValue = RunDirectionEnum.getByValue(runDirection);
 			lineSpacingValue = LineSpacingEnum.getByValue(lineSpacing);
@@ -1155,48 +899,10 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 			rotation = null;
 			lineSpacing = null;
 		}
-		
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setToBox(
-				border,
-				topBorder,
-				leftBorder,
-				bottomBorder,
-				rightBorder,
-				borderColor,
-				topBorderColor,
-				leftBorderColor,
-				bottomBorderColor,
-				rightBorderColor,
-				padding,
-				topPadding,
-				leftPadding,
-				bottomPadding,
-				rightPadding,
-				lineBox
-				);
-			border = null;
-			topBorder = null;
-			leftBorder = null;
-			bottomBorder = null;
-			rightBorder = null;
-			borderColor = null;
-			topBorderColor = null;
-			leftBorderColor = null;
-			bottomBorderColor = null;
-			rightBorderColor = null;
-			padding = null;
-			topPadding = null;
-			leftPadding = null;
-			bottomPadding = null;
-			rightPadding = null;
-		}
 
 		if (isStyledText != null)
 		{
-			markup = isStyledText.booleanValue() ? JRCommonText.MARKUP_STYLED_TEXT : JRCommonText.MARKUP_NONE;
+			markup = isStyledText ? JRCommonText.MARKUP_STYLED_TEXT : JRCommonText.MARKUP_NONE;
 			isStyledText = null;
 		}
 
@@ -1223,8 +929,18 @@ public class JRBasePrintText extends JRBasePrintElement implements JRPrintText
 
 			fontSize = null;
 		}
+
+		if (PSEUDO_SERIAL_VERSION_UID < JRConstants.PSEUDO_SERIAL_VERSION_UID_6_0_2)
+		{
+			horizontalTextAlign = net.sf.jasperreports.engine.type.HorizontalAlignEnum.getHorizontalTextAlignEnum(horizontalAlignmentValue);
+			verticalTextAlign = net.sf.jasperreports.engine.type.VerticalAlignEnum.getVerticalTextAlignEnum(verticalAlignmentValue);
+
+			horizontalAlignmentValue = null;
+			verticalAlignmentValue = null;
+		}
 	}
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);

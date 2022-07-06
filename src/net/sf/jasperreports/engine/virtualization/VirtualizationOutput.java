@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,6 @@ package net.sf.jasperreports.engine.virtualization;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.ObjectStreamClass;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -33,15 +32,14 @@ import java.util.Map;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.fill.JRVirtualizationContext;
-import net.sf.jasperreports.engine.util.VirtualizationSerializer;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: VirtualizationOutput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class VirtualizationOutput extends ObjectOutputStream
 {
-	private final VirtualizationSerializer virtualizationSerializer;
+	public static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_REFERENCE_TYPE = "engine.virtualization.output.unsupported.reference.type";
+	
 	private final JRVirtualizationContext virtualizationContext;
 	
 	private final SerializerRegistry serializerRegistry = DefaultSerializerRegistry.getInstance();
@@ -50,41 +48,16 @@ public class VirtualizationOutput extends ObjectOutputStream
 	private final Map<Object, Integer>[] writtenObjects = new Map[SerializationConstants.OBJECT_TYPE_COUNT];
 
 	public VirtualizationOutput(OutputStream out,
-			VirtualizationSerializer serializer,
 			JRVirtualizationContext virtualizationContext) throws IOException
 	{
 		super(out);
 		
-		this.virtualizationSerializer = serializer;
 		this.virtualizationContext = virtualizationContext;
 	}
 
 	public JRVirtualizationContext getVirtualizationContext()
 	{
 		return virtualizationContext;
-	}
-
-	protected void annotateClass(Class<?> clazz) throws IOException
-	{
-		super.annotateClass(clazz);
-
-		// TODO lucianc investigate if we still need this
-		int loaderIdx = virtualizationSerializer.getClassloaderIdx(clazz);
-		writeShort(loaderIdx);
-	}
-
-	@Override
-	protected void writeClassDescriptor(ObjectStreamClass desc)
-			throws IOException
-	{
-		Class<?> clazz = desc.forClass();
-		if (clazz == null)
-		{
-			throw new RuntimeException();
-		}
-		
-		int classIdx = virtualizationSerializer.getClassDescriptorIdx(clazz);
-		writeIntCompressed(classIdx);
 	}
 	
 	public void writeIntCompressed(int value) throws IOException
@@ -153,13 +126,16 @@ public class VirtualizationOutput extends ObjectOutputStream
 			switch (referenceType)
 			{
 			case OBJECT:
-				objectsMap = new HashMap<Object, Integer>();
+				objectsMap = new HashMap<>();
 				break;
 			case IDENTITY:
-				objectsMap = new IdentityHashMap<Object, Integer>();
+				objectsMap = new IdentityHashMap<>();
 				break;
 			default:
-				throw new JRRuntimeException("Unsupported reference type " + referenceType);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNSUPPORTED_REFERENCE_TYPE,
+						new Object[]{referenceType});
 			}
 			
 			writtenObjects[typeValue - SerializationConstants.OBJECT_TYPE_OFFSET] = objectsMap;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -50,7 +50,6 @@ import net.sf.jasperreports.engine.type.SortOrderEnum;
  * When several sort fields are specified, the sorting will be performed using the fields as
  * sort keys in the order in which they appear in the report template.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRSortField.java 7199 2014-08-27 13:58:10Z teodord $
  * @see net.sf.jasperreports.engine.data.IndexedDataSource
  * @see net.sf.jasperreports.engine.fill.DatasetSortUtil
  * @see net.sf.jasperreports.engine.fill.SortedDataSource

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,11 +25,14 @@ package net.sf.jasperreports.engine.query;
 
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRValueParameter;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Xalan XPath query executer factory.
@@ -38,12 +41,11 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * query executers.
  * 
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: XalanXPathQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XalanXPathQueryExecuterFactory extends JRXPathQueryExecuterFactory
 {
 	/**
-	 * Built-in parameter holdin the value of the <code>javax.xml.parsers.DocumentBuilderFactor</code> used to create 
+	 * Built-in parameter holding the value of the <code>javax.xml.parsers.DocumentBuilderFactor</code> used to create
 	 * documents of type <code>org.w3c.dom.Document<code>
 	 */
 	public final static String PARAMETER_DOCUMENT_BUILDER_FACTORY = "DOCUMENT_BUILDER_FACTORY";
@@ -62,6 +64,13 @@ public class XalanXPathQueryExecuterFactory extends JRXPathQueryExecuterFactory
 	 * the prefixed properties not to be searched for.  
 	 * </p>
 	 */
+	@Property(
+			name="net.sf.jasperreports.xml.namespace.{arbitrary_prefix}",
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {JRXPathQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_4_6_0
+			)
 	public final static String XML_NAMESPACE_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "xml.namespace.";
 	
 	/**
@@ -82,6 +91,14 @@ public class XalanXPathQueryExecuterFactory extends JRXPathQueryExecuterFactory
 	 * </p>
 	 * It defaults to <code>false</code>
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {JRXPathQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_4_6_0,
+			valueType = Boolean.class
+			)
 	public final static String XML_DETECT_NAMESPACES = JRPropertiesUtil.PROPERTY_PREFIX + "xml.detect.namespaces";
 	
 	private final static Object[] XALAN_XPATH_BUILTIN_PARAMETERS = {
@@ -94,18 +111,29 @@ public class XalanXPathQueryExecuterFactory extends JRXPathQueryExecuterFactory
 		XML_TIME_ZONE, "java.util.TimeZone",
 		};
 
+	@Override
 	public Object[] getBuiltinParameters()
 	{
 		return XALAN_XPATH_BUILTIN_PARAMETERS;
 	}
 	
+	@Override
 	public JRQueryExecuter createQueryExecuter(
-		JasperReportsContext jasperReportsContext, 
-		JRDataset dataset, 
+		JasperReportsContext jasperReportsContext,
+		JRDataset dataset,
 		Map<String,? extends JRValueParameter> parameters
 		) throws JRException
 	{
-		return new XalanXPathQueryExecuter(jasperReportsContext, dataset, parameters);
+		return createQueryExecuter(SimpleQueryExecutionContext.of(jasperReportsContext), dataset, parameters);
 	}
 
+	@Override
+	public JRQueryExecuter createQueryExecuter(
+		QueryExecutionContext context,
+		JRDataset dataset,
+		Map<String, ? extends JRValueParameter> parameters
+		) throws JRException
+	{
+		return new XalanXPathQueryExecuter(context, dataset, parameters);
+	}
 }

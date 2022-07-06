@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.JRVisitor;
  * This class is used for representing a static text element. Together with its parents, it contains the full
  * functionality needed for handling a static text.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseStaticText.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseStaticText extends JRBaseTextElement implements JRStaticText
 {
@@ -61,17 +60,13 @@ public class JRBaseStaticText extends JRBaseTextElement implements JRStaticText
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public String getText()
 	{
 		return this.text;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setText(String text)
 	{
 		Object old = this.text;
@@ -79,17 +74,13 @@ public class JRBaseStaticText extends JRBaseTextElement implements JRStaticText
 		getEventSupport().firePropertyChange(PROPERTY_TEXT, old, this.text);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitStaticText(this);

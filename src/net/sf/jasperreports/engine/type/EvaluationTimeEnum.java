@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,11 @@
  */
 package net.sf.jasperreports.engine.type;
 
-import net.sf.jasperreports.engine.JRConstants;
+import net.sf.jasperreports.engine.JRVariable;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: EvaluationTimeEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public enum EvaluationTimeEnum implements JREnum
 {
@@ -76,12 +75,19 @@ public enum EvaluationTimeEnum implements JREnum
 	 * NB: avoid using this evaluation type when other types suffice as it can lead
 	 * to performance loss.
 	 */
-	AUTO((byte)7, "Auto");
+	AUTO((byte)7, "Auto"),
+	
+	/**
+	 * Used for elements that are evaluated at the moment the master report ends.
+	 * 
+	 * @see JRVariable#MASTER_CURRENT_PAGE
+	 * @see JRVariable#MASTER_TOTAL_PAGES
+	 */
+	MASTER((byte) 8, "Master");
 
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient byte value;
 	private final transient String name;
 
@@ -92,24 +98,24 @@ public enum EvaluationTimeEnum implements JREnum
 	}
 
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
 	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
-	
-	/**
-	 *
-	 */
-	public final byte getValue()
 	{
 		return value;
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
+	@Override
+	public final byte getValue()
+	{
+		return value;
+	}
+	
+	@Override
 	public String getName()
 	{
 		return name;
@@ -120,11 +126,11 @@ public enum EvaluationTimeEnum implements JREnum
 	 */
 	public static EvaluationTimeEnum getByName(String name)
 	{
-		return (EvaluationTimeEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static EvaluationTimeEnum getByValue(Byte value)
 	{
@@ -132,11 +138,10 @@ public enum EvaluationTimeEnum implements JREnum
 	}
 	
 	/**
-	 *
+	 * @deprecated Used only by deprecated serialized fields.
 	 */
 	public static EvaluationTimeEnum getByValue(byte value)
 	{
-		return getByValue(new Byte(value));
+		return getByValue((Byte)value);
 	}
-	
 }

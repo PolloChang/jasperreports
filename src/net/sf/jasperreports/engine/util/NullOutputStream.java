@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import java.io.OutputStream;
  * Output stream implementation that discards all the data.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: NullOutputStream.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class NullOutputStream extends OutputStream
 {
@@ -37,16 +36,19 @@ public class NullOutputStream extends OutputStream
 	{
 	}
 
+	@Override
 	public void write(int b)
 	{
 		// discard the data
 	}
 
+	@Override
 	public void write(byte[] b, int off, int len)
 	{
 		// discard the data
 	}
 
+	@Override
 	public void write(byte[] b)
 	{
 		// discard the data

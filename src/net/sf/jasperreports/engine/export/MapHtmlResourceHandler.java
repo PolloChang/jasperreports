@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,6 @@ import java.util.Map;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: MapHtmlResourceHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MapHtmlResourceHandler implements HtmlResourceHandler 
 {
@@ -52,7 +51,7 @@ public class MapHtmlResourceHandler implements HtmlResourceHandler
 	 */
 	public MapHtmlResourceHandler(HtmlResourceHandler parentHandler)
 	{
-		this(parentHandler, new HashMap<String, byte[]>());
+		this(parentHandler, new HashMap<>());
 	}
 
 	/**
@@ -71,9 +70,7 @@ public class MapHtmlResourceHandler implements HtmlResourceHandler
 		this((HtmlResourceHandler)null);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getResourcePath(String id)
 	{
 		if (parentHandler == null)
@@ -83,9 +80,7 @@ public class MapHtmlResourceHandler implements HtmlResourceHandler
 		return parentHandler.getResourcePath(id);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public void handleResource(String id, byte[] data)
 	{
 		if (parentHandler != null)

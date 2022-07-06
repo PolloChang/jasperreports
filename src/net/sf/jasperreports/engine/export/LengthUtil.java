@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,43 +27,64 @@ package net.sf.jasperreports.engine.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: LengthUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class LengthUtil 
 {
 
 	/**
-	 * 
+	 * Converts pixels to inches without decimal truncation.
 	 */
 	public static double inch(double pixels)
 	{
 		double inches = 0.0;
-		inches = pixels/72.0;
-		inches = (Math.floor(inches * 100.0))/100.0;
+		inches = pixels / 72.0;
 		return inches;
 	}
 	
 	/**
 	 * 
 	 */
-	public static double inchRound(double pixels)
+	public static double inchFloor2Dec(double pixels)
 	{
 		double inches = 0.0;
-		inches = pixels/72.0;
-		inches = (Math.round(inches * 100.0))/100.0;
+		inches = pixels / 72.0;
+		inches = (Math.floor(inches * 100.0)) / 100.0;
+		return inches;
+	}
+	
+	/**
+	 * 
+	 */
+	public static double inchFloor4Dec(double pixels)
+	{
+		double inches = 0.0;
+		inches = pixels / 72.0;
+		inches = (Math.floor(inches * 10000.0)) / 10000.0;
 		return inches;
 	}
 
 	/**
 	 * 
 	 */
-	public static double inchNoRound(double pixels)
+	public static double inchRound2Dec(double pixels)
 	{
 		double inches = 0.0;
-		inches = pixels/72.0;
+		inches = pixels / 72.0;
+		inches = (Math.round(inches * 100.0)) / 100.0;
 		return inches;
 	}
 	
+	/**
+	 * 
+	 */
+	public static double inchRound4Dec(double pixels)
+	{
+		double inches = 0.0;
+		inches = pixels / 72.0;
+		inches = (Math.round(inches * 10000.0)) / 10000.0;
+		return inches;
+	}
+
 	/**
 	 * Convert a float value to twips (multiply with 20)
 	 * @param points value that need to be converted

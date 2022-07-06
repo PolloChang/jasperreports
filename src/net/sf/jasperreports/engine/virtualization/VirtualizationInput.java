@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,25 +23,24 @@
  */
 package net.sf.jasperreports.engine.virtualization;
 
+import java.awt.Font;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectStreamClass;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.fill.JRVirtualizationContext;
-import net.sf.jasperreports.engine.util.VirtualizationSerializer;
+import net.sf.jasperreports.engine.fonts.FontUtil;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: VirtualizationInput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class VirtualizationInput extends ObjectInputStream
 {
+	public static final String EXCEPTION_MESSAGE_KEY_READ_OBJECT_FAILED = "engine.virtualization.input.read.object.failed";
 
-	private final VirtualizationSerializer serializer;
 	private final JRVirtualizationContext virtualizationContext;
 	
 	private final SerializerRegistry serializerRegistry = DefaultSerializerRegistry.getInstance();
@@ -50,49 +49,18 @@ public class VirtualizationInput extends ObjectInputStream
 	private final List<Object>[] readObjects = new List[SerializationConstants.OBJECT_TYPE_COUNT];
 
 	public VirtualizationInput(InputStream in,
-			VirtualizationSerializer serializer,
 			JRVirtualizationContext virtualizationContext) throws IOException
 	{
 		super(in);
 		
-		this.serializer = serializer;
 		this.virtualizationContext = virtualizationContext;
+		
+		enableResolveObject(true);		
 	}
 
 	public JRVirtualizationContext getVirtualizationContext()
 	{
 		return virtualizationContext;
-	}
-
-	protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException
-	{
-		Class<?> clazz;
-		try
-		{
-			clazz = super.resolveClass(desc);
-			readShort();
-		}
-		catch (ClassNotFoundException e)
-		{
-			int loaderIdx = readShort();
-			clazz = serializer.resolveClass(desc, loaderIdx);
-			if (clazz == null)
-			{
-				throw e;
-			}
-		}
-
-		return clazz;
-	}
-
-	@Override
-	protected ObjectStreamClass readClassDescriptor() throws IOException,
-			ClassNotFoundException
-	{
-		int classIdx = readIntCompressed();
-		Class<?> clazz = serializer.getClassForDescriptorIdx(classIdx);
-		ObjectStreamClass descriptor = ObjectStreamClass.lookupAny(clazz);
-		return descriptor;
 	}
 	
 	public int readIntCompressed() throws IOException
@@ -121,7 +89,11 @@ public class VirtualizationInput extends ObjectInputStream
 			}
 			catch (ClassNotFoundException e)
 			{
-				throw new JRRuntimeException("Failed to read object", e);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_READ_OBJECT_FAILED,
+						(Object[])null,
+						e);
 			}
 		}
 		
@@ -155,10 +127,21 @@ public class VirtualizationInput extends ObjectInputStream
 		List<Object> objects = readObjects[typeValue - SerializationConstants.OBJECT_TYPE_OFFSET];
 		if (objects == null)
 		{
-			objects = new ArrayList<Object>();
+			objects = new ArrayList<>();
 			readObjects[typeValue - SerializationConstants.OBJECT_TYPE_OFFSET] = objects;
 		}
 		
 		objects.add(value);
+	}
+
+	@Override
+	protected Object resolveObject(Object obj) throws IOException
+	{
+		if (obj instanceof Font)
+		{
+			return FontUtil.getInstance(virtualizationContext.getJasperReportsContext()).resolveDeserializedFont((Font) obj);
+		}
+		
+		return obj;
 	}
 }

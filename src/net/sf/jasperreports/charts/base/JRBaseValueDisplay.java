@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -40,7 +40,6 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
  * such as a Meter or Thermometer.
  *
  * @author Barry Klawans (bklawans@users.sourceforge.net)
- * @version $Id: JRBaseValueDisplay.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseValueDisplay implements JRValueDisplay, Serializable
 {
@@ -60,7 +59,7 @@ public class JRBaseValueDisplay implements JRValueDisplay, Serializable
 
 	/**
 	 * The formatting mask to use when writing the value.  Must a pattern
-	 * that is accepted by a code>java.text.DecimalFormat</code> object.
+	 * that is accepted by a <code>java.text.DecimalFormat</code> object.
 	 */
 	protected String mask;
 
@@ -107,31 +106,23 @@ public class JRBaseValueDisplay implements JRValueDisplay, Serializable
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRChart getChart()
 	{
 		return chart;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getColor()
 	{
 		return color;
 	}
-	/**
-	 *
-	 */
+	@Override
 	public String getMask()
 	{
 		return mask;
 	}
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getFont()
 	{
 		return font;
@@ -148,9 +139,7 @@ public class JRBaseValueDisplay implements JRValueDisplay, Serializable
 	{
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		try

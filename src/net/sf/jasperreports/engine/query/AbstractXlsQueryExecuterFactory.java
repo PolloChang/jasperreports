@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,16 +23,24 @@
  */
 package net.sf.jasperreports.engine.query;
 
+import java.util.Locale;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.util.Designated;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Query executer factory for Excel file type.
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: AbstractXlsQueryExecuterFactory.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
-public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecuterFactory 
+public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecuterFactory implements Designated 
 {
+	
+	public static final String QUERY_EXECUTER_NAME = "net.sf.jasperreports.query.executer:XLS";
+	
 	/**
 	 * Built-in parameter holding the value of the <code>Workbook</code> to be used for obtaining the Excel data.
 	 */
@@ -51,6 +59,12 @@ public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecu
 	/**
 	 * Built-in parameter/property holding the value of the <code>java.lang.String</code> source to be used for obtaining the Excel data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
 	public static final String XLS_SOURCE = JRPropertiesUtil.PROPERTY_PREFIX + "xls.source";
 	
 	/**
@@ -59,6 +73,13 @@ public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecu
 	 * It can also be used as the prefix for custom dataset properties specifying the names of the Excel columns in the format:
 	 * <code>net.sf.jasperreports.xls.column.names.{arbitrary_name}=value1[, value2, ...]</code>
 	 */
+	@Property(
+			name = "net.sf.jasperreports.xls.column.names.{arbitrary_name}",
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
 	public static final String XLS_COLUMN_NAMES = JRPropertiesUtil.PROPERTY_PREFIX + "xls.column.names";
 
 	/**
@@ -67,6 +88,13 @@ public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecu
 	 * It can also be used as the prefix for custom dataset properties specifying the names of the Excel column indexes in the format:
 	 * <code>net.sf.jasperreports.xls.column.indexes.{arbitrary_name}=value1[, value2, ...]</code>
 	 */
+	@Property(
+			name = "net.sf.jasperreports.xls.column.indexes.{arbitrary_name}",
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
 	public static final String XLS_COLUMN_INDEXES = JRPropertiesUtil.PROPERTY_PREFIX + "xls.column.indexes";
 
 	/**
@@ -95,6 +123,13 @@ public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecu
 	 * <p/>
 	 * The allowed format is: language[_country[_variant]] 
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2,
+			valueType = Locale.class
+			)
 	public static final String XLS_LOCALE_CODE = JRPropertiesUtil.PROPERTY_PREFIX + "xls.locale.code";
 	
 	/**
@@ -105,6 +140,12 @@ public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecu
 	/**
 	 * Built-in parameter/property holding the <code>java.lang.String</code> value of the time zone id to be used when parsing the Excel data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
 	public static final String XLS_TIMEZONE_ID = JRPropertiesUtil.PROPERTY_PREFIX + "xls.timezone.id";
 	
 	/**
@@ -115,6 +156,12 @@ public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecu
 	/**
 	 * Built-in parameter/property holding the value of the date format pattern to be used when parsing the Excel data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
 	public static final String XLS_DATE_PATTERN = JRPropertiesUtil.PROPERTY_PREFIX + "xls.date.pattern";
 
 	/**
@@ -125,11 +172,23 @@ public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecu
 	/**
 	 * Built-in parameter/property holding the value of the number format pattern to be used when parsing the Excel data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
 	public static final String XLS_NUMBER_PATTERN = JRPropertiesUtil.PROPERTY_PREFIX + "xls.number.pattern";
 	
 	/**
 	 * Built-in parameter/property holding the value of the sheet name to be used when parsing the Excel data.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.DATASET},
+			scopeQualifications = {QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_5_5_2
+			)
 	public static final String XLS_SHEET_SELECTION = JRPropertiesUtil.PROPERTY_PREFIX + "xls.sheet.selection";
 	
 	/**
@@ -141,4 +200,10 @@ public abstract class AbstractXlsQueryExecuterFactory extends AbstractQueryExecu
 	 * would have no effect. 
 	 */
 	public static final String XLS_USE_FIRST_ROW_AS_HEADER = "XLS_USE_FIRST_ROW_AS_HEADER";
+
+	@Override
+	public String getDesignation()
+	{
+		return QUERY_EXECUTER_NAME;
+	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,13 +31,11 @@ import java.util.List;
 
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JasperReportsContext;
-
-import org.apache.commons.lang.ClassUtils;
+import net.sf.jasperreports.engine.util.ClassUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CompositeExporterConfigurationFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CompositeExporterConfigurationFactory<C extends CommonExportConfiguration>
 {
@@ -71,7 +69,7 @@ public class CompositeExporterConfigurationFactory<C extends CommonExportConfigu
 			boolean isOverrideHints = 
 				parent.isOverrideHints() == null 
 				? propertiesUtil.getBooleanProperty(ExporterConfiguration.PROPERTY_EXPORT_CONFIGURATION_OVERRIDE_REPORT_HINTS)
-				: parent.isOverrideHints().booleanValue();
+				: parent.isOverrideHints();
 			return getConfiguration(parent, child, isOverrideHints);
 		}
 	}
@@ -105,7 +103,7 @@ public class CompositeExporterConfigurationFactory<C extends CommonExportConfigu
 	 */
 	private final C getProxy(Class<?> clazz, InvocationHandler handler)
 	{
-		List<Class<?>> allInterfaces = new ArrayList<Class<?>>();
+		List<Class<?>> allInterfaces = new ArrayList<>();
 
 		if (clazz.isInterface())
 		{
@@ -113,8 +111,7 @@ public class CompositeExporterConfigurationFactory<C extends CommonExportConfigu
 		}
 		else
 		{
-			@SuppressWarnings("unchecked")
-			List<Class<?>> lcInterfaces = ClassUtils.getAllInterfaces(clazz);
+			List<Class<?>> lcInterfaces = ClassUtils.getInterfaces(clazz);
 			allInterfaces.addAll(lcInterfaces);
 		}
 
@@ -147,9 +144,7 @@ public class CompositeExporterConfigurationFactory<C extends CommonExportConfigu
 			this.child = child;
 		}
 		
-		/**
-		 * 
-		 */
+		@Override
 		public Object invoke(
 			Object proxy, 
 			Method method, 

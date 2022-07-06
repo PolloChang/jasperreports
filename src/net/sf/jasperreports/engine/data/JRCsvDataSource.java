@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,20 +37,30 @@ import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRField;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.query.JRCsvQueryExecuterFactory;
 import net.sf.jasperreports.engine.util.FormatUtils;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.repo.RepositoryContext;
 import net.sf.jasperreports.repo.RepositoryUtil;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 
 /**
@@ -64,20 +74,50 @@ import org.apache.commons.logging.LogFactory;
  * either specify a collection of column names or set a flag to read the column names from the first row of the CSV file.
  *
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRCsvDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDataSource
 {
 	protected static final Log log = LogFactory.getLog(JRCsvDataSource.class);
+	public static final String EXCEPTION_MESSAGE_KEY_CSV_FIELD_VALUE_NOT_RETRIEVED = "data.csv.field.value.not.retrieved";
+	public static final String EXCEPTION_MESSAGE_KEY_MALFORMED_QUOTED_FIELD = "data.csv.malformed.quoted.field";
+	public static final String EXCEPTION_MESSAGE_KEY_MISPLACED_QUOTE = "data.csv.misplaced.quote";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_MORE_CHARS = "data.csv.no.more.chars";
 	
+	/**
+	 * Property specifying the CSV column name for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {JRCsvQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+	)
+	public static final String PROPERTY_FIELD_COLUMN_NAME = JRPropertiesUtil.PROPERTY_PREFIX + "csv.field.column.name";
+	
+	/**
+	 * Property specifying the CSV column index for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {JRCsvQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1,
+			valueType = Integer.class
+	)
+	public static final String PROPERTY_FIELD_COLUMN_INDEX = JRPropertiesUtil.PROPERTY_PREFIX + "csv.field.column.index";
+	
+	public static final String INDEXED_COLUMN_PREFIX = "COLUMN_";
+	private static final int INDEXED_COLUMN_PREFIX_LENGTH = INDEXED_COLUMN_PREFIX.length();
+
 	private DateFormat dateFormat;
 	private NumberFormat numberFormat;
 	private char fieldDelimiter = ',';
 	private String recordDelimiter = "\n";
-	private Map<String, Integer> columnNames = new LinkedHashMap<String, Integer>();
+	private Map<String, Integer> columnNames = new LinkedHashMap<>();
+	private Map<String,Integer> columnIndexMap = new HashMap<>();
 	private boolean useFirstRowAsHeader;
 
-	private List<String> fields;
+	private List<String> crtRecordColumnValues;
 	private Reader reader;
 	private char buffer[] = new char[1024];
 	private int position;
@@ -165,7 +205,12 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	 */
 	public JRCsvDataSource(JasperReportsContext jasperReportsContext, String location) throws JRException
 	{
-		this(RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(location));
+		this(SimpleRepositoryContext.of(jasperReportsContext), location);
+	}
+
+	public JRCsvDataSource(RepositoryContext context, String location) throws JRException
+	{
+		this(RepositoryUtil.getInstance(context).getInputStreamFromLocation(location));
 		
 		toClose = true;
 	}
@@ -179,7 +224,12 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	 */
 	public JRCsvDataSource(JasperReportsContext jasperReportsContext, String location, String charsetName) throws JRException, UnsupportedEncodingException
 	{
-		this(RepositoryUtil.getInstance(jasperReportsContext).getInputStreamFromLocation(location), charsetName);
+		this(SimpleRepositoryContext.of(jasperReportsContext), location, charsetName);
+	}
+
+	public JRCsvDataSource(RepositoryContext context, String location, String charsetName) throws JRException, UnsupportedEncodingException
+	{
+		this(RepositoryUtil.getInstance(context).getInputStreamFromLocation(location), charsetName);
 		
 		toClose = true;
 	}
@@ -213,9 +263,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean next() throws JRException
 	{
 		try {
@@ -223,11 +271,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 				if (useFirstRowAsHeader) 
 				{
 					parseRow();
-					this.columnNames = new LinkedHashMap<String, Integer>();
-					for (int i = 0; i < fields.size(); i++) {
-						String name = fields.get(i);
-						this.columnNames.put(name, Integer.valueOf(i));
-					}
+					assignColumnNames();
 				}
 				processingStarted = true;
 			}
@@ -237,27 +281,51 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 			throw new JRException(e);
 		}
 	}
+	
+	protected void assignColumnNames()
+	{
+		BidiMap<Integer, String> indexColumns = new DualHashBidiMap<>();
+		for (int i = 0; i < crtRecordColumnValues.size(); i++)
+		{
+			String name = crtRecordColumnValues.get(i);
+			
+			Integer existingIdx = indexColumns.getKey(name);
+			if (existingIdx == null)
+			{
+				//use the name from the file if possible
+				indexColumns.put(i, name);
+			}
+			else
+			{
+				//the name is taken, force COLUMN_i for this column and recursively if COLUMN_x is already used
+				Integer forceIndex = i;
+				do
+				{
+					String indexName = INDEXED_COLUMN_PREFIX + forceIndex;
+					Integer existingIndex = indexColumns.getKey(indexName);
+					indexColumns.put(forceIndex, indexName);
+					forceIndex = existingIndex;
+				}
+				while(forceIndex != null);
+			}
+		}
+		
+		this.columnNames = new LinkedHashMap<>();
+		for (int i = 0; i < crtRecordColumnValues.size(); i++)
+		{
+			String columnName = indexColumns.get(i);
+			this.columnNames.put(columnName, i);
+		}
+	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(JRField jrField) throws JRException
 	{
-		String fieldName = jrField.getName();
+		Integer columnIndex = getColumnIndex(jrField);
 
-		Integer columnIndex = columnNames.get(fieldName);
-		if (columnIndex == null && fieldName.startsWith("COLUMN_"))
+		if (crtRecordColumnValues.size() > columnIndex) 
 		{
-			columnIndex = Integer.valueOf(fieldName.substring(7));
-		}
-		if (columnIndex == null)
-		{
-			throw new JRException("Unknown column name : " + fieldName);
-		}
-
-		if (fields.size() > columnIndex.intValue()) 
-		{
-			String fieldValue = fields.get(columnIndex.intValue());
+			String fieldValue = crtRecordColumnValues.get(columnIndex);
 			Class<?> valueClass = jrField.getValueClass();
 			
 			if (valueClass.equals(String.class))
@@ -275,7 +343,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 			try {
 				if (valueClass.equals(Boolean.class)) 
 				{
-					return fieldValue.equalsIgnoreCase("true") ? Boolean.TRUE : Boolean.FALSE;
+					return fieldValue.equalsIgnoreCase("true");
 				}
 				else if (Number.class.isAssignableFrom(valueClass))
 				{
@@ -300,10 +368,17 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 				}
 				else
 				{
-					throw new JRException("Field '" + jrField.getName() + "' is of class '" + valueClass.getName() + "' and can not be converted");
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_CANNOT_CONVERT_FIELD_TYPE,
+							new Object[]{jrField.getName(), valueClass.getName()});
 				}
 			} catch (Exception e) {
-				throw new JRException("Unable to get value for field '" + jrField.getName() + "' of class '" + valueClass.getName() + "'", e);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_CSV_FIELD_VALUE_NOT_RETRIEVED,
+						new Object[]{jrField.getName(), valueClass.getName()}, 
+						e);
 			}
 		}
 
@@ -311,6 +386,68 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	}
 
 
+	/**
+	 *
+	 */
+	private Integer getColumnIndex(JRField field) throws JRException
+	{
+		String fieldName = field.getName();
+		Integer columnIndex = columnIndexMap.get(fieldName);
+		if (columnIndex == null)
+		{
+			if (field.hasProperties())
+			{
+				String columnName = field.getPropertiesMap().getProperty(PROPERTY_FIELD_COLUMN_NAME);
+				if (columnName != null)
+				{
+					columnIndex = columnNames.get(columnName);
+					if (columnIndex == null)
+					{
+						throw 
+							new JRException(
+								EXCEPTION_MESSAGE_KEY_UNKNOWN_COLUMN_NAME,
+								new Object[]{columnName});
+					}
+				}
+			}
+
+			if (columnIndex == null)
+			{
+				if (field.hasProperties())
+				{
+					String index = field.getPropertiesMap().getProperty(PROPERTY_FIELD_COLUMN_INDEX);
+					if (index != null)
+					{
+						columnIndex = Integer.valueOf(index);
+					}
+				}
+			}
+			
+			if (columnIndex == null)
+			{
+				columnIndex = columnNames.get(fieldName);
+			}
+			
+			if (columnIndex == null && fieldName.startsWith(INDEXED_COLUMN_PREFIX))
+			{
+				columnIndex = Integer.valueOf(fieldName.substring(INDEXED_COLUMN_PREFIX_LENGTH));
+			}
+			
+			if (columnIndex == null)
+			{
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_COLUMN_NAME,
+						new Object[]{fieldName});
+			}
+
+			columnIndexMap.put(fieldName, columnIndex);
+		}
+		
+		return columnIndex;
+	}
+
+	
 	/**
 	 * Parses a row of CSV data and extracts the fields it contains
 	 */
@@ -325,7 +462,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 		boolean startPosition = false;
 		char c;
 		int leadingSpaces = 0;
-		fields = new ArrayList<String>();
+		crtRecordColumnValues = new ArrayList<>();
 
 		String row = getRow();
 		if (row == null)// || row.length() == 0)
@@ -379,9 +516,17 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 							{
 								//testing if white spaces follow after the closing quote; 
 								int trailingSpaces = 1;
-								while(pos + trailingSpaces < row.length() && row.charAt(pos + trailingSpaces)<= ' ')
+								while (pos + trailingSpaces < row.length())
 								{
-									++trailingSpaces;
+									char nextChar = row.charAt(pos + trailingSpaces);
+									if (nextChar <= ' ' && nextChar != fieldDelimiter)
+									{
+										++trailingSpaces;
+									}
+									else
+									{
+										break;
+									}
 								}
 								
 								//TODO: handling misplaced quotes along with parametrized isStrictCsv; 
@@ -390,7 +535,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 									misplacedQuote = true;
 									if(isStrictCsv)
 									{
-										throw new JRException("Misplaced quote found at position " + pos + " in row: " + row);
+										throw 
+											new JRException(
+												EXCEPTION_MESSAGE_KEY_MISPLACED_QUOTE,
+												new Object[]{pos, row});
 									}
 								}
 								insideQuotes = false;
@@ -405,7 +553,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 					{
 						if(isStrictCsv)
 						{
-							throw new JRException("Misplaced quote found at position " + pos + " in row: " + row);
+							throw 
+								new JRException(
+									EXCEPTION_MESSAGE_KEY_MISPLACED_QUOTE,
+									new Object[]{pos, row});
 						}
 					}
 				}
@@ -425,7 +576,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 					}
 					else if(isStrictCsv)
 					{
-						throw new JRException("Malformed quoted field: " + field);
+						throw 
+							new JRException(
+								EXCEPTION_MESSAGE_KEY_MALFORMED_QUOTED_FIELD,
+								new Object[]{field});
 					}
 					field = field.substring(1);
 					field = replaceAll(field, "\"\"", "\"");
@@ -447,7 +601,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 
 				isQuoted = false;
 				insideQuotes = false;
-				fields.add(field);
+				crtRecordColumnValues.add(field);
 				++addedFields;
 				
 				// if many rows were concatenated due to misplacing of starting and ending quotes in a multiline field 
@@ -489,7 +643,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 			//logged at logger debug level
 			if(isStrictCsv)
 			{
-				throw new JRException("Misplaced quote found in field: " + field);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_MISPLACED_QUOTE,
+						new Object[]{field});
 			}
 
 			if (log.isDebugEnabled())
@@ -507,17 +664,20 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 			}
 			else if(isStrictCsv)
 			{
-				throw new JRException("Malformed quoted field: " + field);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_MALFORMED_QUOTED_FIELD,
+						new Object[]{field});
 			}
 			field = field.substring(1);
 			field = replaceAll(field, "\"\"", "\"");
 		}
 		
-		fields.add(field);
+		crtRecordColumnValues.add(field);
 		++addedFields;
 		while(addedFields < columnNames.size())
 		{
-			fields.add("");
+			crtRecordColumnValues.add("");
 			++addedFields;
 		}
 		
@@ -530,7 +690,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	 */
 	private String getRow() throws IOException
 	{
-		StringBuffer row = new StringBuffer();
+		StringBuilder row = new StringBuilder();
 		char c;
 
 		while (true) 
@@ -591,7 +751,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 			position = 0;
 			if (bufSize == -1)
 			{
-				throw new JRException("No more chars");
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_NO_MORE_CHARS,
+						(Object[])null);
 			}
 		}
 
@@ -615,7 +778,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	{
 		if (processingStarted)
 		{
-			throw new JRRuntimeException("Cannot modify data source properties after data reading has started");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_MODIFY_PROPERTIES_AFTER_START,
+					(Object[])null);
 		}
 		this.dateFormat = dateFormat;
 	}
@@ -639,7 +805,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	{
 		if (processingStarted)
 		{
-			throw new JRRuntimeException("Cannot modify data source properties after data reading has started");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_MODIFY_PROPERTIES_AFTER_START,
+					(Object[])null);
 		}
 		this.fieldDelimiter = fieldDelimiter;
 	}
@@ -662,7 +831,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	{
 		if (processingStarted)
 		{
-			throw new JRRuntimeException("Cannot modify data source properties after data reading has started");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_MODIFY_PROPERTIES_AFTER_START,
+					(Object[])null);
 		}
 		this.recordDelimiter = recordDelimiter;
 	}
@@ -675,12 +847,15 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	{
 		if (processingStarted)
 		{
-			throw new JRRuntimeException("Cannot modify data source properties after data reading has started");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_MODIFY_PROPERTIES_AFTER_START,
+					(Object[])null);
 		}
-		this.columnNames = new LinkedHashMap<String, Integer>();
+		this.columnNames = new LinkedHashMap<>();
 		for (int i = 0; i < columnNames.length; i++)
 		{
-			this.columnNames.put(columnNames[i], Integer.valueOf(i));
+			this.columnNames.put(columnNames[i], i);
 		}
 	}
 
@@ -693,7 +868,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	{
 		if (processingStarted)
 		{
-			throw new JRRuntimeException("Cannot modify data source properties after data reading has started");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_MODIFY_PROPERTIES_AFTER_START,
+					(Object[])null);
 		}
 		this.useFirstRowAsHeader = useFirstRowAsHeader;
 	}
@@ -720,7 +898,7 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 
 	private String replaceAll(String string, String substring, String replacement)
 	{
-		StringBuffer result = new StringBuffer();
+		StringBuilder result = new StringBuilder();
 		int index = string.indexOf(substring);
 		int oldIndex = 0;
 		while (index >= 0) {
@@ -749,7 +927,10 @@ public class JRCsvDataSource extends JRAbstractTextDataSource// implements JRDat
 	public void setNumberFormat(NumberFormat numberFormat) {
 		if (processingStarted)
 		{
-			throw new JRRuntimeException("Cannot modify data source properties after data reading has started");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CANNOT_MODIFY_PROPERTIES_AFTER_START,
+					(Object[])null);
 		}
 		this.numberFormat = numberFormat;
 	}

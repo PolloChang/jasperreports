@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -49,16 +49,21 @@ import org.jfree.data.xy.DefaultHighLowDataset;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRFillHighLowDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillHighLowDataset extends JRFillChartDataset implements JRHighLowDataset
 {
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_CLOSE_VALUE = "charts.high.low.dataset.series.null.close.value";
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_DATE_VALUE = "charts.high.low.dataset.series.null.date.value";
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_HIGH_VALUE = "charts.high.low.dataset.series.null.high.value";
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_LOW_VALUE = "charts.high.low.dataset.series.null.low.value";
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_OPEN_VALUE = "charts.high.low.dataset.series.null.open.value";
+	public static final String EXCEPTION_MESSAGE_KEY_SERIES_NULL_VOLUME_VALUE = "charts.high.low.dataset.series.null.volume.value";
 
 	/**
 	 *
 	 */
 	private String series;
-	private List<HighLowElement> elements = new ArrayList<HighLowElement>();
+	private List<HighLowElement> elements = new ArrayList<>();
 	private Date date;
 	private Number high;
 	private Number low;
@@ -79,13 +84,15 @@ public class JRFillHighLowDataset extends JRFillChartDataset implements JRHighLo
 	}
 
 
+	@Override
 	protected void customInitialize()
 	{
-		elements = new ArrayList<HighLowElement>();
-		itemHyperlinks = new ArrayList<JRPrintHyperlink>();
+		elements = new ArrayList<>();
+		itemHyperlinks = new ArrayList<>();
 	}
 
 
+	@Override
 	protected void customEvaluate(JRCalculator calculator) throws JRExpressionEvalException
 	{
 		series = (String) calculator.evaluate(getSeriesExpression());
@@ -120,6 +127,7 @@ public class JRFillHighLowDataset extends JRFillChartDataset implements JRHighLo
 	}
 
 
+	@Override
 	protected void customIncrement()
 	{
 		elements.add(new HighLowElement(date, high, low, open, close, volume));
@@ -131,6 +139,7 @@ public class JRFillHighLowDataset extends JRFillChartDataset implements JRHighLo
 	}
 
 
+	@Override
 	public Dataset getCustomDataset()
 	{
 		int size = elements.size();
@@ -160,48 +169,56 @@ public class JRFillHighLowDataset extends JRFillChartDataset implements JRHighLo
 	}
 
 
+	@Override
 	public Object getLabelGenerator()
 	{
 		return null;
 	}
 
 
+	@Override
 	public JRExpression getSeriesExpression()
 	{
 		return ((JRHighLowDataset)parent).getSeriesExpression();
 	}
 
 
+	@Override
 	public JRExpression getDateExpression()
 	{
 		return ((JRHighLowDataset)parent).getDateExpression();
 	}
 
 
+	@Override
 	public JRExpression getHighExpression()
 	{
 		return ((JRHighLowDataset)parent).getHighExpression();
 	}
 
 
+	@Override
 	public JRExpression getLowExpression()
 	{
 		return ((JRHighLowDataset)parent).getLowExpression();
 	}
 
 
+	@Override
 	public JRExpression getOpenExpression()
 	{
 		return ((JRHighLowDataset)parent).getOpenExpression();
 	}
 
 
+	@Override
 	public JRExpression getCloseExpression()
 	{
 		return ((JRHighLowDataset)parent).getCloseExpression();
 	}
 
 
+	@Override
 	public JRExpression getVolumeExpression()
 	{
 		return ((JRHighLowDataset)parent).getVolumeExpression();
@@ -231,37 +248,55 @@ public class JRFillHighLowDataset extends JRFillChartDataset implements JRHighLo
 		{
 			if (date == null)
 			{
-				throw new JRRuntimeException("Date value is null in high-low series.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_SERIES_NULL_DATE_VALUE,
+						(Object[])null);
 			}
 			this.date = date;
 
 			if (high == null)
 			{
-				throw new JRRuntimeException("High value is null in high-low series.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_SERIES_NULL_HIGH_VALUE,
+						(Object[])null);
 			}
 			this.high = high;
 			
 			if (low == null)
 			{
-				throw new JRRuntimeException("Low value is null in high-low series.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_SERIES_NULL_LOW_VALUE,
+						(Object[])null);
 			}
 			this.low = low;
 			
 			if (open == null)
 			{
-				throw new JRRuntimeException("Open value is null in high-low series.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_SERIES_NULL_OPEN_VALUE,
+						(Object[])null);
 			}
 			this.open = open;
 			
 			if (close == null)
 			{
-				throw new JRRuntimeException("Close value is null in high-low series.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_SERIES_NULL_CLOSE_VALUE,
+						(Object[])null);
 			}
 			this.close = close;
 			
 			if (volume == null)
 			{
-				throw new JRRuntimeException("Volume value is null in high-low series.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_SERIES_NULL_VOLUME_VALUE,
+						(Object[])null);
 			}
 			this.volume = volume;
 		}
@@ -298,23 +333,20 @@ public class JRFillHighLowDataset extends JRFillChartDataset implements JRHighLo
 		}
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public byte getDatasetType() {
 		return JRChartDataset.HIGHLOW_DATASET;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
+	@Override
 	public JRHyperlink getItemHyperlink()
 	{
 		return ((JRHighLowDataset) parent).getItemHyperlink();
@@ -333,6 +365,7 @@ public class JRFillHighLowDataset extends JRFillChartDataset implements JRHighLo
 	}
 
 
+	@Override
 	public void validate(JRVerifier verifier)
 	{
 		verifier.verify(this);

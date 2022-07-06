@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,7 +27,6 @@ import java.io.IOException;
 
 import net.sf.jasperreports.charts.JRCategorySeries;
 import net.sf.jasperreports.components.charts.ChartSettings;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRComponentElement;
 import net.sf.jasperreports.engine.JRConstants;
@@ -50,8 +49,7 @@ import net.sf.jasperreports.engine.xml.JRXmlWriter;
 
 /**
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: SpiderChartXmlWriter.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class SpiderChartXmlWriter implements ComponentXmlWriter
 {
@@ -79,14 +77,6 @@ public class SpiderChartXmlWriter implements ComponentXmlWriter
 	private final VersionComparator versionComparator;
 	
 	/**
-	 * @deprecated Replaced by {@link #SpiderChartXmlWriter(JasperReportsContext)}.
-	 */
-	public SpiderChartXmlWriter()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-
-	/**
 	 * 
 	 */
 	public SpiderChartXmlWriter(JasperReportsContext jasperReportsContext)
@@ -102,12 +92,14 @@ public class SpiderChartXmlWriter implements ComponentXmlWriter
 	}
 
 
+	@Override
 	public boolean isToWrite(JRComponentElement componentElement, JRXmlWriter reportWriter)
 	{
 		return isNewerVersionOrEqual(version, JRConstants.VERSION_3_7_4);
 	}
 	
 	
+	@Override
 	public void writeToXml(JRComponentElement componentElement, JRXmlWriter reportWriter) throws IOException
 	{
 		Component component = componentElement.getComponent();
@@ -198,6 +190,10 @@ public class SpiderChartXmlWriter implements ComponentXmlWriter
 		writer.closeElement();
 
 		writeExpression(JRXmlConstants.ELEMENT_anchorNameExpression, JRXmlWriter.JASPERREPORTS_NAMESPACE, chartSettings.getAnchorNameExpression(), false, writer);
+		if(isNewerVersionOrEqual(version, JRConstants.VERSION_6_13_0))
+		{
+			writeExpression(JRXmlConstants.ELEMENT_bookmarkLevelExpression, JRXmlWriter.JASPERREPORTS_NAMESPACE, chartSettings.getBookmarkLevelExpression(), false, writer);
+		}
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkReferenceExpression, JRXmlWriter.JASPERREPORTS_NAMESPACE, chartSettings.getHyperlinkReferenceExpression(), false, writer);
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkWhenExpression, JRXmlWriter.JASPERREPORTS_NAMESPACE, chartSettings.getHyperlinkWhenExpression(), false, writer);
 		writeExpression(JRXmlConstants.ELEMENT_hyperlinkAnchorExpression, JRXmlWriter.JASPERREPORTS_NAMESPACE, chartSettings.getHyperlinkAnchorExpression(), false, writer);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,18 +27,20 @@ import java.util.List;
 
 import net.sf.jasperreports.components.sort.FieldFilter;
 import net.sf.jasperreports.engine.DatasetFilter;
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.design.JRDesignDataset;
+import net.sf.jasperreports.util.JacksonUtil;
 import net.sf.jasperreports.web.commands.Command;
-import net.sf.jasperreports.web.util.JacksonUtil;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: FilterCommand.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FilterCommand implements Command 
 {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	public static final String DATASET_FILTER_PROPERTY = "net.sf.jasperreports.filters";
 	
@@ -55,6 +57,7 @@ public class FilterCommand implements Command
 		this.filterData = filterData;
 	}
 
+	@Override
 	public void execute() 
 	{
 		// get existing filter as JSON string
@@ -91,6 +94,8 @@ public class FilterCommand implements Command
 					filterForCurrentField.setFilterValueEnd(filterData.getFieldValueEnd());
 					filterForCurrentField.setFilterValueStart(filterData.getFieldValueStart());
 					filterForCurrentField.setFilterPattern(filterData.getFilterPattern());
+					filterForCurrentField.setLocaleCode(filterData.getLocaleCode());
+					filterForCurrentField.setTimeZoneId(filterData.getTimeZoneId());
 					filterForCurrentField.setIsValid(null);
 					filterForCurrentField.setIsField(filterData.getIsField());
 				} else {
@@ -105,6 +110,8 @@ public class FilterCommand implements Command
 						filterData.getFilterTypeOperator());
 
 				newFilterField.setFilterPattern(filterData.getFilterPattern());
+				newFilterField.setLocaleCode(filterData.getLocaleCode());
+				newFilterField.setTimeZoneId(filterData.getTimeZoneId());
 				newFilterField.setIsField(filterData.getIsField());
 				existingFilters.add(newFilterField);
 			}
@@ -128,11 +135,13 @@ public class FilterCommand implements Command
 		propertiesMap.setProperty(DATASET_FILTER_PROPERTY, newSerializedFilters);
 	}
 	
+	@Override
 	public void undo() 
 	{
 		dataset.getPropertiesMap().setProperty(DATASET_FILTER_PROPERTY, oldSerializedFilters);
 	}
 
+	@Override
 	public void redo() 
 	{
 		dataset.getPropertiesMap().setProperty(DATASET_FILTER_PROPERTY, newSerializedFilters);

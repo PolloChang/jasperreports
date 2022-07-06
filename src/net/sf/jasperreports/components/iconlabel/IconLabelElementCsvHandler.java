@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.util.JRStyledText;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id:ChartThemesUtilities.java 2595 2009-02-10 17:56:51Z teodord $
  */
 public class IconLabelElementCsvHandler implements GenericElementCsvHandler
 {
@@ -43,6 +42,7 @@ public class IconLabelElementCsvHandler implements GenericElementCsvHandler
 		return INSTANCE;
 	}
 
+	@Override
 	public String getTextValue(JRCsvExporterContext exporterContext, JRGenericPrintElement element)
 	{
 		JRPrintText labelPrintText = (JRPrintText)element.getParameterValue(IconLabelElement.PARAMETER_LABEL_TEXT_ELEMENT);
@@ -66,6 +66,7 @@ public class IconLabelElementCsvHandler implements GenericElementCsvHandler
 		return text;
 	}
 
+	@Override
 	public boolean toExport(JRGenericPrintElement element) 
 	{
 		return true;

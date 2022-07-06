@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.util.JRDataUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleFontFamily.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleFontFamily implements FontFamily, JRCloneable {
 
@@ -85,18 +84,16 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 			if (boldItalicFace != null)
 				clone.setBoldItalicFace((SimpleFontFace) boldItalicFace.clone());
 			if (locales != null)
-				clone.setLocales(new HashSet<String>(locales));
+				clone.setLocales(new HashSet<>(locales));
 			if (exportFonts != null)
-				clone.setExportFonts(new HashMap<String, String>(exportFonts));
+				clone.setExportFonts(new HashMap<>(exportFonts));
 			return clone;
 		} catch (CloneNotSupportedException e) {
 			throw new JRRuntimeException(e);
 		}
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getName() {
 		return name;
 	}
@@ -148,9 +145,7 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 		boldItalicFace.setTtf(boldItalic);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public FontFace getNormalFace() {
 		return normalFace;
 	}
@@ -162,9 +157,7 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 		this.normalFace = normalFace;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public FontFace getBoldFace() {
 		return boldFace;
 	}
@@ -176,9 +169,7 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 		this.boldFace = boldFace;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public FontFace getItalicFace() {
 		return italicFace;
 	}
@@ -190,9 +181,7 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 		this.italicFace = italicFace;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public FontFace getBoldItalicFace() {
 		return boldItalicFace;
 	}
@@ -202,13 +191,6 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 	 */
 	public void setBoldItalicFace(SimpleFontFace boldItalicFace) {
 		this.boldItalicFace = boldItalicFace;
-	}
-
-	/**
-	 * @deprecated Replaced by {@link FontFace#getPdf()}.
-	 */
-	public String getNormalPdfFont() {
-		return getNormalFace() == null ? null : getNormalFace().getPdf();
 	}
 
 	/**
@@ -222,13 +204,6 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 	}
 
 	/**
-	 * @deprecated Replaced by {@link FontFace#getPdf()}.
-	 */
-	public String getBoldPdfFont() {
-		return getBoldFace() == null ? null : getBoldFace().getPdf();
-	}
-
-	/**
 	 * @deprecated Replaced by {@link SimpleFontFace#setPdf(String)}.
 	 */
 	public void setBoldPdfFont(String boldPdfFont) {
@@ -236,13 +211,6 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 			boldFace = new SimpleFontFace(jasperReportsContext);
 		}
 		boldFace.setPdf(boldPdfFont);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link FontFace#getPdf()}.
-	 */
-	public String getItalicPdfFont() {
-		return getItalicFace() == null ? null : getItalicFace().getPdf();
 	}
 
 	/**
@@ -256,13 +224,6 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 	}
 
 	/**
-	 * @deprecated Replaced by {@link FontFace#getPdf()}.
-	 */
-	public String getBoldItalicPdfFont() {
-		return getBoldItalicFace() == null ? null : getBoldItalicFace().getPdf();
-	}
-
-	/**
 	 * @deprecated Replaced by {@link SimpleFontFace#setPdf(String)}.
 	 */
 	public void setBoldItalicPdfFont(String boldItalicPdfFont) {
@@ -272,9 +233,7 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 		boldItalicFace.setPdf(boldItalicPdfFont);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getPdfEncoding() {
 		return pdfEncoding;
 	}
@@ -286,9 +245,7 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 		this.pdfEncoding = pdfEncoding;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean isPdfEmbedded() {
 		return isPdfEmbedded;
 	}
@@ -328,9 +285,7 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 		this.exportFonts = exportFonts;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public String getExportFont(String key) {
 		String exportFont = exportFonts == null ? null : (String) exportFonts.get(key);
 		return exportFont == null ? defaultExportFont : exportFont;
@@ -350,16 +305,12 @@ public class SimpleFontFamily implements FontFamily, JRCloneable {
 		this.locales = locales;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public boolean supportsLocale(Locale locale) {
 		return locales == null || locales.isEmpty() || locales.contains(JRDataUtils.getLocaleCode(locale));
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public boolean isVisible() {
 		return isVisible;
 	}

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,26 +23,28 @@
  */
 package net.sf.jasperreports.export;
 
+import java.awt.Color;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertiesUtil.PropertySuffix;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
-import net.sf.jasperreports.engine.type.JREnum;
+import net.sf.jasperreports.engine.type.NamedEnum;
+import net.sf.jasperreports.engine.util.ClassUtils;
+import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.export.annotations.ExporterProperty;
-
-import org.apache.commons.lang.ClassUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PropertiesDefaultsConfigurationFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfiguration>
 {
@@ -74,7 +76,7 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 	 */
 	private final C getProxy(Class<?> clazz, InvocationHandler handler)
 	{
-		List<Class<?>> allInterfaces = new ArrayList<Class<?>>();
+		List<Class<?>> allInterfaces = new ArrayList<>();
 
 		if (clazz.isInterface())
 		{
@@ -82,8 +84,7 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 		}
 		else
 		{
-			@SuppressWarnings("unchecked")
-			List<Class<?>> lcInterfaces = ClassUtils.getAllInterfaces(clazz);
+			List<Class<?>> lcInterfaces = ClassUtils.getInterfaces(clazz);
 			allInterfaces.addAll(lcInterfaces);
 		}
 
@@ -111,9 +112,7 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 		{
 		}
 		
-		/**
-		 * 
-		 */
+		@Override
 		public Object invoke(
 			Object proxy, 
 			Method method, 
@@ -169,6 +168,27 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 				value = values;
 			}
 		}
+		else if (PropertySuffix[].class.equals(type))
+		{
+			List<PropertySuffix> properties = propertiesUtil.getProperties(propertyName);
+			if (properties != null && !properties.isEmpty())
+			{
+				value = properties.toArray(new PropertySuffix[properties.size()]);
+			}
+		}
+		else if (Map.class.equals(type))
+		{
+			List<PropertySuffix> properties = propertiesUtil.getProperties(propertyName);
+			if (properties != null && !properties.isEmpty())
+			{
+				Map<String,String> values = new HashMap<>();
+				for (PropertySuffix propertySuffix : properties)
+				{
+					values.put(propertySuffix.getSuffix(), propertySuffix.getValue());
+				}
+				value = values;
+			}
+		}
 		else
 		{
 			String strValue = propertiesUtil.getProperty(propertyName);
@@ -185,7 +205,7 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 			{
 				if (strValue == null)
 				{
-					if (!exporterProperty.acceptNull())
+					if (!exporterProperty.nullDefault())
 					{
 						value = exporterProperty.intDefault();
 					}
@@ -199,7 +219,7 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 			{
 				if (strValue == null)
 				{
-					if (!exporterProperty.acceptNull())
+					if (!exporterProperty.nullDefault())
 					{
 						value = exporterProperty.longDefault();
 					}
@@ -213,7 +233,7 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 			{
 				if (strValue == null)
 				{
-					if (!exporterProperty.acceptNull())
+					if (!exporterProperty.nullDefault())
 					{
 						value = exporterProperty.floatDefault();
 					}
@@ -227,7 +247,7 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 			{
 				if (strValue == null)
 				{
-					if (!exporterProperty.acceptNull())
+					if (!exporterProperty.nullDefault())
 					{
 						value = exporterProperty.booleanDefault();
 					}
@@ -237,8 +257,38 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 					value = JRPropertiesUtil.asBoolean(strValue);
 				}
 			}
-			else if (JREnum.class.isAssignableFrom(type))
+			else if (Color.class.equals(type))
 			{
+				if (strValue == null)
+				{
+					if (!exporterProperty.nullDefault())
+					{
+						strValue = exporterProperty.stringDefault();
+						if (strValue.trim().length() == 0)
+						{
+							throw new JRRuntimeException(
+								PropertiesExporterConfigurationFactory.EXCEPTION_MESSAGE_KEY_EXPORT_PROPERTIES_EMPTY_STRING_DEFAULT_NOT_SUPPORTED,
+								new Object[]{propertyName}
+								);
+						}
+					}
+				}
+
+				if (strValue != null)
+				{
+					value = JRColorUtil.getColor(strValue, null);
+				}
+			}
+			else if (NamedEnum.class.isAssignableFrom(type))
+			{
+				if (strValue == null)
+				{
+					if (!exporterProperty.nullDefault())
+					{
+						strValue = exporterProperty.stringDefault();
+					}
+				}
+
 				if (strValue != null)
 				{
 					try
@@ -246,15 +296,7 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 						Method byNameMethod = type.getMethod("getByName", new Class<?>[]{String.class});
 						value = byNameMethod.invoke(null, strValue);
 					}
-					catch (NoSuchMethodException e)
-					{
-						throw new JRRuntimeException(e);
-					}
-					catch (InvocationTargetException e)
-					{
-						throw new JRRuntimeException(e);
-					}
-					catch (IllegalAccessException e)
+					catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
 					{
 						throw new JRRuntimeException(e);
 					}
@@ -262,10 +304,14 @@ public class PropertiesDefaultsConfigurationFactory<C extends CommonExportConfig
 			}
 			else
 			{
-				throw new JRRuntimeException("Export property type " + type + " not supported.");
+				throw 
+					new JRRuntimeException(
+						PropertiesExporterConfigurationFactory.EXCEPTION_MESSAGE_KEY_EXPORT_PROPERTIES_TYPE_NOT_SUPPORTED, 
+						new Object[]{type});
 			}
 		}
 		
 		return value;
 	}
+	
 }

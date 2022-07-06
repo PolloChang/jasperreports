@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRParameter;
@@ -45,15 +44,23 @@ import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.fill.JRFillParameter;
 import net.sf.jasperreports.engine.util.JRQueryChunkHandler;
 import net.sf.jasperreports.engine.util.JRQueryParser;
+import net.sf.jasperreports.repo.RepositoryContext;
 
 /**
  * Base abstract query executer.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRAbstractQueryExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 {
+	public static final String EXCEPTION_MESSAGE_KEY_NUMERIC_TYPE_REQUIRED = "query.numeric.type.required";
+	public static final String EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND = "query.parameter.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_CLAUSE_CIRCULARLY_NESTED_PARAMETER = "query.clause.circularly.nested.parameter";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_CLAUSE_ID_FIRST_TOKEN_MISSING = "query.clause.id.first.token.missing";
+	public static final String EXCEPTION_MESSAGE_KEY_QUERY_CLAUSE_NOT_FOUND = "query.clause.not.found";
+	public static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_PARAMETER_TYPE = "query.unsupported.parameter.type";
+
+	public static final String GET_COLLECTED = "getCollectedParameterNames()";
 	
 	/**
 	 * @deprecated use {@link JRClauseTokens#CLAUSE_ID_POSITION} or {@link JRClauseTokens#getClauseId()} instead.
@@ -189,9 +196,9 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	/**
 	 * Clause function registry.
 	 */
-	protected final Map<String,JRClauseFunction> clauseFunctions = new HashMap<String,JRClauseFunction>();
+	protected final Map<String,JRClauseFunction> clauseFunctions = new HashMap<>();
 	
-	private final JasperReportsContext jasperReportsContext;
+	private final QueryExecutionContext context;
 	private final JRPropertiesUtil propertiesUtil;
 	protected final JRDataset dataset;
 	private final Map<String,? extends JRValueParameter> parametersMap;
@@ -214,21 +221,22 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		Map<String, ? extends JRValueParameter> parametersMap
 		)
 	{
-		this.jasperReportsContext = jasperReportsContext;
-		this.propertiesUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
+		this(SimpleQueryExecutionContext.of(jasperReportsContext), dataset, parametersMap);
+	}
+	
+	protected JRAbstractQueryExecuter(
+		QueryExecutionContext context, 
+		JRDataset dataset, 
+		Map<String, ? extends JRValueParameter> parametersMap
+		)
+	{
+		this.context = context;
+		this.propertiesUtil = JRPropertiesUtil.getInstance(context.getJasperReportsContext());
 		this.dataset = dataset;
 		this.parametersMap = parametersMap;
 		
 		queryString = "";
-		queryParameters = new ArrayList<QueryParameterEntry>();
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #JRAbstractQueryExecuter(JasperReportsContext, JRDataset, Map)}.
-	 */
-	protected JRAbstractQueryExecuter(JRDataset dataset, Map<String, ? extends JRValueParameter> parametersMap)
-	{
-		this(DefaultJasperReportsContext.getInstance(), dataset, parametersMap);
+		queryParameters = new ArrayList<>();
 	}
 
 	/**
@@ -236,7 +244,17 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	 */
 	protected JasperReportsContext getJasperReportsContext()
 	{
-		return jasperReportsContext;
+		return context.getJasperReportsContext();
+	}
+
+	protected QueryExecutionContext getQueryExecutionContext()
+	{
+		return context;
+	}
+
+	protected RepositoryContext getRepositoryContext()
+	{
+		return context.getRepositoryContext();
 	}
 
 	/**
@@ -285,7 +303,10 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 			function = findExtensionQueryFunction(id);
 			if (function == null)
 			{
-				throw new JRRuntimeException("No clause function for id " + id + " found");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_QUERY_CLAUSE_NOT_FOUND,
+						new Object[]{id});
 			}
 		}
 		return function;
@@ -297,7 +318,7 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		//FIXME should we also use the current query language?
 		String queryLanguage = getCanonicalQueryLanguage();
 		// look for extensions
-		List<QueryClauseFunctionBundle> functionBundles = jasperReportsContext.getExtensions(
+		List<QueryClauseFunctionBundle> functionBundles = getJasperReportsContext().getExtensions(
 				QueryClauseFunctionBundle.class);
 		for (QueryClauseFunctionBundle functionBundle : functionBundles)
 		{
@@ -342,7 +363,7 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	 */
 	protected void parseQuery()
 	{
-		parameterClauseStack = new HashSet<String>();
+		parameterClauseStack = new HashSet<>();
 		
 		JRQuery query = dataset.getQuery();
 		
@@ -465,7 +486,10 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		
 		if (!parameterClauseStack.add(parameterName))
 		{
-			throw new JRRuntimeException("The query contains circularly nested parameter clauses starting with " + parameterName);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_CLAUSE_CIRCULARLY_NESTED_PARAMETER,
+					new Object[]{parameterName});
 		}
 		
 		try
@@ -474,21 +498,25 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 			String clauseText = String.valueOf(parameterValue);
 			JRQueryChunkHandler nestedChunkHandler = new JRQueryChunkHandler()
 			{
+				@Override
 				public void handleParameterChunk(String text)
 				{
 					appendParameterChunk(sbuffer, text);
 				}
 
+				@Override
 				public void handleParameterClauseChunk(String text)
 				{
 					appendParameterClauseChunk(sbuffer, text);
 				}
 
+				@Override
 				public void handleTextChunk(String text)
 				{
 					appendTextChunk(sbuffer, text);
 				}
 
+				@Override
 				public void handleClauseChunk(String[] tokens, char tokenSeparator)
 				{
 					appendClauseChunk(sbuffer, tokens);
@@ -525,7 +553,10 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		String id = tokens.getClauseId();
 		if (id == null)
 		{
-			throw new JRRuntimeException("Query clause ID/first token missing");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_QUERY_CLAUSE_ID_FIRST_TOKEN_MISSING,
+					(Object[])null);
 		}
 		
 		JRClauseFunction function = resolveFunction(id);
@@ -537,16 +568,19 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	{
 		function.apply(tokens, new JRQueryClauseContext()
 		{
+			@Override
 			public void addQueryMultiParameters(String parameterName, int count)
 			{
 				addQueryMultiParameters(parameterName, count, false);
 			}
 
+			@Override
 			public void addQueryMultiParameters(String parameterName, int count, boolean ignoreNulls)
 			{
 				JRAbstractQueryExecuter.this.addQueryMultiParameters(parameterName, count, ignoreNulls);
 			}
 
+			@Override
 			public void addQueryParameter(String parameterName)
 			{
 				JRAbstractQueryExecuter.this.addQueryParameter(parameterName);
@@ -558,11 +592,13 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 				JRAbstractQueryExecuter.this.addQueryParameter(type, value);
 			}
 
+			@Override
 			public JRValueParameter getValueParameter(String parameterName)
 			{
 				return JRAbstractQueryExecuter.this.getValueParameter(parameterName);
 			}
 
+			@Override
 			public StringBuffer queryBuffer()
 			{
 				return sbuffer;
@@ -571,7 +607,7 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 			@Override
 			public JasperReportsContext getJasperReportsContext()
 			{
-				return jasperReportsContext;
+				return JRAbstractQueryExecuter.this.getJasperReportsContext();
 			}
 
 			@Override
@@ -602,14 +638,16 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	 */
 	protected List<String> getCollectedParameterNames()
 	{
-		List<String> parameterNames = new ArrayList<String>(queryParameters.size());
+		List<String> parameterNames = new ArrayList<>(queryParameters.size());
 		for (Iterator<QueryParameterEntry> it = queryParameters.iterator(); it.hasNext();)
 		{
 			QueryParameterEntry paramEntry = it.next();
 			if (!(paramEntry instanceof QueryParameter))
 			{
-				throw new JRRuntimeException("getCollectedParameterNames found unsupported query parameter type "
-						+ paramEntry.getClass().getName());
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNSUPPORTED_PARAMETER_TYPE,
+						new Object[]{"getCollectedParameterNames()", paramEntry.getClass().getName()});
 			}
 			
 			QueryParameter param = (QueryParameter) paramEntry;
@@ -626,13 +664,15 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	 */
 	protected List<QueryParameter> getCollectedParameters()
 	{
-		List<QueryParameter> params = new ArrayList<QueryParameter>(queryParameters.size());
+		List<QueryParameter> params = new ArrayList<>(queryParameters.size());
 		for (QueryParameterEntry parameterEntry : queryParameters)
 		{
 			if (!(parameterEntry instanceof QueryParameter))
 			{
-				throw new JRRuntimeException("getCollectedParameterNames found unsupported query parameter type "
-						+ parameterEntry.getClass().getName());
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNSUPPORTED_PARAMETER_TYPE,
+						new Object[]{"getCollectedParameters()", parameterEntry.getClass().getName()});
 			}
 			params.add((QueryParameter) parameterEntry);
 		}
@@ -736,7 +776,7 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 			}
 			else
 			{
-				return booleanValue.booleanValue();
+				return booleanValue;
 			}
 		}
 		else
@@ -774,7 +814,7 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 			}
 			else
 			{
-				return booleanValue.booleanValue();
+				return booleanValue;
 			}
 		}
 		else
@@ -797,6 +837,83 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	}
 	
 	
+	
+	
+	/**
+	 * 
+	 */
+	protected int getIntegerParameter(String parameter, String property, int defaultValue)
+	{
+		if (parameterHasValue(parameter))
+		{
+			Integer integerValue = (Integer)getParameterValue(parameter, true);
+			if (integerValue == null)
+			{
+				return getPropertiesUtil().getIntegerProperty(property);
+			}
+			else
+			{
+				return integerValue;
+			}
+		}
+		else
+		{
+			return 
+				getPropertiesUtil().getIntegerProperty(
+					dataset.getPropertiesMap(),
+					property,
+					defaultValue
+					);
+		}
+	}
+	
+	
+	/**
+	 * 
+	 */
+	protected int getIntegerParameterOrProperty(String name, int defaultValue)
+	{
+		return getIntegerParameter(name, name, defaultValue);
+	}
+	
+	
+	/**
+	 * 
+	 */
+	protected Integer getIntegerParameter(String parameter, String property)
+	{
+		if (parameterHasValue(parameter))
+		{
+			Integer integerValue = (Integer)getParameterValue(parameter, true);
+			if (integerValue == null)
+			{
+				return getPropertiesUtil().getIntegerProperty(property);
+			}
+			else
+			{
+				return integerValue;
+			}
+		}
+		else
+		{
+			return 
+				getPropertiesUtil().getIntegerProperty(
+					dataset.getPropertiesMap(),
+					property
+					);
+		}
+	}
+	
+	
+	/**
+	 * 
+	 */
+	protected Integer getIntegerParameterOrProperty(String name)
+	{
+		return getIntegerParameter(name, name);
+	}
+	
+	
 	/**
 	 * Return a fill parameter from the parameter map.
 	 * 
@@ -810,7 +927,10 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		
 		if (parameter == null)
 		{
-			throw new JRRuntimeException("Parameter \"" + parameterName + "\" does not exist.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND,
+					new Object[]{parameterName});
 		}
 		
 		return parameter;
@@ -821,7 +941,10 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 	{
 		if (!parametersMap.containsKey(parameterName))
 		{
-			throw new JRRuntimeException("Parameter \"" + parameterName + "\" does not exist.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND,
+					new Object[]{parameterName});
 		}
 	}
 	
@@ -840,7 +963,10 @@ public abstract class JRAbstractQueryExecuter implements JRQueryExecuter
 		
 		if (parameter == null && !ignoreMissing)
 		{
-			throw new JRRuntimeException("Parameter \"" + parameterName + "\" does not exist.");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND,
+					new Object[]{parameterName});
 		}
 		
 		return parameter;

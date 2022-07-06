@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,72 +31,88 @@ import java.util.List;
 import java.util.Map;
 
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.export.ExporterInputItem;
 import net.sf.jasperreports.export.SimpleExporterInput;
 
 
 /**
  * @deprecated To be removed.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ParametersExporterInput.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ParametersExporterInput extends SimpleExporterInput
 {
+	public static final String EXCEPTION_MESSAGE_KEY_EMPTY_INPUT_SOURCE_IN_BATCH_MODE = "export.parameters.empty.input.source.in.batch.mode";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_INPUT_SOURCE = "export.parameters.no.input.source";
+	
 	/**
 	 * 
 	 */
-	public ParametersExporterInput(Map<JRExporterParameter, Object> parameters)
+	public ParametersExporterInput(Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters)
 	{
-		super(getItems(getJasperPrintList(parameters)));
+		super(getInputItems(parameters));
 	}
 
+	@SuppressWarnings("unchecked")
+	private static List<ExporterInputItem> getInputItems(Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters)
+	{
+		List<ExporterInputItem> items = (List<ExporterInputItem>) parameters.get(net.sf.jasperreports.engine.JRExporterParameter.INPUT_ITEM_LIST);
+		if (items == null)
+		{
+			items = getItems(getJasperPrintList(parameters));
+		}
+		return items;
+	}
 	
 	/**
 	 * 
 	 */
 	@SuppressWarnings("unchecked")
-	private static List<JasperPrint> getJasperPrintList(Map<JRExporterParameter, Object> parameters)
+	private static List<JasperPrint> getJasperPrintList(Map<net.sf.jasperreports.engine.JRExporterParameter, Object> parameters)
 	{
-		List<JasperPrint> jasperPrintList = (List<JasperPrint>)parameters.get(JRExporterParameter.JASPER_PRINT_LIST);
+		List<JasperPrint> jasperPrintList = 
+			(List<JasperPrint>)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.JASPER_PRINT_LIST);
 		if (jasperPrintList == null)
 		{
-			JasperPrint jasperPrint = (JasperPrint)parameters.get(JRExporterParameter.JASPER_PRINT);
+			JasperPrint jasperPrint = (JasperPrint)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.JASPER_PRINT);
 			if (jasperPrint == null)
 			{
 				try
 				{
-					InputStream is = (InputStream)parameters.get(JRExporterParameter.INPUT_STREAM);
+					InputStream is = (InputStream)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.INPUT_STREAM);
 					if (is != null)
 					{
 						jasperPrint = (JasperPrint)JRLoader.loadObject(is);
 					}
 					else
 					{
-						URL url = (URL)parameters.get(JRExporterParameter.INPUT_URL);
+						URL url = (URL)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.INPUT_URL);
 						if (url != null)
 						{
 							jasperPrint = (JasperPrint)JRLoader.loadObject(url);
 						}
 						else
 						{
-							File file = (File)parameters.get(JRExporterParameter.INPUT_FILE);
+							File file = (File)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.INPUT_FILE);
 							if (file != null)
 							{
 								jasperPrint = (JasperPrint)JRLoader.loadObject(file);
 							}
 							else
 							{
-								String fileName = (String)parameters.get(JRExporterParameter.INPUT_FILE_NAME);
+								String fileName = (String)parameters.get(net.sf.jasperreports.engine.JRExporterParameter.INPUT_FILE_NAME);
 								if (fileName != null)
 								{
 									jasperPrint = (JasperPrint)JRLoader.loadObjectFromFile(fileName);
 								}
 								else
 								{
-									throw new JRRuntimeException("No input source supplied to the exporter.");
+									throw 
+										new JRRuntimeException(
+											EXCEPTION_MESSAGE_KEY_NO_INPUT_SOURCE,
+											(Object[])null);
 								}
 							}
 						}
@@ -108,14 +124,17 @@ public class ParametersExporterInput extends SimpleExporterInput
 				}
 			}
 			
-			jasperPrintList = new ArrayList<JasperPrint>();
+			jasperPrintList = new ArrayList<>();
 			jasperPrintList.add(jasperPrint);
 		}
 		else
 		{
 			if (jasperPrintList.size() == 0)
 			{
-				throw new JRRuntimeException("Empty input source supplied to the exporter in batch mode.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_EMPTY_INPUT_SOURCE_IN_BATCH_MODE,
+						(Object[])null);
 			}
 		}
 

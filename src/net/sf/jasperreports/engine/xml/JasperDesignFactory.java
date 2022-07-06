@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,30 +25,32 @@ package net.sf.jasperreports.engine.xml;
 
 import java.util.UUID;
 
+import org.xml.sax.Attributes;
+
 import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.type.OrientationEnum;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.type.SectionTypeEnum;
 import net.sf.jasperreports.engine.type.WhenNoDataTypeEnum;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
-
-import org.xml.sax.Attributes;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JasperDesignFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JasperDesignFactory extends JRBaseFactory
 {
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
-		JasperDesign jasperDesign = new JasperDesign();
+		JRXmlLoader xmlLoader = (JRXmlLoader)digester.peek(digester.getCount() - 1);
+
+		JasperDesign jasperDesign = new JasperDesign(xmlLoader.getJasperReportsContext());
+		
+		jasperDesign.setJasperReportsContext(xmlLoader.getJasperReportsContext());
 		
 		jasperDesign.setName(atts.getValue(JRXmlConstants.ATTRIBUTE_name));
 
@@ -96,6 +98,12 @@ public class JasperDesignFactory extends JRBaseFactory
 			jasperDesign.setWhenNoDataType(whenNoDataType);
 		}
 
+		SectionTypeEnum sectionType = SectionTypeEnum.getByName(atts.getValue(JRXmlConstants.ATTRIBUTE_sectionType));
+		if (sectionType != null)
+		{
+			jasperDesign.setSectionType(sectionType);
+		}
+
 		String columnWidth = atts.getValue(JRXmlConstants.ATTRIBUTE_columnWidth);
 		if (columnWidth != null && columnWidth.length() > 0)
 		{
@@ -135,25 +143,25 @@ public class JasperDesignFactory extends JRBaseFactory
 		String isTitleNewPage = atts.getValue(JRXmlConstants.ATTRIBUTE_isTitleNewPage);
 		if (isTitleNewPage != null && isTitleNewPage.length() > 0)
 		{
-			jasperDesign.setTitleNewPage(Boolean.valueOf(isTitleNewPage).booleanValue());
+			jasperDesign.setTitleNewPage(Boolean.valueOf(isTitleNewPage));
 		}
 
 		String isSummaryNewPage = atts.getValue(JRXmlConstants.ATTRIBUTE_isSummaryNewPage);
 		if (isSummaryNewPage != null && isSummaryNewPage.length() > 0)
 		{
-			jasperDesign.setSummaryNewPage(Boolean.valueOf(isSummaryNewPage).booleanValue());
+			jasperDesign.setSummaryNewPage(Boolean.valueOf(isSummaryNewPage));
 		}
 
 		String isSummaryWithPageHeaderAndFooter = atts.getValue(JRXmlConstants.ATTRIBUTE_isSummaryWithPageHeaderAndFooter);
 		if (isSummaryWithPageHeaderAndFooter != null && isSummaryWithPageHeaderAndFooter.length() > 0)
 		{
-			jasperDesign.setSummaryWithPageHeaderAndFooter(Boolean.valueOf(isSummaryWithPageHeaderAndFooter).booleanValue());
+			jasperDesign.setSummaryWithPageHeaderAndFooter(Boolean.valueOf(isSummaryWithPageHeaderAndFooter));
 		}
 
 		String isFloatColumnFooter = atts.getValue(JRXmlConstants.ATTRIBUTE_isFloatColumnFooter);
 		if (isFloatColumnFooter != null && isFloatColumnFooter.length() > 0)
 		{
-			jasperDesign.setFloatColumnFooter(Boolean.valueOf(isFloatColumnFooter).booleanValue());
+			jasperDesign.setFloatColumnFooter(Boolean.valueOf(isFloatColumnFooter));
 		}
 
 		jasperDesign.setScriptletClass(atts.getValue(JRXmlConstants.ATTRIBUTE_scriptletClass));
@@ -169,7 +177,7 @@ public class JasperDesignFactory extends JRBaseFactory
 		String isIgnorePagination = atts.getValue(JRXmlConstants.ATTRIBUTE_isIgnorePagination);
 		if (isIgnorePagination != null && isIgnorePagination.length() > 0)
 		{
-			jasperDesign.setIgnorePagination(Boolean.valueOf(isIgnorePagination).booleanValue());
+			jasperDesign.setIgnorePagination(Boolean.valueOf(isIgnorePagination));
 		}
 		
 		String uuid = atts.getValue(JRXmlConstants.ATTRIBUTE_uuid);

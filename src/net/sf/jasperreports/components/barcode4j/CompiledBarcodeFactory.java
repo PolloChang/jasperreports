@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,7 +29,6 @@ import net.sf.jasperreports.engine.base.JRBaseObjectFactory;
 /**
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: CompiledBarcodeFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CompiledBarcodeFactory extends UniformBarcodeVisitor
 {
@@ -49,28 +48,34 @@ public class CompiledBarcodeFactory extends UniformBarcodeVisitor
 		return compiledComponent;
 	}
 
-	protected void createCompiledBarcode(BarcodeComponent barcode)
+	@Override
+	protected void visitBarcode(BarcodeComponent barcode)
 	{
 		compiledComponent = barcode.cloneObject();
 		
 		JRExpression compiledCodeExpression = baseFactory.getExpression(
 				barcode.getCodeExpression());
 		compiledComponent.setCodeExpression(compiledCodeExpression);
-		
-		JRExpression compiledPatternExpression = baseFactory.getExpression(
-				barcode.getPatternExpression());
-		compiledComponent.setPatternExpression(compiledPatternExpression);
-		if(barcode instanceof EAN128Component)
-		{
-			JRExpression compiledTemplateExpression = baseFactory.getExpression(
-					((EAN128Component)barcode).getTemplateExpression());
-			((EAN128Component)compiledComponent).setTemplateExpression(compiledTemplateExpression);
-		}
-	}
-
-	protected void visitBarcode(BarcodeComponent barcode)
-	{
-		createCompiledBarcode(barcode);
 	}
 	
+	@Override
+	protected void visitBarcode(Barcode4jComponent barcode)
+	{
+		visitBarcode((BarcodeComponent)barcode);
+
+		JRExpression compiledPatternExpression = baseFactory.getExpression(
+				barcode.getPatternExpression());
+		((Barcode4jComponent)compiledComponent).setPatternExpression(compiledPatternExpression);
+	}
+	
+
+	@Override
+	public void visitEANCode128(EAN128Component ean128) 
+	{
+		super.visitEANCode128(ean128);
+
+		JRExpression compiledTemplateExpression = baseFactory.getExpression(
+				ean128.getTemplateExpression());
+		((EAN128Component)compiledComponent).setTemplateExpression(compiledTemplateExpression);
+	}
 }

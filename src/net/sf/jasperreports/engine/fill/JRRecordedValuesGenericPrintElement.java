@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
  * Generic print element implementation that supports recorded values.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRRecordedValuesGenericPrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRRecordedValuesGenericPrintElement extends
 		JRTemplateGenericPrintElement implements JRRecordedValuesPrintElement
@@ -52,48 +51,11 @@ public class JRRecordedValuesGenericPrintElement extends
 	 * Creates a generic print element.
 	 * 
 	 * @param template the element template to be used by the element
-	 * @deprecated provide a source Id via {@link #JRRecordedValuesGenericPrintElement(JRTemplateGenericElement, int)}
-	 */
-	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template)
-	{
-		super(template);
-	}
-
-	/**
-	 * Creates a generic print element.
-	 * 
-	 * @param template the element template to be used by the element
-	 * @param sourceElementId the Id of the source element
-	 * @deprecated replaced by {@link #JRRecordedValuesGenericPrintElement(JRTemplateGenericElement, PrintElementOriginator)}
-	 */
-	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, int sourceElementId)
-	{
-		super(template, sourceElementId);
-	}
-
-	/**
-	 * Creates a generic print element.
-	 * 
-	 * @param template the element template to be used by the element
 	 * @param originator
 	 */
 	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, PrintElementOriginator originator)
 	{
 		super(template, originator);
-	}
-
-	/**
-	 * Creates a generic print element.
-	 * 
-	 * @param template the element template to be used by the element
-	 * @param sourceElementId the Id of the source element
-	 * @param parameterCount the number of parameters that the element will have
-	 * @deprecated replaced by {@link #JRRecordedValuesGenericPrintElement(JRTemplateGenericElement, PrintElementOriginator, int)}
-	 */
-	public JRRecordedValuesGenericPrintElement(JRTemplateGenericElement template, int sourceElementId,
-			int parameterCount)
-	{
-		super(template, sourceElementId, parameterCount);
 	}
 
 	/**
@@ -109,16 +71,19 @@ public class JRRecordedValuesGenericPrintElement extends
 		super(template, originator, parameterCount);
 	}
 
+	@Override
 	public JRRecordedValues getRecordedValues()
 	{
 		return recordedValues;
 	}
 
+	@Override
 	public void deleteRecordedValues()
 	{
 		recordedValues = null;
 	}
 
+	@Override
 	public void initRecordedValues(Set<JREvaluationTime> evaluationTimes)
 	{
 		recordedValues = new JRRecordedValues(evaluationTimes);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,26 +27,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.jasperreports.engine.JRException;
-
-import org.apache.commons.collections.map.ReferenceMap;
+import org.apache.commons.collections4.map.ReferenceMap;
 import org.jaxen.JaxenException;
 import org.jaxen.XPath;
 import org.jaxen.dom.DOMXPath;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import net.sf.jasperreports.engine.JRException;
+
 
 /**
  * XPath executer implementation that uses <a href="http://jaxen.org/" target="_blank">Jaxen</a>.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JaxenXPathExecuter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JaxenXPathExecuter implements JRXPathExecuter
 {
 
-	private final Map<String,XPath> cachedXPaths = new ReferenceMap();//soft cache
+	public static final String EXCEPTION_MESSAGE_KEY_XPATH_COMPILATION_FAILURE = "util.xml.jaxen.xpath.compilation.failure";
+	public static final String EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE = "util.xml.jaxen.xpath.selection.failure";
+	
+	private final Map<String,XPath> cachedXPaths = new ReferenceMap<>();//soft cache
 	
 	public JaxenXPathExecuter()
 	{
@@ -63,13 +65,18 @@ public class JaxenXPathExecuter implements JRXPathExecuter
 			}
 			catch (JaxenException e)
 			{
-				throw new JRException("XPath compilation failed. Expression: " + expression, e);
+				throw 
+					new JRException(
+						EXCEPTION_MESSAGE_KEY_XPATH_COMPILATION_FAILURE,
+						new Object[]{expression},
+						e);
 			}
 			cachedXPaths.put(expression, xPath);
 		}
 		return xPath;
 	}
 	
+	@Override
 	public NodeList selectNodeList(Node contextNode, String expression) throws JRException
 	{
 		try
@@ -83,17 +90,22 @@ public class JaxenXPathExecuter implements JRXPathExecuter
 			}
 			else
 			{
-				nodes = new ArrayList<Object>();
+				nodes = new ArrayList<>();
 				nodes.add(object);
 			}
 			return new NodeListWrapper(nodes);
 		}
 		catch (JaxenException e)
 		{
-			throw new JRException("XPath selection failed. Expression: " + expression, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE,
+					new Object[]{expression},
+					e);
 		}		
 	}
 
+	@Override
 	public Object selectObject(Node contextNode, String expression) throws JRException
 	{
 		try
@@ -125,7 +137,11 @@ public class JaxenXPathExecuter implements JRXPathExecuter
 		}
 		catch (JaxenException e)
 		{
-			throw new JRException("XPath selection failed. Expression: " + expression, e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_XPATH_SELECTION_FAILURE,
+					new Object[]{expression},
+					e);
 		}
 	}
 
@@ -139,11 +155,13 @@ public class JaxenXPathExecuter implements JRXPathExecuter
 			this.nodes = nodes;
 		}
 		
+		@Override
 		public int getLength()
 		{
 			return nodes.size();
 		}
 
+		@Override
 		public Node item(int index)
 		{
 			return (Node)nodes.get(index);

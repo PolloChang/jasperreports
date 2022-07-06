@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,7 @@ import net.sf.jasperreports.engine.JRExpression;
  * or dynamically, using a value expression.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ItemProperty.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link net.sf.jasperreports.components.items.ItemProperty}.
  */
 public interface ItemProperty extends JRCloneable
 {

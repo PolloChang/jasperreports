@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,12 +23,10 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.export.ExporterInput;
 import net.sf.jasperreports.export.HtmlExporterConfiguration;
 import net.sf.jasperreports.export.HtmlExporterOutput;
 import net.sf.jasperreports.export.HtmlReportConfiguration;
-import net.sf.jasperreports.export.type.HtmlSizeUnitEnum;
 
 
 /**
@@ -45,9 +43,8 @@ import net.sf.jasperreports.export.type.HtmlSizeUnitEnum;
  *
  * @deprecated Replaced by {@link ExporterInput}, {@link HtmlExporterConfiguration} and {@link HtmlExporterOutput}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRHtmlExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRHtmlExporterParameter extends JRExporterParameter
+public class JRHtmlExporterParameter extends net.sf.jasperreports.engine.JRExporterParameter
 {
 
 
@@ -125,33 +122,9 @@ public class JRHtmlExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link HtmlReportConfiguration#PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_ROWS}.
-	 */
-	public static final String PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_ROWS = HtmlReportConfiguration.PROPERTY_REMOVE_EMPTY_SPACE_BETWEEN_ROWS;
-
-
-	/**
 	 * @deprecated Replaced by {@link HtmlReportConfiguration#isWhitePageBackground()}.
 	 */
 	public static final JRHtmlExporterParameter IS_WHITE_PAGE_BACKGROUND = new JRHtmlExporterParameter("Is White Page Background");
-
-
-	/**
-	 * @deprecated Replaced by {@link HtmlReportConfiguration#PROPERTY_WHITE_PAGE_BACKGROUND}.
-	 */
-	public static final String PROPERTY_WHITE_PAGE_BACKGROUND = HtmlReportConfiguration.PROPERTY_WHITE_PAGE_BACKGROUND;
-
-
-	/**
-	 * @deprecated Replaced by {@link JRHtmlExporterConfiguration#isUsingImagesToAlign()}.
-	 */
-	public static final JRHtmlExporterParameter IS_USING_IMAGES_TO_ALIGN = new JRHtmlExporterParameter("Is Using Images To Align");
-
-
-	/**
-	 * @deprecated Replaced by {@link JRHtmlExporterConfiguration#PROPERTY_USING_IMAGES_TO_ALIGN}.
-	 */
-	public static final String PROPERTY_USING_IMAGES_TO_ALIGN = JRHtmlExporterConfiguration.PROPERTY_USING_IMAGES_TO_ALIGN;
 
 
 	/**
@@ -161,48 +134,15 @@ public class JRHtmlExporterParameter extends JRExporterParameter
 
 
 	/**
-	 * @deprecated Replaced by {@link HtmlReportConfiguration#PROPERTY_WRAP_BREAK_WORD}.
-	 */
-	public static final String PROPERTY_WRAP_BREAK_WORD = HtmlReportConfiguration.PROPERTY_WRAP_BREAK_WORD;
-
-
-	/**
 	 * @deprecated Replaced by {@link HtmlReportConfiguration#getSizeUnit()}. 
 	 */
 	public static final JRHtmlExporterParameter SIZE_UNIT = new JRHtmlExporterParameter("Size Unit");
 
-	/**
-	 * @deprecated Replaced by {@link HtmlReportConfiguration#PROPERTY_SIZE_UNIT}.
-	 */
-	public static final String PROPERTY_SIZE_UNIT = HtmlReportConfiguration.PROPERTY_SIZE_UNIT;
 
-
-	/**
-	 * @deprecated Replaced by {@link HtmlSizeUnitEnum#PIXEL}. 
-	 */
-	public static final String SIZE_UNIT_PIXEL = HtmlSizeUnitEnum.PIXEL.getName();
-
-	/**
-	 * @deprecated Replaced by {@link HtmlSizeUnitEnum#POINT}. 
-	 */
-	public static final String SIZE_UNIT_POINT = HtmlSizeUnitEnum.POINT.getName();
-
-	
 	/**
 	 * @deprecated Replaced by {@link HtmlReportConfiguration#getZoomRatio()}.
 	 */
 	public static final JRHtmlExporterParameter ZOOM_RATIO = new JRHtmlExporterParameter("Zoom Ratio");
-
-	/**
-	 * @deprecated Replaced by {@link JRHtmlReportConfiguration#isFramesAsNestedTables()}.
-	 */
-	public static final JRHtmlExporterParameter FRAMES_AS_NESTED_TABLES = new JRHtmlExporterParameter("Export Frames as Nested Tables");
-	
-
-	/**
-	 * @deprecated Replaced by {@link JRHtmlReportConfiguration#PROPERTY_FRAMES_AS_NESTED_TABLES}.
-	 */
-	public static final String PROPERTY_FRAMES_AS_NESTED_TABLES = JRHtmlReportConfiguration.PROPERTY_FRAMES_AS_NESTED_TABLES;
 	
 
 	/**
@@ -210,8 +150,9 @@ public class JRHtmlExporterParameter extends JRExporterParameter
 	 */
 	public static final JRHtmlExporterParameter FLUSH_OUTPUT = new JRHtmlExporterParameter("Flush Output");
 	
+
 	/**
-	 * @deprecated Replaced by {@link HtmlExporterConfiguration#PROPERTY_FLUSH_OUTPUT}.
+	 * @deprecated Replaced by {@link HtmlExporterOutput#getResourceHandler()}.
 	 */
-	public static final String PROPERTY_FLUSH_OUTPUT = HtmlExporterConfiguration.PROPERTY_FLUSH_OUTPUT;
+	public static final JRHtmlExporterParameter RESOURCE_HANDLER = new JRHtmlExporterParameter("Resource Handler");
 }

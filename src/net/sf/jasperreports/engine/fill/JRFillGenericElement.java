@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,14 +42,13 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
  * A {@link JRGenericElement} used during report fill.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillGenericElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillGenericElement extends JRFillElement implements
 		JRGenericElement
 {
 	
 	private JRGenericElementParameter[] parameters;
-	private Map<String,Object> parameterValues = new HashMap<String,Object>();
+	private Map<String,Object> parameterValues = new HashMap<>();
 	
 	public JRFillGenericElement(JRBaseFiller filler, JRGenericElement element,
 			JRFillObjectFactory factory)
@@ -67,6 +66,7 @@ public class JRFillGenericElement extends JRFillElement implements
 		this.parameters = element.parameters;
 	}
 
+	@Override
 	protected void evaluate(byte evaluation) throws JRException
 	{
 		initDelayedEvaluations();
@@ -82,6 +82,7 @@ public class JRFillGenericElement extends JRFillElement implements
 		}
 	}
 	
+	@Override
 	protected void collectDelayedEvaluations()
 	{
 		super.collectDelayedEvaluations();
@@ -117,6 +118,7 @@ public class JRFillGenericElement extends JRFillElement implements
 		}
 	}
 
+	@Override
 	protected boolean prepare(int availableHeight, boolean isOverflow)
 			throws JRException
 	{
@@ -155,6 +157,7 @@ public class JRFillGenericElement extends JRFillElement implements
 		return willOverflow;
 	}
 
+	@Override
 	protected JRPrintElement fill() throws JRException
 	{
 		JRTemplateGenericPrintElement printElement;
@@ -197,6 +200,7 @@ public class JRFillGenericElement extends JRFillElement implements
 		return (JRTemplateGenericElement) getElementTemplate();
 	}
 
+	@Override
 	protected JRTemplateElement createElementTemplate()
 	{
 		return new JRTemplateGenericElement(
@@ -218,6 +222,7 @@ public class JRFillGenericElement extends JRFillElement implements
 		transferProperties(printElement);
 	}
 
+	@Override
 	protected void resolveElement(JRPrintElement element, byte evaluation)
 			throws JRException
 	{
@@ -226,41 +231,49 @@ public class JRFillGenericElement extends JRFillElement implements
 		copy(genericElement);
 	}
 
+	@Override
 	protected void rewind() throws JRException
 	{
 		// NOOP
 	}
 
+	@Override
 	public JRGenericElementType getGenericType()
 	{
 		return ((JRGenericElement) parent).getGenericType();
 	}
 
+	@Override
 	public JRGenericElementParameter[] getParameters()
 	{
 		return parameters;
 	}
 
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitGenericElement(this);
 	}
 
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new JRFillGenericElement(this, factory);
 	}
 
+	@Override
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
 		return ((JRGenericElement) parent).getEvaluationTimeValue();
 	}
 	
+	@Override
 	public String getEvaluationGroupName()
 	{
 		return ((JRGenericElement) parent).getEvaluationGroupName();

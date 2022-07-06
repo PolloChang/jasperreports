@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,14 +28,13 @@ import java.util.Map;
 
 import net.sf.jasperreports.data.xls.AbstractXlsDataAdapterService;
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.data.AbstractXlsDataSource;
 import net.sf.jasperreports.engine.data.ExcelDataSource;
 import net.sf.jasperreports.engine.query.ExcelQueryExecuterFactory;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ExcelDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ExcelDataAdapterService extends AbstractXlsDataAdapterService 
 {
@@ -43,9 +42,9 @@ public class ExcelDataAdapterService extends AbstractXlsDataAdapterService
 	/**
 	 * 
 	 */
-	public ExcelDataAdapterService(JasperReportsContext jasperReportsContext, ExcelDataAdapter excelDataAdapter)
+	public ExcelDataAdapterService(ParameterContributorContext paramContribContext, ExcelDataAdapter excelDataAdapter)
 	{
-		super(jasperReportsContext, excelDataAdapter);
+		super(paramContribContext, excelDataAdapter);
 	}
 
 	public ExcelDataAdapter getExcelDataAdapter()
@@ -83,8 +82,7 @@ public class ExcelDataAdapterService extends AbstractXlsDataAdapterService
 		{
 			dataSource =
 				new ExcelDataSource(
-					getJasperReportsContext(),
-					excelDataAdapter.getFileName(),
+					dataStream,
 					excelDataAdapter.getFormat()
 					);
 		}

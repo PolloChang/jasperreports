@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.type.ResetTypeEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDistinctCountIncrementerFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDistinctCountIncrementerFactory implements JRIncrementerFactory
 {
@@ -60,9 +59,7 @@ public class JRDistinctCountIncrementerFactory implements JRIncrementerFactory
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRIncrementer getIncrementer(byte calculation)
 	{
 		return new JRDistinctCountIncrementer();
@@ -87,9 +84,7 @@ class JRDistinctCountIncrementer implements JRIncrementer
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRFillVariable variable, 
 		Object expressionValue,
@@ -129,7 +124,7 @@ class DistinctCountHolder
 
 	public DistinctCountHolder()
 	{
-		distinctValues = new HashSet<Object>();
+		distinctValues = new HashSet<>();
 	}
 
 	public DistinctCountHolder(Set<Object> distinctValues)
@@ -145,7 +140,7 @@ class DistinctCountHolder
 
 	public void init()
 	{
-		distinctValues = new HashSet<Object>();
+		distinctValues = new HashSet<>();
 	}
 
 	public Set<Object> getDistinctValues()

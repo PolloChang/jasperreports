@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,6 +27,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.jasperreports.components.items.Item;
+import net.sf.jasperreports.components.items.ItemProperty;
 import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
@@ -34,7 +36,7 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: StandardItem.java 7199 2014-08-27 13:58:10Z teodord $
+ * @deprecated Replaced by {@link net.sf.jasperreports.components.items.StandardItem}.
  */
 public class StandardItem implements Item, JRChangeEventsSupport, Serializable
 {
@@ -44,7 +46,7 @@ public class StandardItem implements Item, JRChangeEventsSupport, Serializable
 	
 	private transient JRPropertyChangeSupport eventSupport;
 
-	private List<ItemProperty> properties = new ArrayList<ItemProperty>();
+	private List<ItemProperty> properties = new ArrayList<>();
 
 	public StandardItem()
 	{
@@ -55,6 +57,7 @@ public class StandardItem implements Item, JRChangeEventsSupport, Serializable
 		this.properties = properties;
 	}
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
@@ -68,6 +71,7 @@ public class StandardItem implements Item, JRChangeEventsSupport, Serializable
 		return eventSupport;
 	}
 
+	@Override
 	public Object clone()
 	{
 		StandardItem clone = null;

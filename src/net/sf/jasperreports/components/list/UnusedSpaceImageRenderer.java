@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,21 +28,19 @@ import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
-import net.sf.jasperreports.engine.JRAbstractSvgRenderer;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.renderers.AbstractRenderer;
+import net.sf.jasperreports.renderers.Graphics2DRenderable;
 
 /**
  * Am image renderer used to mark the unused vertical space in a list
  * component preview.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: UnusedSpaceImageRenderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class UnusedSpaceImageRenderer extends JRAbstractSvgRenderer
+public class UnusedSpaceImageRenderer extends AbstractRenderer implements Graphics2DRenderable
 {
-
 	private static final long serialVersionUID = 1L;
 
 	// transparent light grey
@@ -64,14 +62,7 @@ public class UnusedSpaceImageRenderer extends JRAbstractSvgRenderer
 		this.clip = clip;
 	}
 	
-	/**
-	 * @deprecated Replaced by {@link #render(JasperReportsContext, Graphics2D, Rectangle2D)}.
-	 */
-	public void render(Graphics2D grx, Rectangle2D rectangle) throws JRException
-	{
-		render(DefaultJasperReportsContext.getInstance(), grx, rectangle);	
-	}
-	
+	@Override
 	public void render(
 		JasperReportsContext jasperReportsContext,
 		Graphics2D grx, 
@@ -79,30 +70,36 @@ public class UnusedSpaceImageRenderer extends JRAbstractSvgRenderer
 		) throws JRException
 	{
 		Graphics2D graphics = (Graphics2D) grx.create();
-		graphics.translate(rectangle.getX(), rectangle.getY());
-		graphics.setColor(FILL);
-		
-		if (clip != null)
+		try
 		{
-			graphics.clip(clip);
-		}
-		
-		int width = (int) rectangle.getWidth();
-		int limit = width + (int) rectangle.getHeight();
-		int increment = lineGap + lineWidth;
-		int reverseOffset = (width - 4 * lineWidth / 3) % increment;
-		for (int x = 0; x <= limit; x += increment)
-		{
-			graphics.fillPolygon(
-					new int[]{x, x + lineWidth, 0, 0},
-					new int[]{0, 0, x + lineWidth, x},
-					4);
+			graphics.translate(rectangle.getX(), rectangle.getY());
+			graphics.setColor(FILL);
+			
+			if (clip != null)
+			{
+				graphics.clip(clip);
+			}
+			
+			int width = (int) rectangle.getWidth();
+			int limit = width + (int) rectangle.getHeight();
+			int increment = lineGap + lineWidth;
+			int reverseOffset = (width - 4 * lineWidth / 3) % increment;
+			for (int x = 0; x <= limit; x += increment)
+			{
+				graphics.fillPolygon(
+						new int[]{x, x + lineWidth, 0, 0},
+						new int[]{0, 0, x + lineWidth, x},
+						4);
 
-			graphics.fillPolygon(
-					new int[]{width - x - reverseOffset, width - x - lineWidth - reverseOffset, width, width},
-					new int[]{0, 0, x + lineWidth, x},
-					4);
+				graphics.fillPolygon(
+						new int[]{width - x - reverseOffset, width - x - lineWidth - reverseOffset, width, width},
+						new int[]{0, 0, x + lineWidth, x},
+						4);
+			}
+		}
+		finally
+		{
+			graphics.dispose();
 		}
 	}
-
 }

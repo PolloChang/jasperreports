@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,119 +23,190 @@
  */
 package net.sf.jasperreports.engine.export;
 
+import java.text.AttributedCharacterIterator;
 import java.text.AttributedString;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRPrintText;
-import net.sf.jasperreports.engine.JRPropertiesUtil;
-import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.util.JRStyledText;
-
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.Element;
-import com.lowagie.text.Phrase;
-import com.lowagie.text.pdf.ColumnText;
-import com.lowagie.text.pdf.PdfWriter;
+import net.sf.jasperreports.export.pdf.PdfPhrase;
+import net.sf.jasperreports.export.pdf.PdfProducer;
+import net.sf.jasperreports.export.pdf.PdfTextAlignment;
+import net.sf.jasperreports.export.pdf.TextDirection;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimplePdfTextRenderer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimplePdfTextRenderer extends AbstractPdfTextRenderer
 {
-	/**
-	 * @deprecated Replaced by {@link #SimplePdfTextRenderer(JasperReportsContext, boolean)}.
-	 */
-	public static SimplePdfTextRenderer getInstance()
-	{
-		return 
-			new SimplePdfTextRenderer(
-				DefaultJasperReportsContext.getInstance(),
-				JRPropertiesUtil.getInstance(DefaultJasperReportsContext.getInstance()).getBooleanProperty(JRStyledText.PROPERTY_AWT_IGNORE_MISSING_FONT)
-				);
-	}
-	
+	private float yLine = 0;
 	
 	/**
-	 * @deprecated Replaced by {@link #SimplePdfTextRenderer(JasperReportsContext, boolean)}.
+	 * @deprecated Replaced by {@link #SimplePdfTextRenderer(JasperReportsContext, boolean, boolean, boolean)}.
 	 */
-	public SimplePdfTextRenderer(boolean ignoreMissingFont)
+	public SimplePdfTextRenderer(
+		JasperReportsContext jasperReportsContext, 
+		boolean ignoreMissingFont
+		)
 	{
-		this(DefaultJasperReportsContext.getInstance(), ignoreMissingFont);
+		this(jasperReportsContext, ignoreMissingFont, true, false);
 	}
 	
 	
 	/**
 	 * 
 	 */
-	public SimplePdfTextRenderer(JasperReportsContext jasperReportsContext, boolean ignoreMissingFont)
+	public SimplePdfTextRenderer(
+		JasperReportsContext jasperReportsContext, 
+		boolean ignoreMissingFont,
+		boolean defaultIndentFirstLine,
+		boolean defaultJustifyLastLine
+		)
 	{
-		super(jasperReportsContext, ignoreMissingFont);
-	}
-	
-	
-	/**
-	 *
-	 */
-	protected Phrase getPhrase(JRStyledText styledText, JRPrintText textElement)
-	{
-		String text = styledText.getText();
-
-		AttributedString as = styledText.getAttributedString();
-
-		return pdfExporter.getPhrase(as, text, textElement);
+		super(
+			jasperReportsContext, 
+			ignoreMissingFont,
+			defaultIndentFirstLine,
+			defaultJustifyLastLine
+			);
 	}
 
 	
-	/**
-	 * 
-	 */
-	public void render()
+	@Override
+	public void initialize(
+		JRPdfExporter pdfExporter, 
+		PdfProducer pdfProducer,
+		JRPdfExporterTagHelper tagHelper,
+		JRPrintText text, 
+		JRStyledText styledText, 
+		int offsetX,
+		int offsetY
+		)
 	{
-		ColumnText colText = new ColumnText(pdfContentByte);
-		colText.setSimpleColumn(
-			getPhrase(styledText, text),
-			x + leftPadding,
-			pdfExporter.getCurrentJasperPrint().getPageHeight()
+		super.initialize(
+			pdfExporter, 
+			pdfProducer,
+			tagHelper,
+			text, 
+			styledText, 
+			offsetX,
+			offsetY
+			);
+		
+		yLine = 
+			pdfExporter.getCurrentPageFormat().getPageHeight()
 				- y
 				- topPadding
 				- verticalAlignOffset
-				- text.getLeadingOffset(),
-				//+ text.getLineSpacingFactor() * text.getFont().getSize(),
+				- text.getLeadingOffset();
+	}
+
+	
+	@Override
+	public void render()
+	{
+		super.render();
+	}
+
+	
+	@Override
+	protected void renderParagraph(
+		AttributedCharacterIterator allParagraphs,
+		int paragraphStart,
+		String paragraphText
+		)
+	{
+		tagHelper.startText(text.getLinkType() != null);
+
+		if (bulletChunk != null)
+		{
+			PdfPhrase phrase = pdfProducer.createPhrase();
+			pdfExporter.getPhrase(bulletChunk, bulletText, text, phrase);
+
+			phrase.go(
+				x + leftPadding,
+				yLine,
+				htmlListIndent + x + leftPadding - 10,
+				pdfExporter.getCurrentPageFormat().getPageHeight()
+					- y
+					- height
+					+ bottomPadding,
+				0,//text.getLineSpacingFactor(),// * text.getFont().getSize(),
+				text.getLineSpacingFactor(),
+				PdfTextAlignment.RIGHT,
+				TextDirection.LTR
+				);
+		}
+
+		bulletText = null;
+		bulletChunk = null;
+
+		AttributedString paragraph = null;
+		
+		if (paragraphText == null)
+		{
+			paragraphText = " ";
+			paragraph = 
+				new AttributedString(
+					paragraphText,
+					new AttributedString(
+						allParagraphs, 
+						paragraphStart, 
+						paragraphStart + paragraphText.length()
+						).getIterator().getAttributes()
+					);
+		}
+		else
+		{
+			paragraph = 
+				new AttributedString(
+					allParagraphs, 
+					paragraphStart, 
+					paragraphStart + paragraphText.length()
+					);
+		}
+		
+		PdfPhrase phrase = pdfProducer.createPhrase();
+		pdfExporter.getPhrase(paragraph, paragraphText, text, phrase);
+		yLine = phrase.go(
+			htmlListIndent + x + leftPadding,
+			yLine,
 			x + width - rightPadding,
-			pdfExporter.getCurrentJasperPrint().getPageHeight()
+			pdfExporter.getCurrentPageFormat().getPageHeight()
 				- y
 				- height
 				+ bottomPadding,
 			0,//text.getLineSpacingFactor(),// * text.getFont().getSize(),
-			horizontalAlignment == Element.ALIGN_JUSTIFIED_ALL ? Element.ALIGN_JUSTIFIED : horizontalAlignment
-			);
-
-		colText.setLeading(0, text.getLineSpacingFactor());// * text.getFont().getSize());
-		colText.setRunDirection(
+			text.getLineSpacingFactor(),
+			horizontalAlignment == PdfTextAlignment.JUSTIFIED && (isLastParagraph && justifyLastLine) 
+				? PdfTextAlignment.JUSTIFIED_ALL : horizontalAlignment,
 			text.getRunDirectionValue() == RunDirectionEnum.LTR
-			? PdfWriter.RUN_DIRECTION_LTR : PdfWriter.RUN_DIRECTION_RTL
+				? TextDirection.LTR : TextDirection.RTL
 			);
-
-		try
-		{
-			colText.go();
-		}
-		catch (DocumentException e)
-		{
-			throw new JRRuntimeException(e);
-		}
+		
+		tagHelper.endText();
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
+	protected AttributedString getAttributedString()
+	{
+		return styledText.getAttributedString();
+	}
+
+
+	@Override
 	public void draw()
 	{
 		//nothing to do
+	}
+
+
+	@Override
+	public boolean addActualText()
+	{
+		return false;
 	}
 }

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,7 +26,6 @@ package net.sf.jasperreports.export;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: SimpleTextReportConfiguration.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SimpleTextReportConfiguration extends SimpleReportExportConfiguration implements TextReportConfiguration
 {
@@ -43,9 +42,7 @@ public class SimpleTextReportConfiguration extends SimpleReportExportConfigurati
 	{
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Float getCharWidth()
 	{
 		return charWidth;
@@ -59,9 +56,7 @@ public class SimpleTextReportConfiguration extends SimpleReportExportConfigurati
 		this.charWidth = charWidth;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Float getCharHeight()
 	{
 		return charHeight;
@@ -75,9 +70,7 @@ public class SimpleTextReportConfiguration extends SimpleReportExportConfigurati
 		this.charHeight = charHeight;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getPageWidthInChars()
 	{
 		return pageWidthInChars;
@@ -91,9 +84,7 @@ public class SimpleTextReportConfiguration extends SimpleReportExportConfigurati
 		this.pageWidthInChars = pageWidthInChars;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Integer getPageHeightInChars()
 	{
 		return pageHeightInChars;

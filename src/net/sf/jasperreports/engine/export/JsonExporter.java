@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -27,8 +27,19 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.io.JsonStringEncoder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRAbstractExporter;
@@ -39,34 +50,31 @@ import net.sf.jasperreports.engine.JRPrintFrame;
 import net.sf.jasperreports.engine.JRPrintHyperlink;
 import net.sf.jasperreports.engine.JRPrintPage;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.PrintBookmark;
+import net.sf.jasperreports.engine.PrintPart;
+import net.sf.jasperreports.engine.PrintParts;
 import net.sf.jasperreports.engine.ReportContext;
 import net.sf.jasperreports.engine.util.HyperlinkData;
+import net.sf.jasperreports.export.ExportInterruptedException;
 import net.sf.jasperreports.export.ExporterInputItem;
 import net.sf.jasperreports.export.HtmlReportConfiguration;
 import net.sf.jasperreports.export.JsonExporterConfiguration;
+import net.sf.jasperreports.export.JsonExporterOutput;
 import net.sf.jasperreports.export.JsonReportConfiguration;
-import net.sf.jasperreports.export.WriterExporterOutput;
-import net.sf.jasperreports.web.util.JacksonUtil;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import net.sf.jasperreports.util.JacksonUtil;
 
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JsonExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, JsonExporterConfiguration, WriterExporterOutput, JsonExporterContext>
+public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, JsonExporterConfiguration, JsonExporterOutput, JsonExporterContext>
 {
-	
 	private static final Log log = LogFactory.getLog(JsonExporter.class);
 	
+	public static final String REPORT_CONTEXT_PARAMETER_WEB_FONTS = "net.sf.jasperreports.html.webfonts";
+
 	public static final String JSON_EXPORTER_KEY = JRPropertiesUtil.PROPERTY_PREFIX + "json";
 	
 	protected static final String JSON_EXPORTER_PROPERTIES_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "export.json.";
@@ -89,31 +97,24 @@ public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, Js
 
 		exporterContext = new ExporterContext();
 		jacksonUtil = JacksonUtil.getInstance(jasperReportsContext);
-		hyperlinksData = new ArrayList<HyperlinkData>();
+		hyperlinksData = new ArrayList<>();
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<JsonExporterConfiguration> getConfigurationInterface()
 	{
 		return JsonExporterConfiguration.class;
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	protected Class<JsonReportConfiguration> getItemConfigurationInterface()
 	{
 		return JsonReportConfiguration.class;
 	}
 	
 
-	/**
-	 *
-	 */
 	@Override
 	@SuppressWarnings("deprecation")
 	protected void ensureOutput()
@@ -121,7 +122,7 @@ public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, Js
 		if (exporterOutput == null)
 		{
 			exporterOutput = 
-				new net.sf.jasperreports.export.parameters.ParametersWriterExporterOutput(
+				new net.sf.jasperreports.export.parameters.ParametersJsonExporterOutput(
 					getJasperReportsContext(),
 					getParameters(),
 					getCurrentJasperPrint()
@@ -163,7 +164,11 @@ public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, Js
 		}
 		catch (IOException e)
 		{
-			throw new JRException("Error writing to output writer : " + jasperPrint.getName(), e);
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_OUTPUT_WRITER_ERROR,
+					new Object[]{jasperPrint.getName()}, 
+					e);
 		}
 		finally
 		{
@@ -208,7 +213,7 @@ public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, Js
 				{
 					if (Thread.interrupted())
 					{
-						throw new JRException("Current thread interrupted.");
+						throw new ExportInterruptedException();
 					}
 
 					page = pages.get(pageIndex);
@@ -235,10 +240,24 @@ public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, Js
 	protected void exportPage(JRPrintPage page) throws IOException
 	{
 		Collection<JRPrintElement> elements = page.getElements();
-		exportElements(elements);
+		Boolean exportReportComponentsOnly = getCurrentConfiguration().isReportComponentsExportOnly();
+
+		exportReportConfig();
+
+		if (exportReportComponentsOnly == null)
+		{
+			exportReportComponentsOnly = false;
+		}
+
+		if (!exportReportComponentsOnly)
+		{
+			exportElements(elements);
+			exportWebFonts();
+			exportHyperlinks();
+		}
+
 		exportBookmarks();
-		exportWebFonts();
-		exportHyperlinks();
+		exportParts();
 
 		JRExportProgressMonitor progressMonitor = getCurrentItemConfiguration().getProgressMonitor();
 		if (progressMonitor != null)
@@ -275,6 +294,11 @@ public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, Js
 		exportElements(frame.getElements());
 	}
 
+	protected interface PrintBookmarkMixin {
+		@JsonIgnore
+		int getLevel();
+	}
+
 	protected void exportBookmarks() throws IOException
 	{
 		List<PrintBookmark> bookmarks = jasperPrint.getBookmarks();
@@ -287,22 +311,141 @@ public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, Js
 			{
 				gotFirstJsonFragment = true;
 			}
-			writer.write("\"bkmrk_" + (bookmarks.hashCode() & 0x7FFFFFFF) + "\": {");
-
-			writer.write("\"id\": \"bkmrk_" + (bookmarks.hashCode() & 0x7FFFFFFF) + "\",");
-			writer.write("\"type\": \"bookmarks\",");
-			writer.write("\"bookmarks\": " + jacksonUtil.getJsonString(bookmarks));
-
-			writer.write("}");
+			
+			writer.write("\"bkmrk_" + (bookmarks.hashCode() & 0x7FFFFFFF) + "\": ");
+			writeBookmarks(bookmarks, writer, jacksonUtil);
 		}
+	}
+
+	protected void exportReportConfig() throws IOException
+	{
+		if (gotFirstJsonFragment)
+		{
+			writer.write(",\n");
+		} else
+		{
+			gotFirstJsonFragment = true;
+		}
+
+		writer.write("\"reportConfig\": {");
+		writer.write("\"id\": \"reportConfig\",");
+		writer.write("\"type\": \"reportConfig\",");
+
+		List<JRPropertiesUtil.PropertySuffix> viewerProps = JRPropertiesUtil.getProperties(
+				jasperPrint,
+				JRPropertiesUtil.PROPERTY_PREFIX + "htmlviewer.");
+
+		writer.write("\"reportConfig\": " + jacksonUtil.getJsonString(viewerProps));
+		writer.write("}");
+	}
+
+	public static void writeBookmarks(List<PrintBookmark> bookmarks, Writer writer, JacksonUtil jacksonUtil) throws IOException
+	{
+		// exclude the methods marked with @JsonIgnore in PrintBookmarkMixin from PrintBookmark implementation
+		jacksonUtil.getObjectMapper().addMixIn(PrintBookmark.class, PrintBookmarkMixin.class);
+
+		writer.write("{");
+
+		writer.write("\"id\": \"bkmrk_" + (bookmarks.hashCode() & 0x7FFFFFFF) + "\",");
+		writer.write("\"type\": \"bookmarks\",");
+		writer.write("\"bookmarks\": " + jacksonUtil.getJsonString(bookmarks));
+
+		writer.write("}");
+	}
+
+	/**
+	 * @deprecated Replaced by {@link #writeBookmarks(List, Writer, JacksonUtil)}.
+	 */
+	public static void writeBookmarks(List<PrintBookmark> bookmarks, Writer writer, net.sf.jasperreports.web.util.JacksonUtil jacksonUtil) throws IOException
+	{
+		writeBookmarks(bookmarks, writer, (JacksonUtil)jacksonUtil);
+	}
+
+	protected void exportParts() throws IOException
+	{
+		PrintParts parts = jasperPrint.getParts();
+
+		if (parts != null && parts.hasParts())
+		{
+			if (gotFirstJsonFragment)
+			{
+				writer.write(",\n");
+			} else
+			{
+				gotFirstJsonFragment = true;
+			}
+			
+			writer.write("\"parts_" + (parts.hashCode() & 0x7FFFFFFF) + "\": ");
+			writeParts(jasperPrint, writer);
+		}
+	}
+
+	public static void writeParts(JasperPrint jasperPrint, Writer writer) throws IOException
+	{
+		PrintParts parts = jasperPrint.getParts();
+		writer.write("{");
+
+		writer.write("\"id\": \"parts_" + (parts.hashCode() & 0x7FFFFFFF) + "\",");
+		writer.write("\"type\": \"reportparts\",");
+		writer.write("\"parts\": [");
+
+		if (!parts.startsAtZero())
+		{
+			writer.write("{\"idx\": 0, \"name\": \"");
+			writer.write(JsonStringEncoder.getInstance().quoteAsString(jasperPrint.getName()));
+			writer.write("\"}");
+			if (parts.partCount() > 1)
+			{
+				writer.write(",");
+			}
+		}
+
+		Iterator<Map.Entry<Integer, PrintPart>> it = parts.partsIterator();
+
+		while (it.hasNext())
+		{
+			Map.Entry<Integer, PrintPart> partsEntry = it.next();
+			int idx = partsEntry.getKey();
+			PrintPart part = partsEntry.getValue();
+			
+			writer.write("{\"idx\": " + idx + ", \"name\": \"");
+			writer.write(JsonStringEncoder.getInstance().quoteAsString(part.getName()));
+			writer.write("\"}");
+			if (it.hasNext())
+			{
+				writer.write(",");
+			}
+		}
+
+		writer.write("]");
+		writer.write("}");
 	}
 
 	protected void exportWebFonts() throws IOException
 	{
+		HtmlResourceHandler fontHandler = getExporterOutput().getFontHandler();
 		ReportContext reportContext = getReportContext();
-		String webFontsParameter = "net.sf.jasperreports.html.webfonts";
-		if (reportContext != null && reportContext.containsParameter(webFontsParameter)) {
-			ArrayNode webFonts = (ArrayNode) reportContext.getParameterValue(webFontsParameter);
+
+		if (
+			fontHandler != null
+			&& reportContext != null 
+			&& reportContext.containsParameter(REPORT_CONTEXT_PARAMETER_WEB_FONTS)
+			) 
+		{
+			Map<String, HtmlFontFamily> fontsToProcess = 
+				(Map<String, HtmlFontFamily>)reportContext.getParameterValue(REPORT_CONTEXT_PARAMETER_WEB_FONTS);
+
+			ObjectMapper mapper = new ObjectMapper();
+			ArrayNode webFonts = mapper.createArrayNode();
+
+			for (HtmlFontFamily htmlFontFamily : fontsToProcess.values())
+			{
+				ObjectNode objNode = mapper.createObjectNode();
+				objNode.put("id", htmlFontFamily.getId());
+				objNode.put("path", fontHandler.getResourcePath(htmlFontFamily.getId()));
+				webFonts.add(objNode);
+			}
+			
 			if (gotFirstJsonFragment)
 			{
 				writer.write(",\n");
@@ -480,6 +623,27 @@ public class JsonExporter extends JRAbstractExporter<JsonReportConfiguration, Js
 	 */
 	public void addHyperlinkData(HyperlinkData hyperlinkData) {
 		this.hyperlinksData.add(hyperlinkData);
+	}
+
+	/**
+	 *
+	 */
+	public void addFontFamily(HtmlFontFamily htmlFontFamily) 
+	{
+		ReportContext reportContext = getReportContext();
+		if (reportContext != null)
+		{
+			Map<String, HtmlFontFamily> fontsToProcess = 
+				(Map<String, HtmlFontFamily>)reportContext.getParameterValue(REPORT_CONTEXT_PARAMETER_WEB_FONTS);
+			
+			if (fontsToProcess == null)
+			{
+				fontsToProcess = new HashMap<>();
+				reportContext.setParameterValue(REPORT_CONTEXT_PARAMETER_WEB_FONTS, fontsToProcess);
+			}
+			
+			fontsToProcess.put(htmlFontFamily.getId(), htmlFontFamily);
+		}
 	}
 
 	

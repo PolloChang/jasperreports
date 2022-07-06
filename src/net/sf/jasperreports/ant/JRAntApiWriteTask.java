@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,10 +24,21 @@
 package net.sf.jasperreports.ant;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.apache.tools.ant.AntClassLoader;
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.DirectoryScanner;
+import org.apache.tools.ant.types.Path;
+import org.apache.tools.ant.types.Resource;
+import org.apache.tools.ant.types.resources.FileResource;
+import org.apache.tools.ant.util.RegexpPatternMapper;
+import org.apache.tools.ant.util.SourceFileScanner;
 
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRReport;
@@ -39,15 +50,6 @@ import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.util.ReportCreator;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
 import net.sf.jasperreports.engine.xml.JRXmlWriter;
-
-import org.apache.tools.ant.AntClassLoader;
-import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.DirectoryScanner;
-import org.apache.tools.ant.types.Path;
-import org.apache.tools.ant.types.Resource;
-import org.apache.tools.ant.types.resources.FileResource;
-import org.apache.tools.ant.util.RegexpPatternMapper;
-import org.apache.tools.ant.util.SourceFileScanner;
 
 
 /**
@@ -69,7 +71,6 @@ import org.apache.tools.ant.util.SourceFileScanner;
  * is older than the input file will be processed.
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAntApiWriteTask.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRAntApiWriteTask extends JRBaseAntTask
 {
@@ -159,11 +160,12 @@ public class JRAntApiWriteTask extends JRBaseAntTask
 	/**
 	 * Executes the task.
 	 */
+	@Override
 	public void execute() throws BuildException
 	{
 		checkParameters();
 
-		reportFilesMap = new HashMap<String, String>();
+		reportFilesMap = new HashMap<>();
 
 		AntClassLoader classLoader = null;
 		if (classpath != null)
@@ -234,8 +236,7 @@ public class JRAntApiWriteTask extends JRBaseAntTask
 	 */
 	protected void scanSrc() throws BuildException
 	{
-		for(@SuppressWarnings("unchecked")
-		Iterator<Resource> it = src.iterator(); it.hasNext();)
+		for(Iterator<Resource> it = src.iterator(); it.hasNext();)
 		{
 			Resource resource = it.next();
 			FileResource fileResource = resource instanceof FileResource ? (FileResource)resource : null;
@@ -407,13 +408,13 @@ public class JRAntApiWriteTask extends JRBaseAntTask
 					System.out.print("File : " + srcFileName + " ... ");
 
 					Class<?> reportCreatorClass = JRClassLoader.loadClassFromFile(null, new File(srcFileName));
-					ReportCreator reportCreator = (ReportCreator)reportCreatorClass.newInstance();
+					ReportCreator reportCreator = (ReportCreator)reportCreatorClass.getDeclaredConstructor().newInstance();
 					JasperDesign jasperDesign = reportCreator.create();
 					new JRXmlWriter(jasperReportsContext).write(jasperDesign, destFileName, "UTF-8");
 
 					System.out.println("OK.");
 				}
-				catch (Exception e)
+				catch (JRException | IOException | NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e)
 				{
 					System.out.println("FAILED.");
 					System.out.println("Error running API report design class : " + srcFileName);

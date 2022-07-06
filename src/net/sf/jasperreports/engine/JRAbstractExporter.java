@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,6 +36,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.export.DefaultHyperlinkProducerFactory;
 import net.sf.jasperreports.engine.export.ExporterFilter;
 import net.sf.jasperreports.engine.export.ExporterFilterFactory;
 import net.sf.jasperreports.engine.export.ExporterFilterFactoryUtil;
@@ -49,14 +52,12 @@ import net.sf.jasperreports.engine.export.data.StringTextValue;
 import net.sf.jasperreports.engine.export.data.TextValue;
 import net.sf.jasperreports.engine.fonts.FontUtil;
 import net.sf.jasperreports.engine.util.DefaultFormatFactory;
-import net.sf.jasperreports.engine.util.FileResolver;
 import net.sf.jasperreports.engine.util.FormatFactory;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 import net.sf.jasperreports.engine.util.JRDataUtils;
 import net.sf.jasperreports.engine.util.JRStyledText;
 import net.sf.jasperreports.engine.util.JRStyledTextParser;
 import net.sf.jasperreports.engine.util.JRStyledTextUtil;
-import net.sf.jasperreports.engine.util.LocalJasperReportsContext;
 import net.sf.jasperreports.engine.util.Pair;
 import net.sf.jasperreports.export.CompositeExporterConfigurationFactory;
 import net.sf.jasperreports.export.Exporter;
@@ -67,18 +68,25 @@ import net.sf.jasperreports.export.ExporterOutput;
 import net.sf.jasperreports.export.PropertiesDefaultsConfigurationFactory;
 import net.sf.jasperreports.export.PropertiesNoDefaultsConfigurationFactory;
 import net.sf.jasperreports.export.ReportExportConfiguration;
-import net.sf.jasperreports.export.SimpleExporterInputItem;
+import net.sf.jasperreports.properties.PropertyConstants;
+import net.sf.jasperreports.renderers.util.RendererUtil;
+import net.sf.jasperreports.repo.RepositoryResourceContext;
+import net.sf.jasperreports.repo.RepositoryUtil;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRAbstractExporter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C extends ExporterConfiguration, O extends ExporterOutput, E extends JRExporterContext> implements JRExporter<ExporterInput, RC, C, O>
 {
-	public static final String EXCEPTION_MESSAGE_KEY_START_PAGE_INDEX_OUT_OF_RANGE = JRAbstractExporter.class.getName() + ".start.page.index.out.of.range";
-	public static final String EXCEPTION_MESSAGE_KEY_END_PAGE_INDEX_OUT_OF_RANGE = JRAbstractExporter.class.getName() + ".end.page.index.out.of.range";
-	public static final String EXCEPTION_MESSAGE_KEY_PAGE_INDEX_OUT_OF_RANGE = JRAbstractExporter.class.getName() + ".page.index.out.of.range";
+	public static final String EXCEPTION_MESSAGE_KEY_START_PAGE_INDEX_OUT_OF_RANGE = "export.common.start.page.index.out.of.range";
+	public static final String EXCEPTION_MESSAGE_KEY_END_PAGE_INDEX_OUT_OF_RANGE = "export.common.end.page.index.out.of.range";
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_IMAGE_NAME = "export.common.invalid.image.name";
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_ZOOM_RATIO = "export.common.invalid.zoom.ratio";
+	public static final String EXCEPTION_MESSAGE_KEY_MIXED_CALLS_NOT_ALLOWED = "export.common.mixed.calls.not.allowed";
+	public static final String EXCEPTION_MESSAGE_KEY_PAGE_INDEX_OUT_OF_RANGE = "export.common.page.index.out.of.range";
+	public static final String EXCEPTION_MESSAGE_KEY_OUTPUT_WRITER_ERROR = "export.common.output.writer.error";
 
 	/**
 	 * The suffix applied to properties that give the default filter factory for
@@ -90,6 +98,14 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 * If this property is not defined for a specific exporter, the generic
 	 * exporter factory given by {@link #PROPERTY_DEFAULT_FILTER_FACTORY} is used.
 	 */
+	@Property(
+			name = "net.sf.jasperreports.export.{arbitrary_name}.default.filter.factory",
+			valueType = Class.class,
+			category = PropertyConstants.CATEGORY_EXPORT,
+			defaultValue = "same default value as for net.sf.jasperreports.export.default.filter.factory",
+			scopes = {PropertyScope.CONTEXT},
+			sinceVersion = PropertyConstants.VERSION_3_0_1
+			)
 	public static final String PROPERTY_SUFFIX_DEFAULT_FILTER_FACTORY = "default.filter.factory";
 
 	/**
@@ -97,66 +113,95 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 * 
 	 * @see #PROPERTY_SUFFIX_DEFAULT_FILTER_FACTORY
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_EXPORT,
+			valueType = Class.class,
+			defaultValue = "net.sf.jasperreports.engine.export.DefaultExporterFilterFactory",
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_0_1
+			)
 	public static final String PROPERTY_DEFAULT_FILTER_FACTORY = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "export." + PROPERTY_SUFFIX_DEFAULT_FILTER_FACTORY;
 	
 	public abstract class BaseExporterContext implements JRExporterContext
 	{
-		private Map<String, Object> values = new HashMap<String, Object>();
+		private Map<String, Object> values = new HashMap<>();
 
 		/**
 		 * @deprecated Replaced by {@link #getExporterRef()}.
 		 */
+		@Override
 		public JRExporter getExporter()
 		{
 			return JRAbstractExporter.this;
 		}
 
+		@Override
 		public Exporter getExporterRef()
 		{
 			return JRAbstractExporter.this;
 		}
 
+		@Override
 		public JasperReportsContext getJasperReportsContext()
 		{
-			return jasperReportsContext;
+			return JRAbstractExporter.this.getJasperReportsContext();
 		}
 		
+		@Override
+		public RepositoryUtil getRepository()
+		{
+			return JRAbstractExporter.this.getRepository();
+		}
+		
+		@Override
 		public JasperPrint getExportedReport()
 		{
 			return jasperPrint;
 		}
 
+		@Override
 		@SuppressWarnings("deprecation")
 		public Map<JRExporterParameter,Object> getExportParameters()
 		{
 			return parameters;
 		}
 
+		@Override
 		public int getOffsetX()
 		{
 			return JRAbstractExporter.this.getOffsetX();
 		}
 
+		@Override
 		public int getOffsetY()
 		{
 			return JRAbstractExporter.this.getOffsetY();
 		}
 
+		@Override
 		@SuppressWarnings("deprecation")
 		public String getExportPropertiesPrefix()
 		{
 			return JRAbstractExporter.this.getExporterPropertiesPrefix();
 		}
 		
+		@Override
 		public Object getValue(String key)
 		{
 			return values.get(key);
 		}
 		
+		@Override
 		public void setValue(String key, Object value)
 		{
 			values.put(key, value);
+		}
+
+		@Override
+		public Map<String, Object> getValues()
+		{
+			return values;
 		}
 	}
 	
@@ -170,16 +215,18 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 */
 	protected JasperReportsContext jasperReportsContext;
 	protected JRPropertiesUtil propertiesUtil;
+	protected RendererUtil rendererUtil;
 	protected JRStyledTextAttributeSelector allSelector;
 	protected JRStyledTextAttributeSelector noBackcolorSelector;
 	protected JRStyledTextAttributeSelector noneSelector;
 	protected JRStyledTextUtil styledTextUtil;
+	protected FontUtil fontUtil;
 	
 	/**
 	 *
 	 */
 	@SuppressWarnings("deprecation")
-	protected Map<JRExporterParameter,Object> parameters = new HashMap<JRExporterParameter,Object>();
+	protected Map<JRExporterParameter,Object> parameters = new HashMap<>();
 
 	/**
 	 *
@@ -202,15 +249,15 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	/**
 	 *
 	 */
-	private LinkedList<int[]> elementOffsetStack = new LinkedList<int[]>();
+	private LinkedList<int[]> elementOffsetStack = new LinkedList<>();
 	private int elementOffsetX;
 	private int elementOffsetY;
 
 	/**
 	 *
 	 */
-	protected Map<String, DateFormat> dateFormatCache = new HashMap<String, DateFormat>();
-	protected Map<String, NumberFormat> numberFormatCache = new HashMap<String, NumberFormat>();
+	protected Map<String, DateFormat> dateFormatCache = new HashMap<>();
+	protected Map<String, NumberFormat> numberFormatCache = new HashMap<>();
 
 	/*
 	 * cached text locale, JRDataUtils.getLocale(String) is rather slow.
@@ -223,24 +270,20 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 * cache of text value class to avoid calling JRClassLoader.loadClassForRealName() each time.
 	 * note that we're assuming single threaded exporting.
 	 */
-	private Map<String, Class<?>> textValueClasses = new HashMap<String, Class<?>>();
+	protected Map<String, Class<?>> textValueClasses = new HashMap<>();
 	
 	/**
 	 *
 	 */
 	private ReportContext reportContext;
 	protected E exporterContext;
-	
-	
+
+
 	/**
-	 * @deprecated Replaced by {@link #JRAbstractExporter(JasperReportsContext)}.
+	 *
 	 */
-	protected JRAbstractExporter()
-	{
-		this(DefaultJasperReportsContext.getInstance());
-	}
-	
-	
+	protected JRHyperlinkProducerFactory hyperlinkProducerFactory;
+
 	/**
 	 *
 	 */
@@ -263,7 +306,11 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 		{
 			if (useOldApi != isOldApi)
 			{
-				throw new JRRuntimeException("Can't mix deprecated JRParameter API calls with new exporter configuration API calls.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_MIXED_CALLS_NOT_ALLOWED,  
+						(Object[])null 
+						);
 			}
 		}
 	}
@@ -277,10 +324,10 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 		useOldApi = null;
 
 		@SuppressWarnings("deprecation")
-		Map<JRExporterParameter,Object> dep = new HashMap<JRExporterParameter,Object>();
+		Map<JRExporterParameter,Object> dep = new HashMap<>();
 		parameters = dep;
 		
-		elementOffsetStack = new LinkedList<int[]>();
+		elementOffsetStack = new LinkedList<>();
 		exporterInput = null;
 		exporterOutput = null;
 		exporterConfiguration = null;
@@ -292,6 +339,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 * @deprecated Replaced by {@link #setExporterInput(ExporterInput)}, {@link #setConfiguration(ExporterConfiguration)},
 	 * {@link #setConfiguration(ReportExportConfiguration)} and {@link #setExporterOutput(ExporterOutput)}
 	 */
+	@Override
 	public void setParameter(JRExporterParameter parameter, Object value)
 	{
 		checkApi(true);
@@ -307,6 +355,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 * @deprecated Replaced by {@link #setExporterInput(ExporterInput)}, {@link #setConfiguration(ExporterConfiguration)},
 	 * {@link #setConfiguration(ReportExportConfiguration)} and {@link #setExporterOutput(ExporterOutput)}.
 	 */
+	@Override
 	public Object getParameter(JRExporterParameter parameter)
 	{
 		return parameters.get(parameter);
@@ -317,6 +366,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 * @deprecated Replaced by {@link #setExporterInput(ExporterInput)}, {@link #setConfiguration(ExporterConfiguration)},
 	 * {@link #setConfiguration(ReportExportConfiguration)} and {@link #setExporterOutput(ExporterOutput)}
 	 */
+	@Override
 	public void setParameters(Map<JRExporterParameter,Object> parameters)
 	{
 		checkApi(true);
@@ -332,6 +382,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 * @deprecated Replaced by {@link #setExporterInput(ExporterInput)}, {@link #setConfiguration(ExporterConfiguration)},
 	 * {@link #setConfiguration(ReportExportConfiguration)} and {@link #setExporterOutput(ExporterOutput)}
 	 */
+	@Override
 	public Map<JRExporterParameter,Object> getParameters()
 	{
 		return parameters;
@@ -346,9 +397,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setExporterInput(ExporterInput exporterInput)
 	{
 		checkApi(false);
@@ -360,15 +409,13 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	/**
 	 *
 	 */
-	protected O getExporterOutput()
+	public O getExporterOutput()
 	{
 		return exporterOutput;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setExporterOutput(O exporterOutput)
 	{
 		checkApi(false);
@@ -377,9 +424,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setConfiguration(RC configuration)
 	{
 		checkApi(false);
@@ -388,9 +433,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setConfiguration(C configuration)
 	{
 		checkApi(false);
@@ -415,25 +458,23 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	{
 		this.jasperReportsContext = jasperReportsContext;
 		this.propertiesUtil = JRPropertiesUtil.getInstance(jasperReportsContext);
+		this.rendererUtil = RendererUtil.getInstance(jasperReportsContext);
 		this.allSelector = JRStyledTextAttributeSelector.getAllSelector(jasperReportsContext);
 		this.noBackcolorSelector = JRStyledTextAttributeSelector.getNoBackcolorSelector(jasperReportsContext);
 		this.noneSelector = JRStyledTextAttributeSelector.getNoneSelector(jasperReportsContext);
 		this.styledTextUtil = JRStyledTextUtil.getInstance(jasperReportsContext);
+		this.fontUtil = FontUtil.getInstance(jasperReportsContext);
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setReportContext(ReportContext reportContext)
 	{
 		this.reportContext = reportContext;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public ReportContext getReportContext()
 	{
 		return reportContext;
@@ -452,6 +493,19 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	/**
 	 *
 	 */
+	public RendererUtil getRendererUtil()
+	{
+		return rendererUtil;
+	}
+
+	public RepositoryUtil getRepository()
+	{
+		RepositoryResourceContext resourceContext = crtItem == null ? null : crtItem.getRepositoryReportContext();
+		SimpleRepositoryContext repositoryContext = SimpleRepositoryContext.of(getJasperReportsContext(), resourceContext);
+		return RepositoryUtil.getInstance(repositoryContext);
+	}
+	
+	@Override
 	public abstract void exportReport() throws JRException;
 
 
@@ -471,7 +525,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 			Integer offsetX = configuration.getOffsetX();
 			if (offsetX != null)
 			{
-				elementOffsetX = offsetX.intValue();
+				elementOffsetX = offsetX;
 			}
 			else
 			{
@@ -481,7 +535,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 			Integer offsetY = configuration.getOffsetY();
 			if (offsetY != null)
 			{
-				elementOffsetY = offsetY.intValue();
+				elementOffsetY = offsetY;
 			}
 			else
 			{
@@ -500,10 +554,10 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 		if (
 			parameters.containsKey(JRExporterParameter.CLASS_LOADER)
 			|| parameters.containsKey(JRExporterParameter.URL_HANDLER_FACTORY)
-			|| parameters.containsKey(JRExporterParameter.FILE_RESOLVER)
 			)
 		{
-			LocalJasperReportsContext localJasperReportsContext = new LocalJasperReportsContext(jasperReportsContext);
+			net.sf.jasperreports.engine.util.LocalJasperReportsContext localJasperReportsContext = 
+				new net.sf.jasperreports.engine.util.LocalJasperReportsContext(jasperReportsContext);
 
 			if (parameters.containsKey(JRExporterParameter.CLASS_LOADER))
 			{
@@ -515,11 +569,6 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 				localJasperReportsContext.setURLStreamHandlerFactory((URLStreamHandlerFactory)parameters.get(JRExporterParameter.URL_HANDLER_FACTORY));
 			}
 
-			if (parameters.containsKey(JRExporterParameter.FILE_RESOLVER))
-			{
-				localJasperReportsContext.setFileResolver((FileResolver)parameters.get(JRExporterParameter.FILE_RESOLVER));
-			}
-			
 			setJasperReportsContext(localJasperReportsContext);
 		}
 		
@@ -597,13 +646,13 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 			}
 			else
 			{
-				PropertiesDefaultsConfigurationFactory<RC> defaultsFactory = new PropertiesDefaultsConfigurationFactory<RC>(jasperReportsContext);
+				PropertiesDefaultsConfigurationFactory<RC> defaultsFactory = new PropertiesDefaultsConfigurationFactory<>(jasperReportsContext);
 				RC defaultsConfiguration = defaultsFactory.getConfiguration(getItemConfigurationInterface());
 				
-				PropertiesNoDefaultsConfigurationFactory<RC> noDefaultsFactory = new PropertiesNoDefaultsConfigurationFactory<RC>(jasperReportsContext);
+				PropertiesNoDefaultsConfigurationFactory<RC> noDefaultsFactory = new PropertiesNoDefaultsConfigurationFactory<>(jasperReportsContext);
 				RC noDefaultsConfiguration = noDefaultsFactory.getConfiguration(getItemConfigurationInterface(), getCurrentJasperPrint());
 
-				CompositeExporterConfigurationFactory<RC> compositeFactory = new CompositeExporterConfigurationFactory<RC>(jasperReportsContext, getItemConfigurationInterface());
+				CompositeExporterConfigurationFactory<RC> compositeFactory = new CompositeExporterConfigurationFactory<>(jasperReportsContext, getItemConfigurationInterface());
 
 				RC tmpItemConfiguration = compositeFactory.getConfiguration(crtItemConfiguration, noDefaultsConfiguration);
 				
@@ -639,13 +688,13 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 			}
 			else
 			{
-				PropertiesDefaultsConfigurationFactory<C> defaultsFactory = new PropertiesDefaultsConfigurationFactory<C>(jasperReportsContext);
+				PropertiesDefaultsConfigurationFactory<C> defaultsFactory = new PropertiesDefaultsConfigurationFactory<>(jasperReportsContext);
 				C defaultsConfiguration = defaultsFactory.getConfiguration(getConfigurationInterface());
 
-				PropertiesNoDefaultsConfigurationFactory<C> noDefaultsFactory = new PropertiesNoDefaultsConfigurationFactory<C>(jasperReportsContext);
+				PropertiesNoDefaultsConfigurationFactory<C> noDefaultsFactory = new PropertiesNoDefaultsConfigurationFactory<>(jasperReportsContext);
 				C noDefaultsConfiguration = noDefaultsFactory.getConfiguration(getConfigurationInterface(), getCurrentJasperPrint());
 
-				CompositeExporterConfigurationFactory<C> compositeFactory = new CompositeExporterConfigurationFactory<C>(jasperReportsContext, getConfigurationInterface());
+				CompositeExporterConfigurationFactory<C> compositeFactory = new CompositeExporterConfigurationFactory<>(jasperReportsContext, getConfigurationInterface());
 
 				C tmpItemConfiguration = compositeFactory.getConfiguration(exporterConfiguration, noDefaultsConfiguration);
 				
@@ -657,15 +706,6 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	}
 	
 	
-	/**
-	 * @deprecated Replaced by {@link #setCurrentExporterInputItem(ExporterInputItem)}.
-	 */
-	protected void setJasperPrint(JasperPrint jasperPrint)
-	{
-		setCurrentExporterInputItem(new SimpleExporterInputItem(jasperPrint));
-	}
-	
-
 	/**
 	 *
 	 */
@@ -689,7 +729,8 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 			exporterInput = new net.sf.jasperreports.export.parameters.ParametersExporterInput(parameters);
 		}
 		
-		jasperPrint = exporterInput.getItems().get(0).getJasperPrint();//this is just for the sake of getCurrentConfiguration() calls made prior to any setCurrentExporterInputItem() call
+		crtItem = exporterInput.getItems().get(0);//for getRepository
+		jasperPrint = crtItem.getJasperPrint();//this is just for the sake of getCurrentConfiguration() calls made prior to any setCurrentExporterInputItem() call
 	}
 
 	
@@ -715,8 +756,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	 */
 	protected void initReport()
 	{
-		String localeCode = jasperPrint.getLocaleCode();
-		JRStyledTextParser.setLocale(localeCode == null ? null : JRDataUtils.getLocale(localeCode));
+		JRStyledTextParser.setLocale(getLocale());
 
 		setOffset();
 		
@@ -753,9 +793,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 				throw 
 					new JRRuntimeException(
 						EXCEPTION_MESSAGE_KEY_START_PAGE_INDEX_OUT_OF_RANGE,  
-						new Object[]{startPageIndex, lastPageIndex}, 
-						getJasperReportsContext(), 
-						getLocale()
+						new Object[]{startPageIndex, lastPageIndex} 
 						);
 			}
 		}
@@ -770,9 +808,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 				throw 
 					new JRRuntimeException(
 						EXCEPTION_MESSAGE_KEY_END_PAGE_INDEX_OUT_OF_RANGE,  
-						new Object[]{startPage, endPageIndex, lastPageIndex}, 
-						getJasperReportsContext(), 
-						getLocale()
+						new Object[]{startPage, endPageIndex, lastPageIndex} 
 						);
 			}
 		}
@@ -785,9 +821,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 				throw 
 					new JRRuntimeException(
 						EXCEPTION_MESSAGE_KEY_PAGE_INDEX_OUT_OF_RANGE,  
-						new Object[]{pageIndex, lastPageIndex}, 
-						getJasperReportsContext(), 
-						getLocale()
+						new Object[]{pageIndex, lastPageIndex}
 						);
 			}
 			startPageIndex = pageIndex;
@@ -862,8 +896,8 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 		}
 		else
 		{
-			int topPadding = frame.getLineBox().getTopPadding().intValue();
-			int leftPadding = frame.getLineBox().getLeftPadding().intValue();
+			int topPadding = frame.getLineBox().getTopPadding();
+			int leftPadding = frame.getLineBox().getLeftPadding();
 
 			setElementOffsets(getOffsetX() + frame.getX() + leftPadding, getOffsetY() + frame.getY() + topPadding);
 		}
@@ -891,6 +925,15 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 	}
 
 	
+	/**
+	 *
+	 */
+	protected boolean insideFrame()
+	{
+		return elementOffsetStack != null && elementOffsetStack.size() > 0;
+	}
+
+	
 	protected String getTextFormatFactoryClass(JRPrintText text)
 	{
 		String formatFactoryClass = text.getFormatFactoryClass();
@@ -901,7 +944,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 		return formatFactoryClass;
 	}
 
-	protected Locale getLocale()
+	public Locale getLocale()
 	{
 		String localeCode = jasperPrint.getLocaleCode();
 		return localeCode == null ? null : JRDataUtils.getLocale(localeCode);
@@ -927,7 +970,7 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 		}
 		
 		Locale locale = JRDataUtils.getLocale(localeCode);
-		lastTextLocale = new Pair<String, Locale>(localeCode, locale);
+		lastTextLocale = new Pair<>(localeCode, locale);
 		return locale;
 	}
 
@@ -977,14 +1020,9 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 					textValue = getTextValueString(text, textStr);
 				} 
 			}
-			catch (ParseException e)
+			catch (ParseException | ClassNotFoundException e)
 			{
-				//log.warn("Error parsing text value", e);
-				textValue = getTextValueString(text, textStr);
-			}
-			catch (ClassNotFoundException e)
-			{
-				//log.warn("Error loading text value class", e);
+				//log.warn("Error loading text value", e);
 				textValue = getTextValueString(text, textStr);
 			}			
 		}
@@ -998,12 +1036,76 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 
 	protected TextValue getDateCellValue(JRPrintText text, String textStr) throws ParseException
 	{
-		return new DateTextValue(textStr, (Date)text.getValue(), text.getPattern());
+		if (textStr != null && text.getValue() == null)
+		{
+			TextValue textValue;
+			String pattern = text.getPattern();
+			if (pattern == null || pattern.trim().length() == 0)//FIXMENOW there might be formatters that do not use pattern, in which case this test would skip them
+			{
+				textValue = getTextValueString(text, textStr);
+			}
+			else
+			{
+				DateFormat dateFormat = getDateFormat(getTextFormatFactoryClass(text), pattern, getTextLocale(text), getTextTimeZone(text));
+				
+				Date value = null;
+				if (textStr != null && textStr.length() > 0)
+				{
+					value = dateFormat.parse(textStr);
+				}
+				textValue = new DateTextValue(textStr, value, text.getPattern());
+			}
+			return textValue;
+		}
+		else
+		{
+			return new DateTextValue(textStr, (Date)text.getValue(), text.getPattern());
+		}
 	}
 
 	protected TextValue getNumberCellValue(JRPrintText text, String textStr) throws ParseException, ClassNotFoundException
 	{
-		return new NumberTextValue(textStr, (Number)text.getValue(), text.getPattern());
+		if (textStr != null && text.getValue() == null)
+		{
+			TextValue textValue;
+			String pattern = text.getPattern();
+			if (pattern == null || pattern.trim().length() == 0)//FIXMENOW there might be formatters that do not use pattern, in which case this test would skip them
+			{
+				if (textStr != null && textStr.length() > 0)
+				{
+					Number value = defaultParseNumber(textStr, JRClassLoader.loadClassForRealName(text.getValueClassName()));
+
+					if (value != null)
+					{
+						textValue = new NumberTextValue(textStr, value, text.getPattern());
+					}
+					else
+					{
+						textValue = getTextValueString(text, textStr);
+					}
+				}
+				else
+				{
+					textValue = new NumberTextValue(textStr, null, text.getPattern());
+				}
+			}
+			else
+			{
+				NumberFormat numberFormat = getNumberFormat(getTextFormatFactoryClass(text), pattern, getTextLocale(text));
+				
+				Number value = null;
+				if (textStr != null && textStr.length() > 0)
+				{
+					value = numberFormat.parse(textStr);
+				}
+				textValue = new NumberTextValue(textStr, value, text.getPattern());
+			}
+			return textValue;
+		}
+		else
+		{
+			return new NumberTextValue(textStr, (Number)text.getValue(), text.getPattern());
+		}
 	}
 
 	protected Number defaultParseNumber(String textStr, Class<?> valueClass)
@@ -1146,16 +1248,17 @@ public abstract class JRAbstractExporter<RC extends ReportExportConfiguration, C
 
 	public JRHyperlinkProducer getHyperlinkProducer(JRPrintHyperlink link)
 	{
-		JRHyperlinkProducerFactory factory = getCurrentItemConfiguration().getHyperlinkProducerFactory();
-		return factory == null ? null : factory.getHandler(link.getLinkType());
-	}
+		if (hyperlinkProducerFactory == null)
+		{
+			hyperlinkProducerFactory = getCurrentItemConfiguration().getHyperlinkProducerFactory();
 
-	/**
-	 * @deprecated Replaced by {@link #getHyperlinkProducer(JRPrintHyperlink)}.
-	 */
-	protected JRHyperlinkProducer getCustomHandler(JRPrintHyperlink link)
-	{
-		return getHyperlinkProducer(link);
+			if (hyperlinkProducerFactory == null)
+			{
+				hyperlinkProducerFactory = new DefaultHyperlinkProducerFactory(jasperReportsContext);
+			}
+		}
+
+		return hyperlinkProducerFactory.getHandler(link.getLinkType());
 	}
 
 	/**

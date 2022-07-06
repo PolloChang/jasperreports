@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,20 +36,20 @@
  * {@link net.sf.jasperreports.engine.design.JasperDesign JasperDesign} objects into 
  * {@link net.sf.jasperreports.engine.JasperReport JasperReport} objects. Both classes are 
  * implementations of the same basic {@link net.sf.jasperreports.engine.JRReport JRReport} 
- * interface. However, <code>JasperReport</code> objects cannot be modified once they are produced, 
- * while <code>JasperDesign</code> objects can. This is because some modifications made on the 
+ * interface. However, {@link net.sf.jasperreports.engine.JasperReport JasperReport} objects cannot be modified once they are produced, 
+ * while {@link net.sf.jasperreports.engine.design.JasperDesign JasperDesign} objects can. This is because some modifications made on the 
  * report template would probably require re-validation, or if a report expression is 
  * modified, the compiler-associated data stored inside the report template would have to be 
  * updated. 
  * </p><p>
- * <code>JasperDesign</code> objects are produced when parsing JRXML files using the 
+ * {@link net.sf.jasperreports.engine.design.JasperDesign JasperDesign} objects are produced when parsing JRXML files using the 
  * {@link net.sf.jasperreports.engine.xml.JRXmlLoader JRXmlLoader} or created directly by the parent 
  * application if dynamic report templates are required. The GUI tools for editing 
  * JasperReports templates also work with this class to make in-memory modifications to 
  * the report templates before storing them on disk. 
  * </p><p>
- * A <code>JasperDesign</code> object must be subject to the report compilation process to produce a 
- * JasperReport object. 
+ * A {@link net.sf.jasperreports.engine.design.JasperDesign JasperDesign} object must be subject to the report compilation process to produce a 
+ * {@link net.sf.jasperreports.engine.JasperReport JasperReport} object. 
  * </p><p>
  * Central to this process is the {@link net.sf.jasperreports.engine.design.JRCompiler JRCompiler} 
  * interface, which defines two methods, one being the following: 
@@ -65,14 +65,12 @@
  * compiler implementation that can evaluate them at runtime is available.
  * <p>
  * JasperReports currently ships report compiler implementations for the Groovy scripting
- * language (<a href="http://groovy.codehaus.org">http://groovy.codehaus.org</a>), 
- * JavaScript (<a href="http://www.mozilla.org/rhino">http://www.mozilla.org/rhino</a>), and
- * the BeanShell scripting library (<a href="http://www.beanshell.org">http://www.beanshell.org</a>). 
+ * language (<a href="http://groovy.codehaus.org">http://groovy.codehaus.org</a>) and 
+ * JavaScript (<a href="http://www.mozilla.org/rhino">http://www.mozilla.org/rhino</a>). 
  * The compiler implementation classes are:
  * <ul>
  * <li>{@link net.sf.jasperreports.compilers.JRGroovyCompiler JRGroovyCompiler}</li>
  * <li>{@link net.sf.jasperreports.compilers.JavaScriptCompiler JavaScriptCompiler}</li>
- * <li>{@link net.sf.jasperreports.compilers.JRBshCompiler JRBshCompiler}</li>
  * </ul>
  * Historically, these compiler implementations used to be shipped as separate samples, 
  * but now they are part of the core library.

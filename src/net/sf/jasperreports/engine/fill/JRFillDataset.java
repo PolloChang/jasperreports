@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,6 +25,7 @@ package net.sf.jasperreports.engine.fill;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,6 +37,9 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.data.cache.CachedDataset;
 import net.sf.jasperreports.data.cache.DataCacheHandler;
 import net.sf.jasperreports.data.cache.DataRecorder;
@@ -43,6 +47,7 @@ import net.sf.jasperreports.data.cache.DataSnapshot;
 import net.sf.jasperreports.data.cache.DataSnapshotException;
 import net.sf.jasperreports.data.cache.DatasetRecorder;
 import net.sf.jasperreports.engine.DatasetFilter;
+import net.sf.jasperreports.engine.DatasetPropertyExpression;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.EvaluationType;
 import net.sf.jasperreports.engine.JRAbstractScriptlet;
@@ -72,10 +77,13 @@ import net.sf.jasperreports.engine.data.IndexedDataSource;
 import net.sf.jasperreports.engine.design.JRDesignVariable;
 import net.sf.jasperreports.engine.query.JRQueryExecuter;
 import net.sf.jasperreports.engine.query.QueryExecuterFactory;
+import net.sf.jasperreports.engine.query.SimpleQueryExecutionContext;
 import net.sf.jasperreports.engine.scriptlets.ScriptletFactory;
 import net.sf.jasperreports.engine.scriptlets.ScriptletFactoryContext;
 import net.sf.jasperreports.engine.type.CalculationEnum;
 import net.sf.jasperreports.engine.type.IncrementTypeEnum;
+import net.sf.jasperreports.engine.type.ParameterEvaluationTimeEnum;
+import net.sf.jasperreports.engine.type.PropertyEvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
 import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
 import net.sf.jasperreports.engine.util.DigestUtils;
@@ -83,23 +91,27 @@ import net.sf.jasperreports.engine.util.JRDataUtils;
 import net.sf.jasperreports.engine.util.JRQueryExecuterUtils;
 import net.sf.jasperreports.engine.util.JRResourcesUtil;
 import net.sf.jasperreports.engine.util.MD5Digest;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.repo.RepositoryContext;
+import net.sf.jasperreports.repo.SimpleRepositoryContext;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillDataset implements JRDataset, DatasetFillContext
 {
 	
 	private static final Log log = LogFactory.getLog(JRFillDataset.class);
 	
+	public static final String EXCEPTION_MESSAGE_KEY_NO_SUCH_FIELD = "fill.dataset.no.such.field";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_SUCH_PARAMETER = "fill.dataset.no.such.parameter";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_SUCH_SNAPSHOT_DATA = "fill.dataset.no.such.snapshot.data";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_SUCH_SNAPSHOT_PARAMETER = "fill.dataset.no.such.snapshot.parameter";
+	public static final String EXCEPTION_MESSAGE_KEY_NO_SUCH_VARIABLE = "fill.dataset.no.such.variable";
+	
 	/**
 	 * The filler that created this object.
 	 */
-	private final JRBaseFiller filler;
+	private final BaseReportFiller filler;
 	
 	/**
 	 *
@@ -227,10 +239,14 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	 */
 	protected List<JRAbstractScriptlet> scriptlets;
 
+	protected List<DatasetPropertyExpression> propertyExpressions;
+	protected JRPropertiesMap staticProperties;
+	protected JRPropertiesMap mergedProperties;
+	
 	/**
 	 *
 	 */
-	protected JRAbstractScriptlet delegateScriptlet = new JRFillDatasetScriptlet(this);
+	protected JRAbstractScriptlet delegateScriptlet = new JRFillDatasetScriptlet();
 
 	/**
 	 * The value of the {@link JRParameter#REPORT_MAX_COUNT max count} parameter.
@@ -261,7 +277,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	 * @param dataset the template dataset
 	 * @param factory the fill object factory
 	 */
-	public JRFillDataset(JRBaseFiller filler, JRDataset dataset, JRFillObjectFactory factory)
+	public JRFillDataset(BaseReportFiller filler, JRDataset dataset, JRFillObjectFactory factory)
 	{
 		factory.put(dataset, this);
 		
@@ -284,16 +300,31 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		setVariables(dataset, factory);
 		
 		setGroups(dataset, factory);
+		
+		staticProperties = dataset.hasProperties() ? dataset.getPropertiesMap().cloneProperties() : null;
+		mergedProperties = staticProperties;
+		
+		DatasetPropertyExpression[] datasetPropertyExpressions = dataset.getPropertyExpressions();
+		propertyExpressions = 
+			datasetPropertyExpressions == null 
+			? new ArrayList<>(0)
+			: new ArrayList<>(Arrays.asList(datasetPropertyExpressions));
+	}
+	
+	
+	public BaseReportFiller getFiller()
+	{
+		return filler;
 	}
 
-	
+
 	private void setParameters(JRDataset dataset, JRFillObjectFactory factory)
 	{
 		JRParameter[] jrParameters = dataset.getParameters();
 		if (jrParameters != null && jrParameters.length > 0)
 		{
 			parameters = new JRFillParameter[jrParameters.length];
-			parametersMap = new HashMap<String,JRFillParameter>();
+			parametersMap = new HashMap<>();
 			for (int i = 0; i < parameters.length; i++)
 			{
 				parameters[i] = factory.getParameter(jrParameters[i]);
@@ -322,9 +353,9 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		JRVariable[] jrVariables = dataset.getVariables();
 		if (jrVariables != null && jrVariables.length > 0)
 		{
-			List<JRFillVariable> variableList = new ArrayList<JRFillVariable>(jrVariables.length * 3);
+			List<JRFillVariable> variableList = new ArrayList<>(jrVariables.length * 3);
 
-			variablesMap = new HashMap<String,JRFillVariable>();
+			variablesMap = new HashMap<>();
 			for (int i = 0; i < jrVariables.length; i++)
 			{
 				addVariable(jrVariables[i], variableList, factory);
@@ -371,6 +402,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 
 				break;
 			}
+			default:
 		}
 
 		variableList.add(variable);
@@ -432,7 +464,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		if (jrFields != null && jrFields.length > 0)
 		{
 			fields = new JRFillField[jrFields.length];
-			fieldsMap = new HashMap<String,JRFillField>();
+			fieldsMap = new HashMap<>();
 			for (int i = 0; i < fields.length; i++)
 			{
 				fields[i] = factory.getField(jrFields[i]);
@@ -478,12 +510,12 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	/**
 	 * Inherits properties from the report.
 	 */
-	protected void inheritFromMain()
+	public void inheritFromMain()
 	{
 		if (resourceBundleBaseName == null && !isMain)
 		{
-			resourceBundleBaseName = filler.mainDataset.resourceBundleBaseName;
-			whenResourceMissingType = filler.mainDataset.whenResourceMissingType;
+			resourceBundleBaseName = filler.jasperReport.getResourceBundle();
+			whenResourceMissingType = filler.jasperReport.getWhenResourceMissingTypeValue();
 		}
 	}
 	
@@ -498,7 +530,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	{
 		ScriptletFactoryContext context = new ScriptletFactoryContext(getJasperReportsContext(), this, parameterValues);
 		
-		scriptlets = new ArrayList<JRAbstractScriptlet>();
+		scriptlets = new ArrayList<>();
 		
 		List<ScriptletFactory> factories = getJasperReportsContext().getExtensions(ScriptletFactory.class);
 		for (Iterator<ScriptletFactory> it = factories.iterator(); it.hasNext();)
@@ -572,7 +604,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		}
 		else
 		{
-			loadedBundle = JRResourcesUtil.loadResourceBundle(getJasperReportsContext(), resourceBundleBaseName, locale);
+			loadedBundle = JRResourcesUtil.loadResourceBundle(getRepositoryContext(), resourceBundleBaseName, locale);
 		}
 		return loadedBundle;
 	}
@@ -624,18 +656,28 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		}
 		
 		scriptlets = createScriptlets(parameterValues);
-		delegateScriptlet.setData(parametersMap, fieldsMap, variablesMap, groups);//FIXMESCRIPTLET use some context
-
-		contributeParameters(parameterValues);
-		
-		filter = (DatasetFilter) parameterValues.get(JRParameter.FILTER);
+		delegateScriptlet.setData(this);//FIXMESCRIPTLET use some context
 
 		// initializing cache because we need the cached parameter values
 		cacheInit();
 		
-		//FIXME do not call on default parameter value evaluation and when a data snapshot is used?
-		setFillParameterValues(parameterValues);
+		setFillParameterValuesFromMap(parameterValues, true);
+		setFillParameterValuesFromCache(parameterValues);
+		evaluateParameterValues(ParameterEvaluationTimeEnum.EARLY, parameterValues);
 		
+		mergedProperties = staticProperties;
+		evaluateProperties(PropertyEvaluationTimeEnum.EARLY);
+		
+		//FIXME do not call on default parameter value evaluation and when a data snapshot is used?
+		contributeParameters(parameterValues);
+		
+		setFillParameterValuesFromMap(parameterValues, false);
+		evaluateParameterValues(ParameterEvaluationTimeEnum.LATE, parameterValues);
+
+		evaluateProperties(PropertyEvaluationTimeEnum.LATE);
+		
+		filter = (DatasetFilter) parameterValues.get(JRParameter.FILTER);
+
 		// after we have the parameter values, init cache recording
 		cacheInitRecording();
 		
@@ -701,6 +743,11 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		}
 	}
 
+	public FillDatasetPosition getFillPosition()
+	{
+		return fillPosition;
+	}
+
 	public void setFillPosition(FillDatasetPosition fillPosition)
 	{
 		if (fillPosition != null)
@@ -763,7 +810,10 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 			cachedDataset = dataSnapshot.getCachedData(fillPosition);
 			if (cachedDataset == null)
 			{
-				throw new DataSnapshotException("No snapshot data found for position " + fillPosition);
+				throw 
+					new DataSnapshotException(
+						EXCEPTION_MESSAGE_KEY_NO_SUCH_SNAPSHOT_DATA,
+						new Object[]{fillPosition});
 			}
 			
 			if (log.isDebugEnabled())
@@ -845,7 +895,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 					}
 				}
 				
-				cacheRecordIndexCallbacks = new HashMap<Integer, CacheRecordIndexCallback>();
+				cacheRecordIndexCallbacks = new HashMap<>();
 			}
 			else
 			{
@@ -864,6 +914,26 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	{
 		String includedProp = JRPropertiesUtil.getOwnProperty(parameter, DataCacheHandler.PROPERTY_INCLUDED); 
 		return JRPropertiesUtil.asBoolean(includedProp);
+	}
+
+	protected ParameterEvaluationTimeEnum getDefaultParameterEvaluationTime()
+	{
+		String evalTimeProp = 
+			propertiesUtil.getProperty(
+				ParameterEvaluationTimeEnum.PROPERTY_EVALUATION_TIME, 
+				this
+				);
+		return ParameterEvaluationTimeEnum.byName(evalTimeProp);
+	}
+
+	protected PropertyEvaluationTimeEnum getDefaultPropertyEvaluationTime()
+	{
+		String evalTimeProp = 
+			propertiesUtil.getProperty(
+				PropertyEvaluationTimeEnum.PROPERTY_EVALUATION_TIME, 
+				this
+				);
+		return PropertyEvaluationTimeEnum.byName(evalTimeProp);
 	}
 
 	protected void cacheRecord()
@@ -951,13 +1021,47 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		}
 	}
 
+
 	/**
 	 * Sets the parameter values from the values map.
 	 * 
 	 * @param parameterValues the values map
 	 * @throws JRException
 	 */
-	private void setFillParameterValues(Map<String,Object> parameterValues) throws JRException
+	private void evaluateParameterValues(ParameterEvaluationTimeEnum evaluationTime, Map<String,Object> parameterValues) throws JRException
+	{
+		if (parameters != null && parameters.length > 0)
+		{
+			ParameterEvaluationTimeEnum defaultEvaluationTime = getDefaultParameterEvaluationTime();
+			for (int i = 0; i < parameters.length; i++)
+			{
+				JRFillParameter parameter = parameters[i];
+				String paramName = parameter.getName();
+				ParameterEvaluationTimeEnum paramEvalTime = parameter.getEvaluationTime() == null ? defaultEvaluationTime : parameter.getEvaluationTime();
+				
+				if (
+					!parameterValues.containsKey(paramName) //cheaper to test this first
+					&& !parameter.isSystemDefined() //cheaper to test this first
+					&& evaluationTime == paramEvalTime
+					&& (!isIncludedInDataCache(parameter) || cachedDataset == null)
+					)
+				{
+					Object value = calculator.evaluate(parameter.getDefaultValueExpression(), JRExpression.EVALUATION_DEFAULT);
+					if (value != null)
+					{
+						parameterValues.put(paramName, value);
+					}
+					setParameter(parameter, value);
+				}
+			}
+		}
+	}
+
+
+	/**
+	 * 
+	 */
+	private void setFillParameterValuesFromMap(Map<String,Object> parameterValues, boolean reset) throws JRException
 	{
 		if (parameters != null && parameters.length > 0)
 		{
@@ -970,8 +1074,36 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 				if (parameterValues.containsKey(paramName))
 				{
 					value = parameterValues.get(paramName);
+					setParameter(parameter, value);
 				}
-				else if (!parameter.isSystemDefined())
+				else if (reset)
+				{
+					setParameter(parameter, null);
+				}
+			}
+		}
+	}
+
+
+	/**
+	 * Sets the parameter values from the values map.
+	 * 
+	 * @param parameterValues the values map
+	 * @throws JRException
+	 */
+	private void setFillParameterValuesFromCache(Map<String,Object> parameterValues) throws JRException
+	{
+		if (parameters != null && parameters.length > 0)
+		{
+			for (int i = 0; i < parameters.length; i++)
+			{
+				JRFillParameter parameter = parameters[i];
+				String paramName = parameter.getName();
+				
+				if (
+					!parameterValues.containsKey(paramName)
+					&& !parameter.isSystemDefined()
+					)
 				{
 					if (isIncludedInDataCache(parameter) && cachedDataset != null)
 					{
@@ -980,8 +1112,10 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 						if (!cachedDataset.hasParameter(paramName))
 						{
 							// cached data is invalid
-							throw new DataSnapshotException("A value for parameter " + paramName 
-									+ " was not found in the data snapshot");
+							throw 
+								new DataSnapshotException(
+									EXCEPTION_MESSAGE_KEY_NO_SUCH_SNAPSHOT_PARAMETER,
+									new Object[]{paramName});
 						}
 						
 						if (log.isDebugEnabled())
@@ -989,18 +1123,25 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 							log.debug("loading parameter " + paramName + " value from data snapshot");
 						}
 						
-						value = cachedDataset.getParameterValue(paramName);
-					}
-					else
-					{
-						value = calculator.evaluate(parameter.getDefaultValueExpression(), JRExpression.EVALUATION_DEFAULT);
-						if (value != null)
-						{
-							parameterValues.put(paramName, value);
-						}
+						Object value = cachedDataset.getParameterValue(paramName);
+						setParameter(parameter, value);
 					}
 				}
-				setParameter(parameter, value);
+			}
+		}
+	}
+
+
+	/**
+	 * 
+	 */
+	public void evaluateFieldProperties() throws JRException
+	{
+		if (fields != null && fields.length > 0)
+		{
+			for (JRFillField field : fields)
+			{
+				field.evaluateProperties();
 			}
 		}
 	}
@@ -1011,7 +1152,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	 */
 	public void contributeParameters(Map<String,Object> parameterValues) throws JRException
 	{
-		parameterContributors = getParameterContributors(new ParameterContributorContext(getJasperReportsContext(), this, parameterValues));
+		parameterContributors = getParameterContributors(new ParameterContributorContext(getRepositoryContext(), this, parameterValues));
 		if (parameterContributors != null)
 		{
 			for(ParameterContributor contributor : parameterContributors)
@@ -1035,6 +1176,13 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		return filler == null
 				? (jasperReportsContext == null ? DefaultJasperReportsContext.getInstance() : jasperReportsContext)
 				: filler.getJasperReportsContext();
+	}
+	
+	protected RepositoryContext getRepositoryContext()
+	{
+		return filler == null
+				? SimpleRepositoryContext.of(jasperReportsContext == null ? DefaultJasperReportsContext.getInstance() : jasperReportsContext)
+				: filler.getRepositoryContext();
 	}
 	
 	/**
@@ -1061,7 +1209,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		List<?> factories = getJasperReportsContext().getExtensions(ParameterContributorFactory.class);
 		if (factories != null && factories.size() > 0)
 		{
-			allContributors = new ArrayList<ParameterContributor>();
+			allContributors = new ArrayList<>();
 			for (Iterator<?> it = factories.iterator(); it.hasNext();)
 			{
 				ParameterContributorFactory factory = (ParameterContributorFactory)it.next();
@@ -1108,7 +1256,9 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 			}
 			
 			QueryExecuterFactory queryExecuterFactory = JRQueryExecuterUtils.getInstance(getJasperReportsContext()).getExecuterFactory(query.getLanguage());
-			queryExecuter = queryExecuterFactory.createQueryExecuter(getJasperReportsContext(), parent, parametersMap);
+			SimpleQueryExecutionContext queryExecutionContext = SimpleQueryExecutionContext.of(
+					getJasperReportsContext(), getRepositoryContext());
+			queryExecuter = queryExecuterFactory.createQueryExecuter(queryExecutionContext, this, parametersMap);
 			filler.fillContext.setRunningQueryExecuter(queryExecuter);
 			
 			return queryExecuter.createDatasource();
@@ -1271,7 +1421,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 						{
 							Boolean filterExprResult = (Boolean) calculator.evaluate(
 									filterExpression, JRExpression.EVALUATION_ESTIMATED);
-							includeRow = filterExprResult != null && filterExprResult.booleanValue();
+							includeRow = filterExprResult != null && filterExprResult;
 						}
 
 						if (includeRow)
@@ -1383,6 +1533,12 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 			}
 		}
 		
+		revertVariablesToOldValues();
+	}
+
+
+	protected void revertVariablesToOldValues()
+	{
 		if (variables != null && variables.length > 0)
 		{
 			for (int i = 0; i < variables.length; i++)
@@ -1398,7 +1554,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	protected boolean advanceDataSource(boolean limit) throws JRException
 	{
 		boolean hasNext;
-		if (limit && reportMaxCount != null && reportCount >= reportMaxCount.intValue())
+		if (limit && reportMaxCount != null && reportCount >= reportMaxCount)
 		{
 			hasNext = false;
 		}
@@ -1474,12 +1630,17 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		return getVariableValue(variableName, EvaluationType.DEFAULT);
 	}
 
+	@Override
 	public Object getVariableValue(String variableName, EvaluationType evaluation)
 	{
 		JRFillVariable var = variablesMap.get(variableName);
 		if (var == null)
 		{
-			throw new JRRuntimeException("No such variable " + variableName);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NO_SUCH_VARIABLE,  
+					new Object[]{variableName} 
+					);
 		}
 		return var.getValue(evaluation.getType());
 	}
@@ -1495,6 +1656,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	 * @param parameterName the parameter name
 	 * @return the parameter value
 	 */
+	@Override
 	public Object getParameterValue(String parameterName)
 	{
 		return getParameterValue(parameterName, false);
@@ -1516,7 +1678,11 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		{
 			if (!ignoreMissing)
 			{
-				throw new JRRuntimeException("No such parameter " + parameterName);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_NO_SUCH_PARAMETER,  
+						new Object[]{parameterName} 
+						);
 			}
 			
 			// look into REPORT_PARAMETERS_MAP
@@ -1542,12 +1708,17 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		return getFieldValue(fieldName, EvaluationType.DEFAULT);
 	}
 	
+	@Override
 	public Object getFieldValue(String fieldName, EvaluationType evaluation)
 	{
 		JRFillField field = fieldsMap.get(fieldName);
 		if (field == null)
 		{
-			throw new JRRuntimeException("No such field " + fieldName);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_NO_SUCH_FIELD,  
+					new Object[]{fieldName} 
+					);
 		}
 		return field.getValue(evaluation.getType());
 	}
@@ -1572,6 +1743,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 			this.calculation = calculation;
 		}
 
+		@Override
 		public boolean equals(Object o)
 		{
 			if (o == null || !(o instanceof VariableCalculationReq))
@@ -1584,9 +1756,10 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 			return variableName.equals(r.variableName) && calculation == r.calculation;
 		}
 
+		@Override
 		public int hashCode()
 		{
-			return 31 * calculation.getValue() + variableName.hashCode();
+			return 31 * calculation.ordinal() + variableName.hashCode();
 		}
 	}
 	
@@ -1601,7 +1774,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	{
 		if (variableCalculationReqs == null)
 		{
-			variableCalculationReqs = new HashSet<VariableCalculationReq>();
+			variableCalculationReqs = new HashSet<>();
 		}
 
 		variableCalculationReqs.add(new VariableCalculationReq(variableName, calculation));
@@ -1617,7 +1790,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	{
 		if (variableCalculationReqs != null && !variableCalculationReqs.isEmpty())
 		{
-			List<JRFillVariable> variableList = new ArrayList<JRFillVariable>(variables.length * 2);
+			List<JRFillVariable> variableList = new ArrayList<>(variables.length * 2);
 
 			for (int i = 0; i < variables.length; i++)
 			{
@@ -1632,11 +1805,13 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 	
 	private void checkVariableCalculationReq(JRFillVariable variable, List<JRFillVariable> variableList, JRFillObjectFactory factory)
 	{
+		JRVariable parentVariable = variable.getParent();
+		
 		if (hasVariableCalculationReq(variable, CalculationEnum.AVERAGE) || hasVariableCalculationReq(variable, CalculationEnum.VARIANCE))
 		{
 			if (variable.getHelperVariable(JRCalculable.HELPER_COUNT) == null)
 			{
-				JRVariable countVar = createHelperVariable(variable, "_COUNT", CalculationEnum.COUNT);
+				JRVariable countVar = createHelperVariable(parentVariable, "_COUNT", CalculationEnum.COUNT);
 				JRFillVariable fillCountVar = factory.getVariable(countVar);
 				checkVariableCalculationReq(fillCountVar, variableList, factory);
 				variable.setHelperVariable(fillCountVar, JRCalculable.HELPER_COUNT);
@@ -1644,7 +1819,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 
 			if (variable.getHelperVariable(JRCalculable.HELPER_SUM) == null)
 			{
-				JRVariable sumVar = createHelperVariable(variable, "_SUM", CalculationEnum.SUM);
+				JRVariable sumVar = createHelperVariable(parentVariable, "_SUM", CalculationEnum.SUM);
 				JRFillVariable fillSumVar = factory.getVariable(sumVar);
 				checkVariableCalculationReq(fillSumVar, variableList, factory);
 				variable.setHelperVariable(fillSumVar, JRCalculable.HELPER_SUM);
@@ -1655,7 +1830,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		{
 			if (variable.getHelperVariable(JRCalculable.HELPER_VARIANCE) == null)
 			{
-				JRVariable varianceVar = createHelperVariable(variable, "_VARIANCE", CalculationEnum.VARIANCE);
+				JRVariable varianceVar = createHelperVariable(parentVariable, "_VARIANCE", CalculationEnum.VARIANCE);
 				JRFillVariable fillVarianceVar = factory.getVariable(varianceVar);
 				checkVariableCalculationReq(fillVarianceVar, variableList, factory);
 				variable.setHelperVariable(fillVarianceVar, JRCalculable.HELPER_VARIANCE);
@@ -1666,7 +1841,7 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		{
 			if (variable.getHelperVariable(JRCalculable.HELPER_COUNT) == null)
 			{
-				JRVariable countVar = createDistinctCountHelperVariable(variable);
+				JRVariable countVar = createDistinctCountHelperVariable(parentVariable);
 				JRFillVariable fillCountVar = factory.getVariable(countVar);
 				checkVariableCalculationReq(fillCountVar, variableList, factory);
 				variable.setHelperVariable(fillCountVar, JRCalculable.HELPER_COUNT);
@@ -1688,21 +1863,25 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		return parent.getUUID();
 	}
 
+	@Override
 	public String getName()
 	{
 		return parent.getName();
 	}
 
+	@Override
 	public String getScriptletClass()
 	{
 		return parent.getScriptletClass();
 	}
 
+	@Override
 	public JRScriptlet[] getScriptlets()
 	{
 		return parent.getScriptlets();
 	}
 
+	@Override
 	public JRParameter[] getParameters()
 	{
 		return parameters;
@@ -1713,81 +1892,142 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		return parametersMap;
 	}
 
+	@Override
 	public JRQuery getQuery()
 	{
 		return query;
 	}
 
+	@Override
 	public JRField[] getFields()
 	{
 		return fields;
 	}
 
+	public Map<String,JRFillField> getFieldsMap()
+	{
+		return fieldsMap;
+	}
+
+	@Override
 	public JRSortField[] getSortFields()
 	{
 		return parent.getSortFields();
 	}
 
+	@Override
 	public JRVariable[] getVariables()
 	{
 		return variables;
 	}
 
+	public Map<String,JRFillVariable> getVariablesMap()
+	{
+		return variablesMap;
+	}
+
+	@Override
 	public JRGroup[] getGroups()
 	{
 		return groups;
 	}
 
+	@Override
 	public boolean isMainDataset()
 	{
 		return isMain;
 	}
 
+	@Override
 	public String getResourceBundle()
 	{
 		return parent.getResourceBundle();
 	}
 
 
+	@Override
 	public WhenResourceMissingTypeEnum getWhenResourceMissingTypeValue()
 	{
 		return whenResourceMissingType;
 	}
 
 
+	@Override
 	public void setWhenResourceMissingType(WhenResourceMissingTypeEnum whenResourceMissingType)
 	{
 		this.whenResourceMissingType = whenResourceMissingType;
 	}
 
 	
+	@Override
 	public boolean hasProperties()
 	{
-		return parent.hasProperties();
+		return mergedProperties != null && mergedProperties.hasProperties();
 	}
 
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
-		return parent.getPropertiesMap();
+		return mergedProperties;
 	}
 
 	
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		// report properties propagate to subdatasets
-		return isMain ? null : filler.getJasperReport();
+		return 
+			isMain 
+			? (filler == null || filler.parent == null ? null : filler.parent.getParentProperties()) 
+			: filler.getMainDataset();
 	}
 
 
+	@Override
+	public DatasetPropertyExpression[] getPropertyExpressions()
+	{
+		return propertyExpressions.toArray(new DatasetPropertyExpression[propertyExpressions.size()]);
+	}
+
+
+	/**
+	 *
+	 */
+	protected void evaluateProperties(PropertyEvaluationTimeEnum evaluationTime) throws JRException
+	{
+		if (!propertyExpressions.isEmpty())
+		{
+			JRPropertiesMap dynamicProperties = new JRPropertiesMap();
+			
+			PropertyEvaluationTimeEnum defaultEvaluationTime = getDefaultPropertyEvaluationTime();
+			for (DatasetPropertyExpression prop : propertyExpressions)
+			{
+				PropertyEvaluationTimeEnum propEvalTime = prop.getEvaluationTime() == null ? defaultEvaluationTime : prop.getEvaluationTime();
+				if (evaluationTime == propEvalTime)
+				{
+					String value = (String) evaluateExpression(prop.getValueExpression(), JRExpression.EVALUATION_DEFAULT);
+					//if (value != null) //is the null value significant for some field properties?
+					{
+						dynamicProperties.setProperty(prop.getName(), value);
+					}
+				}
+			}
+
+			JRPropertiesMap newMergedProperties = dynamicProperties.cloneProperties();
+			newMergedProperties.setBaseProperties(mergedProperties);
+			mergedProperties = newMergedProperties;
+		}
+	}
+
+
+	@Override
 	public JRExpression getFilterExpression()
 	{
 		return parent.getFilterExpression();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();
@@ -1805,9 +2045,15 @@ public class JRFillDataset implements JRDataset, DatasetFillContext
 		return calculator.evaluate(expression, evaluation);
 	}
 	
+	@Override
 	public Locale getLocale()
 	{
 		return locale;
+	}
+	
+	public TimeZone getTimeZone()
+	{
+		return timeZone;
 	}
 
 	public FillDatasetPosition getDatasetPosition()

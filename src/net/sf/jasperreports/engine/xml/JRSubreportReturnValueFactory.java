@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine.xml;
 
 import net.sf.jasperreports.engine.JRVariable;
+import net.sf.jasperreports.engine.design.JRDesignDataset;
 import net.sf.jasperreports.engine.design.JRDesignSubreportReturnValue;
 import net.sf.jasperreports.engine.design.JRValidationException;
 import net.sf.jasperreports.engine.design.JasperDesign;
@@ -36,7 +37,6 @@ import org.xml.sax.Attributes;
  * creation.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRSubreportReturnValueFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRSubreportReturnValueFactory extends JRBaseFactory
 {
@@ -47,6 +47,7 @@ public class JRSubreportReturnValueFactory extends JRBaseFactory
 	 * @param atts the element attributes
 	 * @return a {@link JRDesignSubreportReturnValue JRDesignSubreportReturnValue} object
 	 */
+	@Override
 	public Object createObject(Attributes atts)
 	{
 		JRXmlLoader xmlLoader = (JRXmlLoader) digester.peek(digester.getCount() - 1);
@@ -55,9 +56,15 @@ public class JRSubreportReturnValueFactory extends JRBaseFactory
 		JRDesignSubreportReturnValue returnValue = new JRDesignSubreportReturnValue();
 
 		String variableName = atts.getValue(JRXmlConstants.ATTRIBUTE_toVariable);
-		JRVariable variable = design.getVariablesMap().get(variableName);
+		
+		XmlLoaderReportContext reportContext = xmlLoader.getReportContext();
+		String subdatasetName = reportContext == null ? null : reportContext.getSubdatesetName();
+		JRDesignDataset dataset = subdatasetName == null ? design.getMainDesignDataset() 
+				: (JRDesignDataset) design.getDatasetMap().get(subdatasetName);
+		JRVariable variable = dataset == null ? null : dataset.getVariablesMap().get(variableName);
 		if (variable == null)
 		{
+			//TODO do we need this check here?  JRVerifier.verifySubreport also validates return values
 			xmlLoader.addError(new JRValidationException("Unknown variable " + variableName, returnValue));
 		}
 		

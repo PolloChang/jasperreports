@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,16 +44,13 @@ import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: PptxServlet.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PptxServlet extends BaseHttpServlet
 {
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void service(
 		HttpServletRequest request,
 		HttpServletResponse response
@@ -67,7 +64,7 @@ public class PptxServlet extends BaseHttpServlet
 		}
 		
 		Boolean isBuffered = Boolean.valueOf(request.getParameter(BaseHttpServlet.BUFFERED_OUTPUT_REQUEST_PARAMETER));
-		if (isBuffered.booleanValue())
+		if (isBuffered)
 		{
 			FileBufferedOutputStream fbos = new FileBufferedOutputStream();
 			JRPptxExporter exporter = new JRPptxExporter(DefaultJasperReportsContext.getInstance());

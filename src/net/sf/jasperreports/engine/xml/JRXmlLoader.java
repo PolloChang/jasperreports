@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,6 +43,10 @@ import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.digester.Digester;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRDatasetRun;
@@ -61,12 +65,9 @@ import net.sf.jasperreports.engine.design.JRDesignTextField;
 import net.sf.jasperreports.engine.design.JRDesignVariable;
 import net.sf.jasperreports.engine.design.JRValidationException;
 import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.type.DatasetResetTypeEnum;
 import net.sf.jasperreports.engine.type.IncrementTypeEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
-
-import org.apache.commons.digester.Digester;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 
 /**
@@ -79,39 +80,30 @@ import org.xml.sax.SAXException;
  * some user input and then compiled on the fly for filling with data.
  * </p>
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlLoader.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRXmlLoader
 {
+	public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_SUBDATASET = "xml.loader.unknown.subdataset";
+	public static final String EXCEPTION_MESSAGE_KEY_SUBDATASET_NOT_FOUND = "xml.loader.subdataset.not.found";
 
 	/**
 	 *
 	 */
 	private final JasperReportsContext jasperReportsContext;
 	private JasperDesign jasperDesign;
-	private LinkedList<XmlLoaderReportContext> contextStack = 
-		new LinkedList<XmlLoaderReportContext>();
+	private LinkedList<XmlLoaderReportContext> contextStack = new LinkedList<>();
 	
-	private Map<XmlGroupReference, XmlLoaderReportContext> groupReferences = 
-		new HashMap<XmlGroupReference, XmlLoaderReportContext>();
+	private Map<XmlGroupReference, XmlLoaderReportContext> groupReferences = new HashMap<>();
 	
 	//TODO use XmlGroupReference for datasets
-	private Set<JRElementDataset> groupBoundDatasets = new HashSet<JRElementDataset>();
+	private Set<JRElementDataset> groupBoundDatasets = new HashSet<>();
 	
-	private List<Exception> errors = new ArrayList<Exception>();
+	private List<Exception> errors = new ArrayList<>();
 
 	private Digester digester;
 
 	private boolean ignoreConsistencyProblems;
 		
-	/**
-	 * @deprecated Replaced by {@link #JRXmlLoader(JasperReportsContext, Digester)}.
-	 */
-	public JRXmlLoader(Digester digester)
-	{
-		this(DefaultJasperReportsContext.getInstance(), digester);
-	}
-
 	/**
 	 *
 	 */
@@ -210,29 +202,13 @@ public class JRXmlLoader
 	{
 		JasperDesign jasperDesign = null;
 
-		FileInputStream fis = null;
-
-		try
+		try (FileInputStream fis = new FileInputStream(file))
 		{
-			fis = new FileInputStream(file);
 			jasperDesign = JRXmlLoader.load(jasperReportsContext, fis);
 		}
-		catch(IOException e)
+		catch (IOException e)
 		{
 			throw new JRException(e);
-		}
-		finally
-		{
-			if (fis != null)
-			{
-				try
-				{
-					fis.close();
-				}
-				catch(IOException e)
-				{
-				}
-			}
 		}
 
 		return jasperDesign;
@@ -259,13 +235,9 @@ public class JRXmlLoader
 
 		try 
 		{
-			xmlLoader = new JRXmlLoader(jasperReportsContext, JRXmlDigesterFactory.createDigester());
+			xmlLoader = new JRXmlLoader(jasperReportsContext, JRXmlDigesterFactory.createDigester(jasperReportsContext));
 		}
-		catch (ParserConfigurationException e) 
-		{
-			throw new JRException(e);
-		}
-		catch (SAXException e) 
+		catch (ParserConfigurationException | SAXException e) 
 		{
 			throw new JRException(e);
 		}
@@ -296,11 +268,7 @@ public class JRXmlLoader
 			/*   */
 			digester.parse(is);
 		}
-		catch(SAXException e)
-		{
-			throw new JRException(e);
-		}
-		catch(IOException e)
+		catch (SAXException | IOException e)
 		{
 			throw new JRException(e);
 		}
@@ -330,7 +298,7 @@ public class JRXmlLoader
 		assignGroupReferences();
 		this.assignGroupsToDatasets();
 		
-		return this.jasperDesign;
+		return jasperDesign;
 	}
 
 	/**
@@ -448,8 +416,10 @@ public class JRXmlLoader
 			JRDesignDataset dataset = (JRDesignDataset) jasperDesign.getDatasetMap().get(datasetName);
 			if (dataset == null)
 			{
-				throw new JRRuntimeException("Could not find subdataset of name \"" 
-						+ datasetName + "\"");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_SUBDATASET_NOT_FOUND,
+						new Object[]{datasetName});
 			}
 			
 			group = dataset.getGroupsMap().get(groupName);
@@ -480,7 +450,10 @@ public class JRXmlLoader
 				JRDesignDataset subDataset = (JRDesignDataset) datasetMap.get(datasetName);
 				if (subDataset == null)
 				{
-					throw new JRException("Unknown sub dataset '" + datasetName + "' for chart dataset.");
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_UNKNOWN_SUBDATASET,
+							new Object[]{datasetName});
 				}
 				groupsMap = subDataset.getGroupsMap();
 			}
@@ -507,7 +480,7 @@ public class JRXmlLoader
 				dataset.setIncrementGroup(null);
 			}
 
-			if (dataset.getResetTypeValue() == ResetTypeEnum.GROUP)
+			if (dataset.getDatasetResetType() == DatasetResetTypeEnum.GROUP)
 			{
 				String groupName = null;
 				JRGroup group = dataset.getResetGroup();

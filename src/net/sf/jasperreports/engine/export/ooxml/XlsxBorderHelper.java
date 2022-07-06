@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,18 +31,16 @@ import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.export.JRExporterGridCell;
-import net.sf.jasperreports.export.XlsReportConfiguration;
+import net.sf.jasperreports.engine.export.JRXlsAbstractExporter;
+import net.sf.jasperreports.engine.type.LineDirectionEnum;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsxBorderHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class XlsxBorderHelper extends BaseHelper
 {
-	private Map<String,Integer> borderCache = new HashMap<String,Integer>();//FIXMEXLSX use soft cache? check other exporter caches as well
-	
-	private XlsReportConfiguration configuration;
+	private Map<String,Integer> borderCache = new HashMap<>();//FIXMEXLSX use soft cache? check other exporter caches as well
 	
 	/**
 	 *
@@ -53,32 +51,24 @@ public class XlsxBorderHelper extends BaseHelper
 	}
 	
 	/**
-	 * 
-	 */
-	public void setConfiguration(XlsReportConfiguration configuration)
-	{
-		this.configuration = configuration;
-	}
-	
-	/**
 	 *
 	 */
-	public int getBorder(JRExporterGridCell gridCell)
+	public int getBorder(JRExporterGridCell gridCell, JRXlsAbstractExporter.SheetInfo sheetInfo, LineDirectionEnum direction)
 	{
-		if (configuration.isIgnoreCellBorder() || gridCell.getBox() == null)
+		if (Boolean.TRUE.equals(sheetInfo.ignoreCellBackground) || gridCell.getBox() == null)
 		{
 			return -1;			
 		}
 
-		XlsxBorderInfo borderInfo = new XlsxBorderInfo(gridCell.getBox());
+		XlsxBorderInfo borderInfo = new XlsxBorderInfo(gridCell.getBox(), direction);
 		Integer borderIndex = borderCache.get(borderInfo.getId());
 		if (borderIndex == null)
 		{
-			borderIndex = Integer.valueOf(borderCache.size());
+			borderIndex = borderCache.size();
 			export(borderInfo);
 			borderCache.put(borderInfo.getId(), borderIndex);
 		}
-		return borderIndex.intValue();
+		return borderIndex;
 	}
 
 	/**
@@ -110,12 +100,18 @@ public class XlsxBorderHelper extends BaseHelper
 	{
 //		if(info.hasBorder())
 		{
-			write("<border>");
-			exportBorder(info, DocxBorderInfo.LEFT_BORDER);
-			exportBorder(info, DocxBorderInfo.RIGHT_BORDER);
-			exportBorder(info, DocxBorderInfo.TOP_BORDER);
-			exportBorder(info, DocxBorderInfo.BOTTOM_BORDER);
-			write("<diagonal/></border>\n");
+			write("<border");
+			if(info.getDirection() != null)
+			{
+				write(info.getDirection().equals(LineDirectionEnum.TOP_DOWN) ? " diagonalDown=\"1\"" : " diagonalUp=\"1\"");
+			}
+			write(">");
+			exportBorder(info, XlsxBorderInfo.LEFT_BORDER);
+			exportBorder(info, XlsxBorderInfo.RIGHT_BORDER);
+			exportBorder(info, XlsxBorderInfo.TOP_BORDER);
+			exportBorder(info, XlsxBorderInfo.BOTTOM_BORDER);
+			exportBorder(info, XlsxBorderInfo.DIAGONAL_BORDER);
+			write("</border>\n");
 		}
 //		
 //		write("      <w:tcMar>\n");
@@ -131,17 +127,17 @@ public class XlsxBorderHelper extends BaseHelper
 	 */
 	private void exportBorder(XlsxBorderInfo info, int side)
 	{
-		write("<" + DocxBorderInfo.BORDER[side]);
+		write("<" + XlsxBorderInfo.BORDER[side]);
   		if (info.borderStyle[side] != null)
 		{
   			write(" style=\"" + info.borderStyle[side] + "\"");
 		}
 		write(">");
-		if (info.borderColor[side] != null)//FIXMEDOCX check this; use default color?
+		if (info.borderColor[side] != null)	//FIXMEDOCX check this; use default color?
 		{
 			write("<color rgb=\"" + info.borderColor[side] + "\"/>");
 		}
-		write("</" + DocxBorderInfo.BORDER[side] + ">");
+		write("</" + XlsxBorderInfo.BORDER[side] + ">");
 	}
 	
 //	/**
@@ -151,7 +147,7 @@ public class XlsxBorderHelper extends BaseHelper
 //	{
 //		if (info.borderPadding[side] != null)
 //		{
-//			write("       <w:" + DocxBorderInfo.BORDER[side] +" w:w=\"" + info.borderPadding[side] + "\" w:type=\"dxa\" />\n");
+//			write("       <w:" + XlsxBorderInfo.BORDER[side] +" w:w=\"" + info.borderPadding[side] + "\" w:type=\"dxa\" />\n");
 //		}
 //	}
 

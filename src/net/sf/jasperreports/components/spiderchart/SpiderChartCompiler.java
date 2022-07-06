@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,12 +36,12 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 
 /**
  * 
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: SpiderChartCompiler.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
 public class SpiderChartCompiler implements ComponentCompiler
 {
 
+	@Override
 	public void collectExpressions(Component component, JRExpressionCollector collector)
 	{
 		SpiderChartComponent chart = (SpiderChartComponent) component;
@@ -89,6 +89,7 @@ public class SpiderChartCompiler implements ComponentCompiler
 			collector.addExpression(chart.getTitleExpression());
 			collector.addExpression(chart.getSubtitleExpression());
 			collector.addExpression(chart.getAnchorNameExpression());
+			collector.addExpression(chart.getBookmarkLevelExpression());
 			collector.addExpression(chart.getHyperlinkReferenceExpression());
 			collector.addExpression(chart.getHyperlinkWhenExpression());
 			collector.addExpression(chart.getHyperlinkAnchorExpression());
@@ -110,6 +111,7 @@ public class SpiderChartCompiler implements ComponentCompiler
 		}
 	}
 
+	@Override
 	public void verify(Component component, JRVerifier verifier)
 	{
 		SpiderChartComponent chartComponent = (SpiderChartComponent) component;
@@ -191,6 +193,7 @@ public class SpiderChartCompiler implements ComponentCompiler
 	{
 	}
 
+	@Override
 	public Component toCompiledComponent(Component component,
 			JRBaseObjectFactory baseFactory)
 	{

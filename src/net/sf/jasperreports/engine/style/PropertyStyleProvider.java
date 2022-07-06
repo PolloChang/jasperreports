@@ -1,7 +1,7 @@
 package net.sf.jasperreports.engine.style;
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,10 +24,13 @@ package net.sf.jasperreports.engine.style;
  */
 
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.engine.JRElement;
 import net.sf.jasperreports.engine.JREvaluation;
 import net.sf.jasperreports.engine.JRExpression;
@@ -38,21 +41,23 @@ import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.base.JRBaseStyle;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.LineSpacingEnum;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.RotationEnum;
 import net.sf.jasperreports.engine.type.ScaleImageEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.engine.xml.JRXmlConstants;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: PropertyStyleProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class PropertyStyleProvider implements StyleProvider
 {
@@ -66,57 +71,396 @@ public class PropertyStyleProvider implements StyleProvider
 	public static final String STYLE_PROPERTY_BOX_BOTTOM_PEN_PREFIX = STYLE_PROPERTY_BOX_PREFIX + "bottom.pen.";
 	public static final String STYLE_PROPERTY_PARAGRAPH_PREFIX = STYLE_PROPERTY_PREFIX + "paragraph.";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = ModeEnum.class
+			)
 	public static final String STYLE_PROPERTY_MODE = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_mode;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Color.class
+			)
 	public static final String STYLE_PROPERTY_BACKCOLOR = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_backcolor;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Color.class
+			)
 	public static final String STYLE_PROPERTY_FORECOLOR = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_forecolor;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = FillEnum.class
+			)
 	public static final String STYLE_PROPERTY_FILL = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_fill;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_RADIUS = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_radius;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = ScaleImageEnum.class
+			)
 	public static final String STYLE_PROPERTY_SCALE_IMAGE = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_scaleImage;
+	/**
+	 * @deprecated Replaced by {@link #STYLE_PROPERTY_H_TEXT_ALIGN} and {@link #STYLE_PROPERTY_H_IMAGE_ALIGN}.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String STYLE_PROPERTY_HALIGN = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_hAlign;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_0_2,
+			valueType = HorizontalTextAlignEnum.class
+			)
+	public static final String STYLE_PROPERTY_H_TEXT_ALIGN = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_hTextAlign;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_0_2,
+			valueType = HorizontalImageAlignEnum.class
+			)
+	public static final String STYLE_PROPERTY_H_IMAGE_ALIGN = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_hImageAlign;
+	/**
+	 * @deprecated Replaced by {@link #STYLE_PROPERTY_V_TEXT_ALIGN} and {@link #STYLE_PROPERTY_V_IMAGE_ALIGN}.
+	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String STYLE_PROPERTY_VALIGN = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_vAlign;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_0_2,
+			valueType = VerticalTextAlignEnum.class
+			)
+	public static final String STYLE_PROPERTY_V_TEXT_ALIGN = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_vTextAlign;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_0_2,
+			valueType = VerticalImageAlignEnum.class
+			)
+	public static final String STYLE_PROPERTY_V_IMAGE_ALIGN = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_vImageAlign;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = RotationEnum.class
+			)
 	public static final String STYLE_PROPERTY_ROTATION = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_rotation;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String STYLE_PROPERTY_MARKUP = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_markup;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String STYLE_PROPERTY_PATTERN = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_pattern;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Boolean.class
+			)
 	public static final String STYLE_PROPERTY_BLANK_WHEN_NULL = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_isBlankWhenNull;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String STYLE_PROPERTY_FONT_NAME = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_fontName;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Float.class
+			)
 	public static final String STYLE_PROPERTY_FONT_SIZE = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_fontSize;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Boolean.class
+			)
 	public static final String STYLE_PROPERTY_FONT_BOLD = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_isBold;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Boolean.class
+			)
 	public static final String STYLE_PROPERTY_FONT_ITALIC = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_isItalic;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Boolean.class
+			)
 	public static final String STYLE_PROPERTY_FONT_UNDERLINE = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_isUnderline;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Boolean.class
+			)
 	public static final String STYLE_PROPERTY_FONT_STRIKETHROUGH = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_isStrikeThrough;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String STYLE_PROPERTY_PDF_FONT_NAME = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_pdfFontName;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0
+			)
 	public static final String STYLE_PROPERTY_PDF_ENCODING = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_pdfEncoding;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Boolean.class
+			)
 	public static final String STYLE_PROPERTY_PDF_EMBEDDED = STYLE_PROPERTY_PREFIX + JRXmlConstants.ATTRIBUTE_isPdfEmbedded;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Float.class
+			)
 	public static final String STYLE_PROPERTY_PEN_LINE_WIDTH = STYLE_PROPERTY_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineWidth;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = LineStyleEnum.class
+			)
 	public static final String STYLE_PROPERTY_PEN_LINE_STYLE = STYLE_PROPERTY_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineStyle;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Color.class
+			)
 	public static final String STYLE_PROPERTY_PEN_LINE_COLOR = STYLE_PROPERTY_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineColor;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_BOX_PADDING = STYLE_PROPERTY_BOX_PREFIX + JRXmlConstants.ATTRIBUTE_padding;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_BOX_TOP_PADDING = STYLE_PROPERTY_BOX_PREFIX + JRXmlConstants.ATTRIBUTE_topPadding;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_BOX_LEFT_PADDING = STYLE_PROPERTY_BOX_PREFIX + JRXmlConstants.ATTRIBUTE_leftPadding;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_BOX_RIGHT_PADDING = STYLE_PROPERTY_BOX_PREFIX + JRXmlConstants.ATTRIBUTE_rightPadding;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_BOX_BOTTOM_PADDING = STYLE_PROPERTY_BOX_PREFIX + JRXmlConstants.ATTRIBUTE_bottomPadding;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Float.class
+			)
 	public static final String STYLE_PROPERTY_BOX_PEN_LINE_WIDTH = STYLE_PROPERTY_BOX_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineWidth;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = LineStyleEnum.class
+			)
 	public static final String STYLE_PROPERTY_BOX_PEN_LINE_STYLE = STYLE_PROPERTY_BOX_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineStyle;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Color.class
+			)
 	public static final String STYLE_PROPERTY_BOX_PEN_LINE_COLOR = STYLE_PROPERTY_BOX_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineColor;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Float.class
+			)
 	public static final String STYLE_PROPERTY_BOX_LEFT_PEN_LINE_WIDTH = STYLE_PROPERTY_BOX_LEFT_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineWidth;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = LineStyleEnum.class
+			)
 	public static final String STYLE_PROPERTY_BOX_LEFT_PEN_LINE_STYLE = STYLE_PROPERTY_BOX_LEFT_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineStyle;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Color.class
+			)
 	public static final String STYLE_PROPERTY_BOX_LEFT_PEN_LINE_COLOR = STYLE_PROPERTY_BOX_LEFT_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineColor;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Float.class
+			)
 	public static final String STYLE_PROPERTY_BOX_TOP_PEN_LINE_WIDTH = STYLE_PROPERTY_BOX_TOP_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineWidth;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = LineStyleEnum.class
+			)
 	public static final String STYLE_PROPERTY_BOX_TOP_PEN_LINE_STYLE = STYLE_PROPERTY_BOX_TOP_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineStyle;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Color.class
+			)
 	public static final String STYLE_PROPERTY_BOX_TOP_PEN_LINE_COLOR = STYLE_PROPERTY_BOX_TOP_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineColor;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Float.class
+			)
 	public static final String STYLE_PROPERTY_BOX_RIGHT_PEN_LINE_WIDTH = STYLE_PROPERTY_BOX_RIGHT_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineWidth;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = LineStyleEnum.class
+			)
 	public static final String STYLE_PROPERTY_BOX_RIGHT_PEN_LINE_STYLE = STYLE_PROPERTY_BOX_RIGHT_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineStyle;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Color.class
+			)
 	public static final String STYLE_PROPERTY_BOX_RIGHT_PEN_LINE_COLOR = STYLE_PROPERTY_BOX_RIGHT_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineColor;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Float.class
+			)
 	public static final String STYLE_PROPERTY_BOX_BOTTOM_PEN_LINE_WIDTH = STYLE_PROPERTY_BOX_BOTTOM_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineWidth;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = LineStyleEnum.class
+			)
 	public static final String STYLE_PROPERTY_BOX_BOTTOM_PEN_LINE_STYLE = STYLE_PROPERTY_BOX_BOTTOM_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineStyle;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Color.class
+			)
 	public static final String STYLE_PROPERTY_BOX_BOTTOM_PEN_LINE_COLOR = STYLE_PROPERTY_BOX_BOTTOM_PEN_PREFIX + JRXmlConstants.ATTRIBUTE_lineColor;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = LineSpacingEnum.class
+			)
 	public static final String STYLE_PROPERTY_LINE_SPACING = STYLE_PROPERTY_PARAGRAPH_PREFIX + JRXmlConstants.ATTRIBUTE_lineSpacing;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Float.class
+			)
 	public static final String STYLE_PROPERTY_LINE_SPACING_SIZE = STYLE_PROPERTY_PARAGRAPH_PREFIX + JRXmlConstants.ATTRIBUTE_lineSpacingSize;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_FIRST_LINE_INDENT = STYLE_PROPERTY_PARAGRAPH_PREFIX + JRXmlConstants.ATTRIBUTE_firstLineIndent;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_LEFT_INDENT = STYLE_PROPERTY_PARAGRAPH_PREFIX + JRXmlConstants.ATTRIBUTE_leftIndent;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_RIGHT_INDENT = STYLE_PROPERTY_PARAGRAPH_PREFIX + JRXmlConstants.ATTRIBUTE_rightIndent;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_SPACING_BEFORE = STYLE_PROPERTY_PARAGRAPH_PREFIX + JRXmlConstants.ATTRIBUTE_spacingBefore;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_SPACING_AFTER = STYLE_PROPERTY_PARAGRAPH_PREFIX + JRXmlConstants.ATTRIBUTE_spacingAfter;
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			scopes = {PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_4_8_0,
+			valueType = Integer.class
+			)
 	public static final String STYLE_PROPERTY_TABSTOP_WIDTH = STYLE_PROPERTY_PARAGRAPH_PREFIX + JRXmlConstants.ATTRIBUTE_tabStopWidth;
 
 	private final StyleProviderContext context;
@@ -134,8 +478,8 @@ public class PropertyStyleProvider implements StyleProvider
 		this.context = context;
 		this.stylePropertyExpressions = stylePropertyExpressions;
 		
-		List<String> fieldsList = new ArrayList<String>();
-		List<String> variablesList = new ArrayList<String>();
+		List<String> fieldsList = new ArrayList<>();
+		List<String> variablesList = new ArrayList<>();
 		
 		if (stylePropertyExpressions != null)
 		{
@@ -162,6 +506,7 @@ public class PropertyStyleProvider implements StyleProvider
 									variablesList.add(chunk.getText());
 									break;
 								}
+								default:
 							}
 						}
 					}
@@ -221,13 +566,35 @@ public class PropertyStyleProvider implements StyleProvider
 		String hAlign = getPropertyValue(STYLE_PROPERTY_HALIGN, evaluation);
 		if (hAlign != null)
 		{
-			style.setHorizontalAlignment(HorizontalAlignEnum.getByName(hAlign));
+			style.setHorizontalTextAlign(HorizontalTextAlignEnum.getByName(hAlign));
+			style.setHorizontalImageAlign(HorizontalImageAlignEnum.getByName(hAlign));
+		}
+		hAlign = getPropertyValue(STYLE_PROPERTY_H_TEXT_ALIGN, evaluation);
+		if (hAlign != null)
+		{
+			style.setHorizontalTextAlign(HorizontalTextAlignEnum.getByName(hAlign));
+		}
+		hAlign = getPropertyValue(STYLE_PROPERTY_H_IMAGE_ALIGN, evaluation);
+		if (hAlign != null)
+		{
+			style.setHorizontalImageAlign(HorizontalImageAlignEnum.getByName(hAlign));
 		}
 		
 		String vAlign = getPropertyValue(STYLE_PROPERTY_VALIGN, evaluation);
 		if (vAlign != null)
 		{
-			style.setVerticalAlignment(VerticalAlignEnum.getByName(vAlign));
+			style.setVerticalTextAlign(VerticalTextAlignEnum.getByName(vAlign));
+			style.setVerticalImageAlign(VerticalImageAlignEnum.getByName(vAlign));
+		}
+		vAlign = getPropertyValue(STYLE_PROPERTY_V_TEXT_ALIGN, evaluation);
+		if (vAlign != null)
+		{
+			style.setVerticalTextAlign(VerticalTextAlignEnum.getByName(vAlign));
+		}
+		vAlign = getPropertyValue(STYLE_PROPERTY_V_IMAGE_ALIGN, evaluation);
+		if (vAlign != null)
+		{
+			style.setVerticalImageAlign(VerticalImageAlignEnum.getByName(vAlign));
 		}
 		
 		String rotation = getPropertyValue(STYLE_PROPERTY_ROTATION, evaluation);

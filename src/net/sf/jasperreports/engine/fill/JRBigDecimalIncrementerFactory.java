@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,11 +33,10 @@ import net.sf.jasperreports.engine.util.BigDecimalUtils;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBigDecimalIncrementerFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRBigDecimalIncrementerFactory extends JRAbstractExtendedIncrementerFactory
 {
-
+	public static final String EXCEPTION_MESSAGE_KEY_VALUE_NOT_SUPPORTED = "fill.big.decimal.value.not.supported";
 
 	/**
 	 *
@@ -69,9 +68,7 @@ public final class JRBigDecimalIncrementerFactory extends JRAbstractExtendedIncr
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExtendedIncrementer getExtendedIncrementer(CalculationEnum calculation)
 	{
 		JRExtendedIncrementer incrementer = null;
@@ -154,8 +151,10 @@ public final class JRBigDecimalIncrementerFactory extends JRAbstractExtendedIncr
 		else
 		{
 			// assuming a number for now, not converting strings
-			throw new JRRuntimeException("Value " + value + " of type " + value.getClass().getName() 
-					+ " unsupported for BigDecimal conversion");
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_VALUE_NOT_SUPPORTED,
+					new Object[]{value, value.getClass().getName()});
 		}
 		return bigDecimal;
 	}
@@ -187,9 +186,7 @@ final class JRBigDecimalCountIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -212,6 +209,7 @@ final class JRBigDecimalCountIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 	
+	@Override
 	public Object combine(JRCalculable calculable, JRCalculable calculableValue, AbstractValueProvider valueProvider)
 	{
 		BigDecimal value = (BigDecimal)calculable.getIncrementedValue();
@@ -231,6 +229,7 @@ final class JRBigDecimalCountIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRBigDecimalIncrementerFactory.ZERO;
@@ -263,9 +262,7 @@ final class JRBigDecimalDistinctCountIncrementer extends JRAbstractExtendedIncre
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -283,6 +280,7 @@ final class JRBigDecimalDistinctCountIncrementer extends JRAbstractExtendedIncre
 		return new BigDecimal(holder.getCount());
 	}
 
+	@Override
 	public Object combine(JRCalculable calculable, JRCalculable calculableValue, AbstractValueProvider valueProvider)
 	{
 		DistinctCountHolder holder = 
@@ -291,6 +289,7 @@ final class JRBigDecimalDistinctCountIncrementer extends JRAbstractExtendedIncre
 		return new BigDecimal(holder.getCount());
 	}
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRBigDecimalIncrementerFactory.ZERO;
@@ -323,9 +322,7 @@ final class JRBigDecimalSumIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -354,6 +351,7 @@ final class JRBigDecimalSumIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRBigDecimalIncrementerFactory.ZERO;
@@ -386,9 +384,7 @@ final class JRBigDecimalAverageIncrementer extends JRAbstractExtendedIncrementer
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -409,6 +405,7 @@ final class JRBigDecimalAverageIncrementer extends JRAbstractExtendedIncrementer
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRBigDecimalIncrementerFactory.ZERO;
@@ -441,9 +438,7 @@ final class JRBigDecimalStandardDeviationIncrementer extends JRAbstractExtendedI
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -463,6 +458,7 @@ final class JRBigDecimalStandardDeviationIncrementer extends JRAbstractExtendedI
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRBigDecimalIncrementerFactory.ZERO;
@@ -495,9 +491,7 @@ final class JRBigDecimalVarianceIncrementer extends JRAbstractExtendedIncremente
 		return mainInstance;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Object increment(
 		JRCalculable variable, 
 		Object expressionValue,
@@ -536,6 +530,7 @@ final class JRBigDecimalVarianceIncrementer extends JRAbstractExtendedIncremente
 	}
 
 	
+	@Override
 	public Object combine(JRCalculable calculable, JRCalculable calculableValue, AbstractValueProvider valueProvider)
 	{
 		BigDecimal value = (BigDecimal)calculable.getIncrementedValue();
@@ -573,6 +568,7 @@ final class JRBigDecimalVarianceIncrementer extends JRAbstractExtendedIncremente
 	}
 
 	
+	@Override
 	public Object initialValue()
 	{
 		return JRBigDecimalIncrementerFactory.ZERO;

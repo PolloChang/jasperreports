@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import net.sf.jasperreports.engine.DatasetPropertyExpression;
 import net.sf.jasperreports.engine.JRAbstractScriptlet;
 import net.sf.jasperreports.engine.JRDataset;
 import net.sf.jasperreports.engine.JRExpression;
@@ -48,7 +49,6 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: TableReportDataset.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class TableReportDataset implements JRDataset
 {
@@ -68,7 +68,7 @@ public class TableReportDataset implements JRDataset
 		this.name = name;
 		
 		JRGroup[] datasetGroups = tableSubdataset.getGroups();
-		groups = new ArrayList<JRGroup>();
+		groups = new ArrayList<>();
 		if (datasetGroups == null)
 		{
 			tableGroups = null;
@@ -85,7 +85,7 @@ public class TableReportDataset implements JRDataset
 		
 		properties = tableSubdataset.getPropertiesMap().cloneProperties();
 		
-		scriptlets = new ArrayList<JRScriptlet>();
+		scriptlets = new ArrayList<>();
 		JRScriptlet[] datasetScriptlets = tableSubdataset.getScriptlets();
 		if (datasetScriptlets != null)
 		{
@@ -93,18 +93,20 @@ public class TableReportDataset implements JRDataset
 		}
 		
 		JRParameter[] datasetParameters = tableSubdataset.getParameters();
-		parameters = new ArrayList<JRParameter>();
+		parameters = new ArrayList<>();
 		if (datasetParameters != null)
 		{
 			Collections.addAll(parameters, datasetParameters);
 		}
 	}
 	
+	@Override
 	public JRField[] getFields()
 	{
 		return tableSubdataset.getFields();
 	}
 
+	@Override
 	public JRExpression getFilterExpression()
 	{
 		return tableSubdataset.getFilterExpression();
@@ -115,6 +117,7 @@ public class TableReportDataset implements JRDataset
 		return tableGroups;
 	}
 
+	@Override
 	public JRGroup[] getGroups()
 	{
 		return groups.toArray(new JRGroup[groups.size()]);
@@ -131,78 +134,99 @@ public class TableReportDataset implements JRDataset
 		return tableSubdataset.getUUID();
 	}
 
+	@Override
 	public String getName()
 	{
 		return name;
 	}
 
+	@Override
 	public JRParameter[] getParameters()
 	{
 		return parameters.toArray(new JRParameter[parameters.size()]);
 	}
 
+	@Override
 	public JRQuery getQuery()
 	{
 		return tableSubdataset.getQuery();
 	}
 
+	@Override
 	public String getResourceBundle()
 	{
 		return tableSubdataset.getResourceBundle();
 	}
 
+	@Override
 	public String getScriptletClass()
 	{
 		return tableSubdataset.getScriptletClass();
 	}
 
+	@Override
 	public JRScriptlet[] getScriptlets()
 	{
 		return scriptlets.toArray(new JRScriptlet[scriptlets.size()]);
 	}
 
+	@Override
 	public JRSortField[] getSortFields()
 	{
 		return tableSubdataset.getSortFields();
 	}
 
+	@Override
 	public JRVariable[] getVariables()
 	{
 		return tableSubdataset.getVariables();
 	}
 
+	@Override
 	public WhenResourceMissingTypeEnum getWhenResourceMissingTypeValue()
 	{
 		return tableSubdataset.getWhenResourceMissingTypeValue();
 	}
 
+	@Override
 	public boolean isMainDataset()
 	{
 		// used as main dataset
 		return true;
 	}
 
+	@Override
 	public void setWhenResourceMissingType(
 			WhenResourceMissingTypeEnum whenResourceMissingType)
 	{
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return tableSubdataset.getParentProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return properties;
 	}
 
+	@Override
 	public boolean hasProperties()
 	{
 		return properties.hasProperties();
 	}
+
+	@Override
+	public DatasetPropertyExpression[] getPropertyExpressions()
+	{
+		return tableSubdataset.getPropertyExpressions();
+	}
 	
+	@Override
 	public Object clone()
 	{
 		throw new UnsupportedOperationException();

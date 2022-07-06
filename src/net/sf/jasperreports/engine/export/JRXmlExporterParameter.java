@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,7 +23,6 @@
  */
 package net.sf.jasperreports.engine.export;
 
-import net.sf.jasperreports.engine.JRExporterParameter;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.export.XmlExporterOutput;
 
@@ -38,9 +37,8 @@ import net.sf.jasperreports.export.XmlExporterOutput;
  *
  * @deprecated Replaced by {@link XmlExporterOutput}.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRXmlExporterParameter.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public class JRXmlExporterParameter extends JRExporterParameter
+public class JRXmlExporterParameter extends net.sf.jasperreports.engine.JRExporterParameter
 {
 
 

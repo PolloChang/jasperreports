@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,45 +26,69 @@ package net.sf.jasperreports.engine.export.oasis;
 import net.sf.jasperreports.engine.JRPrintGraphicElement;
 import net.sf.jasperreports.engine.JRPrintImage;
 import net.sf.jasperreports.engine.export.LengthUtil;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: GraphicStyle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class GraphicStyle extends Style
 {
+	/**
+	 * The ratio of 72 dpi to 96 dpi
+	 */
+	public static final Double DPI_RATIO = 72.0/96.0;
+	
 	/**
 	 *
 	 */
 	private String backcolor;
 	private String forecolor;
 	private String style;
-	private String width;
+	private double width;
 	private String hAlign;
 	private String vAlign;
+	private double cropTop;
+	private double cropLeft;
+	private double cropBottom;
+	private double cropRight;
+
+	private String clip;
 
 
 	/**
 	 *
 	 */
-	public GraphicStyle(WriterHelper styleWriter, JRPrintGraphicElement element)
+	public GraphicStyle(
+			WriterHelper styleWriter, 
+			JRPrintGraphicElement element, 
+			double cropTop,
+			double cropLeft,
+			double cropBottom,
+			double cropRight
+			)
 	{
 		super(styleWriter);
-
+		this.cropTop = cropTop;
+		this.cropLeft = cropLeft;
+		this.cropBottom = cropBottom;
+		this.cropRight = cropRight;
+		
 		if (element.getModeValue() == ModeEnum.OPAQUE)
 		{
+			//fill = "solid";
 			backcolor = JRColorUtil.getColorHexa(element.getBackcolor());
 		}
+//		else
+//		{
+//			//fill = "none";
+//		}
 
 		forecolor = JRColorUtil.getColorHexa(element.getLinePen().getLineColor());
 
-		double doubleWidth = element.getLinePen().getLineWidth().doubleValue();
-		if (doubleWidth < 0)
+		width = element.getLinePen().getLineWidth();
+		if (width <= 0)
 		{
 			style = "none";
 		}
@@ -87,71 +111,25 @@ public class GraphicStyle extends Style
 			}
 		}
 
-		width = String.valueOf(LengthUtil.inchNoRound(doubleWidth));
-		HorizontalAlignEnum horizontalAlignment = HorizontalAlignEnum.LEFT;
-		VerticalAlignEnum verticalAlignment = VerticalAlignEnum.TOP;
-
-		if(element instanceof JRPrintImage)
+		if (element instanceof JRPrintImage)
 		{
-			JRPrintImage imageElement = (JRPrintImage)element;
-			horizontalAlignment = imageElement.getHorizontalAlignmentValue();
-			verticalAlignment = imageElement.getVerticalAlignmentValue();
-		}
-
-		switch(horizontalAlignment)
-		{
-			case RIGHT:
-			{
-				hAlign = "right";
-				break;
-			}
-			case JUSTIFIED:
-			{
-				hAlign = "justified";
-				break;
-			}
-			case CENTER:
-			{
-				hAlign = "center";
-				break;
-			}
-			case LEFT:
-			default:
-			{
-				hAlign = "left";
-				break;
-			}
-		}
-
-		switch(verticalAlignment)
-		{
-			case BOTTOM:
-			{
-				vAlign = "bottom";
-				break;
-			}
-			case MIDDLE:
-			{
-				vAlign = "middle";
-				break;
-			}
-			case TOP:
-			default:
-			{
-				vAlign = "top";
-				break;
-			}
-
+			clip = " fo:clip=\"rect("
+				+ LengthUtil.inchFloor4Dec(cropTop * DPI_RATIO)
+				+ "in,"
+				+ LengthUtil.inchFloor4Dec(cropRight * DPI_RATIO) 
+				+ "in,"
+				+ LengthUtil.inchFloor4Dec(cropBottom * DPI_RATIO) 
+				+ "in,"
+				+ LengthUtil.inchFloor4Dec(cropLeft * DPI_RATIO) 
+				+ "in)\"";
 		}
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getId()
 	{
 		//return fill + "|" + backcolor
-		StringBuffer id = new StringBuffer();
+		StringBuilder id = new StringBuilder();
 		id.append(backcolor);
 		id.append("|");
 		id.append(forecolor);
@@ -163,24 +141,37 @@ public class GraphicStyle extends Style
 		id.append(hAlign);
 		id.append("|");
 		id.append(vAlign);
+		id.append("|");
+		id.append(cropTop);
+		id.append("|");
+		id.append(cropLeft);
+		id.append("|");
+		id.append(cropBottom);
+		id.append("|");
+		id.append(cropRight);
 		return id.toString();
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void write(String lineStyleName)
 	{
 		styleWriter.write(" <style:style style:name=\"" + lineStyleName + "\"");
 		styleWriter.write(" style:family=\"graphic\" style:parent-style-name=\"Graphics\">\n");
 		styleWriter.write("   <style:graphic-properties");
-		styleWriter.write(" draw:fill-color=\"#" + backcolor + "\"");
-		styleWriter.write(" style:horizontal-pos=\""+hAlign+ "\" style:horizontal-rel=\"paragraph\"");
-		styleWriter.write(" style:vertical-pos=\""+vAlign+ "\" style:vertical-rel=\"paragraph\"");
+		if (backcolor != null)
+		{
+			styleWriter.write(" draw:fill-color=\"#" + backcolor + "\"");
+		}
+		styleWriter.write(" style:horizontal-pos=\"from-left\" style:horizontal-rel=\"frame\"");
+		styleWriter.write(" style:vertical-pos=\"from-top\" style:vertical-rel=\"frame\"");
+		if (clip != null)
+		{
+			styleWriter.write(clip);
+		}
 		styleWriter.write(" svg:stroke-color=\"#" + forecolor + "\"");
 		styleWriter.write(" draw:stroke=\"" + style + "\"");//FIXMENOW dashed borders do not work; only dashed lines and ellipses seem to work
 		styleWriter.write(" draw:stroke-dash=\"Dashed\"");
-		styleWriter.write(" svg:stroke-width=\"" + width + "in\"");
+		styleWriter.write(" svg:stroke-width=\"" + LengthUtil.inchFloor4Dec(width) + "in\"");
 		styleWriter.write("/>\n");
 		styleWriter.write("</style:style>\n");
 	}

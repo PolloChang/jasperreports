@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,10 +34,15 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import org.apache.commons.collections4.map.LinkedMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRElement;
@@ -60,29 +65,31 @@ import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.base.JRBasePrintFrame;
 import net.sf.jasperreports.engine.base.JRBasePrintPage;
+import net.sf.jasperreports.engine.component.ComponentsEnvironment;
 import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.fill.JRFiller;
 import net.sf.jasperreports.engine.type.LineStyleEnum;
 import net.sf.jasperreports.engine.type.PrintOrderEnum;
 import net.sf.jasperreports.engine.type.RunDirectionEnum;
+import net.sf.jasperreports.engine.util.JRDataUtils;
 import net.sf.jasperreports.engine.util.JRExpressionUtil;
 import net.sf.jasperreports.engine.xml.JRXmlTemplateLoader;
 
-import org.apache.commons.collections.map.LinkedMap;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ReportConverter.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ReportConverter 
 {
 
 	private static final Log log = LogFactory.getLog(ReportConverter.class);
 	public static final Color GRID_LINE_COLOR = new Color(170, 170, 255);
+	public static final String EXCEPTION_MESSAGE_KEY_CIRCULAR_DEPENDENCY_FOUND = "convert.report.converter.circular.dependency.found";
 	
 	private final JasperReportsContext jasperReportsContext;
+	private final ComponentsEnvironment componentsEnvironment;
 	private final JRReport report;
+	private final Locale locale;
+	private final TimeZone timezone;
 	private JasperPrint jasperPrint;
 	private JRPrintPage page;
 	int pageWidth;
@@ -97,7 +104,7 @@ public class ReportConverter
 	/**
 	 * List containing page elements in a given order 
 	 */
-	private List<JRPrintElement> pageElements = new ArrayList<JRPrintElement>();
+	private List<JRPrintElement> pageElements = new ArrayList<>();
 	
 	protected Map<String, JRStyle> stylesMap;
 
@@ -108,7 +115,10 @@ public class ReportConverter
 	public ReportConverter(JasperReportsContext jasperReportsContext, JRReport report, boolean ignoreContent)
 	{
 		this.jasperReportsContext = jasperReportsContext;
+		this.componentsEnvironment = ComponentsEnvironment.getInstance(jasperReportsContext);
 		this.report = report;
+		this.locale = readLocale();//allow to pass this explicitly?
+		this.timezone = readTimeZone();
 		
 		if (report instanceof JasperDesign)
 		{
@@ -117,13 +127,27 @@ public class ReportConverter
 		
 		convert(ignoreContent);
 	}
-	
-	/**
-	 * @deprecated Replaced by {@link #ReportConverter(JasperReportsContext, JRReport, boolean)}.
-	 */
-	public ReportConverter(JRReport report, boolean ignoreContent)
+
+	private Locale readLocale()
 	{
-		this(DefaultJasperReportsContext.getInstance(), report, ignoreContent);
+		//duplicates code from JRFillDataset.defaultLocale
+		String localeCode = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(report, 
+				JRFiller.PROPERTY_DEFAULT_LOCALE);
+		Locale locale = (localeCode == null || localeCode.isEmpty()) 
+				? Locale.getDefault()
+				: JRDataUtils.getLocale(localeCode);
+		return locale;
+	}
+	
+	private TimeZone readTimeZone()
+	{
+		//duplicates code from JRFillDataset.defaultTimeZone
+		String timezoneId = JRPropertiesUtil.getInstance(jasperReportsContext).getProperty(report, 
+				JRFiller.PROPERTY_DEFAULT_TIMEZONE);
+		TimeZone timezone = (timezoneId == null || timezoneId.isEmpty()) 
+				? TimeZone.getDefault()
+				: JRDataUtils.getTimeZone(timezoneId);
+		return timezone;
 	}
 	
 	/**
@@ -224,7 +248,7 @@ public class ReportConverter
 	protected void setStyles(JRReport report)
 	{
 		//styleFactory = new StyleFactory();
-		stylesMap = new LinkedMap();
+		stylesMap = new LinkedMap<>();
 		
 		loadReportStyles(report);
 		
@@ -271,7 +295,7 @@ public class ReportConverter
 		JRReportTemplate[] templates = report.getTemplates();
 		if (templates != null)
 		{
-			Set<String> loadedLocations = new HashSet<String>();
+			Set<String> loadedLocations = new HashSet<>();
 			for (int i = 0; i < templates.length; i++)
 			{
 				loadReportTemplateStyles(templates[i], loadedLocations);
@@ -294,7 +318,7 @@ public class ReportConverter
 			}
 			else
 			{
-				HashSet<String> parentLocations = new HashSet<String>();
+				HashSet<String> parentLocations = new HashSet<>();
 				loadTemplateStyles(location, loadedLocations, parentLocations);
 			}
 		}
@@ -304,8 +328,11 @@ public class ReportConverter
 	{
 		if (!parentLocations.add(location))
 		{
-			throw new JRRuntimeException("Circular dependency found for template at location " 
-					+ location);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_CIRCULAR_DEPENDENCY_FOUND,  
+					new Object[]{location} 
+					);
 		}
 		
 		if (!loadedLocations.add(location))
@@ -317,7 +344,7 @@ public class ReportConverter
 		JRTemplate template;
 		try
 		{
-			template = JRXmlTemplateLoader.getInstance(getJasperReportsContext()).loadTemplate(location);
+			template = JRXmlTemplateLoader.getInstance(getJasperReportsContext()).loadTemplate(location);//TODO lucianc repository context
 		}
 		catch (Exception e)
 		{
@@ -456,9 +483,9 @@ public class ReportConverter
 		printFrame.setY(y);
 		printFrame.setWidth(width);
 		printFrame.setHeight(1);
-		printFrame.getLineBox().getPen().setLineWidth(0);
+		printFrame.getLineBox().getPen().setLineWidth((Float)0f);
 		printFrame.getLineBox().getPen().setLineStyle(LineStyleEnum.SOLID);
-		printFrame.getLineBox().getTopPen().setLineWidth(0.1f);
+		printFrame.getLineBox().getTopPen().setLineWidth((Float)0.1f);
 		printFrame.getLineBox().getTopPen().setLineStyle(LineStyleEnum.DASHED);
 		printFrame.getLineBox().getTopPen().setLineColor(GRID_LINE_COLOR);
 		pageElements.add(0, printFrame);
@@ -474,9 +501,9 @@ public class ReportConverter
 		printFrame.setY(y);
 		printFrame.setWidth(1);
 		printFrame.setHeight(height);
-		printFrame.getLineBox().getPen().setLineWidth(0);
+		printFrame.getLineBox().getPen().setLineWidth((Float)0f);
 		printFrame.getLineBox().getPen().setLineStyle(LineStyleEnum.SOLID);
-		printFrame.getLineBox().getLeftPen().setLineWidth(0.1f);
+		printFrame.getLineBox().getLeftPen().setLineWidth((Float)0.1f);
 		printFrame.getLineBox().getLeftPen().setLineStyle(LineStyleEnum.DASHED);
 		printFrame.getLineBox().getLeftPen().setLineColor(GRID_LINE_COLOR);
 		pageElements.add(0, printFrame);
@@ -516,6 +543,11 @@ public class ReportConverter
 	public JasperReportsContext getJasperReportsContext()
 	{
 		return jasperReportsContext;
+	}
+
+	public ComponentsEnvironment getComponentsEnvironment()
+	{
+		return componentsEnvironment;
 	}
 	
 	
@@ -559,6 +591,16 @@ public class ReportConverter
 		//printElement.setKey(element.getKey());
 		converted.setMode(source.getOwnModeValue());
 		converted.setStyle(resolveStyle(source));
+	}
+
+	public Locale getLocale()
+	{
+		return locale;
+	}
+
+	public TimeZone getTimeZone()
+	{
+		return timezone;
 	}
 	
 }

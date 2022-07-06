@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,15 +31,12 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRGraphicElement;
 import net.sf.jasperreports.engine.JRPen;
 import net.sf.jasperreports.engine.type.FillEnum;
-import net.sf.jasperreports.engine.util.JRPenUtil;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * This class provides functionality common to graphic elements. It provides implementation for the methods described
  * in <tt>JRTextElement</tt>.
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseGraphicElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class JRBaseGraphicElement extends JRBaseElement implements JRGraphicElement
 {
@@ -85,30 +82,25 @@ public abstract class JRBaseGraphicElement extends JRBaseElement implements JRGr
 	}
 		
 
-	/**
-	 *
-	 */
+	@Override
 	public JRPen getLinePen()
 	{
 		return linePen;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public FillEnum getFillValue()
 	{
-		return JRStyleResolver.getFillValue(this);
+		return getStyleResolver().getFillValue(this);
 	}
 
+	@Override
 	public FillEnum getOwnFillValue()
 	{
 		return this.fillValue;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public void setFill(FillEnum fillValue)
 	{
 		FillEnum old = this.fillValue;
@@ -116,26 +108,20 @@ public abstract class JRBaseGraphicElement extends JRBaseElement implements JRGr
 		getEventSupport().firePropertyChange(JRBaseStyle.PROPERTY_FILL, old, this.fillValue);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Float getDefaultLineWidth() 
 	{
 		return JRPen.LINE_WIDTH_1;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return getForecolor();
 	}
 		
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseGraphicElement clone = (JRBaseGraphicElement)super.clone();
@@ -153,12 +139,9 @@ public abstract class JRBaseGraphicElement extends JRBaseElement implements JRGr
 	/**
 	 * @deprecated
 	 */
-	private Byte pen;
-	/**
-	 * @deprecated
-	 */
 	private Byte fill;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
@@ -167,12 +150,6 @@ public abstract class JRBaseGraphicElement extends JRBaseElement implements JRGr
 		{
 			fillValue = FillEnum.getByValue(fill);
 			fill = null;
-		}
-		if (linePen == null)
-		{
-			linePen = new JRBasePen(this);
-			JRPenUtil.setLinePenFromPen(pen, linePen);
-			pen = null;
 		}
 	}
 }

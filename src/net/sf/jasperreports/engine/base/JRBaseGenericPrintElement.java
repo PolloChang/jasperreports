@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -38,7 +38,6 @@ import net.sf.jasperreports.engine.PrintElementVisitor;
  * A basic implementation of {@link JRGenericPrintElement}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseGenericPrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseGenericPrintElement extends JRBasePrintElement 
 		implements JRGenericPrintElement
@@ -47,7 +46,7 @@ public class JRBaseGenericPrintElement extends JRBasePrintElement
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	
 	private JRGenericElementType genericType;
-	private Map<String,Object> parameters = new LinkedHashMap<String,Object>();
+	private Map<String,Object> parameters = new LinkedHashMap<>();
 
 	/**
 	 * Creates a generic print element.
@@ -60,6 +59,7 @@ public class JRBaseGenericPrintElement extends JRBasePrintElement
 		super(defaultStyleProvider);
 	}
 
+	@Override
 	public JRGenericElementType getGenericType()
 	{
 		return genericType;
@@ -76,26 +76,31 @@ public class JRBaseGenericPrintElement extends JRBasePrintElement
 		this.genericType = genericType;
 	}
 
+	@Override
 	public Set<String> getParameterNames()
 	{
 		return parameters.keySet();
 	}
 
+	@Override
 	public Object getParameterValue(String name)
 	{
 		return parameters.get(name);
 	}
 
+	@Override
 	public boolean hasParameter(String name)
 	{
 		return parameters.containsKey(name);
 	}
 
+	@Override
 	public void setParameterValue(String name, Object value)
 	{
 		parameters.put(name, value);
 	}
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import org.jfree.chart.entity.ChartEntity;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: CategoryChartHyperlinkProvider.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class CategoryChartHyperlinkProvider implements ChartHyperlinkProvider
 {
@@ -48,6 +47,7 @@ public class CategoryChartHyperlinkProvider implements ChartHyperlinkProvider
 	}
 
 
+	@Override
 	public JRPrintHyperlink getEntityHyperlink(ChartEntity entity)
 	{
 		JRPrintHyperlink printHyperlink = null;
@@ -65,6 +65,7 @@ public class CategoryChartHyperlinkProvider implements ChartHyperlinkProvider
 		return printHyperlink;
 	}
 
+	@Override
 	public boolean hasHyperlinks()
 	{
 		return itemHyperlinks != null && itemHyperlinks.size() > 0;

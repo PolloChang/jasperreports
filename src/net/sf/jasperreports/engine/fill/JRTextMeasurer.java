@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -32,7 +32,6 @@ import net.sf.jasperreports.engine.util.JRStyledText;
  * and for computing other text measuring information.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTextMeasurer.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRTextMeasurer
 {
@@ -43,12 +42,15 @@ public interface JRTextMeasurer
 	 * @param styledText the full text
 	 * @param remainingTextStart the start index of the remaining text
 	 * @param availableStretchHeight the available stretch height
+	 * @param indentFirstLine whether should honor first line indent
 	 * @param canOverflow whether the text element is able to overflow
 	 * @return text measuring information
 	 */
 	JRMeasuredText measure(JRStyledText styledText,
-			int remainingTextStart,
-			int availableStretchHeight,
-			boolean canOverflow);
+		int remainingTextStart,
+		int availableStretchHeight,
+		boolean indentFirstLine,
+		boolean canOverflow
+		);
 
 }

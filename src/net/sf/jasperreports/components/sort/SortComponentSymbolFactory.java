@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,9 +26,9 @@ package net.sf.jasperreports.components.sort;
 import java.awt.Color;
 
 import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.type.HorizontalAlignEnum;
+import net.sf.jasperreports.engine.type.HorizontalImageAlignEnum;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
-import net.sf.jasperreports.engine.type.VerticalAlignEnum;
+import net.sf.jasperreports.engine.type.VerticalImageAlignEnum;
 import net.sf.jasperreports.engine.util.JRColorUtil;
 import net.sf.jasperreports.engine.xml.JRBaseFactory;
 
@@ -37,13 +37,10 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SortComponentSymbolFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SortComponentSymbolFactory extends JRBaseFactory
 {
-	/**
-	 *
-	 */
+	@Override
 	public Object createObject(Attributes atts) throws JRException
 	{
 		SortComponent sortComponent = (SortComponent)digester.peek();
@@ -64,16 +61,16 @@ public class SortComponentSymbolFactory extends JRBaseFactory
 			sortComponent.setSortFieldType(fieldType);
 		}
 
-		HorizontalAlignEnum hAlign = HorizontalAlignEnum.getByName(atts.getValue(SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN));
+		HorizontalImageAlignEnum hAlign = HorizontalImageAlignEnum.getByName(atts.getValue(SortComponent.PROPERTY_HANDLER_HORIZONTAL_ALIGN));
 		if (hAlign != null)
 		{
-			sortComponent.setHandlerHorizontalAlign(hAlign);
+			sortComponent.setHandlerHorizontalImageAlign(hAlign);
 		}
 		
-		VerticalAlignEnum vAlign = VerticalAlignEnum.getByName(atts.getValue(SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN));
+		VerticalImageAlignEnum vAlign = VerticalImageAlignEnum.getByName(atts.getValue(SortComponent.PROPERTY_HANDLER_VERTICAL_ALIGN));
 		if (vAlign != null)
 		{
-			sortComponent.setHandlerVerticalAlign(vAlign);
+			sortComponent.setHandlerVerticalImageAlign(vAlign);
 		}
 		
 		return sortComponent;

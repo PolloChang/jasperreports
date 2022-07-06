@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,10 +29,9 @@ import java.util.Collection;
 import java.util.Map;
 
 import net.sf.jasperreports.data.AbstractClasspathAwareDataAdapterService;
-import net.sf.jasperreports.engine.DefaultJasperReportsContext;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRParameter;
-import net.sf.jasperreports.engine.JasperReportsContext;
+import net.sf.jasperreports.engine.ParameterContributorContext;
 import net.sf.jasperreports.engine.data.JRAbstractBeanDataSource;
 import net.sf.jasperreports.engine.data.JRBeanArrayDataSource;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
@@ -40,25 +39,18 @@ import net.sf.jasperreports.engine.util.JRClassLoader;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: BeanDataAdapterService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class BeanDataAdapterService extends AbstractClasspathAwareDataAdapterService 
 {
 
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_RETURN_TYPE = "data.bean.invalid.return.type";
+	
 	/**
 	 * 
 	 */
-	public BeanDataAdapterService(JasperReportsContext jasperReportsContext, BeanDataAdapter beanDataAdapter) 
+	public BeanDataAdapterService(ParameterContributorContext paramContribContext, BeanDataAdapter beanDataAdapter) 
 	{
-		super(jasperReportsContext, beanDataAdapter);
-	}
-
-	/**
-	 * @deprecated Replaced by {@link #BeanDataAdapterService(JasperReportsContext, BeanDataAdapter)}.
-	 */
-	public BeanDataAdapterService(BeanDataAdapter beanDataAdapter) 
-	{
-		this(DefaultJasperReportsContext.getInstance(), beanDataAdapter);
+		super(paramContribContext, beanDataAdapter);
 	}
 
 	public BeanDataAdapter getBeanDataAdapter() {
@@ -90,22 +82,15 @@ public class BeanDataAdapterService extends AbstractClasspathAwareDataAdapterSer
 					beanDataSource = new JRBeanArrayDataSource((Object[]) res,
 							beanDataAdapter.isUseFieldDescription());
 				} else {
-					throw new JRException(
-							"Factory method must return Collection<?> or Object[] not: "
-									+ clazz.getName());
+					throw 
+						new JRException(
+							EXCEPTION_MESSAGE_KEY_INVALID_RETURN_TYPE,
+							new Object[]{clazz.getName()});
 				}
 			}
-			catch (ClassNotFoundException e) {
-				throw new JRException(e);
-			} catch (IllegalAccessException e) {
-				throw new JRException(e);
-			} catch (SecurityException e) {
-				throw new JRException(e);
-			} catch (NoSuchMethodException e) {
-				throw new JRException(e);
-			} catch (IllegalArgumentException e) {
-				throw new JRException(e);
-			} catch (InvocationTargetException e) {
+			catch (ClassNotFoundException | IllegalAccessException | SecurityException 
+				| NoSuchMethodException | IllegalArgumentException | InvocationTargetException e) 
+			{
 				throw new JRException(e);
 			}
 			finally

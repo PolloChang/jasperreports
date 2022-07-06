@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,19 +23,18 @@
  */
 package net.sf.jasperreports.components.map;
 
-import net.sf.jasperreports.engine.JRGenericPrintElement;
-import net.sf.jasperreports.engine.export.GenericElementJsonHandler;
-import net.sf.jasperreports.engine.export.JsonExporterContext;
-import net.sf.jasperreports.web.util.JacksonUtil;
-import net.sf.jasperreports.web.util.VelocityUtil;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.jasperreports.engine.JRGenericPrintElement;
+import net.sf.jasperreports.engine.export.GenericElementJsonHandler;
+import net.sf.jasperreports.engine.export.JsonExporterContext;
+import net.sf.jasperreports.util.JacksonUtil;
+import net.sf.jasperreports.web.util.VelocityUtil;
+
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: MapElementJsonHandler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MapElementJsonHandler implements GenericElementJsonHandler
 {
@@ -48,45 +47,47 @@ public class MapElementJsonHandler implements GenericElementJsonHandler
 		return INSTANCE;
 	}
 
+	@Override
 	public String getJsonFragment(JsonExporterContext context, JRGenericPrintElement element)
 	{
-		Map<String, Object> contextMap = new HashMap<String, Object>();
+		Map<String, Object> contextMap = new HashMap<>();
         contextMap.put("mapCanvasId", "map_canvas_" + element.hashCode());
 
-        Float latitude = (Float)element.getParameterValue(MapPrintElement.PARAMETER_LATITUDE);
-        latitude = latitude == null ? MapPrintElement.DEFAULT_LATITUDE : latitude;
+        Float latitude = (Float)element.getParameterValue(MapComponent.ITEM_PROPERTY_latitude);
+        latitude = latitude == null ? MapComponent.DEFAULT_LATITUDE : latitude;
 
-        Float longitude = (Float)element.getParameterValue(MapPrintElement.PARAMETER_LONGITUDE);
-        longitude = longitude == null ? MapPrintElement.DEFAULT_LONGITUDE : longitude;
+        Float longitude = (Float)element.getParameterValue(MapComponent.ITEM_PROPERTY_longitude);
+        longitude = longitude == null ? MapComponent.DEFAULT_LONGITUDE : longitude;
 
-        Integer zoom = (Integer)element.getParameterValue(MapPrintElement.PARAMETER_ZOOM);
-        zoom = zoom == null ? MapPrintElement.DEFAULT_ZOOM : zoom;
+        Integer zoom = (Integer)element.getParameterValue(MapComponent.PARAMETER_ZOOM);
+        zoom = zoom == null ? MapComponent.DEFAULT_ZOOM : zoom;
 
-        String mapType = (String)element.getParameterValue(MapPrintElement.PARAMETER_MAP_TYPE);
-        mapType = (mapType == null ? MapPrintElement.DEFAULT_MAP_TYPE.getName() : mapType).toUpperCase();
+        String mapType = (String)element.getParameterValue(MapComponent.ATTRIBUTE_MAP_TYPE);
+        mapType = (mapType == null ? MapComponent.DEFAULT_MAP_TYPE.getName() : mapType).toUpperCase();
 
         contextMap.put("latitude", latitude);
         contextMap.put("longitude", longitude);
         contextMap.put("zoom", zoom);
         contextMap.put("mapType", mapType);
 
-        List<Map<String,Object>> markerList = (List<Map<String,Object>>)element.getParameterValue(MapPrintElement.PARAMETER_MARKERS);
+        List<Map<String,Object>> markerList = (List<Map<String,Object>>)element.getParameterValue(MapComponent.PARAMETER_MARKERS);
         String markers = markerList == null || markerList.isEmpty() ? "[]" : JacksonUtil.getInstance(context.getJasperReportsContext()).getJsonString(markerList);
         contextMap.put("markerList", markers);
 
-        List<Map<String,Object>> pathList = (List<Map<String,Object>>)element.getParameterValue(MapPrintElement.PARAMETER_PATHS);
+        List<Map<String,Object>> pathList = (List<Map<String,Object>>)element.getParameterValue(MapComponent.PARAMETER_PATHS);
         String paths = pathList == null || pathList.isEmpty() ? "[]" : JacksonUtil.getInstance(context.getJasperReportsContext()).getJsonString(pathList);
         contextMap.put("pathsList", paths);
 
-        String reqParams = (String)element.getParameterValue(MapPrintElement.PARAMETER_REQ_PARAMS);
+        String reqParams = (String)element.getParameterValue(MapComponent.PARAMETER_REQ_PARAMS);
         if(reqParams != null)
         {
-            contextMap.put(MapPrintElement.PARAMETER_REQ_PARAMS, reqParams);
+            contextMap.put(MapComponent.PARAMETER_REQ_PARAMS, reqParams);
         }
 
 		return VelocityUtil.processTemplate(MAP_ELEMENT_JSON_TEMPLATE, contextMap);
 	}
 
+	@Override
 	public boolean toExport(JRGenericPrintElement element)
     {
 		return true;

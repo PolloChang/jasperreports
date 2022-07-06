@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,7 +36,6 @@ import net.sf.jasperreports.engine.util.JRCloneUtils;
  * Base read-only implementation of {@link net.sf.jasperreports.crosstabs.JRCrosstabCell JRCrosstabCell}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRBaseCrosstabCell.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseCrosstabCell implements JRCrosstabCell, Serializable
 {
@@ -65,34 +64,37 @@ public class JRBaseCrosstabCell implements JRCrosstabCell, Serializable
 		contents = factory.getCell(crosstabCell.getContents());
 	}
 
+	@Override
 	public String getRowTotalGroup()
 	{
 		return rowTotalGroup;
 	}
 
+	@Override
 	public String getColumnTotalGroup()
 	{
 		return columnTotalGroup;
 	}
 
+	@Override
 	public JRCellContents getContents()
 	{
 		return contents;
 	}
 
+	@Override
 	public Integer getHeight()
 	{
 		return height;
 	}
 
+	@Override
 	public Integer getWidth()
 	{
 		return width;
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseCrosstabCell clone = null;

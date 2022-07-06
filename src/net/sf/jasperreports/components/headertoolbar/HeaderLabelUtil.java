@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -47,7 +47,6 @@ import net.sf.jasperreports.engine.type.WhenResourceMissingTypeEnum;
  * 
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: HeaderLabelUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class HeaderLabelUtil
 {
@@ -87,6 +86,7 @@ public class HeaderLabelUtil
 				new Class<?>[]{JRStaticText.class}, 
 				new InvocationHandler() 
 				{
+					@Override
 					public Object invoke(
 						Object proxy, 
 						Method method, 
@@ -111,7 +111,7 @@ public class HeaderLabelUtil
 	}
 
 
-	/**
+	/*
 	 * 
 	 *
 	private static JRTextField getProxy(final JRTextField textField, final SortOrderEnum sortOrder)
@@ -144,6 +144,7 @@ public class HeaderLabelUtil
 				}
 			);
 	}
+	*/
 
 
 	/**
@@ -160,6 +161,7 @@ public class HeaderLabelUtil
 			this.suffix = suffix;
 		}
 		
+		@Override
 		public void init(Map<String, JRFillParameter> parametersMap,
 				Map<String, JRFillField> fieldsMap, 
 				Map<String, JRFillVariable> variablesMap,
@@ -168,16 +170,19 @@ public class HeaderLabelUtil
 			// NOP
 		}
 
+		@Override
 		public Object evaluate(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 		{
 			return evaluator.evaluate(expression) + suffix;
 		}
 
+		@Override
 		public Object evaluateOld(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 		{
 			return evaluator.evaluateOld(expression) + suffix;
 		}
 
+		@Override
 		public Object evaluateEstimated(DatasetExpressionEvaluator evaluator) throws JRExpressionEvalException
 		{
 			return evaluator.evaluateEstimated(expression) + suffix;

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,7 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import net.sf.jasperreports.data.cache.DataCacheHandler;
+import net.sf.jasperreports.engine.CommonReturnValue;
 import net.sf.jasperreports.engine.JRDataSource;
 import net.sf.jasperreports.engine.JRDatasetParameter;
 import net.sf.jasperreports.engine.JRDatasetRun;
@@ -43,24 +47,22 @@ import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JRScriptletException;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.VariableReturnValue;
 import net.sf.jasperreports.engine.type.IncrementTypeEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 /**
  * Class used to instantiate sub datasets.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRFillDatasetRun.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRFillDatasetRun implements JRDatasetRun
 {
 	
 	private static final Log log = LogFactory.getLog(JRFillDatasetRun.class);
 	
-	protected final JRBaseFiller filler;
+	protected final BaseReportFiller filler;
+	protected final JRFillExpressionEvaluator expressionEvaluator;
 
 	protected final JRDatasetRun parentDatasetRun;
 	protected final JRFillDataset dataset;
@@ -85,7 +87,18 @@ public class JRFillDatasetRun implements JRDatasetRun
 	 */
 	public JRFillDatasetRun(JRBaseFiller filler, JRDatasetRun datasetRun, JRFillObjectFactory factory)
 	{
-		this(filler, datasetRun, 
+		this(filler, filler.getExpressionEvaluator(), datasetRun, factory);
+	}
+
+	protected JRFillDatasetRun(JRDatasetRun datasetRun, JRFillObjectFactory factory)
+	{
+		this(factory.getFiller(), factory.getExpressionEvaluator(), datasetRun, factory);
+	}
+
+	protected JRFillDatasetRun(JRBaseFiller filler, JRFillExpressionEvaluator expressionEvaluator,
+			JRDatasetRun datasetRun, JRFillObjectFactory factory)
+	{
+		this(filler, expressionEvaluator, datasetRun, 
 				filler.datasetMap.get(datasetRun.getDatasetName()));
 		
 		factory.put(datasetRun, this);
@@ -93,10 +106,17 @@ public class JRFillDatasetRun implements JRDatasetRun
 		initReturnValues(factory);
 	}
 
-	protected JRFillDatasetRun(JRBaseFiller filler, JRDatasetRun datasetRun, 
+	protected JRFillDatasetRun(BaseReportFiller filler, JRDatasetRun datasetRun, 
 			JRFillDataset dataset)
 	{
+		this(filler, filler.getExpressionEvaluator(), datasetRun, dataset);
+	}
+
+	protected JRFillDatasetRun(BaseReportFiller filler, JRFillExpressionEvaluator expressionEvaluator, 
+			JRDatasetRun datasetRun, JRFillDataset dataset)
+	{
 		this.filler = filler;
+		this.expressionEvaluator = expressionEvaluator;
 		this.dataset = dataset;
 
 		this.parentDatasetRun = datasetRun;
@@ -104,6 +124,22 @@ public class JRFillDatasetRun implements JRDatasetRun
 		parameters = datasetRun.getParameters();
 		connectionExpression = datasetRun.getConnectionExpression();
 		dataSourceExpression = datasetRun.getDataSourceExpression();
+	}
+
+	public JRFillDatasetRun(JRFillDatasetRun datasetRun, JRFillCloneFactory factory)
+	{
+		this.filler = datasetRun.filler;
+		this.expressionEvaluator = datasetRun.expressionEvaluator;
+		this.dataset = datasetRun.dataset;
+		
+		this.parentDatasetRun = datasetRun.parentDatasetRun;
+		this.parametersMapExpression = datasetRun.parametersMapExpression;
+		this.parameters = datasetRun.parameters;
+		this.connectionExpression = datasetRun.getConnectionExpression();
+		this.dataSourceExpression = datasetRun.getDataSourceExpression();
+		
+		this.returnValues = new FillReturnValues(datasetRun.returnValues, factory);
+		this.returnValuesContext = datasetRun.returnValuesContext;
 	}
 
 	protected void initReturnValues(JRFillObjectFactory factory)
@@ -115,30 +151,23 @@ public class JRFillDatasetRun implements JRDatasetRun
 		
 		returnValues = new FillReturnValues(parentDatasetRun.getReturnValues(), factory, filler);
 		
-		returnValuesContext = new FillReturnValues.SourceContext()
+		returnValuesContext = new AbstractVariableReturnValueSourceContext() 
 		{
 			@Override
-			public JRVariable getVariable(String name)
-			{
-				return dataset.getVariable(name);
+			public Object getValue(CommonReturnValue returnValue) {
+				return dataset.getVariableValue(((VariableReturnValue)returnValue).getFromVariable());
 			}
 			
 			@Override
-			public Object getVariableValue(String name)
-			{
-				return dataset.getVariableValue(name);
+			public JRFillVariable getToVariable(String name) {
+				return expressionEvaluator.getFillDataset().getVariable(name);
+			}
+			
+			@Override
+			public JRVariable getFromVariable(String name) {
+				return dataset.getVariable(name);
 			}
 		};
-		
-		try
-		{
-			//FIXME do this at compile time
-			returnValues.checkReturnValues(returnValuesContext);
-		}
-		catch (JRException e)
-		{
-			throw new JRRuntimeException(e);
-		}
 	}
 
 	public void setBand(JRFillBand band)
@@ -158,11 +187,25 @@ public class JRFillDatasetRun implements JRDatasetRun
 	 */
 	public void evaluate(JRFillElementDataset elementDataset, byte evaluation) throws JRException
 	{
+		if (returnValues != null)
+		{
+			try
+			{
+				//FIXME do this at compile time
+				returnValues.checkReturnValues(returnValuesContext);
+			}
+			catch (JRException e)
+			{
+				throw new JRRuntimeException(e);
+			}
+		}
+		
 		saveReturnVariables();
 		
 		Map<String,Object> parameterValues = 
 			JRFillSubreport.getParameterValues(
-				filler, 
+				filler,
+				expressionEvaluator,
 				parametersMapExpression, 
 				parameters, 
 				evaluation, 
@@ -174,9 +217,9 @@ public class JRFillDatasetRun implements JRDatasetRun
 		try
 		{
 			// set fill position for caching
-			FillDatasetPosition datasetPosition = new FillDatasetPosition(filler.mainDataset.fillPosition);
+			FillDatasetPosition datasetPosition = new FillDatasetPosition(expressionEvaluator.getFillDataset().fillPosition);
 			datasetPosition.addAttribute("datasetRunUUID", getUUID());
-			filler.mainDataset.setCacheRecordIndex(datasetPosition, evaluation);		
+			expressionEvaluator.getFillDataset().setCacheRecordIndex(datasetPosition, evaluation);		
 			dataset.setFillPosition(datasetPosition);
 			
 			String cacheIncludedProp = JRPropertiesUtil.getOwnProperty(this, DataCacheHandler.PROPERTY_INCLUDED); 
@@ -187,23 +230,23 @@ public class JRFillDatasetRun implements JRDatasetRun
 			{
 				if (!(filler.fillContext.hasDataSnapshot() && cacheIncluded)) 
 				{
-					JRDataSource dataSource = (JRDataSource) filler.evaluateExpression(dataSourceExpression, evaluation);
+					JRDataSource dataSource = (JRDataSource) expressionEvaluator.evaluate(dataSourceExpression, evaluation);
 					dataset.setDatasourceParameterValue(parameterValues, dataSource);
 				}
 			}
 			else if (connectionExpression != null)
 			{
-				Connection connection = (Connection) filler.evaluateExpression(connectionExpression, evaluation);
+				Connection connection = (Connection) expressionEvaluator.evaluate(connectionExpression, evaluation);
 				dataset.setConnectionParameterValue(parameterValues, connection);
 			}
 
 			copyConnectionParameter(parameterValues);
 			
+			dataset.filterElementDatasets(elementDataset);
 			dataset.initCalculator();
 			dataset.setParameterValues(parameterValues);
+			dataset.evaluateFieldProperties();
 			dataset.initDatasource();
-			
-			dataset.filterElementDatasets(elementDataset);
 
 			iterate();
 		}
@@ -243,7 +286,7 @@ public class JRFillDatasetRun implements JRDatasetRun
 					(language.equals("sql") || language.equals("SQL")) &&
 					!parameterValues.containsKey(JRParameter.REPORT_CONNECTION))
 			{
-				JRFillParameter connParam = filler.getParametersMap().get(JRParameter.REPORT_CONNECTION);
+				JRFillParameter connParam = expressionEvaluator.getFillDataset().getParametersMap().get(JRParameter.REPORT_CONNECTION);
 				Connection connection = (Connection) connParam.getValue();
 				parameterValues.put(JRParameter.REPORT_CONNECTION, connection);
 			}
@@ -254,10 +297,10 @@ public class JRFillDatasetRun implements JRDatasetRun
 	{
 		dataset.start();
 
-		init();
-
 		if (advanceDataset())
 		{
+			startData();
+
 			detail();
 
 			while (advanceDataset())
@@ -269,7 +312,16 @@ public class JRFillDatasetRun implements JRDatasetRun
 				detail();
 			}
 		}
-
+		else if (toStartWhenNoData())
+		{
+			startData();
+		}
+	}
+	
+	protected boolean toStartWhenNoData()
+	{
+		//needed for initializing element datasets
+		return true;
 	}
 
 	protected boolean advanceDataset() throws JRException
@@ -293,7 +345,7 @@ public class JRFillDatasetRun implements JRDatasetRun
 		dataset.delegateScriptlet.callAfterGroupInit();
 	}
 
-	protected void init() throws JRScriptletException, JRException
+	protected void startData() throws JRScriptletException, JRException
 	{
 		dataset.delegateScriptlet.callBeforeReportInit();
 		dataset.calculator.initializeVariables(ResetTypeEnum.REPORT, IncrementTypeEnum.REPORT);
@@ -303,30 +355,35 @@ public class JRFillDatasetRun implements JRDatasetRun
 	protected void detail() throws JRScriptletException, JRException
 	{
 		dataset.delegateScriptlet.callBeforeDetailEval();
-		dataset.calculator.calculateVariables();
+		dataset.calculator.calculateVariables(true);
 		dataset.delegateScriptlet.callAfterDetailEval();
 	}
 
+	@Override
 	public String getDatasetName()
 	{
 		return dataset.getName();
 	}
 
+	@Override
 	public JRExpression getParametersMapExpression()
 	{
 		return parametersMapExpression;
 	}
 
+	@Override
 	public JRDatasetParameter[] getParameters()
 	{
 		return parameters;
 	}
 
+	@Override
 	public JRExpression getConnectionExpression()
 	{
 		return connectionExpression;
 	}
 
+	@Override
 	public JRExpression getDataSourceExpression()
 	{
 		return dataSourceExpression;
@@ -337,29 +394,31 @@ public class JRFillDatasetRun implements JRDatasetRun
 		return dataset;
 	}
 
+	@Override
 	public UUID getUUID()
 	{
 		return parentDatasetRun.getUUID();
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object clone() 
 	{
 		throw new UnsupportedOperationException();
 	}
 	
+	@Override
 	public boolean hasProperties()
 	{
 		return parentDatasetRun.hasProperties();
 	}
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return parentDatasetRun.getPropertiesMap();
 	}
 	
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;

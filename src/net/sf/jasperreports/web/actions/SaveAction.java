@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,7 +25,9 @@ package net.sf.jasperreports.web.actions;
 
 import java.io.File;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.JasperReport;
@@ -38,9 +40,10 @@ import net.sf.jasperreports.repo.JasperDesignReportResource;
 
 /**
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: SaveAction.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class SaveAction extends AbstractAction {
+	
+	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
 	public SaveAction() {
 	}
@@ -49,14 +52,16 @@ public class SaveAction extends AbstractAction {
 		return "save_action";
 	}
 
+	@Override
 	public void performAction() 
 	{
 //		JasperDesign jasperDesign = getJasperDesign();
 		JasperDesignCache cache = JasperDesignCache.getInstance(getJasperReportsContext(), getReportContext());
 		Map<String, JasperDesignReportResource> cachedResources = cache.getCachedResources();
-		for (String uri : cachedResources.keySet())
+		for (Entry<String, JasperDesignReportResource> entry : cachedResources.entrySet())
 		{
-			JasperDesignReportResource resource = cachedResources.get(uri);
+			String uri = entry.getKey();
+			JasperDesignReportResource resource = entry.getValue();
 			JasperDesign jasperDesign = resource.getJasperDesign();
 			if (jasperDesign != null)
 			{

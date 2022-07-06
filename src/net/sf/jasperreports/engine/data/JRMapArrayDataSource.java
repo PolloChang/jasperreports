@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,7 +31,6 @@ import net.sf.jasperreports.engine.JRRewindableDataSource;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRMapArrayDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRMapArrayDataSource implements JRRewindableDataSource
 {
@@ -53,9 +52,7 @@ public class JRMapArrayDataSource implements JRRewindableDataSource
 	}
 	
 
-	/**
-	 *
-	 */
+	@Override
 	public boolean next()
 	{
 		index++;
@@ -69,9 +66,7 @@ public class JRMapArrayDataSource implements JRRewindableDataSource
 	}
 	
 	
-	/**
-	 *
-	 */
+	@Override
 	public Object getFieldValue(JRField field)
 	{
 		Object value = null;
@@ -87,9 +82,7 @@ public class JRMapArrayDataSource implements JRRewindableDataSource
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public void moveFirst()
 	{
 		this.index = -1;

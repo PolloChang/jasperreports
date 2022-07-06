@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,14 +26,15 @@ package net.sf.jasperreports.engine.util;
 import java.io.InvalidObjectException;
 import java.text.AttributedCharacterIterator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import net.sf.jasperreports.engine.JRConstants;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRTextAttribute.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRTextAttribute extends AttributedCharacterIterator.Attribute
 {
@@ -42,7 +43,7 @@ public final class JRTextAttribute extends AttributedCharacterIterator.Attribute
 	 */
 	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 
-	private static final Map<String,JRTextAttribute> instanceMap = new HashMap<String,JRTextAttribute>(4);
+	private static final Map<String,JRTextAttribute> instanceMap = new HashMap<>(4);
 
 	/**
 	 *
@@ -50,16 +51,33 @@ public final class JRTextAttribute extends AttributedCharacterIterator.Attribute
 	public static final JRTextAttribute PDF_FONT_NAME = new JRTextAttribute("PDF_FONT_NAME");
 	public static final JRTextAttribute PDF_ENCODING = new JRTextAttribute("PDF_ENCODING");
 	public static final JRTextAttribute IS_PDF_EMBEDDED = new JRTextAttribute("IS_PDF_EMBEDDED");
+	public static final JRTextAttribute FONT_SIZE = new JRTextAttribute("FONT_SIZE");
 	
 	/**
 	 *
 	 */
 	public static final JRTextAttribute HYPERLINK = new JRTextAttribute("HYPERLINK");
+	
+	/**
+	 *
+	 */
+	public static final JRTextAttribute HTML_LIST = new JRTextAttribute("HTML_LIST");
+	public static final JRTextAttribute HTML_LIST_ITEM = new JRTextAttribute("HTML_LIST_ITEM");
 
     /**
 	 *
 	 */
 	public static final JRTextAttribute SEARCH_HIGHLIGHT = new JRTextAttribute("SEARCH_HIGHLIGHT");
+
+	public static final JRTextAttribute FONT_INFO = new JRTextAttribute("FONT_INFO");
+	
+	
+	public static final Set<JRTextAttribute> HTML_LIST_ATTRIBUTES = new HashSet<>();
+	static
+	{
+		HTML_LIST_ATTRIBUTES.add(JRTextAttribute.HTML_LIST);
+		HTML_LIST_ATTRIBUTES.add(JRTextAttribute.HTML_LIST_ITEM);
+	}
 
 	/**
 	 *
@@ -77,6 +95,7 @@ public final class JRTextAttribute extends AttributedCharacterIterator.Attribute
 	/**
 	 * Resolves instances being deserialized to the predefined constants.
 	*/
+	@Override
 	protected Object readResolve() throws InvalidObjectException 
 	{
 		if (this.getClass() != JRTextAttribute.class)

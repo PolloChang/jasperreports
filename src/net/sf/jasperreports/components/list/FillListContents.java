@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -34,7 +34,6 @@ import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
  * List contents fill element container.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: FillListContents.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class FillListContents extends JRFillElementContainer
 {
@@ -68,9 +67,16 @@ public class FillListContents extends JRFillElementContainer
 		return contentsHeight;
 	}
 	
+	@Override
 	protected int getContainerHeight()
 	{
 		return contentsHeight;
+	}
+
+	@Override
+	protected int getActualContainerHeight()
+	{
+		return getContainerHeight(); 
 	}
 	
 	protected void evaluateContents() throws JRException
@@ -86,6 +92,7 @@ public class FillListContents extends JRFillElementContainer
 		prepareElements(availableHeight, true);
 	}
 	
+	@Override
 	public JRFillCloneable createClone(JRFillCloneFactory factory)
 	{
 		return new FillListContents(this, factory);
@@ -98,12 +105,14 @@ public class FillListContents extends JRFillElementContainer
 	}
 	
 	// overridden for access
+	@Override
 	protected int getStretchHeight()
 	{
 		return super.getStretchHeight();
 	}
 	
 	// overridden for access
+	@Override
 	protected void rewind() throws JRException
 	{
 		super.rewind();
@@ -114,10 +123,28 @@ public class FillListContents extends JRFillElementContainer
 		setStretchHeight(height);
 	}
 
+	// double check the usefulness of this whole method when removing legacy stretch;
+	// it looks like it will be needed only on HorizontalFillList, in which case its content could be copied only there
+	// and this method could be removed
 	protected void finalizeElementPositions()
 	{
-		stretchElements();
-		moveBandBottomElements();
-		removeBlankElements();
+		if (isLegacyElementStretchEnabled())
+		{
+			stretchElements();
+			moveBandBottomElements();
+			removeBlankElements();
+		}
+		else
+		{
+			stretchElementsToContainer();
+			moveBandBottomElements();
+		}
+	}
+
+	@Override
+	public boolean isSplitTypePreventInhibited(boolean isTopLevelCall)
+	{
+		//FIXME implement logic
+		return false;
 	}
 }

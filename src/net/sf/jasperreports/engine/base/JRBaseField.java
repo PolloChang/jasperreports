@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -29,15 +29,16 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRField;
 import net.sf.jasperreports.engine.JRPropertiesHolder;
 import net.sf.jasperreports.engine.JRPropertiesMap;
+import net.sf.jasperreports.engine.JRPropertyExpression;
 import net.sf.jasperreports.engine.JRRuntimeException;
 import net.sf.jasperreports.engine.design.events.JRChangeEventsSupport;
 import net.sf.jasperreports.engine.design.events.JRPropertyChangeSupport;
 import net.sf.jasperreports.engine.util.JRClassLoader;
+import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseField.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseField implements JRField, Serializable, JRChangeEventsSupport
 {
@@ -62,6 +63,8 @@ public class JRBaseField implements JRField, Serializable, JRChangeEventsSupport
 	
 	protected JRPropertiesMap propertiesMap;
 
+	private JRPropertyExpression[] propertyExpressions;
+
 
 	/**
 	 *
@@ -83,29 +86,24 @@ public class JRBaseField implements JRField, Serializable, JRChangeEventsSupport
 		description = field.getDescription();
 		valueClassName = field.getValueClassName();
 		
-		this.propertiesMap = field.getPropertiesMap().cloneProperties();
+		propertiesMap = field.getPropertiesMap().cloneProperties();
+		propertyExpressions = factory.getPropertyExpressions(field.getPropertyExpressions());
 	}
-		
 
-	/**
-	 *
-	 */
+
+	@Override
 	public String getName()
 	{
 		return this.name;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public String getDescription()
 	{
 		return this.description;
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public void setDescription(String description)
 	{
 		Object old = this.description;
@@ -113,9 +111,7 @@ public class JRBaseField implements JRField, Serializable, JRChangeEventsSupport
 		getEventSupport().firePropertyChange(PROPERTY_DESCRIPTION, old, this.description);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Class<?> getValueClass()
 	{
 		if (valueClass == null)
@@ -137,9 +133,7 @@ public class JRBaseField implements JRField, Serializable, JRChangeEventsSupport
 		return valueClass;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getValueClassName()
 	{
 		return this.valueClassName;
@@ -159,27 +153,35 @@ public class JRBaseField implements JRField, Serializable, JRChangeEventsSupport
 	}
 
 	
+	@Override
 	public boolean hasProperties()
 	{
 		return propertiesMap != null && propertiesMap.hasProperties();
 	}
 
 
+	@Override
 	public JRPropertiesMap getPropertiesMap()
 	{
 		return propertiesMap;
 	}
 
 	
+	@Override
 	public JRPropertiesHolder getParentProperties()
 	{
 		return null;
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
+	public JRPropertyExpression[] getPropertyExpressions()
+	{
+		return propertyExpressions;
+	}
+
+
+	@Override
 	public Object clone() 
 	{
 		JRBaseField clone = null;
@@ -193,11 +195,11 @@ public class JRBaseField implements JRField, Serializable, JRChangeEventsSupport
 			throw new JRRuntimeException(e);
 		}
 
-		if (propertiesMap != null)
+		if (propertiesMap != null) // attempt to use properties cloning utility results in clones having this field null, if it was non-null but empty
 		{
 			clone.propertiesMap = (JRPropertiesMap)propertiesMap.clone();
 		}
-		
+		clone.propertyExpressions = JRCloneUtils.cloneArray(propertyExpressions);
 		clone.eventSupport = null;
 		
 		return clone;
@@ -206,6 +208,7 @@ public class JRBaseField implements JRField, Serializable, JRChangeEventsSupport
 	
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)

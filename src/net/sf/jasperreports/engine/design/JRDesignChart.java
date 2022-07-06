@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -74,18 +74,15 @@ import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTargetEnum;
 import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
-import net.sf.jasperreports.engine.util.JRBoxUtil;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
-import net.sf.jasperreports.engine.util.JRStyleResolver;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRDesignChart.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignChart extends JRDesignElement implements JRChart
 {
-
+	public static final String EXCEPTION_MESSAGE_KEY_UNSUPPORTED_CHART_TYPE = "charts.chart.type.unsupported";
 
 	/**
 	 *
@@ -99,6 +96,8 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	public static final String PROPERTY_ANCHOR_NAME_EXPRESSION = "anchorNameExpression";
 	
 	public static final String PROPERTY_BOOKMARK_LEVEL = "bookmarkLevel";
+	
+	public static final String PROPERTY_BOOKMARK_LEVEL_EXPRESSION = "bookmarkLevelExpression";
 	
 	public static final String PROPERTY_EVALUATION_GROUP = "evaluationGroup";
 	
@@ -157,6 +156,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	protected JRExpression titleExpression;
 	protected JRExpression subtitleExpression;
 	protected JRExpression anchorNameExpression;
+	protected JRExpression bookmarkLevelExpression;
 	protected JRExpression hyperlinkReferenceExpression;
 	protected JRExpression hyperlinkWhenExpression;
 	protected JRExpression hyperlinkAnchorExpression;
@@ -188,22 +188,18 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		
 		setChartType(chartType);
 		
-		hyperlinkParameters = new ArrayList<JRHyperlinkParameter>();
+		hyperlinkParameters = new ArrayList<>();
 		
 		lineBox = new JRBaseLineBox(this);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Boolean getShowLegend()
 	{
 		return this.showLegend;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setShowLegend(Boolean isShowLegend)
 	{
 		Boolean old = this.showLegend;
@@ -212,17 +208,13 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	}
 
 	
-	/**
-	 *
-	 */
+	@Override
 	public String getRenderType()
 	{
 		return renderType;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setRenderType(String renderType)
 	{
 		String old = this.renderType;
@@ -230,17 +222,13 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRBaseChart.PROPERTY_RENDER_TYPE, old, this.renderType);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getTheme()
 	{
 		return theme;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setTheme(String theme)
 	{
 		String old = this.theme;
@@ -248,9 +236,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRBaseChart.PROPERTY_THEME, old, this.theme);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public EvaluationTimeEnum getEvaluationTimeValue()
 	{
 		return evaluationTimeValue;
@@ -266,9 +252,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_EVALUATION_TIME, old, this.evaluationTimeValue);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRGroup getEvaluationGroup()
 	{
 		return evaluationGroup;
@@ -284,17 +268,13 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_EVALUATION_GROUP, old, this.evaluationGroup);
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRLineBox getLineBox()
 	{
 		return lineBox;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getTitleFont()
 	{
 		return titleFont;
@@ -310,17 +290,13 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_TITLE_FONT, old, this.titleFont);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public EdgeEnum getTitlePositionValue()
 	{
 		return titlePositionValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setTitlePosition(EdgeEnum titlePositionValue)
 	{
 		EdgeEnum old = this.titlePositionValue;
@@ -328,25 +304,19 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRBaseChart.PROPERTY_TITLE_POSITION, old, this.titlePositionValue);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getTitleColor()
 	{
-		return JRStyleResolver.getTitleColor(this);
+		return getStyleResolver().getTitleColor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnTitleColor()
 	{
 		return titleColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setTitleColor(Color titleColor)
 	{
 		Object old = this.titleColor;
@@ -354,9 +324,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRBaseChart.PROPERTY_TITLE_COLOR, old, this.titleColor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getSubtitleFont()
 	{
 		return subtitleFont;
@@ -372,25 +340,19 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_SUBTITLE_FONT, old, this.subtitleFont);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getSubtitleColor()
 	{
-		return JRStyleResolver.getSubtitleColor(this);
+		return getStyleResolver().getSubtitleColor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnSubtitleColor()
 	{
 		return subtitleColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setSubtitleColor(Color subtitleColor)
 	{
 		Object old = this.subtitleColor;
@@ -398,25 +360,19 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRBaseChart.PROPERTY_SUBTITLE_COLOR, old, this.subtitleColor);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnLegendColor()
 	{
 		return legendColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getLegendColor()
 	{
-		return JRStyleResolver.getLegendColor(this);
+		return getStyleResolver().getLegendColor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setLegendColor(Color legendColor)
 	{
 		Object old = this.legendColor;
@@ -424,25 +380,19 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRBaseChart.PROPERTY_LEGEND_COLOR, old, this.legendColor);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public Color getOwnLegendBackgroundColor()
 	{
 		return legendBackgroundColor;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public Color getLegendBackgroundColor()
 	{
-		return JRStyleResolver.getLegendBackgroundColor(this);
+		return getStyleResolver().getLegendBackgroundColor(this);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setLegendBackgroundColor(Color legendBackgroundColor)
 	{
 		Object old = this.legendBackgroundColor;
@@ -450,9 +400,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRBaseChart.PROPERTY_LEGEND_BACKGROUND_COLOR, old, this.legendBackgroundColor);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public JRFont getLegendFont()
 	{
 		return legendFont;
@@ -468,17 +416,13 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_LEGEND_FONT, old, this.legendFont);
 	}
 	
-	/**
-	 *
-	 */
+	@Override
 	public EdgeEnum getLegendPositionValue()
 	{
 		return legendPositionValue;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public void setLegendPosition(EdgeEnum legendPositionValue)
 	{
 		EdgeEnum old = this.legendPositionValue;
@@ -494,20 +438,10 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		return getHyperlinkTypeValue().getValue();
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public HyperlinkTypeEnum getHyperlinkTypeValue()
 	{
 		return JRHyperlinkHelper.getHyperlinkTypeValue(this);
-	}
-		
-	/**
-	 * @deprecated Replaced by {@link #setHyperlinkType(HyperlinkTypeEnum)}.
-	 */
-	public void setHyperlinkType(byte hyperlinkType)
-	{
-		setHyperlinkType(HyperlinkTypeEnum.getByValue(hyperlinkType));
 	}
 		
 	/**
@@ -521,20 +455,10 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		setLinkType(JRHyperlinkHelper.getLinkType(hyperlinkType));
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public byte getHyperlinkTarget()
 	{
 		return JRHyperlinkHelper.getHyperlinkTarget(this);
-	}
-		
-	/**
-	 * @deprecated Replaced by {@link #setHyperlinkTarget(HyperlinkTargetEnum)}.
-	 */
-	public void setHyperlinkTarget(byte hyperlinkTarget)
-	{
-		setHyperlinkTarget(HyperlinkTargetEnum.getByValue(hyperlinkTarget));
 	}
 		
 	/**
@@ -545,9 +469,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		setLinkTarget(JRHyperlinkHelper.getLinkTarget(hyperlinkTarget));
 	}
 		
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getTitleExpression()
 	{
 		return titleExpression;
@@ -563,9 +485,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_TITLE_EXPRESSION, old, this.titleExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getSubtitleExpression()
 	{
 		return subtitleExpression;
@@ -581,9 +501,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_SUBTITLE_EXPRESSION, old, this.subtitleExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getAnchorNameExpression()
 	{
 		return anchorNameExpression;
@@ -599,9 +517,23 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_ANCHOR_NAME_EXPRESSION, old, this.anchorNameExpression);
 	}
 
+	@Override
+	public JRExpression getBookmarkLevelExpression()
+	{
+		return bookmarkLevelExpression;
+	}
+
 	/**
 	 *
 	 */
+	public void setBookmarkLevelExpression(JRExpression bookmarkLevelExpression)
+	{
+		Object old = this.bookmarkLevelExpression;
+		this.bookmarkLevelExpression = bookmarkLevelExpression;
+		getEventSupport().firePropertyChange(PROPERTY_BOOKMARK_LEVEL_EXPRESSION, old, this.bookmarkLevelExpression);
+	}
+
+	@Override
 	public JRExpression getHyperlinkReferenceExpression()
 	{
 		return hyperlinkReferenceExpression;
@@ -617,9 +549,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_REFERENCE_EXPRESSION, old, this.hyperlinkReferenceExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkWhenExpression()
 	{
 		return hyperlinkWhenExpression;
@@ -635,9 +565,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_WHEN_EXPRESSION, old, this.hyperlinkWhenExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkAnchorExpression()
 	{
 		return hyperlinkAnchorExpression;
@@ -653,9 +581,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_ANCHOR_EXPRESSION, old, this.hyperlinkAnchorExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRExpression getHyperlinkPageExpression()
 	{
 		return hyperlinkPageExpression;
@@ -671,23 +597,20 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_PAGE_EXPRESSION, old, this.hyperlinkPageExpression);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRChartDataset getDataset()
 	{
 		return dataset;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public JRChartPlot getPlot()
 	{
 		return plot;
 	}
 
 
+	@Override
 	public byte getChartType()
 	{
 		return chartType;
@@ -787,7 +710,10 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 				plot = new JRDesignBarPlot(plot, this);
 				break;
 			default:
-				throw new JRRuntimeException("Chart type not supported.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNSUPPORTED_CHART_TYPE,
+						(Object[])null);
 		}
 
 		getEventSupport().firePropertyChange(PROPERTY_CHART_TYPE, old, this.chartType);
@@ -802,21 +728,21 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	}
 
 
+	@Override
 	public void collectExpressions(JRExpressionCollector collector)
 	{
 		collector.collect(this);
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public void visit(JRVisitor visitor)
 	{
 		visitor.visitChart(this);
 	}
 
 	
+	@Override
 	public int getBookmarkLevel()
 	{
 		return bookmarkLevel;
@@ -836,9 +762,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(PROPERTY_BOOKMARK_LEVEL, old, this.bookmarkLevel);
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public String getCustomizerClass()
 	{
 		return customizerClass;
@@ -856,15 +780,14 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	}
 
 
-	/**
-	 *
-	 */
+	@Override
 	public ModeEnum getModeValue()
 	{
-		return JRStyleResolver.getMode(this, ModeEnum.TRANSPARENT);
+		return getStyleResolver().getMode(this, ModeEnum.TRANSPARENT);
 	}
 
 
+	@Override
 	public String getLinkType()
 	{
 		return linkType;
@@ -886,6 +809,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_LINK_TYPE, old, this.linkType);
 	}
 
+	@Override
 	public String getLinkTarget()
 	{
 		return linkTarget;
@@ -909,6 +833,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	}
 
 
+	@Override
 	public JRHyperlinkParameter[] getHyperlinkParameters()
 	{
 		JRHyperlinkParameter[] parameters;
@@ -990,6 +915,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	}
 	
 	
+	@Override
 	public JRExpression getHyperlinkTooltipExpression()
 	{
 		return hyperlinkTooltipExpression;
@@ -1009,18 +935,14 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		getEventSupport().firePropertyChange(JRDesignHyperlink.PROPERTY_HYPERLINK_TOOLTIP_EXPRESSION, old, this.hyperlinkTooltipExpression);
 	}
 
-	/**
-	 * 
-	 */
+	@Override
 	public Color getDefaultLineColor() 
 	{
 		return getForecolor();
 	}
 
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRDesignChart clone = (JRDesignChart)super.clone();
@@ -1029,6 +951,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 		clone.titleExpression = JRCloneUtils.nullSafeClone(titleExpression);
 		clone.subtitleExpression = JRCloneUtils.nullSafeClone(subtitleExpression);
 		clone.anchorNameExpression = JRCloneUtils.nullSafeClone(anchorNameExpression);
+		clone.bookmarkLevelExpression = JRCloneUtils.nullSafeClone(bookmarkLevelExpression);
 		clone.hyperlinkReferenceExpression = JRCloneUtils.nullSafeClone(hyperlinkReferenceExpression);
 		clone.hyperlinkWhenExpression = JRCloneUtils.nullSafeClone(hyperlinkWhenExpression);
 		clone.hyperlinkAnchorExpression = JRCloneUtils.nullSafeClone(hyperlinkAnchorExpression);
@@ -1044,66 +967,6 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	 * These fields are only for serialization backward compatibility.
 	 */
 	private int PSEUDO_SERIAL_VERSION_UID = JRConstants.PSEUDO_SERIAL_VERSION_UID; //NOPMD
-	/**
-	 * @deprecated
-	 */
-	private Byte border;
-	/**
-	 * @deprecated
-	 */
-	private Byte topBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte leftBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte bottomBorder;
-	/**
-	 * @deprecated
-	 */
-	private Byte rightBorder;
-	/**
-	 * @deprecated
-	 */
-	private Color borderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color topBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color leftBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color bottomBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Color rightBorderColor;
-	/**
-	 * @deprecated
-	 */
-	private Integer padding;
-	/**
-	 * @deprecated
-	 */
-	private Integer topPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer leftPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer bottomPadding;
-	/**
-	 * @deprecated
-	 */
-	private Integer rightPadding;
 	/**
 	 * @deprecated
 	 */
@@ -1137,47 +1000,10 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 	 */
 	private Byte titlePositionByte;
 	
+	@SuppressWarnings("deprecation")
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
 	{
 		in.defaultReadObject();
-
-		if (lineBox == null)
-		{
-			lineBox = new JRBaseLineBox(this);
-			JRBoxUtil.setToBox(
-				border,
-				topBorder,
-				leftBorder,
-				bottomBorder,
-				rightBorder,
-				borderColor,
-				topBorderColor,
-				leftBorderColor,
-				bottomBorderColor,
-				rightBorderColor,
-				padding,
-				topPadding,
-				leftPadding,
-				bottomPadding,
-				rightPadding,
-				lineBox
-				);
-			border = null;
-			topBorder = null;
-			leftBorder = null;
-			bottomBorder = null;
-			rightBorder = null;
-			borderColor = null;
-			topBorderColor = null;
-			leftBorderColor = null;
-			bottomBorderColor = null;
-			rightBorderColor = null;
-			padding = null;
-			topPadding = null;
-			leftPadding = null;
-			bottomPadding = null;
-			rightPadding = null;
-		}
 
 		if (linkType == null)
 		{
@@ -1196,7 +1022,7 @@ public class JRDesignChart extends JRDesignElement implements JRChart
 			{
 				legendPositionValue = EdgeEnum.getByValue(legendPosition);
 				titlePositionValue = EdgeEnum.getByValue(titlePosition);
-				showLegend = Boolean.valueOf(isShowLegend);
+				showLegend = isShowLegend;
 			}
 			else
 			{

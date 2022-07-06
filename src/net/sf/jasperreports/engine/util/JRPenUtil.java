@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,18 +33,9 @@ import net.sf.jasperreports.engine.type.PenEnum;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRPenUtil.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public final class JRPenUtil
 {
-
-	/**
-	 * 
-	 */
-	public static void setLinePenFromPen(Byte pen, JRPen linePen)
-	{
-		setLinePenFromPen(PenEnum.getByValue(pen), linePen);
-	}
 
 	/**
 	 * 
@@ -57,88 +48,42 @@ public final class JRPenUtil
 			{
 				case THIN :
 				{
-					linePen.setLineWidth(0.5f);
+					linePen.setLineWidth((Float)0.5f);
 					linePen.setLineStyle(LineStyleEnum.SOLID);
 					break;
 				}
 				case ONE_POINT :
 				{
-					linePen.setLineWidth(1f);
+					linePen.setLineWidth((Float)1f);
 					linePen.setLineStyle(LineStyleEnum.SOLID);
 					break;
 				}
 				case TWO_POINT :
 				{
-					linePen.setLineWidth(2f);
+					linePen.setLineWidth((Float)2f);
 					linePen.setLineStyle(LineStyleEnum.SOLID);
 					break;
 				}
 				case FOUR_POINT :
 				{
-					linePen.setLineWidth(4f);
+					linePen.setLineWidth((Float)4f);
 					linePen.setLineStyle(LineStyleEnum.SOLID);
 					break;
 				}
 				case DOTTED :
 				{
-					linePen.setLineWidth(1f);
+					linePen.setLineWidth((Float)1f);
 					linePen.setLineStyle(LineStyleEnum.DASHED);
 					break;
 				}
 				case NONE :
 				{
-					linePen.setLineWidth(0f);
+					linePen.setLineWidth((Float)0f);
 					linePen.setLineStyle(LineStyleEnum.SOLID);
 					break;
 				}
 			}
 		}
-	}
-
-	/**
-	 * 
-	 */
-	public static byte getPenFromLinePen(JRPen linePen)
-	{
-		float lineWidth = linePen.getLineWidth().floatValue();
-		if (lineWidth <= 0f)
-		{
-			return PenEnum.NONE.getValue();
-		}
-		else if (0f < lineWidth && lineWidth < 1f)
-		{
-			return PenEnum.THIN.getValue();
-		}
-		else if (1f <= lineWidth && lineWidth < 2f)
-		{
-			if (linePen.getLineStyleValue() == LineStyleEnum.DASHED)
-			{
-				return PenEnum.DOTTED.getValue();
-			}
-			else
-			{
-				return PenEnum.ONE_POINT.getValue();
-			}
-		}
-		else if (2f <= lineWidth && lineWidth < 4f)
-		{
-			return PenEnum.TWO_POINT.getValue();
-		}
-
-		return PenEnum.FOUR_POINT.getValue();
-	}
-
-	/**
-	 * 
-	 */
-	public static Byte getOwnPenFromLinePen(JRPen linePen)
-	{
-		if (linePen.getOwnLineWidth() == null && linePen.getOwnLineStyleValue() == null)
-		{
-			return null;
-		}
-		
-		return new Byte(getPenFromLinePen(linePen));
 	}
 
 	/**
@@ -146,7 +91,7 @@ public final class JRPenUtil
 	 */
 	public static Stroke getStroke(JRPen pen, int lineCap)
 	{
-		float lineWidth = pen.getLineWidth().floatValue();
+		float lineWidth = pen.getLineWidth();
 		
 		if (lineWidth > 0f)
 		{
@@ -191,7 +136,9 @@ public final class JRPenUtil
 									0f
 									);
 						}
+						default :
 					}
+					break;
 				}
 				case DASHED :
 				{
@@ -221,7 +168,9 @@ public final class JRPenUtil
 									0f
 									);
 						}
+						default :
 					}
+					break;
 				}
 				case SOLID :
 				default :

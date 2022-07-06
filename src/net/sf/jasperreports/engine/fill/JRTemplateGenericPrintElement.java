@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -42,7 +42,6 @@ import net.sf.jasperreports.engine.virtualization.VirtualizationOutput;
  * store common attributes. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTemplateGenericPrintElement.java 7199 2014-08-27 13:58:10Z teodord $
  * @see JRTemplateGenericPrintElement
  */
 public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
@@ -62,56 +61,13 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 	 * Creates a generic print element.
 	 * 
 	 * @param template the template to use for the element
-	 * @deprecated provide a source Id via {@link #JRTemplateGenericPrintElement(JRTemplateGenericElement, int)}
-	 */
-	public JRTemplateGenericPrintElement(JRTemplateGenericElement template)
-	{
-		super(template);
-		
-		parameters = new LinkedHashMap<String,Object>();
-	}
-	
-	/**
-	 * Creates a generic print element.
-	 * 
-	 * @param template the template to use for the element
-	 * @param sourceElementId the Id of the source element
-	 * @deprecated replaced by {@link #JRTemplateGenericPrintElement(JRTemplateGenericElement, PrintElementOriginator)}
-	 */
-	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, int sourceElementId)
-	{
-		super(template, sourceElementId);
-		
-		parameters = new LinkedHashMap<String,Object>();
-	}
-	
-	/**
-	 * Creates a generic print element.
-	 * 
-	 * @param template the template to use for the element
 	 * @param originator
 	 */
 	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, PrintElementOriginator originator)
 	{
 		super(template, originator);
 		
-		parameters = new LinkedHashMap<String,Object>();
-	}
-	
-	/**
-	 * Creates a generic print element.
-	 * 
-	 * @param template the template to use for the element
-	 * @param sourceElementId the Id of the source element
-	 * @param parameterCount the number of parameters that the element will have
-	 * @deprecated replaced by {@link #JRTemplateGenericPrintElement(JRTemplateGenericElement, PrintElementOriginator, int)}
-	 */
-	public JRTemplateGenericPrintElement(JRTemplateGenericElement template, int sourceElementId,
-			int parameterCount)
-	{
-		super(template, sourceElementId);
-		
-		parameters = new LinkedHashMap<String,Object>(parameterCount * 4 / 3, 0.75f);
+		parameters = new LinkedHashMap<>();
 	}
 	
 	/**
@@ -126,7 +82,7 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 	{
 		super(template, originator);
 		
-		parameters = new LinkedHashMap<String,Object>(parameterCount * 4 / 3, 0.75f);
+		parameters = new LinkedHashMap<>(parameterCount * 4 / 3, 0.75f);
 	}
 
 	/**
@@ -134,31 +90,37 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 	 * 
 	 * @see JRTemplateGenericElement#getGenericType()
 	 */
+	@Override
 	public JRGenericElementType getGenericType()
 	{
 		return ((JRTemplateGenericElement) template).getGenericType();
 	}
 
+	@Override
 	public Set<String> getParameterNames()
 	{
 		return parameters.keySet();
 	}
 
+	@Override
 	public Object getParameterValue(String name)
 	{
 		return parameters.get(name);
 	}
 
+	@Override
 	public boolean hasParameter(String name)
 	{
 		return parameters.containsKey(name);
 	}
 
+	@Override
 	public void setParameterValue(String name, Object value)
 	{
 		parameters.put(name, value);
 	}
 
+	@Override
 	public <T> void accept(PrintElementVisitor<T> visitor, T arg)
 	{
 		visitor.visit(this, arg);
@@ -183,7 +145,7 @@ public class JRTemplateGenericPrintElement extends JRTemplatePrintElement
 		super.readVirtualized(in);
 		
 		int paramsCount = in.readIntCompressed();
-		parameters = new LinkedHashMap<String,Object>(paramsCount * 4 / 3, 0.75f);
+		parameters = new LinkedHashMap<>(paramsCount * 4 / 3, 0.75f);
 		for (int i = 0; i < paramsCount; i++)
 		{
 			String key = (String) in.readJRObject();

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -73,19 +73,19 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: MultiAxisDataService.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class MultiAxisDataService
 {
 	
 	protected static final Log log = LogFactory.getLog(MultiAxisDataService.class);
+	
+	public static final String EXCEPTION_MESSAGE_KEY_INCREMENT_BIDIMENSIONAL_DATASET_ERROR = "engine.analytics.dataset.increment.bidimensional.dataset.error";
 
 	private final BucketingServiceContext serviceContext;
 	private final MultiAxisData data;
 	private final MultiAxisBucketingService bucketingService;
 	
-	private final Map<DataAxisLevel, Map<String, Integer>> axisLevelBucketPropertyIndexes = 
-			new HashMap<DataAxisLevel, Map<String,Integer>>();
+	private final Map<DataAxisLevel, Map<String, Integer>> axisLevelBucketPropertyIndexes = new HashMap<>();
 	
 	private final List<List<AxisLevel>> axisLevels;
 	private final Bucket[] axisRoots;
@@ -106,10 +106,10 @@ public class MultiAxisDataService
 			log.debug("creating multi axis data service for " + data);
 		}
 		
-		this.axisLevels = new ArrayList<List<AxisLevel>>(Axis.axisCount());
+		this.axisLevels = new ArrayList<>(Axis.axisCount());
 		this.axisLevels.addAll(Collections.<List<AxisLevel>>nCopies(Axis.axisCount(), null));
 		
-		List<List<BucketDefinition>> axisBuckets = new ArrayList<List<BucketDefinition>>(Axis.axisCount());
+		List<List<BucketDefinition>> axisBuckets = new ArrayList<>(Axis.axisCount());
 		axisBuckets.addAll(Collections.<List<BucketDefinition>>nCopies(Axis.axisCount(), null));
 		
 		this.axisRoots = new Bucket[Axis.axisCount()];
@@ -122,10 +122,10 @@ public class MultiAxisDataService
 			
 			int levelCount = axisLevels.size();
 			
-			List<AxisLevel> levels = new ArrayList<AxisLevel>(levelCount + 1);
+			List<AxisLevel> levels = new ArrayList<>(levelCount + 1);
 			levels.add(createRootLevel(axis));
 			
-			List<BucketDefinition> buckets = new ArrayList<BucketDefinition>(levelCount + 1);
+			List<BucketDefinition> buckets = new ArrayList<>(levelCount + 1);
 			BucketDefinition rowRootBucket = createRootBucket();
 			buckets.add(rowRootBucket);
 			axisRoots[axis.ordinal()] = rowRootBucket.create(SingleValue.VALUE);
@@ -149,8 +149,8 @@ public class MultiAxisDataService
 		}
 
 		List<DataMeasure> dataMeasures = data.getMeasures();
-		this.measures = new ArrayList<Measure>(dataMeasures.size());
-		List<MeasureDefinition> measureList = new ArrayList<MeasureDefinition>(dataMeasures.size());
+		this.measures = new ArrayList<>(dataMeasures.size());
+		List<MeasureDefinition> measureList = new ArrayList<>(dataMeasures.size());
 		for (DataMeasure dataMeasure : dataMeasures)
 		{
 			// create the data source measure
@@ -231,10 +231,11 @@ public class MultiAxisDataService
 
 		BucketDefinition bucketDefinition;
 		List<DataLevelBucketProperty> bucketProperties = bucket.getBucketProperties();
-		if (bucketProperties != null && !bucketProperties.isEmpty())
+		if (bucket.getLabelExpression() != null 
+				|| (bucketProperties != null && !bucketProperties.isEmpty()))
 		{
 			// wrapping values in a ValuePropertiesWrapper in order to store property values
-			Map<String, Integer> propertyIndexes = new LinkedHashMap<String, Integer>();
+			Map<String, Integer> propertyIndexes = new LinkedHashMap<>();
 			for (ListIterator<DataLevelBucketProperty> it = bucketProperties.listIterator(); it.hasNext();)
 			{
 				DataLevelBucketProperty bucketProperty = it.next();
@@ -325,25 +326,36 @@ public class MultiAxisDataService
 		DataLevelBucket bucket = level.getBucket();
 		Object mainValue = calculator.evaluate(bucket.getExpression());
 		
+		JRExpression labelExpression = bucket.getLabelExpression();
 		List<DataLevelBucketProperty> bucketProperties = bucket.getBucketProperties();
 		Object bucketValue;
-		if (bucketProperties == null || bucketProperties.isEmpty())
+		if (labelExpression == null && (bucketProperties == null || bucketProperties.isEmpty()))
 		{
 			bucketValue = mainValue;
 		}
 		else
 		{
-			// evaluate property values
-			//FIXME avoid evaluating these for each record
-			Object[] propertyValues = new Object[bucketProperties.size()];
-			for (ListIterator<DataLevelBucketProperty> it = bucketProperties.listIterator(); it.hasNext();)
+			String label = labelExpression == null ? null : (String) calculator.evaluate(labelExpression);
+			
+			Object[] propertyValues;
+			if (bucketProperties == null || bucketProperties.isEmpty())
 			{
-				DataLevelBucketProperty bucketProperty = it.next();
-				propertyValues[it.previousIndex()] = calculator.evaluate(bucketProperty.getExpression());
+				propertyValues = null;
+			}
+			else
+			{
+				// evaluate property values
+				//FIXME avoid evaluating these for each record
+				propertyValues = new Object[bucketProperties.size()];
+				for (ListIterator<DataLevelBucketProperty> it = bucketProperties.listIterator(); it.hasNext();)
+				{
+					DataLevelBucketProperty bucketProperty = it.next();
+					propertyValues[it.previousIndex()] = calculator.evaluate(bucketProperty.getExpression());
+				}
 			}
 			
 			// wrap the main value and property values together
-			bucketValue = new ValuePropertiesWrapper(mainValue, propertyValues);
+			bucketValue = new ValuePropertiesWrapper(mainValue, label, propertyValues);
 		}
 		
 		return bucketValue;
@@ -357,7 +369,11 @@ public class MultiAxisDataService
 		}
 		catch (JRException e)
 		{
-			throw new JRRuntimeException("Error incrementing bidimensional dataset", e);
+			throw 
+				new JRRuntimeException(
+					EXCEPTION_MESSAGE_KEY_INCREMENT_BIDIMENSIONAL_DATASET_ERROR,
+					(Object[])null,
+					e);
 		}
 	}
 	
@@ -436,10 +452,11 @@ public class MultiAxisDataService
 	protected class DataSource implements MultiAxisDataSource
 	{
 		private final List<List<AxisLevel>> axisDataLevels;
+		public static final String EXCEPTION_MESSAGE_KEY_UNKNOWN_AXIS = "engine.analytics.dataset.unknown.axis";
 		
 		public DataSource()
 		{
-			axisDataLevels = new ArrayList<List<AxisLevel>>(axisLevels.size());
+			axisDataLevels = new ArrayList<>(axisLevels.size());
 			for (List<AxisLevel> levels : axisLevels)
 			{
 				List<AxisLevel> dataLevels = Collections.unmodifiableList(levels.subList(1, levels.size()));
@@ -472,7 +489,10 @@ public class MultiAxisDataService
 				rootChildren = bucketingService.getColumnRootChildren();
 				break;
 			default:
-				throw new JRRuntimeException("Unknown axis " + axis);
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_UNKNOWN_AXIS,
+						new Object[]{axis});
 			}
 			
 			Bucket rootBucket = axisRoots[axis.ordinal()];
@@ -510,7 +530,7 @@ public class MultiAxisDataService
 			Object bucketValue;
 			if (bucketMap != null)
 			{
-				LinkedList<Bucket> columnBuckets = new LinkedList<Bucket>();
+				LinkedList<Bucket> columnBuckets = new LinkedList<>();
 				if (columnNode != null)
 				{
 					// add all column node parent buckets except the root
@@ -563,8 +583,7 @@ public class MultiAxisDataService
 				values = bucketingService.getUserMeasureValues(rawValues);
 			}
 			
-			List<net.sf.jasperreports.engine.analytics.data.MeasureValue> measureValues = 
-					new ArrayList<net.sf.jasperreports.engine.analytics.data.MeasureValue>(values.length);
+			List<net.sf.jasperreports.engine.analytics.data.MeasureValue> measureValues = new ArrayList<>(values.length);
 			for (int i = 0; i < values.length; i++)
 			{
 				Measure measure = measures.get(i);
@@ -614,6 +633,7 @@ public class MultiAxisDataService
 		protected final BucketMap childrenMap;
 		
 		protected Object value;
+		protected String label;
 		protected PropertyValues propertyValues;
 		
 		public LevelNode(Axis axis, int axisDepth, LevelNode parent, Bucket bucket, BucketMap childrenMap)
@@ -631,25 +651,33 @@ public class MultiAxisDataService
 		{
 			Object bucketValue = bucket.getValue();
 			Object nodeValue = bucketValue;
+			String label = null;
 			PropertyValues propertyValues = null;
 			
 			if (axisDepth > 0 && bucketValue != null)
 			{
 				DataAxisLevel dataLevel = data.getDataAxis(axis).getLevels().get(axisDepth - 1);
-				List<DataLevelBucketProperty> bucketProperties = dataLevel.getBucket().getBucketProperties();
-				if (bucketProperties != null && !bucketProperties.isEmpty())
+				DataLevelBucket dataBucket = dataLevel.getBucket();
+				List<DataLevelBucketProperty> bucketProperties = dataBucket.getBucketProperties();
+				if (dataBucket.getLabelExpression() != null || 
+						(bucketProperties != null && !bucketProperties.isEmpty()))
 				{
 					// unwrap the raw value and the property values
 					ValuePropertiesWrapper valueWrapper = (ValuePropertiesWrapper) bucketValue;
 					nodeValue = valueWrapper.getValue();
+					label = valueWrapper.getLabel();
 					
-					Map<String, Integer> propertyIndexes = axisLevelBucketPropertyIndexes.get(dataLevel);
-					Object[] propertyValuesArray = valueWrapper.getPropertyValues();
-					propertyValues = new MappedPropertyValues(propertyIndexes, propertyValuesArray);
+					if (bucketProperties != null && !bucketProperties.isEmpty())
+					{
+						Map<String, Integer> propertyIndexes = axisLevelBucketPropertyIndexes.get(dataLevel);
+						Object[] propertyValuesArray = valueWrapper.getPropertyValues();
+						propertyValues = new MappedPropertyValues(propertyIndexes, propertyValuesArray);
+					}
 				}
 			}
 			
 			this.value = nodeValue;
+			this.label = label;
 			this.propertyValues = propertyValues;
 		}
 		
@@ -670,6 +698,12 @@ public class MultiAxisDataService
 		public Object getValue()
 		{
 			return value;
+		}
+
+		@Override
+		public String getLabel()
+		{
+			return label;
 		}
 
 		@Override
@@ -699,7 +733,7 @@ public class MultiAxisDataService
 				return Collections.<AxisLevelNode>emptyList();
 			}
 
-			List<LevelNode> children = new ArrayList<LevelNode>(childrenMap.size());
+			List<LevelNode> children = new ArrayList<>(childrenMap.size());
 			for (Iterator<Entry<Bucket, Object>> entryIterator = childrenMap.entryIterator(); entryIterator.hasNext();)
 			{
 				Entry<Bucket, Object> entry = entryIterator.next();
@@ -722,6 +756,7 @@ public class MultiAxisDataService
 		
 		// TODO lucianc equals & hashcode
 		
+		@Override
 		public String toString()
 		{
 			return bucket + " on " + axis + " level " + axisDepth;

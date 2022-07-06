@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -26,36 +26,42 @@ package net.sf.jasperreports.engine.export.ooxml;
 import java.io.Writer;
 import java.util.List;
 
+import net.sf.jasperreports.engine.JRDefaultStyleProvider;
 import net.sf.jasperreports.engine.JRStyle;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.design.JRDesignStyle;
-import net.sf.jasperreports.engine.util.JRDataUtils;
 import net.sf.jasperreports.export.ExporterInput;
 import net.sf.jasperreports.export.ExporterInputItem;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: DocxStyleHelper.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DocxStyleHelper extends BaseHelper
 {
 	/**
 	 * 
 	 */
-	private DocxParagraphHelper paragraphHelper;
-	private DocxRunHelper runHelper;
+	private final JRDocxExporter exporter;
+	private final DocxParagraphHelper paragraphHelper;
+	private final DocxRunHelper runHelper;
+	
 	
 	/**
 	 * 
 	 */
-	public DocxStyleHelper(JasperReportsContext jasperReportsContext, Writer writer, String exporterKey)
+	public DocxStyleHelper(
+		JRDocxExporter exporter, 
+		Writer writer,
+		BaseFontHelper docxFontHelper
+		)
 	{
-		super(jasperReportsContext, writer);
+		super(exporter.getJasperReportsContext(), writer);
+		
+		this.exporter = exporter;
 		
 		paragraphHelper = new DocxParagraphHelper(jasperReportsContext, writer, false);
-		runHelper = new DocxRunHelper(jasperReportsContext, writer, exporterKey);
+		runHelper = new DocxRunHelper(jasperReportsContext, writer, docxFontHelper);
 	}
 
 	/**
@@ -69,9 +75,9 @@ public class DocxStyleHelper extends BaseHelper
 		write(" xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">\n");
 		write(" <w:docDefaults>\n");
 		write("  <w:rPrDefault>\n");
-		write("   <w:rPr>\n");
-		write("    <w:rFonts w:ascii=\"Times New Roman\" w:eastAsia=\"Times New Roman\" w:hAnsi=\"Times New Roman\" w:cs=\"Times New Roman\"/>\n");
-		write("   </w:rPr>\n");
+		//write("   <w:rPr>\n");
+		//write("    <w:rFonts w:ascii=\"Times New Roman\" w:eastAsia=\"Times New Roman\" w:hAnsi=\"Times New Roman\" w:cs=\"Times New Roman\"/>\n");
+		//write("   </w:rPr>\n");
 		write("  </w:rPrDefault>\n");
 		write("  <w:pPrDefault>\n");
 		write("  <w:pPr>\n");
@@ -87,17 +93,15 @@ public class DocxStyleHelper extends BaseHelper
 			ExporterInputItem item = items.get(reportIndex);
 			JasperPrint jasperPrint = item.getJasperPrint();
 			
-			String localeCode = jasperPrint.getLocaleCode();
-			
 			if (reportIndex == 0)
 			{
-				JRDesignStyle style = new JRDesignStyle();
+				JRDesignStyle style = new JRDesignStyle(jasperPrint.getDefaultStyleProvider());
 				style.setName("EMPTY_CELL_STYLE");
 				style.setParentStyle(jasperPrint.getDefaultStyle());
 				style.setFontSize(0f);
-				exportHeader(style);
+				exportHeader(jasperPrint.getDefaultStyleProvider(), style);
 				paragraphHelper.exportProps(style);
-				runHelper.exportProps(style, (localeCode == null ? null : JRDataUtils.getLocale(localeCode)));//FIXMEDOCX reuse exporter
+				runHelper.exportProps(jasperPrint.getDefaultStyleProvider(), style, exporter.getLocale());
 				exportFooter();
 			}
 			
@@ -107,9 +111,9 @@ public class DocxStyleHelper extends BaseHelper
 				for(int i = 0; i < styles.length; i++)
 				{
 					JRStyle style = styles[i];
-					exportHeader(style);
+					exportHeader(jasperPrint.getDefaultStyleProvider(), style);
 					paragraphHelper.exportProps(style);
-					runHelper.exportProps(style, (localeCode == null ? null : JRDataUtils.getLocale(localeCode)));//FIXMEDOCX reuse exporter
+					runHelper.exportProps(jasperPrint.getDefaultStyleProvider(), style, exporter.getLocale());
 					exportFooter();
 				}
 			}
@@ -121,7 +125,7 @@ public class DocxStyleHelper extends BaseHelper
 	/**
 	 * 
 	 */
-	private void exportHeader(JRStyle style)
+	private void exportHeader(JRDefaultStyleProvider defaultStyleProvider, JRStyle style)
 	{
 		//write(" <w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"" + style.getName() + "\">\n");
 		write(" <w:style w:type=\"paragraph\" w:styleId=\"" + style.getName() + "\"");
@@ -132,7 +136,8 @@ public class DocxStyleHelper extends BaseHelper
 		write(">\n");
 		write("  <w:name w:val=\"" + style.getName() + "\" />\n");
 		write("  <w:qFormat />\n");
-		String styleNameReference = style.getStyle() == null ? null : style.getStyle().getName();//FIXMEDOCX why getStyleNameReference is not working?
+		JRStyle baseStyle =  defaultStyleProvider.getStyleResolver().getBaseStyle(style);
+		String styleNameReference = baseStyle == null ? null : baseStyle.getName(); //javadoc says getStyleNameReference is not supposed to work for print elements
 		if (styleNameReference != null)
 		{
 			write("  <w:basedOn w:val=\"" + styleNameReference + "\" />\n");

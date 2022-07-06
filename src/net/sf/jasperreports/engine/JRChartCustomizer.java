@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,10 @@ package net.sf.jasperreports.engine;
 
 import org.jfree.chart.JFreeChart;
 
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.properties.PropertyConstants;
+
 /**
  * This interface allows users to provide pluggable chart customizers. A class that implements this interface can
  * be defined and its name must be specified in the report template. At fill time, the corresponding <i>customize()</i>
@@ -41,9 +45,24 @@ import org.jfree.chart.JFreeChart;
  * to gain access to such values.
  *
  * @author Michael McMahon (Michael.McMahon@activewire.net)
- * @version $Id: JRChartCustomizer.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public interface JRChartCustomizer {
+public interface JRChartCustomizer 
+{
+	@Property(
+			name = "net.sf.jasperreports.customizer.{arbitrary_name}.{property_name}",
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+			)
+	public static final String CUSTOMIZER_PROPERTY_PREFIX = JRPropertiesUtil.PROPERTY_PREFIX + "customizer.";
+	
+	@Property(
+			name = "net.sf.jasperreports.customizer.class.{arbitrary_name}",
+			category = PropertyConstants.CATEGORY_FILL,
+			scopes = {PropertyScope.CHART_ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+			)
+	public static final String CUSTOMIZER_CLASS_PROPERTY_PREFIX = CUSTOMIZER_PROPERTY_PREFIX + "class.";
 
 	/**
 	 * This method is called at fill time, before the chart is rendered.

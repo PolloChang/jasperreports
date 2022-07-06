@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,34 +23,16 @@
  */
 package net.sf.jasperreports.components.map.fill;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import net.sf.jasperreports.components.map.Item;
-import net.sf.jasperreports.components.map.ItemData;
-import net.sf.jasperreports.engine.JRElementDataset;
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.fill.JRFillExpressionEvaluator;
+import net.sf.jasperreports.components.items.ItemData;
+import net.sf.jasperreports.engine.component.FillContextProvider;
 import net.sf.jasperreports.engine.fill.JRFillObjectFactory;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: FillItemData.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public abstract class FillItemData
+public abstract class FillItemData extends net.sf.jasperreports.components.items.fill.FillItemData
 {
-
-	/**
-	 *
-	 */
-	protected ItemData itemData;
-	protected List<FillItem> itemsList;
-	protected FillItemDataset fillItemDataset;
-	protected FillContextProvider fillContextProvider;
-	private List<Map<String,Object>> evaluatedItems = null;
-	
 	/**
 	 *
 	 */
@@ -60,95 +42,6 @@ public abstract class FillItemData
 		JRFillObjectFactory factory
 		)// throws JRException
 	{
-		factory.put(itemData, this);
-		
-		this.itemData = itemData;
-		this.fillContextProvider = fillContextProvider;
-
-		if (itemData.getDataset() != null)
-		{
-			fillItemDataset = new FillItemDataset(this, factory);
-		}
-
-		/*   */
-		List<Item> srcItemList = itemData.getItems();
-		if (srcItemList != null && !srcItemList.isEmpty())
-		{
-			itemsList = new ArrayList<FillItem>();
-			for(Item item : srcItemList)
-			{
-				if(item != null)
-				{
-					itemsList.add(getFillItem(item, factory));
-				}
-			}
-		}
+		super(fillContextProvider, itemData, factory);
 	}
-	
-	/**
-	 *
-	 */
-	public JRElementDataset getDataset()
-	{
-		return itemData.getDataset();
-	}
-	
-	/**
-	 *
-	 */
-	public void evaluateItems(JRFillExpressionEvaluator evaluator, byte evaluation) throws JRException
-	{
-		if (itemsList != null)
-		{
-			for(FillItem item : itemsList)
-			{
-				item.evaluateProperties(evaluator, evaluation);
-			}
-		}
-	}
-	
-	/**
-	 *
-	 */
-	public List<Map<String,Object>> getEvaluateItems(byte evaluation) throws JRException
-	{
-		if (fillItemDataset != null)
-		{
-			fillItemDataset.setEvaluation(evaluation);
-			fillItemDataset.evaluateDatasetRun(evaluation);
-		}
-		
-		if (itemsList != null)
-		{
-			if (getDataset() == null)
-			{
-				evaluateItems(fillContextProvider.getFillContext(), evaluation);
-			}
-			
-			addEvaluateItems();
-		}
-		
-		return evaluatedItems;
-	}
-	
-	/**
-	 *
-	 */
-	public void addEvaluateItems()
-	{
-		if (itemsList != null)
-		{
-			if (evaluatedItems == null || getDataset() == null)
-			{
-				evaluatedItems = new ArrayList<Map<String,Object>>();
-			}
-
-			for(FillItem item : itemsList)
-			{
-				evaluatedItems.add(item.getEvaluatedProperties());
-			}
-		}
-	}
-	
-	public abstract FillItem getFillItem(Item item, JRFillObjectFactory factory);
 }

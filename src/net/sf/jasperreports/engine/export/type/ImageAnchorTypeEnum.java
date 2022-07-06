@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -23,65 +23,42 @@
  */
 package net.sf.jasperreports.engine.export.type;
 
-import net.sf.jasperreports.engine.JRConstants;
-import net.sf.jasperreports.engine.type.JREnum;
 import net.sf.jasperreports.engine.type.EnumUtil;
+import net.sf.jasperreports.engine.type.NamedEnum;
 
 
 /**
- * @author sanda zaharia (shertage@users.sourceforge.net)
- * @version $Id: ImageAnchorTypeEnum.java 7199 2014-08-27 13:58:10Z teodord $
+ * @author Sanda Zaharia (shertage@users.sourceforge.net)
  */
-public enum ImageAnchorTypeEnum implements JREnum
+public enum ImageAnchorTypeEnum implements NamedEnum
 {
 	/**
 	 * Constant useful for specifying the <code>Move and size with cells</code> anchor type in Excel.
 	 */
-	MOVE_SIZE((byte)0, "MoveSize"),
+	MOVE_SIZE("MoveSize"),
 
 	/**
 	 * Constant useful for specifying the <code>Move but don't size with cells</code> anchor type in Excel.
 	 */
-	MOVE_NO_SIZE((byte)2, "MoveNoSize"),
+	MOVE_NO_SIZE("MoveNoSize"),
 	
 	/**
 	 * Constant useful for specifying the <code>Don't move or size with cells</code> anchor type in Excel.
 	 */
-	NO_MOVE_NO_SIZE((byte)3, "NoMoveNoSize");
+	NO_MOVE_NO_SIZE("NoMoveNoSize");
 	
 	
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
-	private final transient byte value;
 	private final transient String name;
 
-	private ImageAnchorTypeEnum(byte value, String name)
+	private ImageAnchorTypeEnum(String name)
 	{
-		this.value = value;
 		this.name = name;
 	}
-
-	/**
-	 *
-	 */
-	public Byte getValueByte()
-	{
-		return new Byte(value);
-	}
 	
-	/**
-	 *
-	 */
-	public final byte getValue()
-	{
-		return value;
-	}
-	
-	/**
-	 *
-	 */
+	@Override
 	public String getName()
 	{
 		return name;
@@ -92,23 +69,6 @@ public enum ImageAnchorTypeEnum implements JREnum
 	 */
 	public static ImageAnchorTypeEnum getByName(String name)
 	{
-		return (ImageAnchorTypeEnum)EnumUtil.getByName(values(), name);
+		return EnumUtil.getEnumByName(values(), name);
 	}
-	
-	/**
-	 *
-	 */
-	public static ImageAnchorTypeEnum getByValue(Byte value)
-	{
-		return (ImageAnchorTypeEnum)EnumUtil.getByValue(values(), value);
-	}
-	
-	/**
-	 *
-	 */
-	public static ImageAnchorTypeEnum getByValue(byte value)
-	{
-		return getByValue(new Byte(value));
-	}
-
 }

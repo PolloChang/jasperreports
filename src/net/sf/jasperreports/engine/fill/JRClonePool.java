@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,10 +33,11 @@ import net.sf.jasperreports.engine.JRRuntimeException;
  * Working clones pooling utility used at fill time.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRClonePool.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRClonePool
 {
+	public static final String EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND = "fill.clone.pool.cannot.release.clone";
+	
 	private final JRFillCloneable original;
 	private final LinkedList<JRFillCloneable> availableClones;
 	private final boolean trackLockedClones;
@@ -57,12 +58,12 @@ public class JRClonePool
 	{
 		this.original = original;
 		
-		availableClones = new LinkedList<JRFillCloneable>();
+		availableClones = new LinkedList<>();
 		
 		this.trackLockedClones = trackLockedClones;
 		if (trackLockedClones)
 		{
-			lockedClones = new HashSet<JRFillCloneable>();
+			lockedClones = new HashSet<>();
 		}
 		else
 		{
@@ -119,7 +120,10 @@ public class JRClonePool
 		{
 			if (!lockedClones.remove(clone))
 			{
-				throw new JRRuntimeException("Cannot release clone.");
+				throw 
+					new JRRuntimeException(
+						EXCEPTION_MESSAGE_KEY_PARAMETER_NOT_FOUND,
+						(Object[])null);
 			}
 		}
 		

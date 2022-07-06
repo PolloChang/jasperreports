@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -24,6 +24,7 @@
 package net.sf.jasperreports.engine;
 
 import net.sf.jasperreports.engine.type.CalculationEnum;
+import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.IncrementTypeEnum;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
 
@@ -152,7 +153,7 @@ import net.sf.jasperreports.engine.type.ResetTypeEnum;
  * <pre>
  *   &lt;variable name="QuantitySum" class="java.lang.Double" resetType="Page" calculation="Sum"&gt;
  *     &lt;variableExpression&gt;$F{Quantity}&lt;/variableExpression&gt;
- *     &lt;initialValueExpression&gt;new Double(0)&lt;/initialValueExpression&gt;
+ *     &lt;initialValueExpression&gt;0&lt;/initialValueExpression&gt;
  *   &lt;/variable&gt;</pre>
  * In this example, the page sum variable will be initialized with zero at the beginning of
  * each new page.
@@ -190,7 +191,6 @@ import net.sf.jasperreports.engine.type.ResetTypeEnum;
  * current group expression like you can see done in the "BreakGroup" of the <i>jasper</i> sample).
  *
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRVariable.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public interface JRVariable extends JRCloneable
 {
@@ -225,6 +225,26 @@ public interface JRVariable extends JRCloneable
 	 */
 	public static final String COLUMN_NUMBER = "COLUMN_NUMBER";
 
+	/**
+	 * A variable that provides the current master report page number.
+	 * 
+	 * <p>
+	 * It can only be used in text elements with {@link EvaluationTimeEnum#MASTER Master} evaluation time,
+	 * it evaluates to <code>null</code> before the moment in which master elements are resolved.
+	 * </p> 
+	 */
+	public static final String MASTER_CURRENT_PAGE = "MASTER_CURRENT_PAGE";
+
+
+	/**
+	 * A variable that provides the number of master report pages.
+	 * 
+	 * <p>
+	 * It can only be used in text elements with {@link EvaluationTimeEnum#MASTER Master} evaluation time,
+	 * it evaluates to <code>null</code> before the moment in which master elements are resolved.
+	 * </p> 
+	 */
+	public static final String MASTER_TOTAL_PAGES = "MASTER_TOTAL_PAGES";
 
 	/**
 	 * Returns the name of the variable. Since all variables are stored in a map, the variable names are the keys in the map.
@@ -233,6 +253,16 @@ public interface JRVariable extends JRCloneable
 	public String getName();
 
 
+	/**
+	 * Gets the variable optional description.
+	 */
+	public String getDescription();
+		
+	/**
+	 * Sets the variable description.
+	 */
+	public void setDescription(String description);
+		
 	/**
 	 * Returns the class of the variable value. Any class is allowed as long as it is in the classpath at compile and run time.
 	 * @return a <tt>Class</tt> instance representing the variable value class
@@ -301,7 +331,7 @@ public interface JRVariable extends JRCloneable
 		
 	/**
 	 * Returns the group whose break triggers the variable increment. Only used when {@link JRVariable#getIncrementTypeValue()} returns
-	 * {@link ResetTypeEnum#GROUP}.
+	 * {@link IncrementTypeEnum#GROUP}.
 	 */
 	public JRGroup getIncrementGroup();
 		

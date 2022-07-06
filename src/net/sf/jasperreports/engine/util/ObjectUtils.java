@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,7 +33,6 @@ import net.sf.jasperreports.engine.JRPropertiesMap;
  * Object comparison and hashing utilities.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ObjectUtils.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ObjectUtils
 {
@@ -72,7 +71,7 @@ public class ObjectUtils
 		 */
 		public void add(boolean value)
 		{
-			addToHash(Boolean.valueOf(value).hashCode());
+			addToHash(((Boolean)value).hashCode());
 		}
 		
 		/**
@@ -195,6 +194,11 @@ public class ObjectUtils
 	public static HashCode hash()
 	{
 		return new HashCode();
+	}
+	
+	public static int hashCode(Object o)
+	{
+		return o == null ? 0 : o.hashCode();
 	}
 	
 	/**
@@ -384,7 +388,7 @@ public class ObjectUtils
 			}
 			
 			String value1 = p1.getProperty(name1);
-			String value2 = p1.getProperty(name1);
+			String value2 = p2.getProperty(name1);
 			if (!equals(value1, value2))
 			{
 				return false;

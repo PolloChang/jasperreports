@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,14 +35,11 @@ import org.xml.sax.Attributes;
 
 /**
  * @author Ionut Nedelcu (ionutned@users.sourceforge.net)
- * @version $Id: JRChartPlotFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRChartPlotFactory extends JRBaseFactory
 {
 
-	/**
-	 *
-	 */
+	@Override
 	@SuppressWarnings("deprecation")
 	public Object createObject(Attributes atts)
 	{
@@ -79,6 +76,7 @@ public class JRChartPlotFactory extends JRBaseFactory
 	
 	public static class JRSeriesColorFactory extends JRBaseFactory
 	{
+		@Override
 		public Object createObject(Attributes atts)
 		{
 			int seriesIndex = -1;
@@ -87,7 +85,7 @@ public class JRChartPlotFactory extends JRBaseFactory
 			String seriesNumber = atts.getValue(JRXmlConstants.ATTRIBUTE_seriesOrder);
 			if (seriesNumber != null && seriesNumber.length() > 0)
 			{
-				seriesIndex = Integer.valueOf(seriesNumber).intValue();
+				seriesIndex = Integer.valueOf(seriesNumber);
 			}
 			String colorName = atts.getValue(JRXmlConstants.ATTRIBUTE_color);
 			if (colorName != null && colorName.length() > 0)

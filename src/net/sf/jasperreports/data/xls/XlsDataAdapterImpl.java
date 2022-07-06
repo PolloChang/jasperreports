@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,87 +25,157 @@ package net.sf.jasperreports.data.xls;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
+
+import com.fasterxml.jackson.annotation.JsonRootName;
 
 import net.sf.jasperreports.data.AbstractDataAdapter;
+import net.sf.jasperreports.data.DataFile;
+import net.sf.jasperreports.data.RepositoryDataLocation;
+import net.sf.jasperreports.data.StandardRepositoryDataLocation;
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: XlsDataAdapterImpl.java 7199 2014-08-27 13:58:10Z teodord $
  */
+@JsonRootName(value = "xlsDataAdapter")
 public class XlsDataAdapterImpl extends AbstractDataAdapter implements XlsDataAdapter
 {
 	private boolean useFirstRowAsHeader = false;
+	private Locale locale;
+	private TimeZone timeZone;
 	private String datePattern = null;
 	private String numberPattern = null;
-	private String fileName;
-	private List<String> columnNames = new ArrayList<String>();
-	private List<Integer> columnIndexes = new ArrayList<Integer>();
+	private DataFile dataFile;
+	private List<String> columnNames = new ArrayList<>();
+	private List<Integer> columnIndexes = new ArrayList<>();
 	private boolean queryExecuterMode = false;
 	private String sheetSelection;
 	
+	@Override
 	public String getDatePattern() {
 		return datePattern;
 	}
 
+	@Override
 	public String getNumberPattern() {
 		return numberPattern;
 	}
 
+	/**
+	 * @deprecated replaced by {@link #getDataFile()}
+	 */
+	@Override
+	@Deprecated
 	public String getFileName() {
-		return fileName;
+		if (dataFile instanceof RepositoryDataLocation) {
+			return ((RepositoryDataLocation) dataFile).getLocation();
+		}
+		return null;
 	}
 
+	/**
+	 * @deprecated replaced by {@link #setDataFile(net.sf.jasperreports.data.DataFile)} and {@link StandardRepositoryDataLocation}
+	 */
+	@Override
+	@Deprecated
 	public void setFileName(String filename) {
-		this.fileName = filename;
+		if (filename != null) {
+			StandardRepositoryDataLocation repositoryDataFile = new StandardRepositoryDataLocation(filename);
+			setDataFile(repositoryDataFile);
+		}
 	}
 	
+	@Override
 	public boolean isUseFirstRowAsHeader() {
 		return useFirstRowAsHeader;
 	}
 	
+	@Override
 	public List<String> getColumnNames() {
 		return columnNames;
 	}
 
+	@Override
 	public List<Integer> getColumnIndexes() {
 		return columnIndexes;
 	}
 	
+	@Override
 	public void setColumnNames(List<String> columnNames) {
 		this.columnNames = columnNames;
 	}
 
+	@Override
 	public void setColumnIndexes(List<Integer> columnIndexes) {
 		this.columnIndexes = columnIndexes;
 	}
 
+	@Override
 	public void setUseFirstRowAsHeader(boolean useFirstRowAsHeader) {
 		this.useFirstRowAsHeader = useFirstRowAsHeader;
 	}
 
+	@Override
 	public void setDatePattern(String datePattern) {
 		this.datePattern = datePattern;
 	}
 
+	@Override
 	public void setNumberPattern(String numberPattern) {
 		this.numberPattern = numberPattern;
 	}
 	
+	@Override
 	public boolean isQueryExecuterMode() {
 		return queryExecuterMode;
 	}
 
+	@Override
 	public void setQueryExecuterMode(boolean queryExecuterMode) {
 		this.queryExecuterMode = queryExecuterMode;
 	}
 	
+	@Override
 	public String getSheetSelection() {
 		return sheetSelection;
 	}
 
+	@Override
 	public void setSheetSelection(String sheetSelection) {
 		this.sheetSelection = sheetSelection;
 	}
 	
+	@Override
+	public DataFile getDataFile()
+	{
+		return dataFile;
+	}
+
+	@Override
+	public void setDataFile(DataFile dataFile)
+	{
+		this.dataFile = dataFile;
+	}
 	
+	@Override
+	public Locale getLocale() {
+		return locale;
+	}
+
+	@Override
+	public void setLocale(Locale locale) {
+		this.locale = locale;
+	}
+
+	@Override
+	public TimeZone getTimeZone() {
+		return timeZone;
+	}
+
+	@Override
+	public void setTimeZone(TimeZone timeZone) {
+		this.timeZone = timeZone;
+	}
+
 }

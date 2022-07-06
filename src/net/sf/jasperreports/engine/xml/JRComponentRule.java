@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,23 +43,26 @@ import org.apache.commons.digester.Rule;
  * and the node name is used as component name.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRComponentRule.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRComponentRule extends Rule
 {
+	public static final String EXCEPTION_MESSAGE_KEY_INVALID_INSTANCE = "xml.component.rule.invalid.instance";
 	
 	public static JRComponentRule newInstance()
 	{
 		return new JRComponentRule();
 	}
 	
+	@Override
 	public void end(String namespace, String name) throws JRException
 	{
 		Object top = getDigester().peek();
 		if (!(top instanceof Component))
 		{
-			throw new JRException("Object of type " + top.getClass().getName() + " is not a "
-					+ Component.class.getName() + " instance");
+			throw 
+				new JRException(
+					EXCEPTION_MESSAGE_KEY_INVALID_INSTANCE,
+					new Object[]{top.getClass().getName(), Component.class.getName()});
 		}
 
 		Component component = (Component) top;

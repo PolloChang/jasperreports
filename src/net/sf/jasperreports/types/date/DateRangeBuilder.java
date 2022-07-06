@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -37,7 +37,6 @@ import java.util.TimeZone;
  * </code>
  *
  * @author Sergey Prilukin
- * @version $Id: DateRangeBuilder.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DateRangeBuilder 
 {
@@ -135,6 +134,17 @@ public class DateRangeBuilder
 	public DateRangeBuilder set(Integer weekStartDay) {
 		this.weekStartDay = weekStartDay;
 		return this;
+	}
+
+	/**
+	 * Returns the week start day used for <code>WEEK</code> expressions.
+	 * 
+	 * @return the week start day
+	 * @see #set(Integer)
+	 */
+	public Integer getWeekStartDay()
+	{
+		return weekStartDay;
 	}
 
 	/**

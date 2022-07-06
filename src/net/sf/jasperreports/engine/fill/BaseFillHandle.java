@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -43,7 +43,6 @@ import net.sf.jasperreports.engine.JasperReportsContext;
  * The main benefit of this method is that the filling process can be cancelled.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: BaseFillHandle.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public abstract class BaseFillHandle implements FillHandle
 {	
@@ -52,7 +51,7 @@ public abstract class BaseFillHandle implements FillHandle
 	protected final Map<String,Object> parameters;
 	protected final JRDataSource dataSource;
 	protected final Connection conn;
-	protected final JRBaseFiller filler;
+	protected final ReportFiller filler;
 	protected final List<AsynchronousFilllListener> listeners;
 	protected boolean started;
 	protected boolean running;
@@ -67,36 +66,52 @@ public abstract class BaseFillHandle implements FillHandle
 			Connection conn
 			) throws JRException
 	{
+		this(jasperReportsContext, SimpleJasperReportSource.from(jasperReport),
+				parameters, dataSource, conn);
+	}
+	
+	protected BaseFillHandle (
+			JasperReportsContext jasperReportsContext,
+			JasperReportSource reportSource,
+			Map<String,Object> parameters,
+			JRDataSource dataSource,
+			Connection conn
+			) throws JRException
+	{
 		this.jasperReportsContext = jasperReportsContext;
-		this.jasperReport = jasperReport;
+		this.jasperReport = reportSource.getReport();
 		this.parameters = parameters;
 		this.dataSource = dataSource;
 		this.conn = conn;
-		this.filler = JRFiller.createFiller(jasperReportsContext, jasperReport);
-		this.listeners = new ArrayList<AsynchronousFilllListener>();
+		this.filler = JRFiller.createReportFiller(jasperReportsContext, reportSource);
+		this.listeners = new ArrayList<>();
 		lock = this;
 	}
 
 	
+	@Override
 	public void addListener(AsynchronousFilllListener listener)
 	{
 		listeners.add(listener);
 	}
 
+	@Override
 	public void addFillListener(FillListener listener)
 	{
 		filler.addFillListener(listener);
 	}
 
 
+	@Override
 	public boolean removeListener(AsynchronousFilllListener listener)
 	{
 		return listeners.remove(listener);
 	}
 
 	
-	protected class ReportFiller implements Runnable
+	protected class ReportFill implements Runnable
 	{
+		@Override
 		public void run()
 		{
 			synchronized (lock)
@@ -147,6 +162,7 @@ public abstract class BaseFillHandle implements FillHandle
 	}
 	
 	
+	@Override
 	public void startFill()
 	{
 		synchronized (lock)
@@ -159,7 +175,7 @@ public abstract class BaseFillHandle implements FillHandle
 			started = true;
 		}
 		
-		ReportFiller reportFiller = new ReportFiller();
+		ReportFill reportFiller = new ReportFill();
 		
 		Executor executor = getReportExecutor();
 		executor.execute(reportFiller);
@@ -168,6 +184,7 @@ public abstract class BaseFillHandle implements FillHandle
 	protected abstract Executor getReportExecutor();
 	
 	
+	@Override
 	public void cancellFill() throws JRException
 	{
 		synchronized (lock)
@@ -212,6 +229,7 @@ public abstract class BaseFillHandle implements FillHandle
 		}
 	}
 	
+	@Override
 	public boolean isPageFinal(int pageIdx)
 	{
 		return filler.isPageFinal(pageIdx);

@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -36,11 +36,11 @@ import net.sf.jasperreports.engine.type.PrintOrderEnum;
  * Compile-time handler of {@link ListComponent list component} instances.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: ListComponentCompiler.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class ListComponentCompiler implements ComponentCompiler
 {
 
+	@Override
 	public void collectExpressions(Component component,
 			JRExpressionCollector collector)
 	{
@@ -60,6 +60,7 @@ public class ListComponentCompiler implements ComponentCompiler
 		}
 	}
 
+	@Override
 	public Component toCompiledComponent(Component component,
 			JRBaseObjectFactory baseFactory)
 	{
@@ -69,6 +70,7 @@ public class ListComponentCompiler implements ComponentCompiler
 		return compiledComponent;
 	}
 
+	@Override
 	public void verify(Component component, JRVerifier verifier)
 	{
 		ListComponent listComponent = (ListComponent) component;
@@ -94,8 +96,7 @@ public class ListComponentCompiler implements ComponentCompiler
 			PrintOrderEnum listPrintOrder = listComponent.getPrintOrderValue() == null ? PrintOrderEnum.VERTICAL : listComponent.getPrintOrderValue();
 			
 			Boolean listIgnoreWidth = listComponent.getIgnoreWidth();
-			boolean ignoreWidth = listIgnoreWidth != null 
-					&& listIgnoreWidth.booleanValue();
+			boolean ignoreWidth = listIgnoreWidth != null && listIgnoreWidth;
 			
 			if (listContents.getHeight() < 0)
 			{
@@ -117,15 +118,15 @@ public class ListComponentCompiler implements ComponentCompiler
 			}
 			else
 			{
-				contentsWidth = width.intValue();
+				contentsWidth = width;
 				
-				if (width.intValue() <= 0)
+				if (width <= 0)
 				{
 					verifier.addBrokenRule("List contents width must be positive.", listContents);
 				}
 				
 				if (!ignoreWidth && listPrintOrder == PrintOrderEnum.HORIZONTAL 
-						&& width.intValue() > elementWidth)
+						&& width > elementWidth)
 				{
 					verifier.addBrokenRule(
 							"List contents width is larger than the list element width", 
@@ -133,34 +134,54 @@ public class ListComponentCompiler implements ComponentCompiler
 				}
 			}
 			
-			JRElement[] elements = listContents.getElements();
-			if (elements != null)
+			String subdataset = datasetRun == null ? null : datasetRun.getDatasetName();
+			if (subdataset != null)
 			{
-				for (int i = 0; i < elements.length; i++)
+				verifier.pushSubdatasetContext(subdataset);
+			}
+			try
+			{
+				verifyContents(verifier, listContents, contentsWidth);
+			}
+			finally
+			{
+				if (subdataset != null)
 				{
-					JRElement element = elements[i];
-					
-					verifier.verifyElement(element);
-					
-					if (element.getX() < 0 || element.getY() < 0)
-					{
-						verifier.addBrokenRule("Element must be placed at positive coordinates.", 
-								element);
-					}
-					
-					if (element.getY() + element.getHeight() > listContents.getHeight())
-					{
-						verifier.addBrokenRule("Element reaches outside list contents height: y = " 
-								+ element.getY() + ", height = " + element.getHeight() 
-								+ ", list contents height = " + listContents.getHeight() + ".", element);
-					}
-					
-					if (element.getX() + element.getWidth() > contentsWidth)
-					{
-						verifier.addBrokenRule("Element reaches outside list contents width: x = " 
-								+ element.getX() + ", width = " + element.getWidth() 
-								+ ", list contents width = " + contentsWidth + ".", element);
-					}
+					verifier.popSubdatasetContext();
+				}
+			}			
+		}
+	}
+
+	protected void verifyContents(JRVerifier verifier, ListContents listContents, int contentsWidth)
+	{
+		JRElement[] elements = listContents.getElements();
+		if (elements != null)
+		{
+			for (int i = 0; i < elements.length; i++)
+			{
+				JRElement element = elements[i];
+				
+				verifier.verifyElement(element);
+				
+				if (element.getX() < 0 || element.getY() < 0)
+				{
+					verifier.addBrokenRule("Element must be placed at positive coordinates.", 
+							element);
+				}
+				
+				if (element.getY() + element.getHeight() > listContents.getHeight())
+				{
+					verifier.addBrokenRule("Element reaches outside list contents height: y = " 
+							+ element.getY() + ", height = " + element.getHeight() 
+							+ ", list contents height = " + listContents.getHeight() + ".", element);
+				}
+				
+				if (element.getX() + element.getWidth() > contentsWidth)
+				{
+					verifier.addBrokenRule("Element reaches outside list contents width: x = " 
+							+ element.getX() + ", width = " + element.getWidth() 
+							+ ", list contents width = " + contentsWidth + ".", element);
 				}
 			}
 		}

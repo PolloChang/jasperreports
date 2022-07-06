@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -33,11 +33,11 @@ import net.sf.jasperreports.engine.design.JRDesignStyle;
  * Factory for {@link JRTemplate template} {@link JRStyle styles}.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRTemplateStyleFactory.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRTemplateStyleFactory extends JRAbstractStyleFactory
 {
 
+	@Override
 	protected void setParentStyle(JRDesignStyle currentStyle, String parentStyleName)
 	{
 		JRSimpleTemplate template = (JRSimpleTemplate) digester.peek(digester.getCount() - 1);

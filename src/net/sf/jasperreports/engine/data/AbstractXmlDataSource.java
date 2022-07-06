@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -28,13 +28,20 @@
  */
 package net.sf.jasperreports.engine.data;
 
-import net.sf.jasperreports.engine.JRException;
-import net.sf.jasperreports.engine.JRField;
-import net.sf.jasperreports.engine.JRRewindableDataSource;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRField;
+import net.sf.jasperreports.engine.JRPropertiesUtil;
+import net.sf.jasperreports.engine.query.JRXPathQueryExecuterFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 /**
  * Abstract XML data source implementation that allows to access the data from a xml
@@ -44,9 +51,12 @@ import org.w3c.dom.NodeList;
  * by an XPath expression from the xml document.
  * </p>
  * <p>
- * Each field can provide an additional XPath expresion that will be used to
- * select its value. This expression must be specified using the "fieldDescription"
- * element of the field. The expression is evaluated in the context of the current
+ * Each field can provide an additional XPath expression that will be used to
+ * select its value. This expression must be specified using the {@link #PROPERTY_FIELD_EXPRESSION} 
+ * custom property at field level. The use of the {@link net.sf.jasperreports.engine.JRField#getDescription() field description} to specify the XPath expression 
+ * is still supported, but is now discouraged, the above mentioned custom property taking precedence 
+ * over the field description. In case no XPath expression is specified, the name of the field will be used for the selection of the value.
+ * The expression is evaluated in the context of the current
  * node thus the expression should be relative to the current node.
  * </p>
  * <p>
@@ -95,7 +105,7 @@ import org.w3c.dom.NodeList;
  * </ul>
  * </p>
  * <p>
- * Generally the full power of XPath expression is available. As an example, "/A/B[@id > 0"] will select all the
+ * Generally the full power of XPath expression is available. As an example, "/A/B[@id &gt; 0"] will select all the
  * nodes of type /A/B having the id greater than 0. 
  * You'll find a short XPath tutorial <a href="http://www.zvon.org/xxl/XPathTutorial/General/examples.html" target="_blank">here</a>.
  * 
@@ -106,13 +116,26 @@ import org.w3c.dom.NodeList;
  * consider implementing a custom data source that directly accesses the Document through the DOM API. 
  * </p>
  * @author Narcis Marcu (narcism@users.sourceforge.net)
- * @version $Id: AbstractXmlDataSource.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public abstract class AbstractXmlDataSource extends JRAbstractTextDataSource implements JRRewindableDataSource {
+public abstract class AbstractXmlDataSource<T extends AbstractXmlDataSource<?>> extends JRAbstractTextDataSource implements RandomAccessDataSource, HierarchicalDataSource<T> 
+{
+	/**
+	 * Property specifying the XPath expression for the dataset field.
+	 */
+	@Property (
+			category = PropertyConstants.CATEGORY_DATA_SOURCE,
+			scopes = {PropertyScope.FIELD},
+			scopeQualifications = {JRXPathQueryExecuterFactory.QUERY_EXECUTER_NAME},
+			sinceVersion = PropertyConstants.VERSION_6_3_1
+	)
+	public static final String PROPERTY_FIELD_EXPRESSION = JRPropertiesUtil.PROPERTY_PREFIX + "xpath.field.expression";
+
+	private Map<String, String> fieldExpressions = new HashMap<>();
+
 
 	public abstract Node getCurrentNode();
 	
-	public abstract Object getSelectObject(Node currentNode, String expression)  throws JRException ; 
+	public abstract Object getSelectObject(Node currentNode, String expression)  throws JRException;
 	
 	
 	/*
@@ -120,17 +143,29 @@ public abstract class AbstractXmlDataSource extends JRAbstractTextDataSource imp
 	 * 
 	 * @see net.sf.jasperreports.engine.JRDataSource#getFieldValue(net.sf.jasperreports.engine.JRField)
 	 */
+	@Override
 	public Object getFieldValue(JRField jrField) throws JRException 
 	{
 		if(getCurrentNode() == null)
 		{
 			return null;
 		}
-		String expression = jrField.getDescription();
+
+		String expression = null;
+		if (fieldExpressions.containsKey(jrField.getName()))
+		{
+			expression = fieldExpressions.get(jrField.getName());
+		}
+		else
+		{
+			expression = getFieldExpression(jrField);
+			fieldExpressions.put(jrField.getName(), expression);
+		}
 		if (expression == null || expression.length() == 0)
 		{
 			return null;
 		}
+
 		Object value = null;
 		
 		Class<?> valueClass = jrField.getValueClass();
@@ -180,7 +215,8 @@ public abstract class AbstractXmlDataSource extends JRAbstractTextDataSource imp
 	 * @throws JRException if the sub data source couldn't be created
 	 * @see JRXmlDataSource#JRXmlDataSource(Document, String)
 	 */
-	public abstract AbstractXmlDataSource subDataSource(String selectExpr) throws JRException;
+	@Override
+	public abstract T subDataSource(String selectExpr) throws JRException;
 
 	/**
 	 * Creates a sub data source using the current node (record) as the root
@@ -192,7 +228,8 @@ public abstract class AbstractXmlDataSource extends JRAbstractTextDataSource imp
 	 * @see JRXmlDataSource#subDataSource(String)
 	 * @see JRXmlDataSource#JRXmlDataSource(Document)
 	 */
-	public AbstractXmlDataSource subDataSource() throws JRException {
+	@Override
+	public T subDataSource() throws JRException {
 		return subDataSource(".");
 	}
 
@@ -216,7 +253,7 @@ public abstract class AbstractXmlDataSource extends JRAbstractTextDataSource imp
 	 * @throws JRException if the sub data source couldn't be created
 	 * @see JRXmlDataSource#JRXmlDataSource(Document, String)
 	 */
-	public abstract AbstractXmlDataSource dataSource(String selectExpr) throws JRException;
+	public abstract T dataSource(String selectExpr) throws JRException;
 
 	/**
 	 * Creates a sub data source using as root document the document used by "this" data source.
@@ -227,7 +264,7 @@ public abstract class AbstractXmlDataSource extends JRAbstractTextDataSource imp
 	 * @see JRXmlDataSource#dataSource(String)
 	 * @see JRXmlDataSource#JRXmlDataSource(Document)
 	 */
-	public AbstractXmlDataSource dataSource() throws JRException {
+	public T dataSource() throws JRException {
 		return dataSource(".");
 	}
 
@@ -249,7 +286,7 @@ public abstract class AbstractXmlDataSource extends JRAbstractTextDataSource imp
 		{
 			return node.getNodeValue();
 		}
-		StringBuffer result = new StringBuffer();
+		StringBuilder result = new StringBuilder();
 
 		NodeList list = node.getChildNodes();
 		for (int i = 0; i < list.getLength(); i++) {
@@ -283,4 +320,21 @@ public abstract class AbstractXmlDataSource extends JRAbstractTextDataSource imp
 		return result.toString();
 	}
 	
+	protected String getFieldExpression(JRField field)
+	{
+		String fieldExpression = null;
+		if (field.hasProperties())
+		{
+			fieldExpression = field.getPropertiesMap().getProperty(PROPERTY_FIELD_EXPRESSION);
+		}
+		if (fieldExpression == null || fieldExpression.length() == 0)
+		{
+			fieldExpression = field.getDescription();
+			if (fieldExpression == null || fieldExpression.length() == 0)
+			{
+				fieldExpression = field.getName();
+			}
+		}
+		return fieldExpression;
+	}
 }

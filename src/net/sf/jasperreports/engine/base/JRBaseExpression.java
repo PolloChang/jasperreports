@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -30,13 +30,13 @@ import net.sf.jasperreports.engine.JRConstants;
 import net.sf.jasperreports.engine.JRExpression;
 import net.sf.jasperreports.engine.JRExpressionChunk;
 import net.sf.jasperreports.engine.JRRuntimeException;
+import net.sf.jasperreports.engine.type.ExpressionTypeEnum;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 import net.sf.jasperreports.engine.util.JRCloneUtils;
 
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRBaseExpression.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRBaseExpression implements JRExpression, Serializable
 {
@@ -72,6 +72,11 @@ public class JRBaseExpression implements JRExpression, Serializable
 	 */
 	private static int lastId;
 
+	/**
+	 *
+	 */
+	protected ExpressionTypeEnum type;
+
 
 	/**
 	 *
@@ -99,8 +104,10 @@ public class JRBaseExpression implements JRExpression, Serializable
 		}
 		else
 		{
-			id = expressionId.intValue();
+			id = expressionId;
 		}
+		
+		type = expression.getType();
 		
 		/*   */
 		JRExpressionChunk[] jrChunks = expression.getChunks();
@@ -148,6 +155,7 @@ public class JRBaseExpression implements JRExpression, Serializable
 	/**
 	 * @deprecated To be removed.
 	 */
+	@Override
 	public Class<?> getValueClass()
 	{
 		if (valueClass == null)
@@ -172,6 +180,7 @@ public class JRBaseExpression implements JRExpression, Serializable
 	/**
 	 * @deprecated To be removed.
 	 */
+	@Override
 	public String getValueClassName()
 	{
 		return valueClassName;
@@ -190,25 +199,25 @@ public class JRBaseExpression implements JRExpression, Serializable
 		return valueClassRealName;
 	}
 
-	/**
-	 *
-	 */
+	@Override
 	public int getId()
 	{
 		return id;
 	}
 
-	/**
-	 *
-	 */
+	@Override
+	public ExpressionTypeEnum getType()
+	{
+		return type;
+	}
+
+	@Override
 	public JRExpressionChunk[] getChunks()
 	{
 		return chunks;
 	}
 			
-	/**
-	 *
-	 */
+	@Override
 	public String getText()
 	{
 		String text = "";
@@ -216,7 +225,7 @@ public class JRBaseExpression implements JRExpression, Serializable
 		chunks = getChunks();
 		if (chunks != null && chunks.length > 0)
 		{
-			StringBuffer sbuffer = new StringBuffer();
+			StringBuilder sb = new StringBuilder();
 
 			for(int i = 0; i < chunks.length; i++)
 			{
@@ -224,30 +233,30 @@ public class JRBaseExpression implements JRExpression, Serializable
 				{
 					case JRExpressionChunk.TYPE_PARAMETER :
 					{
-						sbuffer.append("$P{");
-						sbuffer.append( chunks[i].getText() );
-						sbuffer.append("}");
+						sb.append("$P{");
+						sb.append( chunks[i].getText() );
+						sb.append("}");
 						break;
 					}
 					case JRExpressionChunk.TYPE_FIELD :
 					{
-						sbuffer.append("$F{");
-						sbuffer.append( chunks[i].getText() );
-						sbuffer.append("}");
+						sb.append("$F{");
+						sb.append( chunks[i].getText() );
+						sb.append("}");
 						break;
 					}
 					case JRExpressionChunk.TYPE_VARIABLE :
 					{
-						sbuffer.append("$V{");
-						sbuffer.append( chunks[i].getText() );
-						sbuffer.append("}");
+						sb.append("$V{");
+						sb.append( chunks[i].getText() );
+						sb.append("}");
 						break;
 					}
 					case JRExpressionChunk.TYPE_RESOURCE :
 					{
-						sbuffer.append("$R{");
-						sbuffer.append( chunks[i].getText() );
-						sbuffer.append("}");
+						sb.append("$R{");
+						sb.append( chunks[i].getText() );
+						sb.append("}");
 						break;
 					}
 					case JRExpressionChunk.TYPE_TEXT :
@@ -255,13 +264,13 @@ public class JRBaseExpression implements JRExpression, Serializable
 					{
 						String textChunk = chunks[i].getText();
 						String escapedText = escapeTextChunk(textChunk);
-						sbuffer.append(escapedText);
+						sb.append(escapedText);
 						break;
 					}
 				}
 			}
 
-			text = sbuffer.toString();
+			text = sb.toString();
 		}
 		
 		return text;
@@ -274,7 +283,7 @@ public class JRBaseExpression implements JRExpression, Serializable
 			return text;
 		}
 		
-		StringBuffer sb = new StringBuffer(text.length() + 4);
+		StringBuilder sb = new StringBuilder(text.length() + 4);
 		StringTokenizer tkzer = new StringTokenizer(text, "$", true);
 		boolean wasDelim = false;
 		while (tkzer.hasMoreElements())
@@ -294,9 +303,7 @@ public class JRBaseExpression implements JRExpression, Serializable
 	}
 
 
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone() 
 	{
 		JRBaseExpression clone = null;

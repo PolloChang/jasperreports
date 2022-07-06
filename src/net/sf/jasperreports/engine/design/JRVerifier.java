@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -31,6 +31,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import net.sf.jasperreports.annotations.properties.Property;
+import net.sf.jasperreports.annotations.properties.PropertyScope;
 import net.sf.jasperreports.charts.JRCategoryDataset;
 import net.sf.jasperreports.charts.JRCategorySeries;
 import net.sf.jasperreports.charts.JRGanttDataset;
@@ -61,7 +66,10 @@ import net.sf.jasperreports.crosstabs.design.JRDesignCrosstab;
 import net.sf.jasperreports.crosstabs.fill.JRPercentageCalculator;
 import net.sf.jasperreports.crosstabs.fill.JRPercentageCalculatorFactory;
 import net.sf.jasperreports.crosstabs.type.CrosstabPercentageEnum;
+import net.sf.jasperreports.crosstabs.type.CrosstabTotalPositionEnum;
+import net.sf.jasperreports.engine.CommonReturnValue;
 import net.sf.jasperreports.engine.DefaultJasperReportsContext;
+import net.sf.jasperreports.engine.ExpressionReturnValue;
 import net.sf.jasperreports.engine.JRAnchor;
 import net.sf.jasperreports.engine.JRBand;
 import net.sf.jasperreports.engine.JRChart;
@@ -88,6 +96,7 @@ import net.sf.jasperreports.engine.JRHyperlinkParameter;
 import net.sf.jasperreports.engine.JRImage;
 import net.sf.jasperreports.engine.JRLineBox;
 import net.sf.jasperreports.engine.JRParameter;
+import net.sf.jasperreports.engine.JRPart;
 import net.sf.jasperreports.engine.JRPropertiesMap;
 import net.sf.jasperreports.engine.JRPropertiesUtil;
 import net.sf.jasperreports.engine.JRPropertyExpression;
@@ -108,25 +117,32 @@ import net.sf.jasperreports.engine.JRTextField;
 import net.sf.jasperreports.engine.JRVariable;
 import net.sf.jasperreports.engine.JasperReportsContext;
 import net.sf.jasperreports.engine.ReturnValue;
+import net.sf.jasperreports.engine.VariableReturnValue;
 import net.sf.jasperreports.engine.analytics.dataset.MultiAxisData;
 import net.sf.jasperreports.engine.component.Component;
 import net.sf.jasperreports.engine.component.ComponentCompiler;
 import net.sf.jasperreports.engine.component.ComponentKey;
 import net.sf.jasperreports.engine.component.ComponentsEnvironment;
 import net.sf.jasperreports.engine.fill.JRExtendedIncrementerFactory;
+import net.sf.jasperreports.engine.part.PartComponent;
+import net.sf.jasperreports.engine.part.PartComponentCompiler;
+import net.sf.jasperreports.engine.part.PartComponentManager;
+import net.sf.jasperreports.engine.part.PartComponentsEnvironment;
+import net.sf.jasperreports.engine.part.PartEvaluationTime;
 import net.sf.jasperreports.engine.query.QueryExecuterFactory;
 import net.sf.jasperreports.engine.type.CalculationEnum;
+import net.sf.jasperreports.engine.type.DatasetResetTypeEnum;
 import net.sf.jasperreports.engine.type.EvaluationTimeEnum;
 import net.sf.jasperreports.engine.type.IncrementTypeEnum;
+import net.sf.jasperreports.engine.type.PartEvaluationTimeType;
 import net.sf.jasperreports.engine.type.ResetTypeEnum;
+import net.sf.jasperreports.engine.type.SectionTypeEnum;
 import net.sf.jasperreports.engine.type.SortFieldTypeEnum;
 import net.sf.jasperreports.engine.type.SplitTypeEnum;
 import net.sf.jasperreports.engine.util.FormatFactory;
 import net.sf.jasperreports.engine.util.JRClassLoader;
 import net.sf.jasperreports.engine.util.JRQueryExecuterUtils;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import net.sf.jasperreports.properties.PropertyConstants;
 
 
 /**
@@ -137,7 +153,6 @@ import org.apache.commons.logging.LogFactory;
  * report compilation.  
  * 
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: JRVerifier.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRVerifier
 {
@@ -191,12 +206,36 @@ public class JRVerifier
 	 * one of them should be explicitly marked to allow element overlap
 	 * when the report is configured to check for overlaps.
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_5_0,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_ALLOW_ELEMENT_OVERLAP = 
 		JRPropertiesUtil.PROPERTY_PREFIX + "allow.element.overlap";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			valueType = Boolean.class,
+			defaultValue = PropertyConstants.BOOLEAN_FALSE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT},
+			sinceVersion = PropertyConstants.VERSION_3_7_1
+			)
 	public static final String PROPERTY_ALLOW_ELEMENT_NEGATIVE_WIDTH =
 		JRPropertiesUtil.PROPERTY_PREFIX + "allow.element.negative.width";
 	
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			valueType = Boolean.class,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_6_1_1
+			)
+	public static final String PROPERTY_ALLOW_ELEMENT_NEGATIVE_X =
+			JRPropertiesUtil.PROPERTY_PREFIX + "allow.element.negative.x";
+
 	/**
 	 * Property that determines whether elements positioned at negative Y offsets 
 	 * on bands, frames and other element containers are allowed in a report.
@@ -221,6 +260,13 @@ public class JRVerifier
 	 * @see JRElement#getY()
 	 * @since 3.7.3
 	 */
+	@Property(
+			category = PropertyConstants.CATEGORY_DESIGN,
+			defaultValue = PropertyConstants.BOOLEAN_TRUE,
+			scopes = {PropertyScope.CONTEXT, PropertyScope.REPORT, PropertyScope.ELEMENT},
+			sinceVersion = PropertyConstants.VERSION_3_7_3,
+			valueType = Boolean.class
+			)
 	public static final String PROPERTY_ALLOW_ELEMENT_NEGATIVE_Y =
 		JRPropertiesUtil.PROPERTY_PREFIX + "allow.element.negative.y";
 
@@ -236,31 +282,17 @@ public class JRVerifier
 	 */
 	private JasperReportsContext jasperReportsContext;
 	private JasperDesign jasperDesign;
+	private SectionTypeEnum sectionType;
 	private Collection<JRValidationFault> brokenRules;
 
 	private JRExpressionCollector expressionCollector;
 
-	private LinkedList<JRComponentElement> currentComponentElementStack = new LinkedList<JRComponentElement>();
+	private LinkedList<JRComponentElement> currentComponentElementStack = new LinkedList<>();
+	private LinkedList<String> datasetContextStack = new LinkedList<>();
 	
 	private boolean allowElementNegativeWidth;
+	private final boolean allowElementNegativeX;
 	private final boolean allowElementNegativeY;
-
-	/**
-	 * @deprecated Replaced by {@link #JRVerifier(JasperReportsContext, JasperDesign, JRExpressionCollector)}.
-	 */
-	protected JRVerifier(JasperDesign jasperDesign)
-	{
-		this(DefaultJasperReportsContext.getInstance(), jasperDesign, null);
-	}
-
-
-	/**
-	 * @deprecated Replaced by {@link #JRVerifier(JasperReportsContext, JasperDesign, JRExpressionCollector)}.
-	 */
-	protected JRVerifier(JasperDesign jasperDesign, JRExpressionCollector expressionCollector)
-	{
-		this(DefaultJasperReportsContext.getInstance(), jasperDesign, expressionCollector);
-	}
 
 	/**
 	 * 
@@ -273,7 +305,8 @@ public class JRVerifier
 	{
 		this.jasperReportsContext = jasperReportsContext;
 		this.jasperDesign = jasperDesign;
-		brokenRules = new ArrayList<JRValidationFault>();
+		this.sectionType = jasperDesign.getSectionType() == null ? SectionTypeEnum.BAND : jasperDesign.getSectionType();
+		brokenRules = new ArrayList<>();
 
 		if (expressionCollector != null)
 		{
@@ -285,6 +318,8 @@ public class JRVerifier
 		}
 		
 		allowElementNegativeWidth = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(jasperDesign, PROPERTY_ALLOW_ELEMENT_NEGATIVE_WIDTH, false);
+		allowElementNegativeX = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(jasperDesign, 
+				PROPERTY_ALLOW_ELEMENT_NEGATIVE_X, true);
 		allowElementNegativeY = JRPropertiesUtil.getInstance(jasperReportsContext).getBooleanProperty(jasperDesign, 
 				PROPERTY_ALLOW_ELEMENT_NEGATIVE_Y, true);
 	}
@@ -330,14 +365,6 @@ public class JRVerifier
 	}
 
 	/**
-	 * @deprecated Replaced by {@link #verifyDesign(JasperReportsContext, JasperDesign, JRExpressionCollector)}.
-	 */
-	public static Collection<JRValidationFault> verifyDesign(JasperDesign jasperDesign, JRExpressionCollector expressionCollector)
-	{
-		return verifyDesign(DefaultJasperReportsContext.getInstance(), jasperDesign, expressionCollector);
-	}
-
-	/**
 	 * Validates a {@link JasperDesign report design}.
 	 *
 	 * @param jasperDesign the report design
@@ -367,7 +394,7 @@ public class JRVerifier
 	 */
 	public static Collection<JRValidationFault> verifyDesign(JasperDesign jasperDesign)
 	{
-		return verifyDesign(jasperDesign, null);
+		return verifyDesign(DefaultJasperReportsContext.getInstance(), jasperDesign, null);
 	}
 
 	/**
@@ -988,6 +1015,8 @@ public class JRVerifier
 				{
 					addBrokenRule(e, field);
 				}
+				
+				verifyProperyExpressions(field.getPropertyExpressions());
 			}
 		}
 	}
@@ -1059,7 +1088,6 @@ public class JRVerifier
 		JRVariable[] variables = dataset.getVariables();
 		if (variables != null && variables.length > 0)
 		{
-			boolean isMainDataset = dataset.isMainDataset();
 			for(int index = 0; index < variables.length; index++)
 			{
 				JRVariable variable = variables[index];
@@ -1115,19 +1143,6 @@ public class JRVerifier
 						{
 							addBrokenRule("Increment group \"" + variable.getIncrementGroup().getName() + "\" not found for variable : " + variable.getName(), variable);
 						}
-					}
-				}
-
-				if (!isMainDataset && !variable.isSystemDefined())
-				{
-					if (resetType == ResetTypeEnum.COLUMN || resetType == ResetTypeEnum.PAGE)
-					{
-						addBrokenRule("Variable " + variable.getName() + " of dataset " + dataset.getName() + " cannot have Column or Page reset type.", variable);
-					}
-
-					if (incrementType == IncrementTypeEnum.COLUMN || incrementType == IncrementTypeEnum.PAGE)
-					{
-						addBrokenRule("Variable " + variable.getName() + " of dataset " + dataset.getName() + " cannot have Column or Page increment type.", variable);
 					}
 				}
 			}
@@ -1327,7 +1342,7 @@ public class JRVerifier
 						&& element2.getY() < element1.getY() + element1.getHeight()))
 		{
 			// we have an overlap
-			StringBuffer message = new StringBuffer();
+			StringBuilder message = new StringBuilder();
 			message.append("Element ");
 			if (element2.getKey() != null)
 			{
@@ -1395,9 +1410,32 @@ public class JRVerifier
 			JRBand[] bands = section.getBands();
 			if (bands != null && bands.length > 0)
 			{
-				for(int i = 0; i< bands.length; i++)
+				if (sectionType == SectionTypeEnum.PART)
 				{
-					verifyBand(bands[i]);
+					addBrokenRule("Part reports cannot contain bands", section);
+				}
+				else
+				{
+					for(int i = 0; i< bands.length; i++)
+					{
+						verifyBand(bands[i]);
+					}
+				}
+			}
+			
+			JRPart[] parts = section.getParts();
+			if (parts != null && parts.length > 0)
+			{
+				if (sectionType == SectionTypeEnum.BAND)
+				{
+					addBrokenRule("Band reports cannot contain parts", section);
+				}
+				else
+				{
+					for (int i = 0; i < parts.length; i++)
+					{
+						verifyPart(parts[i]);
+					}
 				}
 			}
 		}
@@ -1411,6 +1449,12 @@ public class JRVerifier
 	{
 		if (band != null)
 		{
+			if (sectionType == SectionTypeEnum.PART)
+			{
+				addBrokenRule("Part reports cannot contain bands", band);
+				return;
+			}
+			
 			JRElement[] elements = band.getElements();
 			if (elements != null && elements.length > 0)
 			{
@@ -1449,6 +1493,15 @@ public class JRVerifier
 				}
 				
 				verifyElementsOverlap(elements);
+			}
+
+			List<ExpressionReturnValue> returnValues = band.getReturnValues();
+			if (returnValues != null && !returnValues.isEmpty())
+			{
+				for (ExpressionReturnValue returnValue : returnValues)
+				{
+					verifyReturnValue(returnValue);
+				}
 			}
 		}
 	}
@@ -1612,7 +1665,7 @@ public class JRVerifier
 				{
 					JRSubreportReturnValue returnValue = returnValues[i];
 
-					if (returnValue.getSubreportVariable() == null || returnValue.getSubreportVariable().trim().length() == 0)
+					if (returnValue.getFromVariable() == null || returnValue.getFromVariable().trim().length() == 0)
 					{
 						addBrokenRule("Subreport return value variable name missing.", returnValue);
 					}
@@ -1622,7 +1675,8 @@ public class JRVerifier
 						addBrokenRule("Subreport return value to variable name missing.", returnValue);
 					}
 
-					if (!jasperDesign.getVariablesMap().containsKey(returnValue.getToVariable()))
+					JRDesignDataset dataset = currentDataset();
+					if (dataset == null || !dataset.getVariablesMap().containsKey(returnValue.getToVariable()))
 					{
 						addBrokenRule("Subreport return value to variable not found.", returnValue);
 					}
@@ -1631,19 +1685,37 @@ public class JRVerifier
 		}
 	}
 
-	protected void verifyReturnValue(ReturnValue returnValue)
+	protected void verifyReturnValue(VariableReturnValue returnValue)
 	{
 		if (returnValue.getFromVariable() == null || returnValue.getFromVariable().trim().length() == 0)
 		{
 			addBrokenRule("Return value source variable name missing.", returnValue);
 		}
 
+		verifyCommonReturnValue(returnValue);
+	}
+
+
+	protected void verifyReturnValue(ExpressionReturnValue returnValue)
+	{
+		if (returnValue.getExpression() == null)
+		{
+			addBrokenRule("Return value expression missing.", returnValue);
+		}
+
+		verifyCommonReturnValue(returnValue);
+	}
+
+
+	protected void verifyCommonReturnValue(CommonReturnValue returnValue)
+	{
 		if (returnValue.getToVariable() == null || returnValue.getToVariable().trim().length() == 0)
 		{
 			addBrokenRule("Return value destination variable name missing.", returnValue);
 		}
 
-		if (!jasperDesign.getVariablesMap().containsKey(returnValue.getToVariable()))
+		JRDesignDataset dataset = currentDataset();
+		if (dataset == null || !dataset.getVariablesMap().containsKey(returnValue.getToVariable()))
 		{
 			addBrokenRule("Return value destination variable not found.", returnValue);
 		}
@@ -1682,6 +1754,11 @@ public class JRVerifier
 			for (int i = 0; i < rowGroups.length; i++)
 			{
 				verifyCrosstabRowGroup(rowGroups[i]);
+				
+				if (i + 1 < rowGroups.length)
+				{
+					verifyCrosstabNextGroup(rowGroups[i], rowGroups[i + 1]);
+				}
 			}
 		}
 
@@ -1695,6 +1772,11 @@ public class JRVerifier
 			for (int i = 0; i < colGroups.length; i++)
 			{
 				verifyCrosstabColumnGroup(colGroups[i]);
+				
+				if (i + 1 < colGroups.length)
+				{
+					verifyCrosstabNextGroup(colGroups[i], colGroups[i + 1]);
+				}
 			}
 		}
 
@@ -1718,6 +1800,15 @@ public class JRVerifier
 		verifyExpressions(crosstab);
 	}
 
+	protected void verifyCrosstabNextGroup(JRCrosstabGroup group, JRCrosstabGroup nextGroup)
+	{
+		if (Boolean.FALSE.equals(group.getMergeHeaderCells())
+				&& nextGroup.getTotalPositionValue() != CrosstabTotalPositionEnum.NONE)
+		{
+			addBrokenRule("Row crosstab group has repeating header cells but the next group has a total row",
+					group);
+		}
+	}
 
 	private void verifyParameters(JRDesignCrosstab crosstab)
 	{
@@ -1961,7 +2052,7 @@ public class JRVerifier
 	{
 		verifyExpressions(expressionCollector.getExpressions(crosstab),
 				crosstab.getParametersMap(),
-				new HashMap<String,JRField>(),
+				new HashMap<>(),
 				crosstab.getVariablesMap());
 	}
 
@@ -2002,10 +2093,10 @@ public class JRVerifier
 				JRLineBox box = contents.getLineBox();
 				if (box != null)
 				{
-					topPadding = box.getTopPadding().intValue();
-					leftPadding = box.getLeftPadding().intValue();
-					bottomPadding = box.getBottomPadding().intValue();
-					rightPadding = box.getRightPadding().intValue();
+					topPadding = box.getTopPadding();
+					leftPadding = box.getLeftPadding();
+					bottomPadding = box.getBottomPadding();
+					rightPadding = box.getRightPadding();
 				}
 
 				int cellWidth = contents.getWidth();
@@ -2065,7 +2156,7 @@ public class JRVerifier
 					}
 					else if (element instanceof JRSubreport)
 					{
-						addBrokenRule("Subreports are not allowed inside crosstab cells.", element);
+						verifySubreport((JRSubreport) element);
 					}
 					else if (element instanceof JRCrosstab)
 					{
@@ -2095,8 +2186,8 @@ public class JRVerifier
 				addBrokenRule("Chart datasets with dataset run cannont have Column or Page increment type.", dataset);
 			}
 
-			ResetTypeEnum resetType = dataset.getResetTypeValue();
-			if (resetType == ResetTypeEnum.PAGE || resetType == ResetTypeEnum.COLUMN)
+			DatasetResetTypeEnum resetType = dataset.getDatasetResetType();
+			if (resetType == DatasetResetTypeEnum.PAGE || resetType == DatasetResetTypeEnum.COLUMN)
 			{
 				addBrokenRule("Chart datasets with dataset run cannont have Column or Page reset type.", dataset);
 			}
@@ -2203,6 +2294,8 @@ public class JRVerifier
 	{
 		verifyExpressions(dataset);
 
+		verifyProperyExpressions(dataset.getPropertyExpressions());
+
 		verifyParameters(dataset);
 
 		verifyQuery(dataset);
@@ -2224,13 +2317,10 @@ public class JRVerifier
 		JRElement[] elements = frame.getElements();
 		if (elements != null && elements.length > 0)
 		{
-			int topPadding = frame.getLineBox().getTopPadding().intValue();
-			int leftPadding = frame.getLineBox().getLeftPadding().intValue();
-			int bottomPadding = frame.getLineBox().getBottomPadding().intValue();
-			int rightPadding = frame.getLineBox().getRightPadding().intValue();
+			int leftPadding = frame.getLineBox().getLeftPadding();
+			int rightPadding = frame.getLineBox().getRightPadding();
 
 			int avlblWidth = frame.getWidth() - leftPadding - rightPadding;
-			int avlblHeight = frame.getHeight() - topPadding - bottomPadding;
 
 			for (int i = 0; i < elements.length; i++)
 			{
@@ -2240,12 +2330,6 @@ public class JRVerifier
 				{
 					addBrokenRule("Element reaches outside frame width: x=" + element.getX() + ", width="
 							+ element.getWidth() + ", available width=" + avlblWidth + ".", element);
-				}
-
-				if (element.getY() + element.getHeight() > avlblHeight)
-				{
-					addBrokenRule("Element reaches outside frame height: y=" + element.getY() + ", height="
-							+ element.getHeight() + ", available height=" + avlblHeight + ".", element);
 				}
 
 				verifyElement(element);
@@ -2438,6 +2522,12 @@ public class JRVerifier
 			}
 		}
 		
+		if (element.getX() < 0 && !allowElementNegativeX(element))
+		{
+			addBrokenRule("Element negative X " + element.getX() + " not allowed", 
+					element);
+		}
+
 		if (element.getY() < 0 && !allowElementNegativeY(element))
 		{
 			addBrokenRule("Element negative Y " + element.getY() + " not allowed", 
@@ -2445,6 +2535,23 @@ public class JRVerifier
 		}
 
 		verifyProperyExpressions(element.getPropertyExpressions());
+	}
+
+	protected boolean allowElementNegativeX(JRElement element)
+	{
+		// default to report/global property
+		boolean allow = allowElementNegativeX;
+		if (element.hasProperties())
+		{
+			JRPropertiesMap properties = element.getPropertiesMap();
+			if (properties.containsProperty(PROPERTY_ALLOW_ELEMENT_NEGATIVE_X))
+			{
+				// use element level property
+				allow = JRPropertiesUtil.asBoolean(properties.getProperty(
+						PROPERTY_ALLOW_ELEMENT_NEGATIVE_X));
+			}
+		}
+		return allow;
 	}
 
 	protected boolean allowElementNegativeY(JRElement element)
@@ -2643,6 +2750,72 @@ public class JRVerifier
 	public void verify(MultiAxisData data)
 	{
 		// TODO lucianc 
+	}
+
+
+	protected void verifyPart(JRPart part)
+	{
+		PartEvaluationTime evaluationTime = part.getEvaluationTime();
+		if (evaluationTime != null && evaluationTime.getEvaluationTimeType() == PartEvaluationTimeType.GROUP)
+		{
+			String evaluationGroup = evaluationTime.getEvaluationGroup();
+			if (evaluationGroup == null)
+			{
+				addBrokenRule("Evaluation group not set for part", part);
+			}
+			else
+			{
+				Map<String, JRGroup> groups = jasperDesign.getGroupsMap();
+				if (!groups.containsKey(evaluationGroup))
+				{
+					addBrokenRule("Part evaluation group \"" + evaluationGroup + "\" not found in report", part);
+				}
+			}
+		}
+
+		ComponentKey componentKey = part.getComponentKey();
+		if (componentKey == null)
+		{
+			addBrokenRule("No component key set for part", part);
+		}
+		
+		PartComponent component = part.getComponent();
+		if (component == null)
+		{
+			addBrokenRule("No component set for part", part);
+		}
+		
+		if (componentKey != null && component != null)
+		{
+			PartComponentManager manager = PartComponentsEnvironment.getInstance(jasperReportsContext).getManager(componentKey);
+			if (manager == null)
+			{
+				addBrokenRule("No component manager found for part component \"" + componentKey.getName() + "\"", part);
+			}
+			else
+			{
+				PartComponentCompiler compiler = manager.getComponentCompiler(jasperReportsContext);
+				compiler.verify(component, this);
+			}
+		}
+	}
+	
+	public void pushSubdatasetContext(String subdatasetName)
+	{
+		datasetContextStack.addFirst(subdatasetName);
+	}
+	
+	public void popSubdatasetContext()
+	{
+		datasetContextStack.removeFirst();
+	}
+	
+	protected JRDesignDataset currentDataset()
+	{
+		String subdatasetName = datasetContextStack.isEmpty() ? null : datasetContextStack.getFirst();
+		JRDesignDataset dataset = subdatasetName == null ? jasperDesign.getMainDesignDataset()
+				: (JRDesignDataset) jasperDesign.getDatasetMap().get(subdatasetName);
+		return dataset;
 	}
 	
 }

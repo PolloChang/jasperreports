@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -35,7 +35,6 @@ import net.sf.jasperreports.engine.Deduplicable;
  * A registry of deduplicable objects.
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: DeduplicableRegistry.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class DeduplicableRegistry
 {
@@ -69,11 +68,11 @@ public class DeduplicableRegistry
 	
 	protected static class DeduplicableMap<T extends Deduplicable>
 	{
-		private final Map<DeduplicableWrapper<T>, T> objects = new HashMap<DeduplicableWrapper<T>, T>();
+		private final Map<DeduplicableWrapper<T>, T> objects = new HashMap<>();
 		
 		public T deduplicate(T object)
 		{
-			DeduplicableWrapper<T> key = new DeduplicableWrapper<T>(object);
+			DeduplicableWrapper<T> key = new DeduplicableWrapper<>(object);
 			T existing = objects.get(key);
 			if (existing == null)
 			{
@@ -96,8 +95,7 @@ public class DeduplicableRegistry
 		}
 	}
 	
-	private final Map<Class<? extends Deduplicable>, DeduplicableMap<?>> typesMap 
-			= new HashMap<Class<? extends Deduplicable>, DeduplicableMap<?>>();
+	private final Map<Class<? extends Deduplicable>, DeduplicableMap<?>> typesMap = new HashMap<>();
 	
 	/**
 	 * Search for a duplicate of a given object in the registry, and add the object
@@ -118,7 +116,7 @@ public class DeduplicableRegistry
 		DeduplicableMap<T> typeMap = (DeduplicableMap<T>) typesMap.get(object.getClass());
 		if (typeMap == null)
 		{
-			typeMap = new DeduplicableMap<T>();
+			typeMap = new DeduplicableMap<>();
 			typesMap.put(object.getClass(), typeMap);
 		}
 		return typeMap;

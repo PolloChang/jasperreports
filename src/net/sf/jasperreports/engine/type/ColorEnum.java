@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -25,14 +25,11 @@ package net.sf.jasperreports.engine.type;
 
 import java.awt.Color;
 
-import net.sf.jasperreports.engine.JRConstants;
-
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
- * @version $Id: ColorEnum.java 7199 2014-08-27 13:58:10Z teodord $
  */
-public enum ColorEnum
+public enum ColorEnum implements NamedValueEnum<Color>
 {
 	/**
 	 *
@@ -102,7 +99,6 @@ public enum ColorEnum
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = JRConstants.SERIAL_VERSION_UID;
 	private final transient Color color;
 	private final transient String name;
 
@@ -120,9 +116,13 @@ public enum ColorEnum
 		return color;
 	}
 	
-	/**
-	 *
-	 */
+	@Override
+	public final Color getValue()
+	{
+		return color;
+	}
+	
+	@Override
 	public String getName()
 	{
 		return name;
@@ -133,18 +133,7 @@ public enum ColorEnum
 	 */
 	public static ColorEnum getByName(String name)
 	{
-		ColorEnum[] values = values();
-		if (values != null && name != null)
-		{
-			for(ColorEnum e:values)
-			{
-				if (name.equals(e.getName()))
-				{
-					return e;
-				}
-			}
-		}
-		return null;
+		return EnumUtil.getEnumByName(values(), name);
 	}
 	
 	/**
@@ -152,18 +141,6 @@ public enum ColorEnum
 	 */
 	public static ColorEnum getByColor(Color color)
 	{
-		ColorEnum[] values = values();
-		if (values != null && color != null)
-		{
-			for(ColorEnum e:values)
-			{
-				if (color.equals(e.getColor()))
-				{
-					return e;
-				}
-			}
-		}
-		return null;
+		return EnumUtil.getByValue(values(), color);
 	}
-	
 }

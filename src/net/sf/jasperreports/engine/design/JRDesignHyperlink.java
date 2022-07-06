@@ -1,6 +1,6 @@
 /*
  * JasperReports - Free Java Reporting Library.
- * Copyright (C) 2001 - 2014 TIBCO Software Inc. All rights reserved.
+ * Copyright (C) 2001 - 2022 TIBCO Software Inc. All rights reserved.
  * http://www.jaspersoft.com
  *
  * Unless you have purchased a commercial license agreement from Jaspersoft,
@@ -44,7 +44,6 @@ import net.sf.jasperreports.engine.type.HyperlinkTypeEnum;
  * which should be used for report design purposes. 
  * 
  * @author Lucian Chirita (lucianc@users.sourceforge.net)
- * @version $Id: JRDesignHyperlink.java 7199 2014-08-27 13:58:10Z teodord $
  */
 public class JRDesignHyperlink extends JRBaseHyperlink implements JRChangeEventsSupport
 {
@@ -73,7 +72,7 @@ public class JRDesignHyperlink extends JRBaseHyperlink implements JRChangeEvents
 	
 	public JRDesignHyperlink()
 	{
-		hyperlinkParameters = new ArrayList<JRHyperlinkParameter>();
+		hyperlinkParameters = new ArrayList<>();
 	}
 
 	
@@ -211,6 +210,7 @@ public class JRDesignHyperlink extends JRBaseHyperlink implements JRChangeEvents
 	}
 
 
+	@Override
 	public JRHyperlinkParameter[] getHyperlinkParameters()
 	{
 		JRHyperlinkParameter[] parameters;
@@ -306,9 +306,7 @@ public class JRDesignHyperlink extends JRBaseHyperlink implements JRChangeEvents
 		getEventSupport().firePropertyChange(PROPERTY_HYPERLINK_TARGET, old, this.hyperlinkTooltipExpression);
 	}
 	
-	/**
-	 * 
-	 */
+	@Override
 	public Object clone()
 	{
 		JRDesignHyperlink clone = (JRDesignHyperlink)super.clone();
@@ -318,6 +316,7 @@ public class JRDesignHyperlink extends JRBaseHyperlink implements JRChangeEvents
 
 	private transient JRPropertyChangeSupport eventSupport;
 	
+	@Override
 	public JRPropertyChangeSupport getEventSupport()
 	{
 		synchronized (this)
