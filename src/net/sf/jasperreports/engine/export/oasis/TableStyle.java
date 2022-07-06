@@ -82,23 +82,6 @@ public class TableStyle extends Style
 		{
 			styleWriter.write(" tableooo:tab-color=\"#" + JRColorUtil.getColorHexa(tabColor) + "\"");
 		}
-//		FIXMEODT
-//		if (tableWidth != null)
-//		{
-//			styleWriter.write(" style:width=\""+ tableWidth +"in\"");
-//		}
-//		if (align != null)
-//		{
-//			styleWriter.write(" table:align=\""+ align +"\"");
-//		}
-//		if (margin != null)
-//		{
-//			styleWriter.write(" fo:margin=\""+ margin +"\"");
-//		}
-//		if (backGroundColor != null)
-//		{
-//			styleWriter.write(" fo:background-color=\""+ backGroundColor +"\"");
-//		}
 		styleWriter.write("/>\n");
 		styleWriter.write(" </style:style>\n");
 		styleWriter.flush();

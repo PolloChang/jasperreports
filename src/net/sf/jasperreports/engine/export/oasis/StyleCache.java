@@ -270,13 +270,6 @@ public class StyleCache
 	{
 		CellStyle cellStyle  = new CellStyle(styleWriter, gridCell, shrinkToFit, wrapText);
 		
-//		JRPrintElement element = gridCell.getElement();
-//
-//		if (element instanceof JRBoxContainer)
-//			cellStyle.setBox(((JRBoxContainer)element).getLineBox());
-//		if (element instanceof JRCommonGraphicElement)
-//			cellStyle.setPen(((JRCommonGraphicElement)element).getLinePen());
-		
 		String cellStyleId = cellStyle.getId();
 		String cellStyleName = cellStyles.get(cellStyleId);
 		
@@ -384,15 +377,6 @@ public class StyleCache
 			textSpanStyleIdBuilder.append(strikeThrough);
 		}
 
-//		if (TextAttribute.SUPERSCRIPT_SUPER.equals(attributes.get(TextAttribute.SUPERSCRIPT)))
-//		{
-//			textSpanStyleIdBuffer.append(" vertical-align: super;");
-//		}
-//		else if (TextAttribute.SUPERSCRIPT_SUB.equals(attributes.get(TextAttribute.SUPERSCRIPT)))
-//		{
-//			textSpanStyleIdBuffer.append(" vertical-align: sub;");
-//		}
-
 		String textSpanStyleId = textSpanStyleIdBuilder.toString();
 		String textSpanStyleName = textSpanStyles.get(textSpanStyleId);
 		
@@ -424,8 +408,6 @@ public class StyleCache
 			{
 				styleWriter.write(" fo:background-color=\"#" + backcolorHexa + "\"");
 			}
-//			styleWriter.write(" style:text-rotation-angle=\"" + textRotationAngle + "\"");
-//			styleWriter.write(" style:text-rotation-scale=\"" + textRotationScale + "\"");
 			if (underline != null)
 			{
 				styleWriter.write(" style:text-underline-type=\"" + underline + "\"");

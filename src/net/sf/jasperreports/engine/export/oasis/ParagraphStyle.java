@@ -33,8 +33,6 @@ import net.sf.jasperreports.engine.type.RunDirectionEnum;
 import net.sf.jasperreports.engine.type.TabStopAlignEnum;
 import net.sf.jasperreports.engine.type.VerticalTextAlignEnum;
 
-import java.io.IOException;
-
 
 /**
  * @author Teodor Danciu (teodord@users.sourceforge.net)
@@ -412,17 +410,12 @@ public class ParagraphStyle extends Style
 				break;
 			}
 		}
-//		styleWriter.write(" fo:line-height=\"" + pLineHeight + "\"");
-//		styleWriter.write(" style:line-spacing=\"" + pLineSpacing + "\"");
 		styleWriter.write(" fo:text-align=\"" + horizontalAlignment + "\"");
-
-//		styleWriter.write(" fo:keep-together=\"" + pKeepTogether + "\"");
 		styleWriter.write(" fo:text-indent=\"" + LengthUtil.inchFloor4Dec(paragraph.getFirstLineIndent()) + "in\"");
 		styleWriter.write(" fo:margin-left=\"" + LengthUtil.inchFloor4Dec(paragraph.getLeftIndent()) + "in\"");
 		styleWriter.write(" fo:margin-right=\"" + LengthUtil.inchFloor4Dec(paragraph.getRightIndent()) + "in\"");
 		styleWriter.write(" fo:margin-top=\"" + LengthUtil.inchFloor4Dec(paragraph.getSpacingBefore()) + "in\"");
 		styleWriter.write(" fo:margin-bottom=\"" + LengthUtil.inchFloor4Dec(paragraph.getSpacingAfter()) + "in\"");
-//		styleWriter.write(" fo:background-color=\"#" + pBackGroundColor + "\"");
 		styleWriter.write(" style:vertical-align=\"" + verticalAlignment + "\"");
 		if (runDirection != null)
 		{
@@ -451,12 +444,6 @@ public class ParagraphStyle extends Style
 		}
 		styleWriter.write(">\n");
 		styleWriter.write("</style:text-properties>\n");
-		
-//		styleWriter.write("<style:properties");
-//		styleWriter.write(" style:rotation-align=\"" + rotationAlignment + "\"");
-//		styleWriter.write(">\n");
-//		styleWriter.write("</style:properties>\n");
-//
 
 		styleWriter.write("</style:style>\n");
 	}
