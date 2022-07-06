@@ -1,6 +1,6 @@
 # jasperreports
 
-基於 jasperReports 6.19.1.1 繼續增修
+基於 jasperReports 6.19.1 繼續增修
 
 
 ## version
